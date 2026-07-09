@@ -1,0 +1,59 @@
+{
+  "welcomeFile": "/index.html",
+  "authenticationMethod": "route",
+  "sessionTimeout": 60,
+  "logout": {
+    "logoutEndpoint": "/do/logout",
+    "logoutPage": "/logout-page.html"
+  },
+  "routes": [
+    {
+      "source": "^/logout-page.html$",
+      "target": "/logout-page.html",
+      "localDir": "resources/cnma",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^/(web-manifest\\.json|pwa-icon-.*\\.png|apple-touch-icon\\.png|favicon\\.svg|RESOURCE_FAVICON\\.png|sw\\.js)$",
+      "target": "/$1",
+      "localDir": "resources/cnma",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^/index.html$",
+      "target": "/index.html",
+      "localDir": "resources/cnma",
+      "authenticationType": "xsuaa",
+      "cacheControl": "no-cache, no-store, must-revalidate"
+    },
+    {
+      "source": "^/odata/v4/(.*)$",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/api/(.*)$",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/cnma/(.*)$",
+      "target": "/cnma/$1",
+      "localDir": "resources",
+      "authenticationType": "xsuaa"
+    },
+    {
+      "source": "^(.*)$",
+      "target": "$1",
+      "localDir": "resources/cnma",
+      "authenticationType": "xsuaa"
+    },
+    {
+      "source": "^/user-api(.*)",
+      "target": "$1",
+      "service": "sap-approuter-userapi"
+    }
+  ]
+}

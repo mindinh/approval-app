@@ -1,0 +1,129 @@
+{
+  "name": "cnma-approval",
+  "version": "1.0.0",
+  "description": "CNMA Approval BFF - Workflow task management and approvals",
+  "repository": "<repository>",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@cap-js/cds-typer": "^0",
+    "@sap-cloud-sdk/connectivity": "^4",
+    "@sap-cloud-sdk/http-client": "^4.4.0",
+    "@sap-cloud-sdk/resilience": "^4.4.0",
+    "@sap/cds": "^9.5.2",
+    "@sap/xssec": "^4",
+    "axios": "^1",
+    "dotenv": "^17.2.3",
+    "express": "^4",
+    "passport": "^0.7",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
+    "xml2js": "^0.6.2"
+  },
+  "scripts": {
+    "dev:all": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be\" \"npm run dev:fe\"",
+    "dev:hybrid": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be:hybrid\" \"npm run dev:fe\"",
+    "dev:be": "set SAP_PREFER_BOUND_DESTINATION=false&& set PORT=4005&& cds serve --with-mocks",
+    "dev:be:hybrid": "set PORT=4005&& cds serve --profile hybrid --with-mocks",
+    "dev:fe": "npm --prefix app/cnma_approval_ui run dev",
+    "start": "cds-serve",
+    "start:dev": "node -r ts-node/register node_modules/@sap/cds/bin/serve.js",
+    "build": "cds build --production",
+    "build:cf": "mbt build",
+    "clean": "npx --yes rimraf --glob ui_resources/ gen/ mta_archives/ \"mta-op-*\" app/cnma_approval_ui/dist/",
+    "clean:all": "npm run clean && npx --yes rimraf node_modules/ app/cnma_approval_ui/node_modules/",
+    "predeploy": "npm run clean && mbt build",
+    "deploy": "cf deploy mta_archives/cnma-approval_1.0.0.mtar --retries 1",
+    "start:hybrid": "set NODE_OPTIONS=--max-old-space-size=8192 && cds watch --profile hybrid",
+    "build:types": "cds-typer srv --outputDirectory @cds-models",
+    "lint": "eslint srv/",
+    "lint:fix": "eslint srv/ --fix",
+    "start:lan": "set HOST=0.0.0.0&& set PORT=4004&& cds serve --with-mocks",
+    "start:hybrid:lan": "set HOST=0.0.0.0&& set PORT=4004&& cds bind --exec --profile hybrid -- cds serve --profile hybrid --with-mocks",
+    "start:ias:lan": "set HOST=0.0.0.0&& set PORT=4004&& set ENABLE_IAS_DEV_CLAIMS_FALLBACK=true&& cds bind --exec --profile hybrid -- cds serve --profile hybrid --with-mocks",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "cds": {
+    "odata": {
+      "max_batch_parallelization": 8
+    },
+    "build": {
+      "target": "gen",
+      "tasks": [
+        {
+          "for": "nodejs",
+          "src": "srv"
+        },
+        {
+          "for": "typescript",
+          "options": {
+            "tsconfig": "tsconfig.json"
+          }
+        }
+      ]
+    },
+    "requires": {
+      "auth": {
+        "kind": "mocked",
+        "users": {
+          "admin": {
+            "roles": [
+              "admin",
+              "user"
+            ]
+          },
+          "user": {
+            "roles": [
+              "user",
+              "admin"
+            ]
+          }
+        }
+      },
+      "[hybrid]": {
+        "auth": {
+          "kind": "ias"
+        }
+      },
+      "[production]": {
+        "auth": {
+          "kind": "xsuaa"
+        }
+      },
+      "C_PURREQ": {
+        "kind": "odata-v2",
+        "model": "srv/external/pr"
+      }
+    },
+    "server": {
+      "body": {
+        "limit": "50mb"
+      }
+    }
+  },
+  "devDependencies": {
+    "@cap-js/cds-types": "^0.15.0",
+    "@eslint/js": "^9.0.0",
+    "@sap/cds-dk": "^9.8.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.1",
+    "@types/passport": "^1.0.17",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^10.0.0",
+    "@types/xml2js": "^0.4.14",
+    "@vitest/coverage-v8": "^4.1.10",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.0.17"
+  },
+  "engines": {
+    "node": "^22"
+  }
+}

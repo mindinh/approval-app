@@ -1,0 +1,240 @@
+/**
+ * TanStack Query hooks for reading Inbox server state.
+ *
+ * Responsibilities:
+ * - Bind API calls to query keys
+ * - Define staleTime / gcTime / retry / enabled
+ * - Show toast on errors (one-shot, deduplicated)
+ *
+ * Must NOT:
+ * - Contain mutation logic
+ * - Own page-level UI state
+ */
+import { useEffect, useRef } from 'react';
+import { keepPreviousData, useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { inboxApi } from '@/services/inbox/inbox.api';
+import { toast } from '@cnma/react-ui';
+import { STALE, REFRESH } from '@/pages/Inbox/utils/constants';
+import { isSapUserMappingMissing, extractErrorMessage } from '@/pages/Inbox/utils/predicates';
+import { inboxKeys } from './inboxKeys';
+import type { TaskDetailResponse } from '@/services/inbox/inbox.types';
+
+// ─── Helpers ───────────────────────────────────────────────
+
+function shouldPausePolling(): boolean {
+    return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
+function listRefetchInterval(error: unknown): number | false {
+    if (isSapUserMappingMissing(error)) return false;
+    if (shouldPausePolling()) return false;
+    return REFRESH.LIST_MS;
+}
+
+/**
+ * Deduplicated error toast — prevents the same message from showing twice.
+ */
+function useErrorToast(error: unknown, fallback: string) {
+    const lastRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!error) return;
+        const message = extractErrorMessage(error, fallback);
+        if (lastRef.current === message) return;
+        lastRef.current = message;
+        toast.error(message);
+    }, [error, fallback]);
+}
+
+// ─── useCurrentUser ────────────────────────────────────────
+export function useCurrentUser() {
+    return useQuery({
+        queryKey: inboxKeys.currentUser(),
+        queryFn: () => inboxApi.getCurrentUser(),
+        staleTime: Infinity, // User identity doesn't change mid-session
+        gcTime: Infinity,
+        retry: 1,
+    });
+}
+
+// ─── useTasks ──────────────────────────────────────────────
+export function useTasks(options?: { enabled?: boolean; top?: number; skip?: number }) {
+    const pagination = options?.top != null || options?.skip != null
+        ? { top: options?.top, skip: options?.skip }
+        : undefined;
+
+    const query = useQuery({
+        queryKey: inboxKeys.tasks(pagination),
+        queryFn: () => inboxApi.getTasks(pagination),
+        staleTime: STALE.LIST,
+        enabled: options?.enabled !== false,
+        placeholderData: keepPreviousData,
+        refetchOnWindowFocus: true,
+        refetchInterval: (q) => listRefetchInterval(q.state.error),
+        retry: (failureCount, error: any) => {
+            if (isSapUserMappingMissing(error)) return false;
+            return failureCount < 1;
+        },
+    });
+
+    useErrorToast(query.error, 'Failed to load tasks');
+    return query;
+}
+
+// ─── useApprovedTasks ──────────────────────────────────────
+export function useApprovedTasks(options?: { enabled?: boolean; top?: number; skip?: number }) {
+    const pagination = options?.top != null || options?.skip != null
+        ? { top: options?.top, skip: options?.skip }
+        : undefined;
+
+    const query = useQuery({
+        queryKey: inboxKeys.approvedTasks(pagination),
+        queryFn: () => inboxApi.getApprovedTasks(pagination),
+        staleTime: STALE.LIST,
+        enabled: options?.enabled !== false,
+        placeholderData: keepPreviousData,
+        refetchOnWindowFocus: true,
+        refetchInterval: (q) => listRefetchInterval(q.state.error),
+        retry: (failureCount, error: any) => {
+            if (isSapUserMappingMissing(error)) return false;
+            return failureCount < 1;
+        },
+    });
+
+    useErrorToast(query.error, 'Failed to load approved tasks');
+    return query;
+}
+
+// ─── useInfiniteTasks (infinite scroll) ────────────────────
+const INFINITE_PAGE_SIZE = 10;
+
+export function useInfiniteTasks(options?: { enabled?: boolean }) {
+    const query = useInfiniteQuery({
+        queryKey: inboxKeys.tasksPrefix(),
+        queryFn: ({ pageParam = 0 }) =>
+            inboxApi.getTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
+            if (totalFetched >= lastPage.total) return undefined;
+            return totalFetched;
+        },
+        staleTime: STALE.LIST,
+        enabled: options?.enabled !== false,
+        refetchOnWindowFocus: true,
+        retry: (failureCount, error: any) => {
+            if (isSapUserMappingMissing(error)) return false;
+            return failureCount < 1;
+        },
+    });
+
+    useErrorToast(query.error, 'Failed to load tasks');
+    return query;
+}
+
+// ─── useInfiniteApprovedTasks (infinite scroll) ────────────
+export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
+    const query = useInfiniteQuery({
+        queryKey: inboxKeys.approvedTasksPrefix(),
+        queryFn: ({ pageParam = 0 }) =>
+            inboxApi.getApprovedTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
+            if (totalFetched >= lastPage.total) return undefined;
+            return totalFetched;
+        },
+        staleTime: STALE.LIST,
+        enabled: options?.enabled !== false,
+        refetchOnWindowFocus: true,
+        retry: (failureCount, error: any) => {
+            if (isSapUserMappingMissing(error)) return false;
+            return failureCount < 1;
+        },
+    });
+
+    useErrorToast(query.error, 'Failed to load approved tasks');
+    return query;
+}
+
+// ─── useTaskOverview (fast-path, 3-segment batch) ──────────
+export function useTaskOverview(
+    instanceId: string | null,
+    options?: {
+        enabled?: boolean;
+        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string };
+    }
+) {
+    const query = useQuery<TaskDetailResponse, Error>({
+        queryKey: inboxKeys.taskOverview(instanceId || ''),
+        queryFn: () => inboxApi.getTaskOverview(instanceId!, options?.hints),
+        enabled: !!instanceId && options?.enabled !== false,
+        staleTime: STALE.OVERVIEW,
+    });
+
+    useErrorToast(query.error, 'Failed to load task overview');
+    return query;
+}
+
+// ─── useTaskInformation ────────────────────────────────────
+export function useTaskInformation(
+    instanceId: string | null,
+    options?: {
+        enabled?: boolean;
+        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string };
+    }
+) {
+    const query = useQuery<TaskDetailResponse, Error>({
+        queryKey: inboxKeys.taskInformation(instanceId || ''),
+        queryFn: () => inboxApi.getTaskInformation(instanceId!, options?.hints),
+        enabled: !!instanceId && options?.enabled !== false,
+        staleTime: STALE.INFORMATION,
+    });
+
+    useErrorToast(query.error, 'Failed to load task information');
+    return query;
+}
+
+// ─── useTaskDetail ─────────────────────────────────────────
+export function useTaskDetail(instanceId: string | null, options?: { enabled?: boolean }) {
+    const query = useQuery<TaskDetailResponse, Error>({
+        queryKey: inboxKeys.taskDetail(instanceId || ''),
+        queryFn: () => inboxApi.getTaskDetail(instanceId!),
+        enabled: !!instanceId && options?.enabled !== false,
+        staleTime: STALE.DETAIL,
+    });
+
+    useErrorToast(query.error, 'Failed to load task detail');
+    return query;
+}
+
+// ─── useWorkflowApprovalTree ───────────────────────────────
+export function useWorkflowApprovalTree(
+    instanceId: string | null,
+    documentId?: string,
+    sapOrigin?: string,
+    options?: { enabled?: boolean }
+) {
+    return useQuery({
+        queryKey: inboxKeys.taskWorkflow(instanceId || '', { documentId, sapOrigin }),
+        queryFn: () => inboxApi.getWorkflowApprovalTree(instanceId!, documentId, sapOrigin),
+        enabled: !!instanceId && !!documentId && options?.enabled !== false,
+        staleTime: STALE.WORKFLOW,
+    });
+}
+
+// ─── usePrAttachments (Standalone PR API) ──────────────────
+export function usePrAttachments(
+    documentNumber: string | null | undefined,
+    sapOrigin?: string,
+    options?: { enabled?: boolean }
+) {
+    const query = useQuery({
+        queryKey: inboxKeys.prAttachments(documentNumber || '', sapOrigin),
+        queryFn: () => inboxApi.getPrAttachments(documentNumber!, sapOrigin),
+        enabled: !!documentNumber && options?.enabled !== false,
+        staleTime: STALE.DETAIL,
+    });
+
+    useErrorToast(query.error, 'Failed to load PR attachments');
+    return query;
+}

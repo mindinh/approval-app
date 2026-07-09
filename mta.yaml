@@ -1,0 +1,233 @@
+_schema-version: "3.3.0"
+ID: cnma-approval
+version: 1.0.0
+description: "CNMA Approval - Workflow task management and approvals"
+
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm install
+        - npx -p @sap/cds-dk cds build --production
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                              MODULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+modules:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CAP Backend Server
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 512M
+    properties:
+      SAP_USE_DESTINATION: "true"
+      SAP_TASK_DESTINATION: "SAP_ABAP_BACKEND"
+      SAP_TASK_CLIENT: "100"
+      USE_MOCK_SAP: "false"
+    build-parameters:
+      builder: npm
+      ignore:
+        - "node_modules/"
+    requires:
+      - name: cnma-approval-auth
+      - name: cnma-approval-identity
+      - name: cnma-approval-destination
+      - name: cnma-approval-connectivity
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Standalone App Router (Direct URL access)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-approuter
+    type: approuter.nodejs
+    path: app/router
+    parameters:
+      memory: 256M
+      disk-quota: 512M
+    properties:
+      DYNAMIC_IDENTITY_PROVIDER: true
+    requires:
+      - name: cnma-approval-auth
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+          timeout: 300000
+    build-parameters:
+      ignore:
+        - "node_modules/"
+      requires:
+        - name: cnma-approval-ui
+          artifacts:
+            - ./*
+          target-path: resources/cnma
+  # ─────────────────────────────────────────────────────────────────────────────
+  # React Frontend UI Build
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-ui
+    type: html5
+    path: app/cnma_approval_ui
+    build-parameters:
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms: []
+      build-result: dist
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # UI Deployer (pushes UI zip to HTML5 App Repo for WorkZone)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-ui-deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: cnma-approval-html5-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      memory: 128M
+      disk-quota: 256M
+      ignore:
+        - "*node_modules*"
+      build-result: ui_resources
+      requires:
+        - name: cnma-approval-ui
+          artifacts:
+            - cnma_approval_ui.zip
+          target-path: ui_resources/
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Destination Content Registry (for WorkZone managed app router)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: srv-api
+      - name: cnma-approval-destination
+        parameters:
+          content-target: true
+      - name: cnma-approval-auth
+        parameters:
+          service-key:
+            name: cnma-approval-auth-key
+      - name: cnma-approval-html5-repo-host
+        parameters:
+          service-key:
+            name: cnma-approval-html5-repo-host-key
+
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            # XSUAA Destination
+            - Name: cnma_approval_xsuaa_dest
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: cnma-approval-auth
+              ServiceKeyName: cnma-approval-auth-key
+              sap.cloud.service: cnma.approval
+            # Html5 Repo Destination
+            - Name: cnma_approval_html5_repo_host_dest
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: cnma-approval-html5-repo-host
+              ServiceKeyName: cnma-approval-html5-repo-host-key
+              sap.cloud.service: cnma.approval
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                              RESOURCES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+resources:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # XSUAA (Authentication & Authorization)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Destination Service (for SAP backend + WorkZone routing)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-destination
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: srv-api
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        version: 1.0.0
+        forwardAuthToken: true
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            existing_destinations_policy: update
+            destinations:
+              - Name: cnma_approval_destination
+                Description: CNMA Approval Service Destination
+                Authentication: NoAuthentication
+                Type: HTTP
+                ProxyType: Internet
+                URL: ~{srv-api/srv-url}
+                HTML5.DynamicDestination: true
+                HTML5.ForwardAuthToken: true
+                HTML5.Timeout: 600000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Connectivity Service (for on-premise destinations via Cloud Connector)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Identity Service (for mobile IAS OIDC support)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-identity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: identity
+      service-plan: application
+      config:
+        xsuaa-cross-consumption: true
+        display-name: CNMA Approval Identity
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # HTML5 Application Repository Host
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # HTML5 Application Repository Runtime
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-approval-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime

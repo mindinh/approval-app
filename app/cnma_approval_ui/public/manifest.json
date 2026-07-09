@@ -1,0 +1,41 @@
+{
+  "_version": "1.21.0",
+  "sap.app": {
+    "id": "cnma.approval",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "title": "CNMA Approval",
+    "description": "Workflow Task Management and Approvals",
+    "crossNavigation": {
+      "inbounds": {
+        "cnma_approval_inbound": {
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          },
+          "semanticObject": "cnma_approval",
+          "action": "approve"
+        }
+      }
+    }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "cnma.approval"
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "fullWidth": true,
+    "icons": {
+      "icon": "sap-icon://inbox"
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  }
+}
