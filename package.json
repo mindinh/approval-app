@@ -43,7 +43,8 @@
     "start:hybrid:lan": "set HOST=0.0.0.0&& set PORT=4004&& cds bind --exec --profile hybrid -- cds serve --profile hybrid --with-mocks",
     "start:ias:lan": "set HOST=0.0.0.0&& set PORT=4004&& set ENABLE_IAS_DEV_CLAIMS_FALLBACK=true&& cds bind --exec --profile hybrid -- cds serve --profile hybrid --with-mocks",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "login": "cf login -a https://api.cf.eu10.hana.ondemand.com"
   },
   "cds": {
     "odata": {

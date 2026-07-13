@@ -384,7 +384,7 @@ export function AttachmentsPanel({
                                 </div>
                             ))
                             )}
-                            {isSecLoading && (
+                            {isSecLoading && displayedAttachments.length > 0 && (
                                 <div className="flex justify-center py-4">
                                     <Loader2 className="size-6 animate-spin text-primary/80" />
                                 </div>

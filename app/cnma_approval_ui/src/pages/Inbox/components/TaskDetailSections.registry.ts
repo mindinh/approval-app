@@ -40,7 +40,9 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
 
     // Helper to format values
     const formatFieldValue = (value: unknown, fieldDef: DynamicFieldDefinition, contextObj?: unknown): string => {
-        if (value === null || value === undefined) return fieldDef.fallbackValue || '-';
+        if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+            return fieldDef.fallbackValue || 'N/A';
+        }
         
         const dataType = fieldDef.dataType;
 
@@ -91,7 +93,7 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
 
     const getFormattedFieldVal = (fieldKey: string, contextObj: unknown): string => {
         const fieldDef = fieldSchema[fieldKey];
-        if (!fieldDef) return '-';
+        if (!fieldDef) return 'N/A';
         const rawVal = resolveJsonPath(contextObj, fieldDef.dataPath);
         return formatFieldValue(rawVal, fieldDef, contextObj);
     };
@@ -175,7 +177,7 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
                         const rawVal = resolveJsonPath(rowObj, fieldDef.dataPath);
                         values[colKey] = formatFieldValue(rawVal, fieldDef, rowObj);
                     } else {
-                        values[colKey] = '-';
+                        values[colKey] = 'N/A';
                     }
                 });
 

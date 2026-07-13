@@ -106,14 +106,14 @@ describe('SapOdataAdapter', () => {
     });
 
     it('should fetch PR and PO in batch and normalize headers', async () => {
-      mockSapClient.batchGet.mockImplementation(async (path: string) => {
-        if (path.includes('C_PURREQUISITION_FS_SRV')) {
-          return [{ PurchaseRequisitionType: 'ZASS', PurchaseRequisition: '10000001' }];
+      mockSapClient.get.mockImplementation(async (path: string, relativePath: string) => {
+        if (relativePath.includes('C_PurRequisitionFs')) {
+          return { d: { PurchaseRequisitionType: 'ZASS', PurchaseRequisition: '10000001' } };
         }
-        if (path.includes('C_PURCHASEORDER_FS_SRV')) {
-          return [{ PurchaseOrder: '45000002' }];
+        if (relativePath.includes('C_PurchaseOrderFs')) {
+          return { d: { PurchaseOrderType: 'DEFAULT', PurchaseOrder: '45000002' } };
         }
-        return [];
+        return {};
       });
 
       const items = [
@@ -123,7 +123,7 @@ describe('SapOdataAdapter', () => {
 
       const result = await adapter.getDetailBatch(items, 'SAP_USER', 'jwt-token');
 
-      expect(mockSapClient.batchGet).toHaveBeenCalledTimes(2);
+      expect(mockSapClient.get).toHaveBeenCalled();
       expect(result['PR:10000001'].documentType).toBe('ZASS');
       expect(result['PR:10000001'].header.purchaseRequisition).toBe('10000001');
       expect(result['PO:45000002'].header.purchaseOrder).toBe('45000002');

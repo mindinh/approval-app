@@ -342,7 +342,7 @@ export const PO_BASE_CONFIG: ObjectTypeConfiguration = {
     requester: {
       key: "requester",
       label: "Created By",
-      dataPath: "$.header.userFullName",
+      dataPath: "$.header.createdByUser",
       dataType: "USER",
     },
     paymentTermsText: {
@@ -584,6 +584,7 @@ export const PO_BASE_CONFIG: ObjectTypeConfiguration = {
       dataType: "TEXT"
     },
     {
+      label: "Supplier",
       dataPath: "$.header.supplierName",
       dataType: "TEXT"
     },

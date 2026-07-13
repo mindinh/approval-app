@@ -60,7 +60,7 @@ graph TD
 
 ## 🔄 Detail Retrieval Flow (Strategy Pattern)
 
-The system resolves detailed business object data using a Strategy Pattern. The [SapOdataAdapter](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts) acts as a facade, delegating requests to registered object strategies (such as [PrStrategy](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr-strategy.ts) or [PoStrategy](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po-strategy.ts)).
+The system resolves detailed business object data using a Strategy Pattern. The [SapOdataAdapter](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts) acts as a facade, delegating requests to registered object strategies (such as [PrDetail](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts) or [PoDetail](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts) implementing the [Detail](file:///d:/learning/test/cnma_approval/srv/lib/integrations/detail.ts) interface).
 
 The sequence diagram below displays the end-to-end data retrieval flow:
 
@@ -71,7 +71,7 @@ sequenceDiagram
     participant Processor as InboxProcessor
     participant Adapter as SapOdataAdapter
     participant Cache as TtlLruCache
-    participant Strategy as DetailStrategy (PR/PO)
+    participant Strategy as Detail Strategy (PR/PO)
     participant ClientSDK as SapClient
     participant Meta as MetadataService
 

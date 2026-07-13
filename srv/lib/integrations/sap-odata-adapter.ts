@@ -1,10 +1,11 @@
 import { SapClient } from './sap-client';
-import { DetailStrategy } from './detail-strategy';
-import { PrStrategy } from './pr-strategy';
-import { PoStrategy } from './po-strategy';
+import { Detail } from './detail';
+import { PrDetail } from './pr';
+import { PoDetail } from './po';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { getMockInstances } from './mock-data-provider';
 import { TtlLruCache } from '../utils/cache';
+import { MetadataService } from '../metadata-service';
 
 const detailCache = new TtlLruCache<string, any>(500, 5 * 60 * 1000); // 5 minutes TTL, 500 capacity
 
@@ -16,18 +17,19 @@ export function clearDetailCache(objectType: string, objectId: string) {
 
 export class SapOdataAdapter {
     private readonly sapClient = new SapClient();
-    private readonly strategies = new Map<string, DetailStrategy>();
+    private readonly metadataService = new MetadataService(this.sapClient);
+    private readonly strategies = new Map<string, Detail>();
 
     constructor() {
-        this.register(new PrStrategy(this.sapClient));
-        this.register(new PoStrategy(this.sapClient));
+        this.register(new PrDetail(this.sapClient, this.metadataService));
+        this.register(new PoDetail(this.sapClient, this.metadataService));
     }
 
-    private register(strategy: DetailStrategy) {
+    private register(strategy: Detail) {
         this.strategies.set(strategy.objectType, strategy);
     }
 
-    private getStrategy(objectType: string): DetailStrategy {
+    private getStrategy(objectType: string): Detail {
         const strategy = this.strategies.get(objectType);
         if (!strategy) {
             throw new Error(`Integration Strategy not implemented for: ${objectType}`);

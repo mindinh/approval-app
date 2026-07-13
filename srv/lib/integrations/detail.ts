@@ -1,6 +1,6 @@
 import { ObjectTypeCode } from '../processors/object-config';
 
-export interface DetailStrategy {
+export interface Detail {
     readonly objectType: ObjectTypeCode;
 
     getDetail(

@@ -33,9 +33,10 @@ cnma-approval/
 │   ├── lib/                           # Core business processors and adapter layers
 │   │   ├── integrations/              # Outbound connectors to SAP systems
 │   │   │   ├── sap-odata-adapter.ts   # Facade adapter managing list fetching and cache
-│   │   │   ├── detail-strategy.ts     # Unified strategy interface
-│   │   │   ├── pr-strategy.ts         # PR-specific detail strategy implementation
-│   │   │   ├── po-strategy.ts         # PO-specific detail strategy implementation
+│   │   │   ├── detail.ts              # Unified detail strategy interface
+│   │   │   ├── base.ts                # Base strategy class handling mock mode, camel casing, etc.
+│   │   │   ├── pr.ts                  # PR-specific detail strategy implementation
+│   │   │   ├── po.ts                  # PO-specific detail strategy implementation
 │   │   │   ├── sap-client.ts          # Low-level connection client (proactive CSRF handling)
 │   │   │   └── taskprocessing-adapter.ts # SAP Task Gateway operations
 │   │   ├── processors/                # Data processors, normalization, and mappings
@@ -59,9 +60,10 @@ cnma-approval/
 *   [`srv/server.ts`](file:///d:/learning/test/cnma_approval/srv/server.ts): Bootstraps the Express application. Configures passport authentication using XSUAA/IAS JWT validation strategy and mounts the REST routing middleware.
 *   [`srv/handlers/inbox-handler.ts`](file:///d:/learning/test/cnma_approval/srv/handlers/inbox-handler.ts): Acts as the controller layer. It maps routes (like `/tasks`, `/tasks/:id`, `/tasks/:id/decision`) to methods inside the processor, extracts user identities, handles errors, and returns JSON envelopes.
 *   [`srv/lib/processors/inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts): Orchestrates the business logic. It handles the batch fetching of details to solve N+1 query overhead, maps raw structures, merges priorities, and returns standard objects to the frontend.
-*   [`srv/lib/integrations/sap-odata-adapter.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts): Unified SAP OData adapter acting as a facade for worklist fetching and document detail routing. Delegates specific detail retrieval tasks to PR/PO strategy handlers and coordinates in-memory caching.
-*   [`srv/lib/integrations/pr-strategy.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr-strategy.ts): Strategy class handling PR-specific OData queries, attachment uploads, comments posting, and schema mappings.
-*   [`srv/lib/integrations/po-strategy.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po-strategy.ts): Strategy class handling PO-specific OData queries, account assignments, schedule lines, and schema mappings.
+*   [`srv/lib/integrations/sap-odata-adapter.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts): Unified SAP OData adapter acting as a facade for worklist fetching and document detail routing. Delegates specific detail retrieval tasks to registered detail strategies (`PrDetail`, `PoDetail`) and coordinates in-memory caching.
+*   [`srv/lib/integrations/base.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/base.ts): Abstract base strategy class (`BaseDetail`) encapsulating common features like mock data injection, parallel batch GETs, camel-casing serialization, and mapping configurations.
+*   [`srv/lib/integrations/pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts): Strategy class (`PrDetail`) handling PR-specific OData queries, custom info mappings, attachment uploads, comments posting, and schema mappings.
+*   [`srv/lib/integrations/po.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts): Strategy class (`PoDetail`) handling PO-specific OData queries, account assignments, schedule lines, and schema mappings.
 *   [`srv/lib/utils/file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts): Utility library handling binary string decoding and hex/base64 conversions for GOS attachment streams.
 *   [`srv/lib/utils/cache.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/cache.ts): Implements the custom LRU/TTL cache mechanism.
 
