@@ -1,15 +1,7 @@
 import type { TaskDetail, DynamicFieldDefinition } from '@/services/inbox/inbox.types';
-import type { BusinessSectionModel, TaskDetailRenderer, DetailCardModel, DetailTableModel } from './TaskDetailSections.types';
-import { poTaskDetailRenderer } from './TaskDetailSections.renderer.po';
-import { prTaskDetailRenderer } from './TaskDetailSections.renderer.pr';
-import { defaultTaskDetailRenderer } from './TaskDetailSections.renderer.default';
+import type { BusinessSectionModel, DetailCardModel, DetailTableModel } from './TaskDetailSections.types';
 import { formatAmountWithCurrency as formatAmount, formatDateShortLocale as formatDate } from '@/pages/Inbox/utils/formatters';
-
-const RENDERERS: TaskDetailRenderer[] = [
-    poTaskDetailRenderer,
-    prTaskDetailRenderer,
-    defaultTaskDetailRenderer,
-];
+import { buildDefaultBusinessModel } from './TaskDetailSections.shared';
 
 export function resolveJsonPath(obj: unknown, path: string): unknown {
     if (!path || obj === null || obj === undefined) return undefined;
@@ -207,12 +199,12 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
 
 /**
  * Resolver for task object presentation.
- * To support new task object types, add a new renderer and register it here.
+ * Returns the dynamic business model if fieldSchema and uiSchema are defined,
+ * otherwise falls back to a clean default business model representation.
  */
 export function resolveBusinessSectionModel(detail: TaskDetail): BusinessSectionModel {
     if (detail.fieldSchema && detail.uiSchema && Object.keys(detail.fieldSchema).length > 0 && detail.uiSchema.sections && detail.uiSchema.sections.length > 0) {
         return buildDynamicBusinessModel(detail);
     }
-    const renderer = RENDERERS.find((candidate) => candidate.matches(detail)) || defaultTaskDetailRenderer;
-    return renderer.build(detail);
+    return buildDefaultBusinessModel(detail);
 }

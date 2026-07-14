@@ -18,13 +18,13 @@ import { AttachmentPreviewCard, isPreviewableType } from '../AttachmentPreviewMo
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { useAddAttachment, usePrAttachments, useUploadPrAttachment } from '@/pages/Inbox/hooks/useInbox';
 import { formatDate, safe } from '@/pages/Inbox/utils/formatters';
-import { formatFileSize } from '../TaskDetailSections.shared';
+import { formatFileSize } from '../renderers/TaskDetailSections.shared';
 import {
     ALLOWED_ATTACHMENT_TYPES,
     MAX_ATTACHMENT_SIZE_MB,
     MAX_ATTACHMENT_SIZE_BYTES,
 } from '@/pages/Inbox/utils/constants';
-import { cleanFileName, friendlyFileType, Empty } from './shared';
+import { cleanFileName, friendlyFileType, Empty } from '@/pages/Inbox/utils/shared';
 import { cn } from '@/lib/utils';
 import { toast } from '@cnma/react-ui';
 

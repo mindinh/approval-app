@@ -18,8 +18,8 @@ import {
     StatusHeaderBadges,
     WorkflowApprovalPanel,
     makeTabDefinitions,
-} from './TaskDetailPanels';
-import { resolveBusinessSectionModel } from './TaskDetailSections.registry';
+} from './panels';
+import { resolveBusinessSectionModel } from './renderers';
 import { useTranslation } from 'react-i18next';
 
 interface TaskDetailViewProps {
@@ -66,44 +66,53 @@ export function TaskDetailView({
     const activeTab =
         detail && tabState.taskId === detail.task.instanceId ? tabState.tab : 'overview';
 
-    const isPRTask = detail?.task.businessContext?.type === 'PR';
-    const prDocumentId =
-        detail?.task.businessContext?.type === 'PR'
-            ? detail?.task.businessContext?.documentId
-            : undefined;
+    const docType = detail?.task.businessContext?.type;
+    const supportsApproval = docType === 'PR';
+    const supportsStandaloneAttach = docType === 'PR';
+    const documentId = detail?.task.businessContext?.documentId;
+
     const workflowQuery = useWorkflowApprovalTree(
         detail?.task.instanceId ?? null,
-        prDocumentId,
+        documentId,
         detail?.task.sapOrigin,
-        { enabled: !!detail && !!isPRTask }
+        { enabled: !!detail && supportsApproval }
     );
     const workflowError = workflowQuery.error
         ? 'Failed to load workflow approval tree.'
         : undefined;
 
-    // PR attachment count for the tab badge
+    // Standalone attachment count for the tab badge (e.g. for PR)
     const prAttachmentsQuery = usePrAttachments(
-        isPRTask ? prDocumentId : null,
+        supportsStandaloneAttach ? documentId : null,
         detail?.task.sapOrigin,
-        { enabled: !!detail && !!isPRTask }
+        { enabled: !!detail && supportsStandaloneAttach }
     );
-    const prAttachmentCount = isPRTask
+    const prAttachmentCount = supportsStandaloneAttach
         ? (prAttachmentsQuery.data?.attachments?.length ?? undefined)
         : undefined;
-    const isPrAttachmentsLoading = isPRTask && prAttachmentsQuery.isLoading;
+    const isPrAttachmentsLoading = supportsStandaloneAttach && prAttachmentsQuery.isLoading;
+
+    const detailsCount = useMemo(() => {
+        if (!businessModel) return undefined;
+        const filteredTables = businessModel.tables.filter(
+            (table) => !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title)
+        );
+        return filteredTables.reduce((acc, t) => acc + t.rows.length, 0);
+    }, [businessModel]);
 
     const tabs = useMemo(
         () =>
             detail
-                ? makeTabDefinitions(
-                    detail,
-                    workflowQuery.data?.steps?.length || 0,
-                    workflowQuery.data?.comments,
-                    t,
-                    prAttachmentCount
-                )
+                ? makeTabDefinitions({
+                      detail,
+                      workflowCount: workflowQuery.data?.steps?.length || 0,
+                      workflowComments: workflowQuery.data?.comments,
+                      detailsCount,
+                      attachmentCount: prAttachmentCount,
+                      t,
+                  })
                 : [],
-        [detail, workflowQuery.data?.steps?.length, workflowQuery.data?.comments, t, prAttachmentCount]
+        [detail, workflowQuery.data?.steps?.length, workflowQuery.data?.comments, detailsCount, prAttachmentCount, t]
     );
 
     if (isLoading) {

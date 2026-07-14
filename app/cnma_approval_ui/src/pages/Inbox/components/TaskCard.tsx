@@ -21,6 +21,22 @@ function useBusinessChips(task: InboxTask): BusinessChip[] {
     return useMemo(() => mapBusinessChips(task), [task.businessContext]);
 }
 
+function getObjectTypeStyle(type?: string) {
+    const defaultStyle = {
+        text: 'text-muted-foreground',
+        stripe: 'before:bg-transparent',
+    };
+    if (!type || type === 'UNKNOWN') return defaultStyle;
+
+    const map: Record<string, { text: string; stripe: string }> = {
+        PR: { text: 'text-primary font-semibold', stripe: 'before:bg-primary' },
+        PO: { text: 'text-info font-semibold', stripe: 'before:bg-info' },
+        RE: { text: 'text-warning font-semibold', stripe: 'before:bg-warning' },
+        CLAIM: { text: 'text-success font-semibold', stripe: 'before:bg-success' },
+    };
+    return map[type.toUpperCase()] || defaultStyle;
+}
+
 export function TaskCard({
     task,
     isSelected,
@@ -32,9 +48,11 @@ export function TaskCard({
             ? task.businessContext.type
             : 'Workflow';
     const contextId = task.businessContext?.documentId || task.instanceId;
-    const isPrTask = task.businessContext?.type === 'PR';
     const isHighPriority = task.priority === 'HIGH' || task.priority === 'VERY_HIGH';
     const chips = useBusinessChips(task);
+
+    const typeStyle = getObjectTypeStyle(task.businessContext?.type);
+    const stripeClass = isHighPriority ? 'before:bg-destructive' : typeStyle.stripe;
 
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
@@ -55,13 +73,13 @@ export function TaskCard({
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     // Colour — base
                     'bg-card border-border',
-                    'shadow-[0_3px_0_0_rgba(15,23,42,0.06)] hover:shadow-[0_4px_0_0_rgba(15,23,42,0.08)]',
+                    'shadow-sm',
                     // Colour — selected
                     isSelected &&
-                        'border-primary/35 ring-1 ring-primary/10 shadow-[0_4px_0_0_rgba(193,0,0,0.15)] bg-[linear-gradient(180deg,rgba(255,247,247,0.98)_0%,rgba(255,255,255,1)_100%)]',
+                        'border-primary/35 ring-1 ring-primary/10 shadow-sm bg-primary/5',
                     // Priority accent stripe (left edge)
-                    !isSelected && (isHighPriority || isPrTask) &&
-                        'before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-destructive',
+                    !isSelected && stripeClass !== 'before:bg-transparent' &&
+                        cn('before:absolute before:inset-y-0 before:left-0 before:w-1', stripeClass),
                 )}
             >
                 {/* ── Icon + header row ── */}
@@ -81,20 +99,10 @@ export function TaskCard({
                         {/* Type + ID + Badges */}
                         <div className="flex w-full items-start justify-between gap-2">
                             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                                <span
-                                    className={cn(
-                                        'shrink-0 text-xs',
-                                        isPrTask ? 'text-primary' : 'text-muted-foreground',
-                                    )}
-                                >
+                                <span className={cn('shrink-0 text-xs', typeStyle.text)}>
                                     {contextType}
                                 </span>
-                                <span
-                                    className={cn(
-                                        'truncate text-xs',
-                                        isPrTask ? 'text-primary' : 'text-muted-foreground',
-                                    )}
-                                >
+                                <span className={cn('truncate text-xs', typeStyle.text)}>
                                     {contextId}
                                 </span>
                             </div>
@@ -163,15 +171,14 @@ export function TaskCard({
                 // Colour — base (not selected)
                 !isSelected && [
                     'bg-card border-border',
-                    'shadow-[0_3px_0_0_rgba(15,23,42,0.06)]',
-                    'hover:-translate-y-px hover:shadow-[0_4px_0_0_rgba(15,23,42,0.08)]',
-                    isPrTask ? 'before:bg-destructive' : 'before:bg-transparent',
+                    'shadow-sm',
+                    stripeClass,
                 ],
                 // Colour — selected
                 isSelected && [
                     'border-primary/35 ring-1 ring-primary/10',
-                    'shadow-[0_4px_0_0_rgba(193,0,0,0.15)]',
-                    'bg-[linear-gradient(180deg,rgba(193,0,0,0.04)_0%,rgba(255,255,255,0.98)_100%)]',
+                    'shadow-sm',
+                    'bg-primary/5',
                     'before:bg-primary',
                 ],
             )}
@@ -179,20 +186,10 @@ export function TaskCard({
             {/* ── Header: type + id + badges ── */}
             <div className="flex w-full items-center justify-between gap-2">
                 <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                    <span
-                        className={cn(
-                            'shrink-0 text-xs font-normal',
-                            isPrTask ? 'text-primary' : 'text-muted-foreground',
-                        )}
-                    >
+                    <span className={cn('shrink-0 text-xs font-normal', typeStyle.text)}>
                         {contextType}
                     </span>
-                    <span
-                        className={cn(
-                            'truncate text-xs',
-                            isPrTask ? 'text-primary' : 'text-muted-foreground',
-                        )}
-                    >
+                    <span className={cn('truncate text-xs', typeStyle.text)}>
                         {contextId}
                     </span>
                 </div>

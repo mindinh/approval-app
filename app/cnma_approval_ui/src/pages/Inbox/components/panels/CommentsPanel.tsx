@@ -8,7 +8,7 @@ import type { TaskDetail, WorkflowApprovalComment } from '@/services/inbox/inbox
 import { useAddComment } from '@/pages/Inbox/hooks/useInbox';
 import { formatRelative } from '@/pages/Inbox/utils/formatters';
 import { mergeAndDeduplicateComments } from '@/pages/Inbox/mappers/comments.mapper';
-import { Empty } from './shared';
+import { Empty } from '@/pages/Inbox/utils/shared';
 import { formatDate, formatDateTime } from '@/utils/formatters/date';
 import { cn } from '@/lib/utils';
 

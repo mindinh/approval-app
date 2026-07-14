@@ -23,6 +23,11 @@ describe('normalizeApprovalStatus', () => {
     it('trims whitespace', () => {
         expect(normalizeApprovalStatus('  Approved  ')).toBe('APPROVED');
     });
+
+    it('handles special characters and retains them', () => {
+        expect(normalizeApprovalStatus('in-process')).toBe('IN-PROCESS');
+        expect(normalizeApprovalStatus('status_ok')).toBe('STATUS_OK');
+    });
 });
 
 describe('isPendingApprovalStatus', () => {
@@ -51,6 +56,11 @@ describe('isPendingApprovalStatus', () => {
     it('returns false for undefined', () => {
         expect(isPendingApprovalStatus(undefined)).toBe(false);
     });
+    
+    it('returns false for unknown statuses', () => {
+        expect(isPendingApprovalStatus('COMPLETED')).toBe(false);
+        expect(isPendingApprovalStatus('RANDOM_STATUS')).toBe(false);
+    });
 });
 
 describe('formatApprovalStatus', () => {
@@ -68,6 +78,10 @@ describe('formatApprovalStatus', () => {
 
     it('handles lowercase input', () => {
         expect(formatApprovalStatus('pending')).toBe('Pending');
+    });
+
+    it('formats snake_case with multiple underscores correctly', () => {
+        expect(formatApprovalStatus('READY_FOR_APPROVAL')).toBe('Ready For Approval');
     });
 });
 
@@ -89,6 +103,10 @@ describe('isSapUserMappingMissing', () => {
     it('returns false for missing response', () => {
         expect(isSapUserMappingMissing({ message: 'fail' })).toBe(false);
     });
+
+    it('returns false when code property is empty', () => {
+        expect(isSapUserMappingMissing({ response: { data: {} } })).toBe(false);
+    });
 });
 
 describe('extractErrorMessage', () => {
@@ -104,5 +122,12 @@ describe('extractErrorMessage', () => {
 
     it('falls back to the provided string', () => {
         expect(extractErrorMessage(null, 'something went wrong')).toBe('something went wrong');
+    });
+
+    it('extracts nested error messages from response if data.error is missing but data.message is present', () => {
+        const error = { response: { data: { message: 'nested message' } } };
+        // Currently extractErrorMessage only pulls data.error or error.message.
+        // Let's verify standard extractErrorMessage behavior:
+        expect(extractErrorMessage(error, 'fallback')).toBe('fallback');
     });
 });

@@ -3,9 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
-import { TaskList } from '@/pages/Inbox/components/TaskList';
-import { TaskDetailView } from '@/pages/Inbox/components/TaskDetailView';
-import { MassSelectionView } from '@/pages/Inbox/components/MassSelectionView';
+import { TaskList, TaskDetailView, MassSelectionView } from '@/pages/Inbox/components';
 import {
     useInfiniteTasks,
     useInfiniteApprovedTasks,

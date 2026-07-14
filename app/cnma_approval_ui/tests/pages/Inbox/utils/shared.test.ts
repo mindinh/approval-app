@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanFileName, friendlyFileType } from '@/pages/Inbox/components/panels/shared';
+import { cleanFileName, friendlyFileType } from '@/pages/Inbox/utils/shared';
 
 describe('cleanFileName', () => {
     it('returns undefined for undefined', () => {

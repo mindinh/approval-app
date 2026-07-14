@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBusinessSectionModel } from './TaskDetailSections.registry';
+import { resolveBusinessSectionModel } from '@/pages/Inbox/components/renderers/TaskDetailSections.registry';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 
 describe('resolveBusinessSectionModel with dynamic schema', () => {
@@ -29,8 +29,8 @@ describe('resolveBusinessSectionModel with dynamic schema', () => {
         };
 
         const result = resolveBusinessSectionModel(detail);
-        expect(result.title).toBe('Purchase Requisition');
-        expect(result.subtitle).toBe('PR 10001');
+        expect(result.title).toBe('PR Business Data');
+        expect(result.subtitle).toBe('Document 10001');
     });
 
     it('renders dynamically using fieldSchema and uiSchema when provided', () => {
