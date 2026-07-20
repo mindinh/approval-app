@@ -28,7 +28,7 @@ export function makeTabDefinitions({
     const mergedCommentsCount = mergeAndDeduplicateComments(detail.comments, workflowComments).length;
     const finalAttachmentCount = attachmentCount ?? detail.attachments.length;
 
-    const showWorkflow = detail.task.businessContext?.type === 'PR';
+    const showWorkflow = detail.task.businessContext?.type === 'PR' || detail.task.businessContext?.type === 'PO';
 
     const tabs = [
         {

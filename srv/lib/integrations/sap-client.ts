@@ -15,7 +15,7 @@ export class SapClient {
 
         const baseURL = process.env.SAP_TASK_BASE_URL || 'http://s4hanadev.ais-tech.vn:8000';
         this.logger.info(`Initializing direct Axios instance. Base URL: ${baseURL}`);
-        
+
         this.http = axios.create({
             baseURL,
             timeout: 30000,
@@ -79,7 +79,7 @@ export class SapClient {
         if (effectiveJwt) {
             return true;
         }
-        
+
         if (!this.hasLoggedDirectFallback) {
             this.logger.warn('No valid User JWT found (or token expired) in local development. Bypassing BTP Destination/Principal Propagation and falling back to direct S/4 connection using technical user basic credentials.');
             this.hasLoggedDirectFallback = true;
@@ -145,7 +145,7 @@ export class SapClient {
                     return response.data as T;
                 } catch (error: any) {
                     if (this.shouldFallbackToDirect(error)) {
-                        const response = await this.http.get<T>(`${servicePath}${relativePath}`, { 
+                        const response = await this.http.get<T>(`${servicePath}${relativePath}`, {
                             params,
                             headers: this.getRequestHeaders(sapUser)
                         });
@@ -154,7 +154,7 @@ export class SapClient {
                     throw error;
                 }
             } else {
-                const response = await this.http.get<T>(`${servicePath}${relativePath}`, { 
+                const response = await this.http.get<T>(`${servicePath}${relativePath}`, {
                     params,
                     headers: this.getRequestHeaders(sapUser)
                 });
@@ -218,7 +218,7 @@ export class SapClient {
             if (isForbidden) {
                 this.logger.warn(`POST request to ${servicePath}${relativePath} failed with 403 Forbidden. Invalidating CSRF cache and retrying...`);
                 this.invalidateCsrf(servicePath, sapUser);
-                
+
                 const fresh = await this.fetchCsrf(servicePath, sapUser, userJwt, true);
                 const retriedHeaders = { ...headers };
                 retriedHeaders['x-csrf-token'] = fresh.token;
@@ -310,7 +310,7 @@ export class SapClient {
 
         const boundary = 'batch_' + Math.random().toString(36).substring(2, 15);
         const body = this.buildBatchGetBody(requests, boundary);
-        
+
         const headers: Record<string, string> = {
             'Content-Type': `multipart/mixed; boundary=${boundary}`,
             'Accept': 'multipart/mixed'
@@ -356,7 +356,7 @@ export class SapClient {
             const contentType = responseHeaders['content-type'] || '';
             const boundaryMatch = contentType.match(/boundary=([\w\-]+)/i);
             let responseBoundary = boundaryMatch ? boundaryMatch[1] : undefined;
-            
+
             if (!responseBoundary && typeof responseData === 'string') {
                 const firstLine = responseData.split('\r\n')[0] || '';
                 if (firstLine.startsWith('--')) {
@@ -376,7 +376,7 @@ export class SapClient {
             body += `--${boundary}\r\n`;
             body += 'Content-Type: application/http\r\n';
             body += 'Content-Transfer-Encoding: binary\r\n\r\n';
-            
+
             let url = req.relativePath;
             const queryParams = { ...req.params, $format: 'json' };
             const searchParams = new URLSearchParams();
@@ -395,20 +395,20 @@ export class SapClient {
     private parseBatchResponse(responseBody: string, boundary: string): any[] {
         const parts = responseBody.split(`--${boundary}`);
         const results: any[] = [];
-        
+
         for (const part of parts) {
             if (part.trim() === '' || part.trim() === '--') {
                 continue;
             }
-            
+
             const statusMatch = part.match(/HTTP\/1\.\d\s+(\d+)/);
             const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 500;
-            
+
             const doubleCrlfIndex = part.indexOf('\r\n\r\n');
             if (doubleCrlfIndex !== -1) {
                 const content = part.substring(doubleCrlfIndex + 4).trim();
                 const jsonStr = content.endsWith('--') ? content.slice(0, -2).trim() : content;
-                
+
                 try {
                     if (statusCode >= 200 && statusCode < 300) {
                         const parsed = JSON.parse(jsonStr);

@@ -135,12 +135,14 @@ export const inboxApi = {
     getWorkflowApprovalTree: async (
         instanceId: string, 
         documentId?: string, 
-        sapOrigin?: string
+        sapOrigin?: string,
+        businessObjectType?: string
     ): Promise<WorkflowApprovalTreeResponse> => {
         let url = `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/workflow-approval-tree`;
         const params = new URLSearchParams();
         if (documentId) params.append('documentId', documentId);
         if (sapOrigin) params.append('sapOrigin', sapOrigin);
+        if (businessObjectType) params.append('businessObjectType', businessObjectType);
         const query = params.toString();
         if (query) url += `?${query}`;
 

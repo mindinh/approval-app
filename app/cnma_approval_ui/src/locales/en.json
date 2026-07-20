@@ -178,6 +178,10 @@
         "low": "Low",
         "veryHigh": "Very High"
     },
+    "taskType": {
+        "normal": "Standard Approval",
+        "tagged": "CC"
+    },
     "errors": {
         "networkError": "Network error. Please check your connection.",
         "sessionExpired": "Your session has expired. Please log in again.",

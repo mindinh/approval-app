@@ -5,7 +5,7 @@ import type { InboxTask } from '@/services/inbox/inbox.types';
 import { Clock, User, ChevronRight, FileText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { mapBusinessChips, type BusinessChip } from '@/pages/Inbox/mappers/taskCard.mapper';
-import { PriorityBadge, StatusBadge } from './TaskBadges';
+import { PriorityBadge, StatusBadge, TaskTypeBadge } from './TaskBadges';
 
 interface TaskCardProps {
     task: InboxTask;
@@ -54,6 +54,12 @@ export function TaskCard({
     const typeStyle = getObjectTypeStyle(task.businessContext?.type);
     const stripeClass = isHighPriority ? 'before:bg-destructive' : typeStyle.stripe;
 
+    const typeUpper = task.businessContext?.type?.toUpperCase();
+    const colorKey = typeUpper === 'PO' ? 'info'
+                   : typeUpper === 'RE' ? 'warning'
+                   : typeUpper === 'CLAIM' ? 'success'
+                   : 'primary';
+
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
         return (
@@ -75,8 +81,12 @@ export function TaskCard({
                     'bg-card border-border',
                     'shadow-sm',
                     // Colour — selected
-                    isSelected &&
-                        'border-primary/35 ring-1 ring-primary/10 shadow-sm bg-primary/5',
+                    isSelected && {
+                        'border-info/35 ring-1 ring-info/10 shadow-sm bg-info/5': colorKey === 'info',
+                        'border-warning/35 ring-1 ring-warning/10 shadow-sm bg-warning/5': colorKey === 'warning',
+                        'border-success/35 ring-1 ring-success/10 shadow-sm bg-success/5': colorKey === 'success',
+                        'border-primary/35 ring-1 ring-primary/10 shadow-sm bg-primary/5': colorKey === 'primary',
+                    },
                     // Priority accent stripe (left edge)
                     !isSelected && stripeClass !== 'before:bg-transparent' &&
                         cn('before:absolute before:inset-y-0 before:left-0 before:w-1', stripeClass),
@@ -88,7 +98,12 @@ export function TaskCard({
                         className={cn(
                             'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl',
                             isSelected
-                                ? 'bg-primary/10 text-primary'
+                                ? {
+                                      'bg-info/10 text-info': colorKey === 'info',
+                                      'bg-warning/10 text-warning': colorKey === 'warning',
+                                      'bg-success/10 text-success': colorKey === 'success',
+                                      'bg-primary/10 text-primary': colorKey === 'primary',
+                                  }
                                 : 'bg-muted text-muted-foreground',
                         )}
                     >
@@ -107,6 +122,7 @@ export function TaskCard({
                                 </span>
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
+                                <TaskTypeBadge normalTask={task.normalTask} />
                                 <PriorityBadge priority={task.priority} />
                                 <StatusBadge status={task.status} />
                             </div>
@@ -176,10 +192,11 @@ export function TaskCard({
                 ],
                 // Colour — selected
                 isSelected && [
-                    'border-primary/35 ring-1 ring-primary/10',
                     'shadow-sm',
-                    'bg-primary/5',
-                    'before:bg-primary',
+                    colorKey === 'info' && 'border-info/35 ring-1 ring-info/10 bg-info/5 before:bg-info',
+                    colorKey === 'warning' && 'border-warning/35 ring-1 ring-warning/10 bg-warning/5 before:bg-warning',
+                    colorKey === 'success' && 'border-success/35 ring-1 ring-success/10 bg-success/5 before:bg-success',
+                    colorKey === 'primary' && 'border-primary/35 ring-1 ring-primary/10 bg-primary/5 before:bg-primary',
                 ],
             )}
         >
@@ -193,8 +210,8 @@ export function TaskCard({
                         {contextId}
                     </span>
                 </div>
-                {/* Badges — shrink-0 + flex-nowrap so they never wrap */}
                 <div className="flex shrink-0 flex-nowrap items-center gap-1">
+                    <TaskTypeBadge normalTask={task.normalTask} />
                     <PriorityBadge priority={task.priority} />
                     <StatusBadge status={task.status} />
                 </div>
@@ -237,7 +254,12 @@ export function TaskCard({
             <ChevronRight
                 className={cn(
                     'absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100',
-                    isSelected && 'text-primary/60 opacity-100',
+                    isSelected && {
+                        'text-info/60 opacity-100': colorKey === 'info',
+                        'text-warning/60 opacity-100': colorKey === 'warning',
+                        'text-success/60 opacity-100': colorKey === 'success',
+                        'text-primary/60 opacity-100': colorKey === 'primary',
+                    },
                 )}
             />
         </Button>

@@ -94,7 +94,8 @@ export function getMockInstances(status?: string | string[]) {
             total: 0,
             curr_vnd: '',
             total_doc_curr: 0,
-            doc_curr: ''
+            doc_curr: '',
+            normalTask: false
         },
         {
             instanceID: 'task-claim-01',

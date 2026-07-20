@@ -58,7 +58,7 @@ export function AttachmentsPanel({
     const instanceId = detail.task.instanceId;
     const isPreviewOpen = !!previewAttachment;
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+
     const isPR = detail.task.businessContext?.type === 'PR';
     const documentNumber = detail.task.businessContext?.documentId;
     const sapOrigin = detail.task.sapOrigin;
@@ -68,9 +68,9 @@ export function AttachmentsPanel({
         sapOrigin,
         { enabled: isPR }
     );
-    
+
     // Merge or fallback to PR attachments
-    const displayedAttachments = isPR 
+    const displayedAttachments = isPR
         ? (prAttachmentsResult?.attachments || [])
         : detail.attachments;
 
@@ -129,13 +129,13 @@ export function AttachmentsPanel({
         <div className={cn(
             isMobile ? 'w-full space-y-4' : 'flex gap-4 items-stretch w-full min-w-0 overflow-hidden h-full'
         )}>
-            <Input
+            {/* <Input
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp,.odt,.ods,.odp"
                 onChange={handleFileUpload}
-            />
+            /> */}
 
             <div className={cn(
                 'transition-all duration-300 ease-in-out shrink-0 flex flex-col min-h-0 min-w-0',
@@ -158,82 +158,82 @@ export function AttachmentsPanel({
                             <Empty message="No files attached." />
                         ) : (
                             displayedAttachments.map((attachment) => {
-                            const fileName = safe(cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id);
-                            const fileType = friendlyFileType(attachment.mimeType);
-                            const fileSize = formatFileSize(attachment.fileSize);
-                            const author = safe(attachment.createdByName || attachment.createdBy);
-                            const date = formatDate(attachment.createdAt);
-                            const canPreview = isPreviewableType(attachment.mimeType, fileName);
-                            const previewUrl = canPreview ? getPreviewUrl(attachment.id, fileName) : undefined;
+                                const fileName = safe(cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id);
+                                const fileType = friendlyFileType(attachment.mimeType);
+                                const fileSize = formatFileSize(attachment.fileSize);
+                                const author = safe(attachment.createdByName || attachment.createdBy);
+                                const date = formatDate(attachment.createdAt);
+                                const canPreview = isPreviewableType(attachment.mimeType, fileName);
+                                const previewUrl = canPreview ? getPreviewUrl(attachment.id, fileName) : undefined;
 
-                            return (
-                                <div
-                                    key={attachment.id}
-                                    className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        {/* File type icon */}
-                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-destructive/10 text-destructive">
-                                            <FileIcon mimeType={attachment.mimeType} />
-                                        </div>
+                                return (
+                                    <div
+                                        key={attachment.id}
+                                        className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            {/* File type icon */}
+                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-destructive/10 text-destructive">
+                                                <FileIcon mimeType={attachment.mimeType} />
+                                            </div>
 
-                                        {/* File info */}
-                                        <div className="flex-1 min-w-0 space-y-0.5">
-                                            <p className="text-sm font-semibold text-foreground truncate">
-                                                {fileName}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {fileType} · {fileSize}
-                                            </p>
-                                            {(author || date) && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    {author && `By ${author}`}{author && date && ' • '}{date}
+                                            {/* File info */}
+                                            <div className="flex-1 min-w-0 space-y-0.5">
+                                                <p className="text-sm font-semibold text-foreground truncate">
+                                                    {fileName}
                                                 </p>
-                                            )}
-                                            {canPreview && previewUrl && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => window.open(previewUrl, '_blank')}
-                                                    className="text-xs font-semibold mt-1 flex items-center gap-1 text-primary h-auto p-0 hover:bg-transparent"
-                                                >
-                                                    <Eye className="size-3" />
-                                                    Tap to view
-                                                </Button>
-                                            )}
-                                        </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {fileType} · {fileSize}
+                                                </p>
+                                                {(author || date) && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {author && `By ${author}`}{author && date && ' • '}{date}
+                                                    </p>
+                                                )}
+                                                {canPreview && previewUrl && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => window.open(previewUrl, '_blank')}
+                                                        className="text-xs font-semibold mt-1 flex items-center gap-1 text-primary h-auto p-0 hover:bg-transparent"
+                                                    >
+                                                        <Eye className="size-3" />
+                                                        Tap to view
+                                                    </Button>
+                                                )}
+                                            </div>
 
-                                        {/* Download icon */}
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => {
-                                                const downloadUrl = getDownloadUrl(attachment.id, fileName);
-                                                setDownloadingAttachmentId(attachment.id);
-                                                const link = document.createElement('a');
-                                                link.href = downloadUrl;
-                                                if (fileName) link.download = fileName;
-                                                document.body.appendChild(link);
-                                                link.click();
-                                                link.remove();
-                                                window.setTimeout(() => {
-                                                    setDownloadingAttachmentId((current) =>
-                                                        current === attachment.id ? null : current
-                                                    );
-                                                }, 1500);
-                                            }}
-                                            disabled={downloadingAttachmentId === attachment.id}
-                                            className="shrink-0 size-9 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                                        >
-                                            {downloadingAttachmentId === attachment.id ? (
-                                                <Loader2 className="size-5 animate-spin" />
-                                            ) : (
-                                                <Download className="size-5" />
-                                            )}
-                                        </Button>
+                                            {/* Download icon */}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => {
+                                                    const downloadUrl = getDownloadUrl(attachment.id, fileName);
+                                                    setDownloadingAttachmentId(attachment.id);
+                                                    const link = document.createElement('a');
+                                                    link.href = downloadUrl;
+                                                    if (fileName) link.download = fileName;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    link.remove();
+                                                    window.setTimeout(() => {
+                                                        setDownloadingAttachmentId((current) =>
+                                                            current === attachment.id ? null : current
+                                                        );
+                                                    }, 1500);
+                                                }}
+                                                disabled={downloadingAttachmentId === attachment.id}
+                                                className="shrink-0 size-9 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                            >
+                                                {downloadingAttachmentId === attachment.id ? (
+                                                    <Loader2 className="size-5 animate-spin" />
+                                                ) : (
+                                                    <Download className="size-5" />
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            );
+                                );
                             })
                         )}
 
@@ -291,98 +291,98 @@ export function AttachmentsPanel({
                                 <Empty message="No files attached." />
                             ) : (
                                 displayedAttachments.map((attachment) => (
-                                <div
-                                    key={attachment.id}
-                                    className={cn(
-                                        'rounded-md border p-3 transition-colors',
-                                        isPreviewOpen ? 'space-y-2' : 'flex items-start justify-between gap-3',
-                                        previewAttachment?.id === attachment.id
-                                            ? 'border-primary/40 bg-primary/10'
-                                            : 'border-border/60 hover:bg-muted/30'
-                                    )}
-                                >
-                                    <div className="min-w-0 space-y-1 flex-1">
-                                        <div className="font-medium truncate text-sm">
-                                            {safe(cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id)}
+                                    <div
+                                        key={attachment.id}
+                                        className={cn(
+                                            'rounded-md border p-3 transition-colors',
+                                            isPreviewOpen ? 'space-y-2' : 'flex items-start justify-between gap-3',
+                                            previewAttachment?.id === attachment.id
+                                                ? 'border-primary/40 bg-primary/10'
+                                                : 'border-border/60 hover:bg-muted/30'
+                                        )}
+                                    >
+                                        <div className="min-w-0 space-y-1 flex-1">
+                                            <div className="font-medium truncate text-sm">
+                                                {safe(cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id)}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {friendlyFileType(attachment.mimeType)} · {formatFileSize(attachment.fileSize)}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {friendlyFileType(attachment.mimeType)} · {formatFileSize(attachment.fileSize)}
-                                        </div>
-                                    </div>
-                                    <div className={cn(
-                                        'flex items-center gap-1.5 shrink-0',
-                                        isPreviewOpen && 'flex-wrap'
-                                    )}>
-                                        {isPreviewableType(attachment.mimeType, attachment.fileName || attachment.fileDisplayName) && (
+                                        <div className={cn(
+                                            'flex items-center gap-1.5 shrink-0',
+                                            isPreviewOpen && 'flex-wrap'
+                                        )}>
+                                            {isPreviewableType(attachment.mimeType, attachment.fileName || attachment.fileDisplayName) && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (isPreviewOpen && previewAttachment?.id !== attachment.id) return;
+                                                        if (previewAttachment?.id === attachment.id) {
+                                                            setPreviewAttachment(null);
+                                                        } else {
+                                                            setPreviewAttachment({
+                                                                id: attachment.id,
+                                                                fileName: attachment.fileName || attachment.fileDisplayName,
+                                                                mimeType: attachment.mimeType,
+                                                            });
+                                                        }
+                                                    }}
+                                                    disabled={isPreviewOpen && previewAttachment?.id !== attachment.id}
+                                                    className={cn(
+                                                        'inline-flex items-center gap-1 px-2 py-1.5 h-auto font-medium transition-colors',
+                                                        previewAttachment?.id === attachment.id
+                                                            ? 'border-primary/40 bg-primary/10 text-primary'
+                                                            : isPreviewOpen
+                                                                ? 'border-border/40 text-muted-foreground/40 bg-muted/20 cursor-not-allowed opacity-50'
+                                                                : 'border-border/60 text-muted-foreground hover:bg-primary/5 hover:text-foreground'
+                                                    )}
+                                                >
+                                                    <Eye className="size-3.5" />
+                                                    {previewAttachment?.id === attachment.id ? 'Close' : 'View'}
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (isPreviewOpen && previewAttachment?.id !== attachment.id) return;
-                                                    if (previewAttachment?.id === attachment.id) {
-                                                        setPreviewAttachment(null);
-                                                    } else {
-                                                        setPreviewAttachment({
-                                                            id: attachment.id,
-                                                            fileName: attachment.fileName || attachment.fileDisplayName,
-                                                            mimeType: attachment.mimeType,
-                                                        });
-                                                    }
+                                                    const fName = cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName);
+                                                    const downloadUrl = getDownloadUrl(attachment.id, fName);
+                                                    setDownloadingAttachmentId(attachment.id);
+                                                    const toastId = toast.loading('Preparing file for download...');
+                                                    const link = document.createElement('a');
+                                                    link.href = downloadUrl;
+                                                    if (fName) link.download = fName;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    link.remove();
+                                                    window.setTimeout(() => {
+                                                        toast.dismiss(toastId);
+                                                        setDownloadingAttachmentId((current) =>
+                                                            current === attachment.id ? null : current
+                                                        );
+                                                    }, 1500);
                                                 }}
-                                                disabled={isPreviewOpen && previewAttachment?.id !== attachment.id}
-                                                className={cn(
-                                                    'inline-flex items-center gap-1 px-2 py-1.5 h-auto font-medium transition-colors',
-                                                    previewAttachment?.id === attachment.id
-                                                        ? 'border-primary/40 bg-primary/10 text-primary'
-                                                        : isPreviewOpen
-                                                            ? 'border-border/40 text-muted-foreground/40 bg-muted/20 cursor-not-allowed opacity-50'
-                                                            : 'border-border/60 text-muted-foreground hover:bg-primary/5 hover:text-foreground'
-                                                )}
+                                                disabled={downloadingAttachmentId === attachment.id}
+                                                className="inline-flex items-center gap-1 border border-border/60 px-2 py-1.5 h-auto font-medium text-muted-foreground hover:bg-primary/5 hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-70"
                                             >
-                                                <Eye className="size-3.5" />
-                                                {previewAttachment?.id === attachment.id ? 'Close' : 'View'}
+                                                {downloadingAttachmentId === attachment.id ? (
+                                                    <Loader2 className="size-3.5 animate-spin" />
+                                                ) : (
+                                                    <Download className="size-3.5" />
+                                                )}
+                                                {downloadingAttachmentId === attachment.id ? 'Preparing...' : 'Download'}
                                             </Button>
-                                        )}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                const fName = cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName);
-                                                const downloadUrl = getDownloadUrl(attachment.id, fName);
-                                                setDownloadingAttachmentId(attachment.id);
-                                                const toastId = toast.loading('Preparing file for download...');
-                                                const link = document.createElement('a');
-                                                link.href = downloadUrl;
-                                                if (fName) link.download = fName;
-                                                document.body.appendChild(link);
-                                                link.click();
-                                                link.remove();
-                                                window.setTimeout(() => {
-                                                    toast.dismiss(toastId);
-                                                    setDownloadingAttachmentId((current) =>
-                                                        current === attachment.id ? null : current
-                                                    );
-                                                }, 1500);
-                                            }}
-                                            disabled={downloadingAttachmentId === attachment.id}
-                                            className="inline-flex items-center gap-1 border border-border/60 px-2 py-1.5 h-auto font-medium text-muted-foreground hover:bg-primary/5 hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-70"
-                                        >
-                                            {downloadingAttachmentId === attachment.id ? (
-                                                <Loader2 className="size-3.5 animate-spin" />
-                                            ) : (
-                                                <Download className="size-3.5" />
-                                            )}
-                                            {downloadingAttachmentId === attachment.id ? 'Preparing...' : 'Download'}
-                                        </Button>
-                                    </div>
-                                    {!isPreviewOpen && (
-                                        <div className="text-xs text-muted-foreground shrink-0 text-right">
-                                            <div>{formatDate(attachment.createdAt)}</div>
-                                            <div>{safe(attachment.createdByName || attachment.createdBy)}</div>
                                         </div>
-                                    )}
-                                </div>
-                            ))
+                                        {!isPreviewOpen && (
+                                            <div className="text-xs text-muted-foreground shrink-0 text-right">
+                                                <div>{formatDate(attachment.createdAt)}</div>
+                                                <div>{safe(attachment.createdByName || attachment.createdBy)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
                             )}
                             {isSecLoading && displayedAttachments.length > 0 && (
                                 <div className="flex justify-center py-4">

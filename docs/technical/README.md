@@ -2,7 +2,7 @@
 
 This directory contains technical documentation for developers, system architects, and DevOps engineers maintaining or extending the **CNMA Approval** application.
 
-> **Last Updated:** 2026-07-07
+> **Last Updated:** 2026-07-17
 
 ## 📂 Subdirectories
 

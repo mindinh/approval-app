@@ -46,4 +46,13 @@ describe('INBOX_FILTER_CONFIG', () => {
             { value: 'PO', label: 'Purchase Order' },
         ]);
     });
+
+    it('defines normalTask selection option options', () => {
+        const normalTaskField = INBOX_FILTER_CONFIG.find(f => f.key === 'normalTask');
+        expect(normalTaskField?.type).toBe('select');
+        expect(normalTaskField?.options).toEqual([
+            { value: 'NORMAL', label: 'Standard Approval' },
+            { value: 'TAGGED', label: 'CC' },
+        ]);
+    });
 });

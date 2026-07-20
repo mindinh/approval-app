@@ -1,6 +1,6 @@
 # System Architecture Overview
 
-> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-07-09 | **Status:** Active
+> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-07-17 | **Status:** Active
 
 This document provides a high-level technical overview of the **CNMA Approval** system design, integration boundaries, and technology stack.
 
@@ -24,14 +24,14 @@ graph TD
 
     subgraph SAPCore [Enterprise On-Premises Core]
         TaskGW["SAP Task Gateway<br/>(/iwfnd/sgw_taskprocessing)"]
-        S4Core["S/4HANA OData Core<br/>(Purchase Requisition / Order APIs)"]
+        S4Core["S/4HANA OData Core<br/>(Unified V4 Service - zsb_prorequest)"]
     end
 
     ClientSide -->|HTTPS / JWT Auth| AppRouter
     AppRouter -->|JWT Principal Propagation| BFF
     BFF -->|Caching layer| Cache
     BFF -->|OData v2 Client Protocol| TaskGW
-    BFF -->|OData v2 Client Protocol| S4Core
+    BFF -->|OData v4 Client Protocol| S4Core
 ```
 
 ---
@@ -54,7 +54,7 @@ graph TD
 
 ### Datastores & Backends
 *   **Task Lists**: SAP Task Gateway (supports workflow tasks, approvals, rejections).
-*   **Procurement Records**: SAP S/4HANA ERP core exposing standard OData v2 APIs for PR and PO details, comments, and Generic Object Services (GOS) attachments.
+*   **Procurement Records**: SAP S/4HANA ERP core exposing a unified OData v4 API (`/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001`) for PR and PO details, comments, and approval logs.
 
 ---
 

@@ -67,7 +67,7 @@ export function TaskDetailView({
         detail && tabState.taskId === detail.task.instanceId ? tabState.tab : 'overview';
 
     const docType = detail?.task.businessContext?.type;
-    const supportsApproval = docType === 'PR';
+    const supportsApproval = docType === 'PR' || docType === 'PO';
     const supportsStandaloneAttach = docType === 'PR';
     const documentId = detail?.task.businessContext?.documentId;
 
@@ -75,6 +75,7 @@ export function TaskDetailView({
         detail?.task.instanceId ?? null,
         documentId,
         detail?.task.sapOrigin,
+        docType,
         { enabled: !!detail && supportsApproval }
     );
     const workflowError = workflowQuery.error

@@ -49,15 +49,12 @@ export class SapOdataAdapter {
 
         const params: Record<string, string> = {
             $format: 'json',
-            $orderby: 'credate desc,cretime desc'
+            $orderby: 'WorkflowTaskInternalID desc'
         };
 
         if (status) {
-            if (Array.isArray(status)) {
-                params.$filter = status.map(s => `status eq '${s}'`).join(' or ');
-            } else {
-                params.$filter = `status eq '${status}'`;
-            }
+            const statusList = Array.isArray(status) ? status : [status];
+            params.$filter = statusList.map(s => `WorkflowTaskStatus eq '${s}'`).join(' or ');
         }
 
         const response: any = await this.sapClient.get(
@@ -70,17 +67,31 @@ export class SapOdataAdapter {
 
         console.log(`[SapOdataAdapter] raw response status: ${response ? 'object' : 'null'}, keys: ${response ? Object.keys(response).join(', ') : 'none'}, value length: ${response?.value?.length ?? 'undefined'}`);
 
-        const items = response?.value || [];
-        // Local sort fallback
+        // Map V4 service properties back to the internal model
+        const rawItems = response?.value || [];
+        const items = rawItems.map((item: any) => ({
+            instanceID: item.WorkflowTaskInternalID,
+            status: item.WorkflowTaskStatus,
+            typeid: item.TechnicalWrkflwObjectType,
+            instid: item.TechnicalWrkflwObject,
+            doctyp: item.DocumentType,
+            doctyp_desc: item.DocumentTypeText,
+            normalTask: item.NormalTask !== false,
+            total: item.TotalNetAmountLocalCrcy !== undefined && item.TotalNetAmountLocalCrcy !== null ? Number(item.TotalNetAmountLocalCrcy) : undefined,
+            curr_vnd: item.LocalCurrency,
+            total_doc_curr: item.TotalNetAmountDocCrcy !== undefined && item.TotalNetAmountDocCrcy !== null ? Number(item.TotalNetAmountDocCrcy) : undefined,
+            doc_curr: item.DocumentCurrency,
+            taskCreationDateTime: item.TaskCreationDateTime,
+            createdByUser: item.CreatedByUser,
+            creationDate: item.CreationDate,
+            creationTime: item.CreationTime
+        }));
+
+        // Local sort fallback by instance ID descending
         items.sort((a: any, b: any) => {
-            const dateA = a.credate || '';
-            const dateB = b.credate || '';
-            if (dateA !== dateB) {
-                return dateB.localeCompare(dateA);
-            }
-            const timeA = a.cretime || a.cretim || '';
-            const timeB = b.cretime || b.cretim || '';
-            return timeB.localeCompare(timeA);
+            const idA = a.instanceID || '';
+            const idB = b.instanceID || '';
+            return idB.localeCompare(idA);
         });
 
         return items;

@@ -34,7 +34,7 @@ describe('SapOdataAdapter', () => {
     adapter = new SapOdataAdapter();
     mockSapClient = (adapter as any).sapClient;
     originalEnv = process.env.USE_MOCK_SAP;
-    
+
     // Clear caches
     clearDetailCache('PR', '10000001');
     clearDetailCache('PO', '45000002');
@@ -54,11 +54,31 @@ describe('SapOdataAdapter', () => {
 
     it('should fetch instances list from SAP in direct mode', async () => {
       process.env.USE_MOCK_SAP = 'false';
-      mockSapClient.get.mockResolvedValue({ value: [{ credate: '2026-07-09', cretime: '12:00:00' }] });
+      mockSapClient.get.mockResolvedValue({
+        value: [{
+          WorkflowTaskInternalID: '198781',
+          WorkflowTaskStatus: 'IN PROCESSING',
+          TechnicalWrkflwObjectType: 'BUS2105',
+          TaskCreationDateTime: '2026-04-05T08:13:18.43246Z',
+          CreatedByUser: 'DIENTRAN',
+          CreationDate: '2026-04-05',
+          CreationTime: '15:13:17'
+        }]
+      });
       const result = await adapter.getInstances('SAP_USER', 'IN PROCESSING');
       expect(result).toBeDefined();
       expect(result.length).toBe(1);
-      expect(mockSapClient.get).toHaveBeenCalled();
+      expect(result[0].taskCreationDateTime).toBe('2026-04-05T08:13:18.43246Z');
+      expect(result[0].createdByUser).toBe('DIENTRAN');
+      expect(result[0].creationDate).toBe('2026-04-05');
+      expect(result[0].creationTime).toBe('15:13:17');
+      expect(mockSapClient.get).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
+        '/ZC_WORKFLOWTASK',
+        { $format: 'json', $orderby: 'WorkflowTaskInternalID desc', $filter: "WorkflowTaskStatus eq 'IN PROCESSING'" },
+        'SAP_USER',
+        undefined
+      );
     });
   });
 
@@ -107,11 +127,11 @@ describe('SapOdataAdapter', () => {
 
     it('should fetch PR and PO in batch and normalize headers', async () => {
       mockSapClient.get.mockImplementation(async (path: string, relativePath: string) => {
-        if (relativePath.includes('C_PurRequisitionFs')) {
-          return { d: { PurchaseRequisitionType: 'ZASS', PurchaseRequisition: '10000001' } };
+        if (relativePath.includes('ZC_PRHEADER')) {
+          return { DocumentType: 'ZASS', DocumentNumber: '10000001' };
         }
-        if (relativePath.includes('C_PurchaseOrderFs')) {
-          return { d: { PurchaseOrderType: 'DEFAULT', PurchaseOrder: '45000002' } };
+        if (relativePath.includes('ZC_POHEADER')) {
+          return { DocumentType: 'DEFAULT', DocumentNumber: '45000002' };
         }
         return {};
       });
@@ -130,27 +150,19 @@ describe('SapOdataAdapter', () => {
     });
 
     it('should query single PR detail with complete sections (headerOnly = false)', async () => {
-      // Mock Promise.all responses
+      // Mock OData V4 response with expands
       mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
-        if (relativePath.includes('ZC_PR_CUSTOM')) {
-          return { value: [{ PurchaseRequisition: '10000001', PRItem: '00010', Quantity: 100, QuantityUnit: 'PC', Price: 10, DocumentCurrency: 'VND', NetValueDocCrcy: 1000 }] };
+        if (relativePath.includes('ZC_PRHEADER')) {
+          return {
+            DocumentNumber: '10000001',
+            DocumentType: 'ZASS',
+            _Item: [{ DocumentNumber: '10000001', ItemNumber: '00010', Quantity: 100, Unit: 'PC', NetAmount: 1000, DocumentCurrency: 'VND' }],
+            _ApprovalStep: [{ ObjectKey: '10000001', ApprovalLevel: 1, ReleaseCode: 'R1', ApproverName: 'Approver 1', ApproverUserId: 'USR1', ApprovalStatus: 'PENDING', CommentText: 'Ok', CommentDate: '2026-07-15', CommentTime: '10:00:00' }],
+            _HeaderText: [{ DocCategory: 'BUS2105', DocNumber: '10000001', LineId: 1, LongText: 'Desc line 1' }],
+            _Comment: [{ DocumentNumber: '10000001', Sequence: 1, PostedOn: '2026-07-15', PostedTime: '10:00:00', NoteText: 'Test PR comment', UserComment: 'USR1' }]
+          };
         }
-        if (relativePath.includes('C_PurRequisitionFs')) {
-          return { d: { PurchaseRequisition: '10000001', PurchaseRequisitionType: 'ZASS' } };
-        }
-        if (relativePath.includes('ZI_PR_APPROVAL_LINE')) {
-          return { value: [{ Banfn: '10000001', Approver: 'Approver 1', Lvl: '1' }] };
-        }
-        if (relativePath.includes('ZI_PR_COMMENT_TAB')) {
-          return { value: [{ NoteText: 'Ok', UserComment: 'Nguyen Van A' }] };
-        }
-        if (relativePath.includes('ZI_PR_INFO')) {
-          return { value: [{ Description: [{ TextLine: 'Desc line 1' }] }] };
-        }
-        if (relativePath.includes('ZI_PR_ATTACHMENTS')) {
-          return { value: [{ attach_id: 'att-123', file_name: 'test.pdf' }] };
-        }
-        return { value: [] };
+        return {};
       });
 
       const result = await adapter.getDetail('PR', '10000001', 'SAP_USER', 'jwt', false);
@@ -161,24 +173,23 @@ describe('SapOdataAdapter', () => {
       expect(result.items.length).toBe(1);
       expect(result.approvalTree.length).toBe(1);
       expect(result.comments.length).toBe(1);
-      expect(result.attachments.length).toBe(1);
+      expect(result.comments[0].author).toBe('USR1');
+      expect(result.comments[0].text).toBe('Test PR comment');
     });
 
     it('should query single PO detail with complete sections (headerOnly = false)', async () => {
       mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
-        if (relativePath.includes('C_PurchaseOrderFs')) {
-          return { d: { PurchaseOrder: '45000002' } };
+        if (relativePath.includes('ZC_POHEADER')) {
+          return {
+            DocumentNumber: '45000002',
+            DocumentType: 'DEFAULT',
+            _Item: [{ DocumentNumber: '45000002', ItemNumber: '10', Quantity: 5, Unit: 'PC', NetAmount: 500, DocumentCurrency: 'VND', CostCenter: 'CC1', GLAccount: '610000' }],
+            _ApprovalStep: [{ ObjectKey: '45000002', ApprovalLevel: 1, ReleaseCode: 'R1', ApproverName: 'Approver 1', ApproverUserId: 'USR1', ApprovalStatus: 'PENDING', CommentText: 'Ok', CommentDate: '2026-07-15', CommentTime: '10:00:00' }],
+            _HeaderText: [{ DocCategory: 'BUS2012', DocNumber: '45000002', LineId: 1, LongText: 'Ok' }],
+            _Comment: [{ DocumentNumber: '45000002', Sequence: 1, PostedOn: '2026-07-15', PostedTime: '10:00:00', NoteText: 'Test PO comment', UserComment: 'USR1' }]
+          };
         }
-        if (relativePath.includes('C_PurOrdItemEnh')) {
-          return { d: { results: [{ PurchaseOrderItem: '10' }] } };
-        }
-        if (relativePath.includes('C_POAccountAssignmentFactSheet')) {
-          return { d: { results: [{ GLAccount: '610000' }] } };
-        }
-        if (relativePath.includes('C_POScheduleLineFactSheet')) {
-          return { d: { results: [{ ScheduleLine: '1' }] } };
-        }
-        return { d: { results: [] } };
+        return {};
       });
 
       const result = await adapter.getDetail('PO', '45000002', 'SAP_USER', 'jwt', false);
@@ -187,65 +198,27 @@ describe('SapOdataAdapter', () => {
       expect(result.header.purchaseOrder).toBe('45000002');
       expect(result.items.length).toBe(1);
       expect(result.accountAssignments.length).toBe(1);
-      expect(result.scheduleLines.length).toBe(1);
+      expect(result.comments.length).toBe(1);
+      expect(result.comments[0].author).toBe('USR1');
+      expect(result.comments[0].text).toBe('Test PO comment');
     });
 
-    it('should stream attachment content and correctly decode hex-encoded binary files', async () => {
-      // Mock response containing hex value of "hello" (68656c6c6f)
-      mockSapClient.get.mockResolvedValue({
-        value: [{
-          file_content: '68656c6c6f',
-          mime_type: 'application/pdf',
-          file_name: 'test.pdf'
-        }]
-      });
-
+    it('should fail attachment streaming in direct SAP mode', async () => {
       const result = await adapter.fetchAttachmentContent('10000001', 'att-123', 'SAP_USER');
-      expect(result).not.toBeNull();
-      expect(result?.contentType).toBe('application/pdf');
-      expect(result?.fileName).toBe('test.pdf');
-      expect(result?.data.toString()).toBe('hello');
+      expect(result).toBeNull();
     });
 
-    it('should stream attachment content and correctly decode base64 encoded files', async () => {
-      // base64 of "world" is "d29ybGQ="
-      mockSapClient.get.mockResolvedValue({
-        value: [{
-          file_content: 'd29ybGQ=',
-          mime_type: 'text/plain',
-          file_name: 'world.txt'
-        }]
-      });
-
-      const result = await adapter.fetchAttachmentContent('10000001', 'att-123', 'SAP_USER');
-      expect(result).not.toBeNull();
-      expect(result?.contentType).toBe('text/plain');
-      expect(result?.fileName).toBe('world.txt');
-      expect(result?.data.toString()).toBe('world');
-    });
-
-    it('should upload attachment delegating CSRF to client', async () => {
-      mockSapClient.post.mockResolvedValue({ success: true });
-
+    it('should throw an error on uploadAttachment in direct SAP mode', async () => {
       const buf = Buffer.from('my-file');
-      await adapter.uploadAttachment('10000001', 'doc.pdf', 'application/pdf', buf, 'SAP_USER', 'jwt');
+      await expect(
+        adapter.uploadAttachment('10000001', 'doc.pdf', 'application/pdf', buf, 'SAP_USER', 'jwt')
+      ).rejects.toThrow('Attachment upload is disabled for this service.');
+    });
 
-      expect(mockSapClient.post).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/zsb_pr_approval_tree/srvd_a2x/sap/zsd_pr_approval_tree/0001',
-        "/ZI_PR_ATTACH_TAB(doc_num='0010000001')/SAP__self.upload",
-        {
-          File_Name: 'doc.pdf',
-          Mime_Type: 'application/pdf',
-          File_Content: buf.toString('base64'),
-          File_Size: buf.byteLength
-        },
-        {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        'SAP_USER',
-        'jwt'
-      );
+    it('should throw an error on addComment in direct SAP mode', async () => {
+      await expect(
+        adapter.addComment('10000001', 'Nice PR', 'SAP_USER', 'jwt')
+      ).rejects.toThrow('Comments posting is disabled for this service.');
     });
   });
 });

@@ -51,7 +51,16 @@ describe('InboxProcessor', () => {
     it('should fetch tasks, query details in batch, enrich business objects and apply pagination', async () => {
       // Mock 3 custom instances
       const mockInstances = [
-        { instanceID: '000000000001', typeid: 'BUS2105', instid: '10000001', status: 'IN PROCESSING', total: 1000, curr_vnd: 'VND' },
+        {
+          instanceID: '000000000001',
+          typeid: 'BUS2105',
+          instid: '10000001',
+          status: 'IN PROCESSING',
+          total: 1000,
+          curr_vnd: 'VND',
+          taskCreationDateTime: '2026-04-05T08:13:18.43246Z',
+          createdByUser: 'DIENTRAN'
+        },
         { instanceID: '000000000002', typeid: 'BUS2012', instid: '45000002', status: 'IN PROCESSING', total: 2000, curr_vnd: 'VND' },
         { instanceID: '000000000003', typeid: 'BUS2105', instid: '10000003', status: 'IN PROCESSING', total: 3000, curr_vnd: 'VND' }
       ];
@@ -59,7 +68,7 @@ describe('InboxProcessor', () => {
 
       // Mock raw tasks from TaskCollection
       const mockRawTasks = [
-        { InstanceID: '000000000001', TaskTitle: 'Approve PR 1', Priority: '1', CreatedOn: '2026-07-01T00:00:00Z', CreatedByName: 'User A' },
+        { InstanceID: '000000000001', TaskTitle: 'Approve PR 1', Priority: '1' },
         { InstanceID: '000000000002', TaskTitle: 'Approve PO 2', Priority: '2', CreatedOn: '2026-07-02T00:00:00Z', CreatedByName: 'User B' }
       ];
       mockTaskAdapter.getTasks.mockResolvedValue(mockRawTasks);
@@ -70,7 +79,7 @@ describe('InboxProcessor', () => {
           objectType: 'PR',
           documentType: 'DEFAULT',
           objectId: '10000001',
-          header: { purchaseRequisition: '10000001', userFullName: 'User A', purchaseRequisitionTypeDisplay: 'Standard' }
+          header: { purchaseRequisition: '10000001', purchaseRequisitionTypeDisplay: 'Standard' }
         },
         'PO:45000002': {
           objectType: 'PO',
@@ -91,6 +100,8 @@ describe('InboxProcessor', () => {
       expect(result.items[0].instanceId).toBe('000000000001');
       expect(result.items[0].objectType).toBe('PR');
       expect(result.items[0].priority).toBe('VERY_HIGH'); // mapped from '1'
+      expect(result.items[0].createdOn).toBe(new Date('2026-04-05T08:13:18.43246Z').toISOString()); // fallback to taskCreationDateTime
+      expect(result.items[0].requestorName).toBe('DIENTRAN'); // fallback to inst.createdByUser
       expect(result.items[0].businessContext.pr.header.totalNetAmount).toBe(1000); // enriched from custom instances
       
       expect(result.items[1].instanceId).toBe('000000000002');
@@ -192,6 +203,82 @@ describe('InboxProcessor', () => {
       expect(result.decisions[1].key).toBe('0002');
       expect(result.decisions[1].nature).toBe('NEGATIVE'); // variant danger -> NEGATIVE
       expect(result.decisions[1].requiresComment).toBe(true);
+    });
+
+    it('should skip decision fetching and return empty decisions if normalTask is false', async () => {
+      const mockTaskRuntime = {
+        InstanceID: 'task-pr-01',
+        Status: 'READY',
+        TaskDefinitionID: 'BUS2105',
+        TaskTitle: 'Approve PR 10001234',
+        CreatedOn: '2026-07-01T08:00:00Z',
+        CreatedByName: 'Nguyen Van A',
+        Priority: 'MEDIUM',
+        decisions: []
+      };
+      mockTaskAdapter.getTaskRuntime.mockResolvedValue(mockTaskRuntime);
+
+      const mockDetail = {
+        objectType: 'PR',
+        documentType: 'ZASS',
+        objectId: '10001234',
+        header: {
+          purchaseRequisition: '10001234',
+          userFullName: 'Nguyen Van A',
+          purReqCreationDate: '2026-06-25T08:00:00Z',
+          totalNetAmount: 150000000,
+          displayCurrency: 'VND'
+        },
+        items: [],
+        comments: [],
+        attachments: []
+      };
+      mockSapOdataAdapter.getDetail.mockResolvedValue(mockDetail);
+      mockSapOdataAdapter.getInstances.mockResolvedValue([
+        { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND', normalTask: false, typeid: 'BUS2105' }
+      ]);
+
+      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234' }, 'jwt');
+
+      expect(result.task.instanceId).toBe('task-pr-01');
+      expect(result.task.normalTask).toBe(false);
+      expect(mockTaskAdapter.getTaskRuntime).toHaveBeenCalledWith('task-pr-01', 'MOCK_USER', 'jwt', false);
+      expect(result.decisions.length).toBe(0);
+    });
+
+    it('should completely skip getTaskRuntime call for non-normal tasks in real mode', async () => {
+      const originalEnv = process.env.USE_MOCK_SAP;
+      process.env.USE_MOCK_SAP = 'false';
+      try {
+        const mockDetail = {
+          objectType: 'PR',
+          documentType: 'ZASS',
+          objectId: '10001234',
+          header: {
+            purchaseRequisition: '10001234',
+            userFullName: 'Nguyen Van A',
+            purReqCreationDate: '2026-06-25T08:00:00Z',
+            totalNetAmount: 150000000,
+            displayCurrency: 'VND'
+          },
+          items: [],
+          comments: [],
+          attachments: []
+        };
+        mockSapOdataAdapter.getDetail.mockResolvedValue(mockDetail);
+        mockSapOdataAdapter.getInstances.mockResolvedValue([
+          { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND', normalTask: false, typeid: 'BUS2105' }
+        ]);
+
+        const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234' }, 'jwt');
+
+        expect(result.task.instanceId).toBe('task-pr-01');
+        expect(result.task.normalTask).toBe(false);
+        expect(mockTaskAdapter.getTaskRuntime).not.toHaveBeenCalled();
+        expect(result.decisions.length).toBe(0);
+      } finally {
+        process.env.USE_MOCK_SAP = originalEnv;
+      }
     });
   });
 

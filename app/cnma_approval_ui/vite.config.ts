@@ -29,27 +29,27 @@ export default defineConfig(({ mode }) => {
             port: 3000,
             proxy: {
                 '/api/cnma/APPROVAL_SRV': {
-                    target: 'http://localhost:4005',
+                    target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
                     headers: inboxAuthHeaders,
                 },
                 '/api/cnma': {
-                    target: 'http://localhost:4005',
+                    target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
                     headers: { Authorization: 'Basic YWRtaW46' },
                 },
                 '/browse': {
-                    target: 'http://localhost:4005',
+                    target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
                     headers: { Authorization: 'Basic YWRtaW46' },
                 },
                 '/admin': {
-                    target: 'http://localhost:4005',
+                    target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
                     headers: { Authorization: 'Basic YWRtaW46' },
                 },
                 '/odata': {
-                    target: 'http://localhost:4005',
+                    target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
                     secure: false,
                     headers: { Authorization: 'Basic YWRtaW46' },

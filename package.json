@@ -24,7 +24,6 @@
   "scripts": {
     "dev:all": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be\" \"npm run dev:fe\"",
     "dev:hybrid": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be:hybrid\" \"npm run dev:fe\"",
-    "dev:be": "set SAP_PREFER_BOUND_DESTINATION=false&& set PORT=4005&& cds serve --with-mocks",
     "dev:be:hybrid": "set PORT=4005&& cds serve --profile hybrid --with-mocks",
     "dev:fe": "npm --prefix app/cnma_approval_ui run dev",
     "start": "cds-serve",

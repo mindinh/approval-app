@@ -126,6 +126,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ### 11. POST `/tasks/tasks/:id/comments`
 *   **Purpose**: Upload a text note into the timeline.
+*   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the unified OData V4 service is read-only.
 *   **Payload Schema**:
     ```json
     {
@@ -138,6 +139,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ### 12. POST `/tasks/tasks/:id/attachments`
 *   **Purpose**: Upload a raw file attachment to the Generic Object Service (GOS).
+*   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the unified OData V4 service is read-only.
 *   **Headers**:
     *   `slug`: URI-encoded file name.
     *   `content-type`: MIME specification (e.g., `application/pdf`).
@@ -146,5 +148,6 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ### 13. GET `/tasks/tasks/:id/attachments/:attId/content`
 *   **Purpose**: Stream and download the binary contents of an attachment.
+*   **Availability**: **Mock-only.** Returns `null` / `404 Not Found` in direct SAP mode (`USE_MOCK_SAP=false`) as attachments are not exposed in the current schema.
 *   **Query Parameters**:
     *   `documentId`: Associated PR/PO number.

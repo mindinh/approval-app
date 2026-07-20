@@ -327,6 +327,12 @@ export const PO_BASE_CONFIG: ObjectTypeConfiguration = {
       dataPath: "$.header.purchaseOrder",
       dataType: "TEXT",
     },
+    description: {
+      key: "description",
+      label: "Description",
+      dataPath: "$.header.purchaseOrderText",
+      dataType: "TEXT",
+    },
     poTypeDisplay: {
       key: "poTypeDisplay",
       label: "PO Type",
@@ -505,6 +511,7 @@ export const PO_BASE_CONFIG: ObjectTypeConfiguration = {
         title: "Basic Data",
         fields: [
           "poNumber",
+          "description",
           "poTypeDisplay",
           "supplierName",
           "requester",

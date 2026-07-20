@@ -253,6 +253,7 @@ export interface InboxTask {
     total_doc_curr?: number;
     doc_curr?: string;
     businessChips?: BusinessChipConfig[];
+    normalTask?: boolean;
 }
 
 export interface TaskComment {
@@ -297,7 +298,7 @@ export interface TaskAttachment {
 }
 
 export interface WorkflowApprovalStep {
-    prNumber: string;
+    documentId: string;
     level: number;
     releaseCode?: string;
     approver?: string;
@@ -318,7 +319,7 @@ export interface WorkflowApprovalComment {
 }
 
 export interface WorkflowApprovalTreeResponse {
-    prNumber?: string;
+    documentId?: string;
     releaseStrategyName?: string;
     steps: WorkflowApprovalStep[];
     comments?: WorkflowApprovalComment[];

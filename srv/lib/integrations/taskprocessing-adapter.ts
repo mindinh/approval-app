@@ -45,10 +45,14 @@ export class TaskprocessingAdapter {
         return /^\d+$/.test(id) ? id.padStart(12, '0') : id;
     }
 
-    async getTaskRuntime(instanceId: string, sapUser: string, userJwt?: string): Promise<any> {
+    async getTaskRuntime(instanceId: string, sapUser: string, userJwt?: string, normalTask = true): Promise<any> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
-            return getMockTaskRuntime(instanceId);
+            const runtime = getMockTaskRuntime(instanceId);
+            if (!normalTask) {
+                runtime.decisions = [];
+            }
+            return runtime;
         }
 
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
@@ -62,21 +66,23 @@ export class TaskprocessingAdapter {
         // 2. Fetch decision options using the correct SAP__Origin resolved from task
         const origin = task.SAP__Origin || 'LOCAL';
         let decisions: any[] = [];
-        try {
-            const decisionRes: any = await this.sapClient.get<any>(
-                path,
-                '/DecisionOptions',
-                {
-                    $format: 'json',
-                    SAP__Origin: `'${origin}'`,
-                    InstanceID: `'${paddedId}'`
-                },
-                sapUser,
-                userJwt
-            );
-            decisions = decisionRes?.d?.results || [];
-        } catch (error: any) {
-            console.warn(`[Adapter] Non-fatal: Failed to fetch decision options for task ${paddedId}: ${error.message}`);
+        if (normalTask) {
+            try {
+                const decisionRes: any = await this.sapClient.get<any>(
+                    path,
+                    '/DecisionOptions',
+                    {
+                        $format: 'json',
+                        SAP__Origin: `'${origin}'`,
+                        InstanceID: `'${paddedId}'`
+                    },
+                    sapUser,
+                    userJwt
+                );
+                decisions = decisionRes?.d?.results || [];
+            } catch (error: any) {
+                console.warn(`[Adapter] Non-fatal: Failed to fetch decision options for task ${paddedId}: ${error.message}`);
+            }
         }
 
         return {

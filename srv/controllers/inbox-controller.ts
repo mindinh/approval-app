@@ -455,8 +455,10 @@ export class InboxController {
     getWorkflowApprovalTree = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const docNum = req.query.documentId ? String(req.query.documentId) : '';
+            const businessObjectType = req.query.businessObjectType ? String(req.query.businessObjectType) : undefined;
+            const instanceId = req.params.id ? String(req.params.id) : undefined;
             const { sapUser, userJwt } = resolveIdentity(req);
-            const result = await this.processor.getWorkflowApprovalTree(docNum, sapUser, userJwt);
+            const result = await this.processor.getWorkflowApprovalTree(docNum, sapUser, userJwt, instanceId, businessObjectType);
             res.json(result);
         } catch (error) {
             next(error);

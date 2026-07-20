@@ -82,3 +82,13 @@ export function StatusBadge({ status }: { status?: string }) {
         </Badge>
     );
 }
+
+export function TaskTypeBadge({ normalTask }: { normalTask?: boolean }) {
+    const { t } = useTranslation();
+    if (normalTask !== false) return null;
+    return (
+        <Badge variant="outline" className="px-2.5 py-0.5 text-xs font-normal border-amber-300/40 bg-amber-500/10 text-amber-600 dark:text-amber-500">
+            {t('taskType.tagged', 'CC')}
+        </Badge>
+    );
+}

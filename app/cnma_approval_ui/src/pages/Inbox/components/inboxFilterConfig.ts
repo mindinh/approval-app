@@ -54,6 +54,17 @@ export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
         ],
     },
     {
+         key: 'normalTask',
+         label: 'Task Type',
+         type: 'select',
+         placeholder: 'All Types',
+         visible: true,
+         options: [
+             { value: 'NORMAL', label: 'Standard Approval' },
+             { value: 'TAGGED', label: 'CC' },
+         ],
+     },
+    {
         key: 'createdBy',
         label: 'Requestor',
         type: 'text',

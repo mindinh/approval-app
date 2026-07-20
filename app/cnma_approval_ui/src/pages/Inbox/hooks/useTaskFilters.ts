@@ -90,6 +90,14 @@ export function useTaskFilters(tasks: InboxTask[]) {
             result = result.filter((task) => task.businessContext?.type === v.documentType);
         }
 
+        if (v.normalTask) {
+            if (v.normalTask === 'NORMAL') {
+                result = result.filter((task) => task.normalTask !== false);
+            } else if (v.normalTask === 'TAGGED') {
+                result = result.filter((task) => task.normalTask === false);
+            }
+        }
+
         if (v.createdBy?.trim()) {
             const q = v.createdBy.toLowerCase();
             result = result.filter(

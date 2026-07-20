@@ -104,7 +104,7 @@ export class InboxProcessor {
                     po: objectType === 'PO' ? businessObject : undefined
                 };
 
-                const requesterName = businessObject?.header?.userFullName || matchingTask?.CreatedByName || undefined;
+                const requesterName = businessObject?.header?.userFullName || businessObject?.header?.createdByUser || businessObject?.header?.requisitioner || inst.createdByUser || matchingTask?.CreatedByName || undefined;
                 const documentType = businessObject?.documentType || 'DEFAULT';
                 const config = getObjectConfig(objectType, documentType);
                 const businessChips = mapCardChips(config, businessObject);
@@ -112,10 +112,10 @@ export class InboxProcessor {
                 return {
                     instanceId: inst.instanceID,
                     sapOrigin: matchingTask?.SAP__Origin || 'LOCAL',
-                    title: matchingTask?.TaskTitle || `Approve ${objectType} ${inst.instid}`,
+                    title: matchingTask?.TaskTitle || `${inst.normalTask === false ? 'Review' : 'Approve'} ${objectType} ${inst.instid}`,
                     status: (inst.status || matchingTask?.Status || 'READY').replace(/\s+/g, '_'),
                     priority: normalizePriority(matchingTask?.Priority),
-                    createdOn: normalizeDate(matchingTask?.CreatedOn),
+                    createdOn: normalizeDate(matchingTask?.CreatedOn || inst.taskCreationDateTime),
                     createdByName: matchingTask?.CreatedByName || undefined,
                     requestorName: requesterName,
                     taskDefinitionId: inst.typeid || matchingTask?.TaskDefinitionID,
@@ -124,13 +124,14 @@ export class InboxProcessor {
                     businessContext: businessContext,
                     supports: {
                         forward: matchingTask?.SupportsForward ?? true,
-                        comments: matchingTask?.SupportsComments ?? true
+                        comments: process.env.USE_MOCK_SAP !== 'false' ? (matchingTask?.SupportsComments ?? true) : false
                     },
                     total: inst.total !== undefined && inst.total !== null ? Number(inst.total) : undefined,
                     curr_vnd: inst.curr_vnd || undefined,
                     total_doc_curr: inst.total_doc_curr !== undefined && inst.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
                     doc_curr: inst.doc_curr || undefined,
-                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined
+                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
+                    normalTask: inst.normalTask
                 };
             }));
 
@@ -215,7 +216,7 @@ export class InboxProcessor {
                     po: objectType === 'PO' ? businessObject : undefined
                 };
 
-                const requesterName = businessObject?.header?.userFullName || matchingTask?.CreatedByName || undefined;
+                const requesterName = businessObject?.header?.userFullName || businessObject?.header?.createdByUser || businessObject?.header?.requisitioner || inst.createdByUser || matchingTask?.CreatedByName || undefined;
                 const documentType = businessObject?.documentType || 'DEFAULT';
                 const config = getObjectConfig(objectType, documentType);
                 const businessChips = mapCardChips(config, businessObject);
@@ -223,10 +224,10 @@ export class InboxProcessor {
                 return {
                     instanceId: inst.instanceID,
                     sapOrigin: matchingTask?.SAP__Origin || 'LOCAL',
-                    title: matchingTask?.TaskTitle || `Approved ${objectType} ${inst.instid}`,
+                    title: matchingTask?.TaskTitle || `${inst.normalTask === false ? 'Reviewed' : 'Approved'} ${objectType} ${inst.instid}`,
                     status: 'COMPLETED',
                     priority: normalizePriority(matchingTask?.Priority || 'MEDIUM'),
-                    createdOn: normalizeDate(matchingTask?.CreatedOn),
+                    createdOn: normalizeDate(matchingTask?.CreatedOn || inst.taskCreationDateTime),
                     createdByName: matchingTask?.CreatedByName || undefined,
                     requestorName: requesterName,
                     taskDefinitionId: inst.typeid || matchingTask?.TaskDefinitionID,
@@ -235,13 +236,14 @@ export class InboxProcessor {
                     businessContext: businessContext,
                     supports: {
                         forward: false,
-                        comments: true
+                        comments: process.env.USE_MOCK_SAP !== 'false'
                     },
                     total: inst.total !== undefined && inst.total !== null ? Number(inst.total) : undefined,
                     curr_vnd: inst.curr_vnd || undefined,
                     total_doc_curr: inst.total_doc_curr !== undefined && inst.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
                     doc_curr: inst.doc_curr || undefined,
-                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined
+                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
+                    normalTask: inst.normalTask
                 };
             }));
 
@@ -265,15 +267,44 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Fetching task detail for ${instanceId}`);
         try {
-            const taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt);
-
-            let objectType: string = 'PR';
-            if (hints?.businessObjectType && hints.businessObjectType !== 'UNKNOWN') {
-                objectType = hints.businessObjectType;
-            } else {
-                const typeid = hints?.typeid || taskRuntime.TaskDefinitionID || '';
-                objectType = resolveObjectTypeFromTypeId(typeid) || 'PR';
+            let inst: any = null;
+            let normalTask = true;
+            try {
+                const customInstances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => []);
+                inst = customInstances.find((i: any) => {
+                    const rawId = i.instanceID ? String(i.instanceID).replace(/^0+/, '') : '';
+                    const instId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
+                    return rawId === instId;
+                });
+                if (inst && inst.normalTask === false) {
+                    normalTask = false;
+                }
+            } catch (e: any) {
+                this.logger.warn(`Failed to retrieve custom instances for task ${instanceId}: ${e.message}`);
             }
+
+            let taskRuntime: any;
+            const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+            if (isMockMode || normalTask) {
+                taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask);
+            } else {
+                this.logger.info(`Omitting TASKPROCESSING API calls for comment-only tagged task ${instanceId}`);
+                const objectType = inst ? (resolveObjectTypeFromTypeId(inst.typeid) || 'PR') : 'PR';
+                taskRuntime = {
+                    InstanceID: instanceId,
+                    SAP__Origin: 'LOCAL',
+                    TaskTitle: inst ? `${inst.normalTask === false ? 'Review' : 'Approve'} ${objectType} ${inst.instid}` : '',
+                    Status: inst ? inst.status : 'READY',
+                    Priority: 'MEDIUM',
+                    CreatedOn: undefined,
+                    CreatedByName: undefined,
+                    TaskDefinitionID: inst ? (inst.typeid || '') : '',
+                    SupportsForward: false,
+                    SupportsComments: true,
+                    decisions: []
+                };
+            }
+            const objectType = await this._resolveObjectType(instanceId, sapUser, userJwt, hints?.businessObjectType, taskRuntime);
 
             let instid = hints?.documentId || hints?.instid;
             if (!instid) {
@@ -282,17 +313,12 @@ export class InboxProcessor {
 
             const businessObject = await this.sapOdataAdapter.getDetail(objectType, instid || '', sapUser, userJwt);
 
-            let inst: any = null;
-            try {
-                const customInstances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => []);
-                inst = customInstances.find((i: any) => {
-                    const rawId = i.instanceID ? String(i.instanceID).replace(/^0+/, '') : '';
-                    const instId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-                    return rawId === instId;
-                });
-                enrichBusinessObjectForSchema(businessObject, objectType, inst, taskRuntime);
-            } catch (e: any) {
-                this.logger.warn(`Failed to inject doctyp details for task ${instanceId}: ${e.message}`);
+            if (inst) {
+                try {
+                    enrichBusinessObjectForSchema(businessObject, objectType, inst, taskRuntime);
+                } catch (e: any) {
+                    this.logger.warn(`Failed to inject doctyp details for task ${instanceId}: ${e.message}`);
+                }
             }
             const documentType = businessObject.documentType || 'DEFAULT';
             const config = getObjectConfig(objectType, documentType);
@@ -319,7 +345,7 @@ export class InboxProcessor {
                     confirmMessage: configAct?.confirmMessage || undefined,
                     sapDecisionKey: sapDec.DecisionKey,
                     commentMandatory: configAct?.requiresComment || false,
-                    commentSupported: true
+                    commentSupported: process.env.USE_MOCK_SAP !== 'false'
                 };
             });
 
@@ -363,7 +389,7 @@ export class InboxProcessor {
                     title: taskRuntime.TaskTitle || '',
                     status: taskRuntime.Status,
                     priority: normalizePriority(taskRuntime.Priority),
-                    createdOn: normalizeDate(taskRuntime.CreatedOn),
+                    createdOn: normalizeDate(taskRuntime.CreatedOn || inst?.taskCreationDateTime),
                     createdByName: taskRuntime.CreatedByName || undefined,
                     requestorName: taskRuntime.CreatedByName || undefined,
                     taskDefinitionId: hints?.typeid || taskRuntime.TaskDefinitionID || '',
@@ -376,7 +402,8 @@ export class InboxProcessor {
                     curr_vnd: inst?.curr_vnd || undefined,
                     total_doc_curr: inst?.total_doc_curr !== undefined && inst?.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
                     doc_curr: inst?.doc_curr || undefined,
-                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined
+                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
+                    normalTask: normalTask
                 },
                 decisions: actions,
                 customAttributes: [],
@@ -424,10 +451,45 @@ export class InboxProcessor {
         }
     }
 
-    async getWorkflowApprovalTree(documentId: string, sapUser: string, userJwt?: string) {
-        this.logger.info(`Fetching approval tree for document ${documentId}`);
+    private async _resolveObjectType(
+        instanceId: string | undefined,
+        sapUser: string,
+        userJwt?: string,
+        businessObjectTypeHint?: string,
+        taskRuntimeHint?: any
+    ): Promise<string> {
+        if (businessObjectTypeHint && businessObjectTypeHint !== 'UNKNOWN') {
+            return businessObjectTypeHint;
+        }
+        if (taskRuntimeHint) {
+            const typeid = taskRuntimeHint.TaskDefinitionID || '';
+            return resolveObjectTypeFromTypeId(typeid) || 'PR';
+        }
+        if (!instanceId) {
+            return 'PR';
+        }
         try {
-            const detail = await this.sapOdataAdapter.getDetail('PR', documentId, sapUser, userJwt);
+            const taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt);
+            const typeid = taskRuntime.TaskDefinitionID || '';
+            return resolveObjectTypeFromTypeId(typeid) || 'PR';
+        } catch (e: any) {
+            this.logger.warn(`Failed to resolve objectType from task ${instanceId}: ${e.message}`);
+            return 'PR';
+        }
+    }
+
+    async getWorkflowApprovalTree(
+        documentId: string, 
+        sapUser: string, 
+        userJwt?: string, 
+        instanceId?: string, 
+        businessObjectType?: string
+    ) {
+        this.logger.info(`Fetching approval tree for document ${documentId} (type: ${businessObjectType || 'unknown'}, task: ${instanceId || 'unknown'})`);
+        try {
+            const objectType = await this._resolveObjectType(instanceId, sapUser, userJwt, businessObjectType);
+
+            const detail = await this.sapOdataAdapter.getDetail(objectType, documentId, sapUser, userJwt);
             const comments = (detail.comments || []).map((c: any) => ({
                 docNum: documentId,
                 postedOn: c.postedOn,
@@ -437,7 +499,7 @@ export class InboxProcessor {
                 type: 'NORM'
             }));
             return {
-                prNumber: documentId,
+                documentId: documentId,
                 releaseStrategyName: detail.header?.releaseStrategyName,
                 steps: detail.approvalTree || [],
                 comments
@@ -520,41 +582,36 @@ function enrichBusinessObjectForSchema(businessObject: any, objectType: string, 
     
     // Inject custom instance doctyp details and total amounts/currencies
     if (objectType === 'PR') {
-        businessObject.header.purchaseRequisitionType = inst?.doctyp || businessObject.header.purchaseRequisitionType;
-        businessObject.header.purchaseRequisitionTypeText = inst?.doctyp_desc || businessObject.header.purchaseRequisitionTypeText;
-        if (inst?.total !== undefined && inst?.total !== null) {
-            businessObject.header.totalNetAmount = inst.total;
-        }
-        if (inst?.curr_vnd !== undefined && inst?.curr_vnd !== null) {
-            businessObject.header.displayCurrency = inst.curr_vnd;
-        }
-        if (inst?.total_doc_curr !== undefined && inst?.total_doc_curr !== null) {
-            businessObject.header.totalDocNetAmount = inst.total_doc_curr;
-        }
-        if (inst?.doc_curr !== undefined && inst?.doc_curr !== null) {
-            businessObject.header.docCurrency = inst.doc_curr;
-        }
+        businessObject.header.purchaseRequisitionType = businessObject.header.documentType || inst?.doctyp || businessObject.header.purchaseRequisitionType;
+        businessObject.header.purchaseRequisitionTypeText = businessObject.header.documentTypeText || inst?.doctyp_desc || businessObject.header.purchaseRequisitionTypeText;
+        
+        businessObject.header.totalNetAmount = businessObject.header.totalNetAmountLocalCrcy || inst?.total || businessObject.header.totalNetAmount;
+        businessObject.header.displayCurrency = businessObject.header.localCurrency || inst?.curr_vnd || businessObject.header.displayCurrency;
+        
+        businessObject.header.totalDocNetAmount = businessObject.header.totalNetAmountDocCrcy || inst?.total_doc_curr || businessObject.header.totalDocNetAmount;
+        businessObject.header.docCurrency = businessObject.header.documentCurrency || inst?.doc_curr || businessObject.header.docCurrency;
+        
+        businessObject.header.releaseStrategyName = businessObject.header.releaseStrategyText || businessObject.header.releaseStrategyName;
+        businessObject.header.userFullName = businessObject.header.requisitioner || businessObject.header.createdByUser || businessObject.header.userFullName;
     } else if (objectType === 'PO') {
-        businessObject.header.purchaseOrderType = inst?.doctyp || businessObject.header.purchaseOrderType;
-        businessObject.header.purchaseOrderTypeText = inst?.doctyp_desc || businessObject.header.purchaseOrderTypeText;
-        if (inst?.total !== undefined && inst?.total !== null) {
-            businessObject.header.purchaseOrderNetAmount = inst.total;
-        }
-        if (inst?.curr_vnd !== undefined && inst?.curr_vnd !== null) {
-            businessObject.header.documentCurrency = inst.curr_vnd;
-        }
-        if (inst?.total_doc_curr !== undefined && inst?.total_doc_curr !== null) {
-            businessObject.header.totalDocNetAmount = inst.total_doc_curr;
-        }
-        if (inst?.doc_curr !== undefined && inst?.doc_curr !== null) {
-            businessObject.header.docCurrency = inst.doc_curr;
-        }
+        businessObject.header.purchaseOrderType = businessObject.header.documentType || inst?.doctyp || businessObject.header.purchaseOrderType;
+        businessObject.header.purchaseOrderTypeText = businessObject.header.documentTypeText || inst?.doctyp_desc || businessObject.header.purchaseOrderTypeText;
+        
+        businessObject.header.purchaseOrderNetAmount = businessObject.header.totalNetAmountLocalCrcy || inst?.total || businessObject.header.purchaseOrderNetAmount;
+        businessObject.header.documentCurrency = businessObject.header.localCurrency || inst?.curr_vnd || businessObject.header.documentCurrency;
+        
+        businessObject.header.totalDocNetAmount = businessObject.header.totalNetAmountDocCrcy || inst?.total_doc_curr || businessObject.header.totalDocNetAmount;
+        businessObject.header.docCurrency = businessObject.header.documentCurrency || inst?.doc_curr || businessObject.header.docCurrency;
+        
+        businessObject.header.supplierName = businessObject.header.supplier || businessObject.header.supplierName;
+        businessObject.header.purchasingDocumentStatusName = inst?.status || taskRuntime?.Status || businessObject.header.purchasingDocumentStatusName;
+        businessObject.header.createdByUser = businessObject.header.createdByUser || businessObject.header.requisitioner || businessObject.header.createdByUser;
     }
 
     // Inject task metadata
-    if (taskRuntime) {
-        businessObject.header.priority = taskRuntime.Priority || taskRuntime.priority || businessObject.header.priority;
-        businessObject.header.createdOn = taskRuntime.CreatedOn || taskRuntime.createdOn || businessObject.header.createdOn;
+    if (taskRuntime || inst) {
+        businessObject.header.priority = taskRuntime?.Priority || taskRuntime?.priority || businessObject.header.priority;
+        businessObject.header.createdOn = taskRuntime?.CreatedOn || taskRuntime?.createdOn || inst?.taskCreationDateTime || businessObject.header.createdOn;
     }
 
     // Pre-merge display fields for dynamic schema

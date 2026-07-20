@@ -212,11 +212,12 @@ export function useWorkflowApprovalTree(
     instanceId: string | null,
     documentId?: string,
     sapOrigin?: string,
+    businessObjectType?: string,
     options?: { enabled?: boolean }
 ) {
     return useQuery({
-        queryKey: inboxKeys.taskWorkflow(instanceId || '', { documentId, sapOrigin }),
-        queryFn: () => inboxApi.getWorkflowApprovalTree(instanceId!, documentId, sapOrigin),
+        queryKey: inboxKeys.taskWorkflow(instanceId || '', { documentId, sapOrigin, businessObjectType }),
+        queryFn: () => inboxApi.getWorkflowApprovalTree(instanceId!, documentId, sapOrigin, businessObjectType),
         enabled: !!instanceId && !!documentId && options?.enabled !== false,
         staleTime: STALE.WORKFLOW,
     });

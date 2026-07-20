@@ -177,6 +177,10 @@
         "low": "Thấp",
         "veryHigh": "Rất cao"
     },
+    "taskType": {
+        "normal": "Duyệt thông thường",
+        "tagged": "CC"
+    },
     "errors": {
         "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
         "sessionExpired": "Phiên đã hết hạn. Vui lòng đăng nhập lại.",
