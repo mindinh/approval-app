@@ -598,11 +598,22 @@ export class InboxController {
     streamAttachment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const attId = String(req.params.attId);
-            const docNum = req.query.documentId ? String(req.query.documentId) : '';
+            let docNum = req.query.documentId ? String(req.query.documentId) : '';
             const { sapUser, userJwt } = resolveIdentity(req);
 
-            if (!docNum) {
-                throw new AppError('Missing documentId', 400);
+            const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+            if (isMockMode && (!docNum || docNum === 'undefined')) {
+                const taskId = String(req.params.id);
+                try {
+                    const detail = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
+                    docNum = detail.object?.objectId || '';
+                } catch (e: any) {
+                    console.warn(`Failed to resolve documentId for task ${taskId}: ${e.message}`);
+                }
+            }
+
+            if (isMockMode && !docNum) {
+                throw new AppError('Missing documentId (required in mock mode)', 400);
             }
 
             const file = await this.processor.getAttachmentContent(docNum, attId, sapUser, userJwt);
@@ -611,8 +622,9 @@ export class InboxController {
                 return;
             }
 
+            const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
             res.setHeader('Content-Type', file.contentType);
-            res.setHeader('Content-Disposition', `inline; filename="${file.fileName}"`);
+            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"`);
             res.send(file.data);
         } catch (error) {
             next(error);
@@ -685,8 +697,9 @@ export class InboxController {
                 return;
             }
 
+            const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
             res.setHeader('Content-Type', file.contentType);
-            res.setHeader('Content-Disposition', `inline; filename="${file.fileName}"`);
+            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"`);
             res.send(file.data);
         } catch (error) {
             next(error);

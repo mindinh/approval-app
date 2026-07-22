@@ -39,7 +39,7 @@ export function resolveObjectTypeFromTypeId(typeid: string): ObjectTypeCode {
     return "RE";
   }
 
-  // Fallback to PR default (or throw if preferred, let's return PR as default)
+  // Fallback to PR default
   return "PR";
 }
 
@@ -51,83 +51,5 @@ export const ODATA_SERVICES = {
   INSTANCE_LIST: {
     servicePath: process.env.ODATA_PATH_INSTANCE_LIST || '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
     entitySet: 'ZC_WORKFLOWTASK'
-  }
-};
-
-export interface ODataServiceConfig {
-  servicePath: string;
-  headerEntity: string;
-  docCategory?: string;
-  itemsEntity?: string;
-  approvalTreeEntity?: string;
-  commentsEntity?: string;
-  attachmentsEntity?: string;
-  commentPostAction?: string;
-  attachmentPostAction?: string;
-  accountAssignmentsEntity?: string;
-  scheduleLinesEntity?: string;
-  itemMapper?: Record<string, string | ((item: any) => any)>;
-}
-
-export const ODATA_DETAIL_CONFIGS: Record<ObjectTypeCode, ODataServiceConfig> = {
-  PR: {
-    servicePath: '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
-    headerEntity: 'ZC_PRHEADER',
-    docCategory: 'BUS2105',
-    itemMapper: {
-      purchaseRequisition: 'DocumentNumber',
-      purchaseRequisitionItem: 'ItemNumber',
-      purchaseRequisitionItemText: (item: any) => item.MaterialText || item.ItemText || `Item ${item.ItemNumber} (${item.Material || 'Service'})`,
-      material: (item: any) => item.Material || '',
-      materialGroup: (item: any) => item.MaterialGroup || '',
-      materialGroupText: (item: any) => item.MaterialGroupText || '',
-      requestedQuantity: (item: any) => String(item.Quantity || '0'),
-      baseUnit: (item: any) => item.Unit || 'PC',
-      purchaseRequisitionPrice: (item: any) => {
-        const qty = Number(item.Quantity || 0);
-        const netAmt = Number(item.NetAmount || 0);
-        return qty > 0 ? String(netAmt / qty) : String(netAmt);
-      },
-      purReqnItemCurrency: (item: any) => item.DocumentCurrency || 'VND',
-      purReqnItemTotalAmount: (item: any) => String(item.NetAmount || '0'),
-      deliveryDate: (item: any) => item.DeliveryDate || new Date().toISOString(),
-      plant: (item: any) => item.Plant || '',
-      costCenter: (item: any) => item.CostCenter || '',
-      costCenterDescription: (item: any) => item.CostCenterDescription || '',
-      documentType: (item: any) => item.DocumentType || ''
-    }
-  },
-  PO: {
-    servicePath: '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
-    headerEntity: 'ZC_POHEADER',
-    docCategory: 'BUS2012',
-    itemMapper: {
-      purchaseOrder: 'DocumentNumber',
-      purchaseOrderItem: 'ItemNumber',
-      purchaseOrderItemText: (item: any) => item.MaterialText || item.ItemText || `Item ${item.ItemNumber} (${item.Material || 'Service'})`,
-      material: (item: any) => item.Material || '',
-      materialGroup: (item: any) => item.MaterialGroup || '',
-      materialGroupText: (item: any) => item.MaterialGroupText || '',
-      orderQuantity: (item: any) => String(item.Quantity || '0'),
-      purchaseOrderQuantityUnit: (item: any) => item.Unit || 'PC',
-      netPriceAmount: (item: any) => {
-        const qty = Number(item.Quantity || 0);
-        const netAmt = Number(item.NetAmount || 0);
-        return qty > 0 ? String(netAmt / qty) : String(netAmt);
-      },
-      purchaseOrderPriceUnit: (item: any) => item.DocumentCurrency || 'VND',
-      documentCurrency: (item: any) => item.DocumentCurrency || 'VND',
-      netAmount: (item: any) => String(item.NetAmount || '0'),
-      plant: (item: any) => item.Plant || ''
-    }
-  },
-  // Placeholders to satisfy type-checking for Reservation / Claim
-  RE: {
-    servicePath: '',
-    headerEntity: ''
-  },
-  CLAIM: {
-    servicePath: '',
-    headerEntity: ''
   }
 };

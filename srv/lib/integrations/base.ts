@@ -2,7 +2,8 @@ import { SapClient } from './sap-client';
 import { MetadataService } from '../metadata-service';
 import { Detail } from './detail';
 import { ObjectTypeCode } from '../processors/object-config';
-import { ODATA_DETAIL_CONFIGS } from '../processors/odata-config';
+import { ConfigRegistry } from '../mapping/config-registry';
+import { ODATA_SERVICES } from '../processors/odata-config';
 import { RawODataEntity, ODataSingleResult } from '../types/sap-odata.types';
 import { getMockDetail } from './mock-data-provider';
 
@@ -39,6 +40,9 @@ export abstract class BaseDetail implements Detail {
         userJwt?: string,
         headerOnly = false
     ): Promise<any> {
+        if (!objectId) {
+            throw new Error('Document ID is required but was not provided');
+        }
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
             const mock = getMockDetail(this.objectType, objectId);
@@ -57,27 +61,32 @@ export abstract class BaseDetail implements Detail {
             };
         }
 
-        const config = ODATA_DETAIL_CONFIGS[this.objectType];
+        const objConfig = ConfigRegistry.getInstance().get(this.objectType);
+        const headerEntity = objConfig?.source?.rootEntity || (this.objectType === 'PR' ? 'ZC_PRHEADER' : 'ZC_POHEADER');
+        const docCategoryKey = objConfig?.source?.key?.find((k: any) => k.name === 'DocCategory');
+        const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : 'BUS2012');
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Comment,_Attachment';
+
         const paddedId = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
 
         let headerUrl = '';
         const params: Record<string, string> = { $format: 'json' };
 
-        if (config.headerEntity.startsWith('ZC_')) {
+        if (headerEntity.startsWith('ZC_')) {
             // New V4 composite key
-            const docCategory = config.docCategory || (this.objectType === 'PR' ? 'BUS2105' : 'BUS2012');
-            headerUrl = `/${config.headerEntity}(DocCategory='${docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
+            headerUrl = `/${headerEntity}(DocCategory='${docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
             // Request expanded sub-entities only if we are loading full details
             if (!headerOnly) {
-                params.$expand = '_Item,_ApprovalStep,_HeaderText,_Comment';
+                params.$expand = expandNavs;
             }
         } else {
             // Old V2 format
-            headerUrl = `/${config.headerEntity}('${encodeURIComponent(paddedId)}')`;
+            headerUrl = `/${headerEntity}('${encodeURIComponent(paddedId)}')`;
         }
 
         const headerRes = await this.sapClient.get<any>(
-            config.servicePath,
+            servicePath,
             headerUrl,
             params,
             sapUser,
@@ -93,7 +102,7 @@ export abstract class BaseDetail implements Detail {
             throw new Error(`Failed to fetch header for ${this.objectType} ${paddedId}: Empty response received`);
         }
 
-        const normalizedHeader = await this.metadataService.normalizeDetail(rawHeader, config.servicePath, sapUser, userJwt);
+        const normalizedHeader = await this.metadataService.normalizeDetail(rawHeader, servicePath, sapUser, userJwt);
         const docType = rawHeader.DocumentType || rawHeader.PurchaseRequisitionType || rawHeader.PurchaseOrderType || 'ZASS';
 
         const header = toCamelCaseKeys(normalizedHeader);

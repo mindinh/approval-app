@@ -12,6 +12,7 @@ vi.mock('../../../srv/lib/integrations/sap-client', () => {
       post = vi.fn();
       fetchCsrf = vi.fn();
       batchGet = vi.fn();
+      getBinary = vi.fn();
     }
   };
 });
@@ -159,7 +160,17 @@ describe('SapOdataAdapter', () => {
             _Item: [{ DocumentNumber: '10000001', ItemNumber: '00010', Quantity: 100, Unit: 'PC', NetAmount: 1000, DocumentCurrency: 'VND' }],
             _ApprovalStep: [{ ObjectKey: '10000001', ApprovalLevel: 1, ReleaseCode: 'R1', ApproverName: 'Approver 1', ApproverUserId: 'USR1', ApprovalStatus: 'PENDING', CommentText: 'Ok', CommentDate: '2026-07-15', CommentTime: '10:00:00' }],
             _HeaderText: [{ DocCategory: 'BUS2105', DocNumber: '10000001', LineId: 1, LongText: 'Desc line 1' }],
-            _Comment: [{ DocumentNumber: '10000001', Sequence: 1, PostedOn: '2026-07-15', PostedTime: '10:00:00', NoteText: 'Test PR comment', UserComment: 'USR1' }]
+            _Comment: [{ DocumentNumber: '10000001', Sequence: 1, PostedOn: '2026-07-15', PostedTime: '10:00:00', NoteText: 'Test PR comment', UserComment: 'USR1' }],
+            _Attachment: [{
+              DocumentCategory: 'BUS2105',
+              DocumentNumber: '10000001',
+              DocId: 'FOL42000000000004EXT51000000000208',
+              FileName: 'PR_01_Toiletries_Bath_Amenities',
+              FileExtension: 'pdf',
+              CreatedBy: 'DIENTRAN',
+              CreatedOnDate: '2026-04-10',
+              CreatedOnTime: '11:45:05'
+            }]
           };
         }
         return {};
@@ -175,6 +186,12 @@ describe('SapOdataAdapter', () => {
       expect(result.comments.length).toBe(1);
       expect(result.comments[0].author).toBe('USR1');
       expect(result.comments[0].text).toBe('Test PR comment');
+      
+      expect(result.attachments.length).toBe(1);
+      expect(result.attachments[0].id).toBe('FOL42000000000004EXT51000000000208');
+      expect(result.attachments[0].fileName).toBe('PR_01_Toiletries_Bath_Amenities.pdf');
+      expect(result.attachments[0].fileDisplayName).toBe('PR_01_Toiletries_Bath_Amenities');
+      expect(result.attachments[0].mimeType).toBe('application/pdf');
     });
 
     it('should query single PO detail with complete sections (headerOnly = false)', async () => {
@@ -203,9 +220,25 @@ describe('SapOdataAdapter', () => {
       expect(result.comments[0].text).toBe('Test PO comment');
     });
 
-    it('should fail attachment streaming in direct SAP mode', async () => {
-      const result = await adapter.fetchAttachmentContent('10000001', 'att-123', 'SAP_USER');
-      expect(result).toBeNull();
+    it('should stream attachment binary content in direct SAP mode', async () => {
+      mockSapClient.getBinary.mockResolvedValue({
+        data: Buffer.from('my-sap-file'),
+        contentType: 'application/pdf',
+        fileName: 'Invoice.pdf'
+      });
+
+      const result = await adapter.fetchAttachmentContent('10000001', 'FOL42000000000004EXT51000000000208', 'SAP_USER', 'jwt');
+      expect(result).toEqual({
+        data: Buffer.from('my-sap-file'),
+        contentType: 'application/pdf',
+        fileName: 'Invoice.pdf'
+      });
+      expect(mockSapClient.getBinary).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
+        "/ZI_DOC_ATTACH_CONTENT('FOL42000000000004EXT51000000000208')/Content",
+        'SAP_USER',
+        'jwt'
+      );
     });
 
     it('should throw an error on uploadAttachment in direct SAP mode', async () => {

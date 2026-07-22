@@ -165,6 +165,69 @@ export class SapClient {
         }
     }
 
+    async getBinary(
+        servicePath: string,
+        relativePath: string,
+        sapUser?: string,
+        userJwt?: string
+    ): Promise<{ data: Buffer; contentType: string; fileName?: string }> {
+        try {
+            const effectiveJwt = this.getEffectiveJwt(userJwt);
+            if (this.shouldUseDestination(effectiveJwt)) {
+                try {
+                    const response = await executeHttpRequest(
+                        { destinationName: this.destinationName, jwt: effectiveJwt },
+                        {
+                            method: 'get',
+                            url: `${servicePath}${relativePath}`,
+                            headers: this.getRequestHeaders(sapUser),
+                            responseType: 'arraybuffer'
+                        }
+                    );
+                    const contentType = (response.headers['content-type'] || response.headers['Content-Type'] || 'application/octet-stream') as string;
+                    const contentDisposition = (response.headers['content-disposition'] || response.headers['Content-Disposition']) as string;
+                    let fileName: string | undefined = undefined;
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+                        if (match) fileName = match[1];
+                    }
+                    return { data: Buffer.from(response.data as any), contentType, fileName };
+                } catch (error: any) {
+                    if (this.shouldFallbackToDirect(error)) {
+                        const response = await this.http.get(`${servicePath}${relativePath}`, {
+                            headers: this.getRequestHeaders(sapUser),
+                            responseType: 'arraybuffer'
+                        });
+                        const contentType = (response.headers['content-type'] || response.headers['Content-Type'] || 'application/octet-stream') as string;
+                        const contentDisposition = (response.headers['content-disposition'] || response.headers['Content-Disposition']) as string;
+                        let fileName: string | undefined = undefined;
+                        if (contentDisposition) {
+                            const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+                            if (match) fileName = match[1];
+                        }
+                        return { data: Buffer.from(response.data), contentType, fileName };
+                    }
+                    throw error;
+                }
+            } else {
+                const response = await this.http.get(`${servicePath}${relativePath}`, {
+                    headers: this.getRequestHeaders(sapUser),
+                    responseType: 'arraybuffer'
+                });
+                const contentType = (response.headers['content-type'] || response.headers['Content-Type'] || 'application/octet-stream') as string;
+                const contentDisposition = (response.headers['content-disposition'] || response.headers['Content-Disposition']) as string;
+                let fileName: string | undefined = undefined;
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+                    if (match) fileName = match[1];
+                }
+                return { data: Buffer.from(response.data), contentType, fileName };
+            }
+        } catch (error: any) {
+            throw handleSapError(error);
+        }
+    }
+
     async post<T>(servicePath: string, relativePath: string, data: any = {}, headers: any = {}, sapUser?: string, userJwt?: string): Promise<T> {
         const finalHeaders = { ...headers };
         const hasCsrfToken = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'x-csrf-token');

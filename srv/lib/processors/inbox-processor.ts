@@ -4,6 +4,10 @@ import { getObjectConfig, mapCardChips } from './object-config';
 import { resolveObjectTypeFromTypeId } from './odata-config';
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
+import { ConfigRegistry } from '../mapping/config-registry';
+import { MappingEngine } from '../mapping/mapping-engine';
+import { FieldRequirementResolver } from '../mapping/resolver';
+import { CanonicalProjector } from '../mapping/canonical-projector';
 
 function normalizePriority(priority: string): string {
     const map: Record<string, string> = {
@@ -91,48 +95,12 @@ export class InboxProcessor {
                         } else {
                             businessObject = await this.sapOdataAdapter.getDetail(objectType, inst.instid, sapUser, userJwt, true);
                         }
-                        enrichBusinessObjectForSchema(businessObject, objectType, inst, matchingTask);
                     }
                 } catch (err: any) {
-                    this.logger.warn(`Failed to enrich active task ${inst.instanceID}: ${err.message}`);
+                    this.logger.warn(`Failed to retrieve task detail ${inst.instanceID}: ${err.message}`);
                 }
 
-                const businessContext = {
-                    type: objectType,
-                    documentId: inst.instid,
-                    pr: objectType === 'PR' ? businessObject : undefined,
-                    po: objectType === 'PO' ? businessObject : undefined
-                };
-
-                const requesterName = businessObject?.header?.userFullName || businessObject?.header?.createdByUser || businessObject?.header?.requisitioner || inst.createdByUser || matchingTask?.CreatedByName || undefined;
-                const documentType = businessObject?.documentType || 'DEFAULT';
-                const config = getObjectConfig(objectType, documentType);
-                const businessChips = mapCardChips(config, businessObject);
-
-                return {
-                    instanceId: inst.instanceID,
-                    sapOrigin: matchingTask?.SAP__Origin || 'LOCAL',
-                    title: matchingTask?.TaskTitle || `${inst.normalTask === false ? 'Review' : 'Approve'} ${objectType} ${inst.instid}`,
-                    status: (inst.status || matchingTask?.Status || 'READY').replace(/\s+/g, '_'),
-                    priority: normalizePriority(matchingTask?.Priority),
-                    createdOn: normalizeDate(matchingTask?.CreatedOn || inst.taskCreationDateTime),
-                    createdByName: matchingTask?.CreatedByName || undefined,
-                    requestorName: requesterName,
-                    taskDefinitionId: inst.typeid || matchingTask?.TaskDefinitionID,
-                    instid: inst.instid,
-                    objectType: objectType,
-                    businessContext: businessContext,
-                    supports: {
-                        forward: matchingTask?.SupportsForward ?? true,
-                        comments: process.env.USE_MOCK_SAP !== 'false' ? (matchingTask?.SupportsComments ?? true) : false
-                    },
-                    total: inst.total !== undefined && inst.total !== null ? Number(inst.total) : undefined,
-                    curr_vnd: inst.curr_vnd || undefined,
-                    total_doc_curr: inst.total_doc_curr !== undefined && inst.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
-                    doc_curr: inst.doc_curr || undefined,
-                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
-                    normalTask: inst.normalTask
-                };
+                return this._buildTaskCard(inst, matchingTask, businessObject, objectType);
             }));
 
             return { items, total };
@@ -203,48 +171,12 @@ export class InboxProcessor {
                         } else {
                             businessObject = await this.sapOdataAdapter.getDetail(objectType, inst.instid, sapUser, userJwt, true);
                         }
-                        enrichBusinessObjectForSchema(businessObject, objectType, inst, matchingTask);
                     }
                 } catch (err: any) {
-                    this.logger.warn(`Failed to enrich approved task ${inst.instanceID}: ${err.message}`);
+                    this.logger.warn(`Failed to retrieve task detail ${inst.instanceID}: ${err.message}`);
                 }
 
-                const businessContext = {
-                    type: objectType,
-                    documentId: inst.instid,
-                    pr: objectType === 'PR' ? businessObject : undefined,
-                    po: objectType === 'PO' ? businessObject : undefined
-                };
-
-                const requesterName = businessObject?.header?.userFullName || businessObject?.header?.createdByUser || businessObject?.header?.requisitioner || inst.createdByUser || matchingTask?.CreatedByName || undefined;
-                const documentType = businessObject?.documentType || 'DEFAULT';
-                const config = getObjectConfig(objectType, documentType);
-                const businessChips = mapCardChips(config, businessObject);
-
-                return {
-                    instanceId: inst.instanceID,
-                    sapOrigin: matchingTask?.SAP__Origin || 'LOCAL',
-                    title: matchingTask?.TaskTitle || `${inst.normalTask === false ? 'Reviewed' : 'Approved'} ${objectType} ${inst.instid}`,
-                    status: 'COMPLETED',
-                    priority: normalizePriority(matchingTask?.Priority || 'MEDIUM'),
-                    createdOn: normalizeDate(matchingTask?.CreatedOn || inst.taskCreationDateTime),
-                    createdByName: matchingTask?.CreatedByName || undefined,
-                    requestorName: requesterName,
-                    taskDefinitionId: inst.typeid || matchingTask?.TaskDefinitionID,
-                    instid: inst.instid,
-                    objectType: objectType,
-                    businessContext: businessContext,
-                    supports: {
-                        forward: false,
-                        comments: process.env.USE_MOCK_SAP !== 'false'
-                    },
-                    total: inst.total !== undefined && inst.total !== null ? Number(inst.total) : undefined,
-                    curr_vnd: inst.curr_vnd || undefined,
-                    total_doc_curr: inst.total_doc_curr !== undefined && inst.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
-                    doc_curr: inst.doc_curr || undefined,
-                    businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
-                    normalTask: inst.normalTask
-                };
+                return this._buildTaskCard(inst, matchingTask, businessObject, objectType, 'COMPLETED');
             }));
 
             return { items, total };
@@ -306,22 +238,40 @@ export class InboxProcessor {
             }
             const objectType = await this._resolveObjectType(instanceId, sapUser, userJwt, hints?.businessObjectType, taskRuntime);
 
+            const configRegistry = ConfigRegistry.getInstance();
+            const mappingEngine = MappingEngine.getInstance();
+            const resolver = FieldRequirementResolver.getInstance();
+            const projector = CanonicalProjector.getInstance();
+
+            const config = configRegistry.get(objectType);
+            if (!config) {
+                throw new Error(`Configuration not found for objectType: ${objectType}`);
+            }
+
             let instid = hints?.documentId || hints?.instid;
             if (!instid) {
                 instid = taskRuntime.TaskTitle?.match(/\d+/)?.[0] || '';
             }
 
-            const businessObject = await this.sapOdataAdapter.getDetail(objectType, instid || '', sapUser, userJwt);
-
-            if (inst) {
-                try {
-                    enrichBusinessObjectForSchema(businessObject, objectType, inst, taskRuntime);
-                } catch (e: any) {
-                    this.logger.warn(`Failed to inject doctyp details for task ${instanceId}: ${e.message}`);
-                }
+            if (!instid) {
+                throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
             }
+
+            let businessObject = await this.sapOdataAdapter.getDetail(objectType, instid, sapUser, userJwt);
+
+            const mergedPayload = inst ? { ...inst, ...businessObject, header: { ...inst, ...businessObject.header } } : businessObject;
+
+            // Map to Canonical Model using Config mappings
+            const canonicalObject = mappingEngine.map(mergedPayload, config, { documentId: instid });
+
+            // Resolve field requirements & Project / Prune
+            const fieldPlan = resolver.resolve('detail', config);
+            const projectedObject = projector.project(canonicalObject, fieldPlan.canonicalPaths);
+
             const documentType = businessObject.documentType || 'DEFAULT';
-            const config = getObjectConfig(objectType, documentType);
+            const subtypeConfig = config.documentTypes?.[documentType];
+            const activeUiSchema = subtypeConfig?.uiSchema || config.uiSchema;
+            const activeCardChips = subtypeConfig?.cardChips || config.cardChips;
 
             // Merge SAP available decisions with configured action decorations
             const actions = (taskRuntime.decisions || []).map((sapDec: any) => {
@@ -349,15 +299,8 @@ export class InboxProcessor {
                 };
             });
 
-            // Construct frontend businessContext structure
-            const businessContext = {
-                type: objectType,
-                documentId: instid,
-                pr: objectType === 'PR' ? businessObject : undefined,
-                po: objectType === 'PO' ? businessObject : undefined
-            };
-
-            const comments = (businessObject.comments || []).map((c: any, idx: number) => ({
+            // Legacy comments mapping for compatibility
+            const comments = (projectedObject.workflow?.comments || []).map((c: any, idx: number) => ({
                 id: `comment-${idx}`,
                 createdBy: c.author || 'SAP User',
                 createdByName: c.author || 'SAP User',
@@ -365,7 +308,8 @@ export class InboxProcessor {
                 createdAt: normalizeDate(c.postedOn && c.postedTime ? `${c.postedOn}T${c.postedTime}` : undefined) || new Date().toISOString()
             }));
 
-            const attachments = (businessObject.attachments || []).map((a: any, idx: number) => {
+            // Legacy attachments mapping for compatibility
+            const attachments = (projectedObject.attachments || []).map((a: any, idx: number) => {
                 const attId = a.id || `attach-${idx}`;
                 return {
                     id: attId,
@@ -376,11 +320,66 @@ export class InboxProcessor {
                     createdBy: a.createdBy || 'SAP User',
                     createdByName: a.createdBy || 'SAP User',
                     createdAt: normalizeDate(a.createdAt),
-                    link: `/api/cnma/APPROVAL_SRV/tasks/tasks/${instanceId}/attachments/${attId}/content?documentId=${instid}`
+                    link: `/api/cnma/APPROVAL_SRV/tasks/tasks/${instanceId}/attachments/${attId}/content?documentId=${projectedObject.objectId || instid}`
                 };
             });
 
-            const businessChips = mapCardChips(config, businessObject);
+            const businessChips: any[] = [];
+            if (activeCardChips) {
+                for (const chip of activeCardChips) {
+                    const rawVal = mappingEngine['getNestedValue'](projectedObject, chip.dataPath);
+                    if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+                        businessChips.push({
+                            label: chip.label,
+                            value: rawVal,
+                            dataType: chip.dataType,
+                            isPrimary: chip.isPrimary,
+                            currency: projectedObject.header?.displayCurrency || projectedObject.header?.documentCurrency || ''
+                        });
+                    }
+                }
+            }
+
+            // Dynamically construct fieldSchema in the key-value structure expected by the React dynamic renderer
+            const dynamicFieldSchema: Record<string, any> = {};
+            for (const m of config.mappings.root) {
+                const parts = m.targetPath.split('.');
+                const key = parts[parts.length - 1];
+                const label = m.label || key
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase());
+
+                dynamicFieldSchema[key] = {
+                    key,
+                    label,
+                    dataPath: `$.${m.targetPath}`,
+                    dataType: m.type === 'string' ? 'TEXT' : m.transform === 'number' ? 'AMOUNT' : m.transform === 'sapDateToIso' ? 'DATE' : 'TEXT'
+                };
+            }
+
+            for (const colKey of Object.keys(config.mappings.collections)) {
+                const col = config.mappings.collections[colKey];
+                for (const f of col.fields) {
+                    const parts = f.targetPath.split('.');
+                    const key = parts[parts.length - 1];
+                    const label = f.label || key
+                        .replace(/([A-Z])/g, ' $1')
+                        .replace(/^./, str => str.toUpperCase());
+
+                    dynamicFieldSchema[key] = {
+                        key,
+                        label,
+                        dataPath: `$.${f.targetPath}`,
+                        dataType: f.type === 'string' ? 'TEXT' : f.transform === 'number' ? 'QUANTITY' : f.transform === 'sapDateToIso' ? 'DATE' : 'TEXT'
+                    };
+                }
+            }
+
+            const businessContext: Record<string, any> = {
+                type: objectType,
+                documentId: instid,
+                [objectType.toLowerCase()]: canonicalObject
+            };
 
             return {
                 task: {
@@ -391,7 +390,7 @@ export class InboxProcessor {
                     priority: normalizePriority(taskRuntime.Priority),
                     createdOn: normalizeDate(taskRuntime.CreatedOn || inst?.taskCreationDateTime),
                     createdByName: taskRuntime.CreatedByName || undefined,
-                    requestorName: taskRuntime.CreatedByName || undefined,
+                    requestorName: projectedObject.header?.userFullName || projectedObject.header?.createdByUser || taskRuntime.CreatedByName || undefined,
                     taskDefinitionId: hints?.typeid || taskRuntime.TaskDefinitionID || '',
                     supports: {
                         forward: taskRuntime.SupportsForward ?? true,
@@ -405,6 +404,7 @@ export class InboxProcessor {
                     businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
                     normalTask: normalTask
                 },
+                object: projectedObject,
                 decisions: actions,
                 customAttributes: [],
                 taskObjects: [],
@@ -413,8 +413,8 @@ export class InboxProcessor {
                 workflowLogs: [],
                 attachments,
                 businessContext: businessContext,
-                fieldSchema: config.fieldSchema,
-                uiSchema: config.uiSchema,
+                fieldSchema: dynamicFieldSchema,
+                uiSchema: activeUiSchema,
                 actions
             };
         } catch (error: any) {
@@ -422,6 +422,7 @@ export class InboxProcessor {
             throw new AppError(`Failed to load task detail: ${error.message}`, 500);
         }
     }
+
 
     async executeDecision(
         instanceId: string,
@@ -543,6 +544,9 @@ export class InboxProcessor {
     async getPrAttachments(documentId: string, sapUser: string, userJwt?: string) {
         this.logger.info(`Fetching PR attachments for document ${documentId}`);
         try {
+            if (!documentId) {
+                return [];
+            }
             const detail = await this.sapOdataAdapter.getDetail('PR', documentId, sapUser, userJwt);
             return detail.attachments || [];
         } catch (error: any) {
@@ -555,7 +559,7 @@ export class InboxProcessor {
         this.logger.info(`Generating dashboard summary for user: ${sapUser}`);
         const result = await this.getTasks(sapUser, userJwt);
         const items = result.items.map((t: any) => {
-            const header = t.businessContext?.pr?.header || t.businessContext?.po?.header;
+            const header = t.businessContext?.pr?.header || t.businessContext?.po?.header || t.businessContext?.re?.header || t.businessContext?.claim?.header;
             const netAmount = Number(header?.totalNetAmount || header?.purchaseOrderNetAmount || 0);
             const currency = header?.displayCurrency || header?.documentCurrency || 'VND';
             const docTypeDesc = header?.purchaseRequisitionType || header?.purchaseOrderType || 'Standard';
@@ -575,87 +579,56 @@ export class InboxProcessor {
         });
         return { items, total: items.length };
     }
-}
 
-function enrichBusinessObjectForSchema(businessObject: any, objectType: string, inst: any, taskRuntime: any) {
-    if (!businessObject || !businessObject.header) return;
-    
-    // Inject custom instance doctyp details and total amounts/currencies
-    if (objectType === 'PR') {
-        businessObject.header.purchaseRequisitionType = businessObject.header.documentType || inst?.doctyp || businessObject.header.purchaseRequisitionType;
-        businessObject.header.purchaseRequisitionTypeText = businessObject.header.documentTypeText || inst?.doctyp_desc || businessObject.header.purchaseRequisitionTypeText;
+    private _buildTaskCard(inst: any, matchingTask: any, rawBusinessObject: any, objectType: string, overrideStatus?: string) {
+        const configRegistry = ConfigRegistry.getInstance();
+        const mappingEngine = MappingEngine.getInstance();
+        const objConfig = configRegistry.get(objectType);
         
-        businessObject.header.totalNetAmount = businessObject.header.totalNetAmountLocalCrcy || inst?.total || businessObject.header.totalNetAmount;
-        businessObject.header.displayCurrency = businessObject.header.localCurrency || inst?.curr_vnd || businessObject.header.displayCurrency;
-        
-        businessObject.header.totalDocNetAmount = businessObject.header.totalNetAmountDocCrcy || inst?.total_doc_curr || businessObject.header.totalDocNetAmount;
-        businessObject.header.docCurrency = businessObject.header.documentCurrency || inst?.doc_curr || businessObject.header.docCurrency;
-        
-        businessObject.header.releaseStrategyName = businessObject.header.releaseStrategyText || businessObject.header.releaseStrategyName;
-        businessObject.header.userFullName = businessObject.header.requisitioner || businessObject.header.createdByUser || businessObject.header.userFullName;
-    } else if (objectType === 'PO') {
-        businessObject.header.purchaseOrderType = businessObject.header.documentType || inst?.doctyp || businessObject.header.purchaseOrderType;
-        businessObject.header.purchaseOrderTypeText = businessObject.header.documentTypeText || inst?.doctyp_desc || businessObject.header.purchaseOrderTypeText;
-        
-        businessObject.header.purchaseOrderNetAmount = businessObject.header.totalNetAmountLocalCrcy || inst?.total || businessObject.header.purchaseOrderNetAmount;
-        businessObject.header.documentCurrency = businessObject.header.localCurrency || inst?.curr_vnd || businessObject.header.documentCurrency;
-        
-        businessObject.header.totalDocNetAmount = businessObject.header.totalNetAmountDocCrcy || inst?.total_doc_curr || businessObject.header.totalDocNetAmount;
-        businessObject.header.docCurrency = businessObject.header.documentCurrency || inst?.doc_curr || businessObject.header.docCurrency;
-        
-        businessObject.header.supplierName = businessObject.header.supplier || businessObject.header.supplierName;
-        businessObject.header.purchasingDocumentStatusName = inst?.status || taskRuntime?.Status || businessObject.header.purchasingDocumentStatusName;
-        businessObject.header.createdByUser = businessObject.header.createdByUser || businessObject.header.requisitioner || businessObject.header.createdByUser;
+        const mergedPayload = (rawBusinessObject || inst) ? { ...inst, ...rawBusinessObject, header: { ...inst, ...rawBusinessObject?.header } } : null;
+        const businessObject = (mergedPayload && objConfig) ? mappingEngine.map(mergedPayload, objConfig, { documentId: inst?.instid }) : rawBusinessObject;
+
+        const requesterName = businessObject?.header?.userFullName || businessObject?.header?.createdByUser || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
+        const documentType = businessObject?.documentType || 'DEFAULT';
+        const config = getObjectConfig(objectType, documentType);
+        const businessChips = mapCardChips(config, businessObject);
+
+        return {
+            instanceId: inst.instanceID,
+            sapOrigin: matchingTask?.SAP__Origin || 'LOCAL',
+            title: matchingTask?.TaskTitle || this._formatTaskTitle(inst, matchingTask, objectType, overrideStatus),
+            status: overrideStatus || (inst.status || matchingTask?.Status || 'READY').replace(/\s+/g, '_'),
+            priority: normalizePriority(matchingTask?.Priority),
+            createdOn: normalizeDate(matchingTask?.CreatedOn || inst.taskCreationDateTime),
+            createdByName: matchingTask?.CreatedByName || undefined,
+            requestorName: requesterName,
+            taskDefinitionId: inst.typeid || matchingTask?.TaskDefinitionID,
+            instid: inst.instid,
+            objectType: objectType,
+            businessContext: {
+                type: objectType,
+                documentId: inst.instid,
+                [objectType.toLowerCase()]: businessObject
+            },
+            supports: {
+                forward: overrideStatus === 'COMPLETED' ? false : (matchingTask?.SupportsForward ?? true),
+                comments: process.env.USE_MOCK_SAP !== 'false' ? (matchingTask?.SupportsComments ?? true) : false
+            },
+            total: inst.total !== undefined && inst.total !== null ? Number(inst.total) : undefined,
+            curr_vnd: inst.curr_vnd || undefined,
+            total_doc_curr: inst.total_doc_curr !== undefined && inst.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
+            doc_curr: inst.doc_curr || undefined,
+            businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
+            normalTask: inst.normalTask
+        };
     }
 
-    // Inject task metadata
-    if (taskRuntime || inst) {
-        businessObject.header.priority = taskRuntime?.Priority || taskRuntime?.priority || businessObject.header.priority;
-        businessObject.header.createdOn = taskRuntime?.CreatedOn || taskRuntime?.createdOn || inst?.taskCreationDateTime || businessObject.header.createdOn;
-    }
-
-    // Pre-merge display fields for dynamic schema
-    if (objectType === 'PR') {
-        const typeCode = businessObject.header.purchaseRequisitionType;
-        const typeText = businessObject.header.purchaseRequisitionTypeText;
-        businessObject.header.purchaseRequisitionTypeDisplay = typeCode && typeText && typeCode !== typeText ? `${typeCode} (${typeText})` : typeCode || typeText || '-';
-        
-        businessObject.header.departmentDisplay = '1001201000 - IT department';
-        businessObject.header.expenseTypeDisplay = '6105 - IT Equipment & Software Cost';
-
-        // Pre-merge for items
-        if (Array.isArray(businessObject.items)) {
-            businessObject.items.forEach((item: any) => {
-                item.materialGroupDisplay = item.materialGroup && item.materialGroupText ? `${item.materialGroup} (${item.materialGroupText})` : item.materialGroup || item.materialGroupText || '-';
-            });
-        }
-    } else if (objectType === 'PO') {
-        const typeCode = businessObject.header.purchaseOrderType;
-        const typeText = businessObject.header.purchaseOrderTypeText;
-        businessObject.header.purchaseOrderTypeDisplay = typeCode && typeText && typeCode !== typeText ? `${typeCode} (${typeText})` : typeCode || typeText || '-';
-        
-        const compCode = businessObject.header.companyCode;
-        const compName = businessObject.header.companyCodeName;
-        businessObject.header.companyCodeDisplay = compCode && compName ? `${compCode} (${compName})` : compCode || compName || '-';
-
-        const orgCode = businessObject.header.purchasingOrganization;
-        const orgName = businessObject.header.purchasingOrganizationName;
-        businessObject.header.purchasingOrganizationDisplay = orgCode && orgName ? `${orgCode} (${orgName})` : orgCode || orgName || '-';
-
-        // Pre-merge for items
-        if (Array.isArray(businessObject.items)) {
-            businessObject.items.forEach((item: any) => {
-                item.materialGroupDisplay = item.materialGroup && item.materialGroupText ? `${item.materialGroup} (${item.materialGroupText})` : item.materialGroup || item.materialGroupText || '-';
-            });
-        }
-
-        // Pre-merge for account assignments
-        if (Array.isArray(businessObject.accountAssignments)) {
-            businessObject.accountAssignments.forEach((aa: any) => {
-                aa.glAccountDisplay = aa.glAccount && aa.glAccountText ? `${aa.glAccount} (${aa.glAccountText})` : aa.glAccount || aa.glAccountText || '-';
-                aa.costCenterDisplay = aa.costCenter && aa.costCenterText ? `${aa.costCenter} (${aa.costCenterText})` : aa.costCenter || aa.costCenterText || '-';
-                aa.profitCenterDisplay = aa.profitCenter && aa.profitCenterText ? `${aa.profitCenter} (${aa.profitCenterText})` : aa.profitCenter || aa.profitCenterText || '-';
-            });
-        }
+    private _formatTaskTitle(inst: any, matchingTask: any, objectType: string, overrideStatus?: string): string {
+        if (matchingTask?.TaskTitle) return matchingTask.TaskTitle;
+        const isCompleted = overrideStatus === 'COMPLETED';
+        const actionPrefix = inst.normalTask === false 
+            ? (isCompleted ? 'Reviewed' : 'Review') 
+            : (isCompleted ? 'Approved' : 'Approve');
+        return `${actionPrefix} ${objectType} ${inst.instid}`;
     }
 }

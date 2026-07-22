@@ -61,7 +61,7 @@ cds.on('bootstrap', (app: express.Application) => {
             const xsuaaService = new XsuaaService(authConfig.credentials as any);
             passport.use(new XssecPassportStrategy(xsuaaService));
             app.use(passport.initialize());
-            
+
             const shouldEnableJwtAuth = process.env.NODE_ENV === 'production' || process.env.ENABLE_JWT_AUTH === 'true';
             if (shouldEnableJwtAuth) {
                 app.use('/api/cnma/APPROVAL_SRV/tasks', passport.authenticate('JWT', { session: false }));
@@ -78,6 +78,12 @@ cds.on('bootstrap', (app: express.Application) => {
 
     // Parse bodies
     app.use('/api/cnma/APPROVAL_SRV/tasks', express.json({ limit: '10mb' }));
+
+    // Request logging middleware to trace CAP API calls
+    app.use('/api/cnma/APPROVAL_SRV/tasks', (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+        console.log(`[ApprovalService] Method: ${req.method} | URL: ${req.originalUrl}`);
+        next();
+    });
 
     // Mount Express Router for Tasks
     app.use('/api/cnma/APPROVAL_SRV/tasks', createInboxRouter());

@@ -1,6 +1,6 @@
 import { BaseDetail, toCamelCaseKeys } from './base';
 import { ObjectTypeCode } from '../processors/object-config';
-import { ODATA_DETAIL_CONFIGS } from '../processors/odata-config';
+import { ODATA_SERVICES } from '../processors/odata-config';
 import { RawODataEntity } from '../types/sap-odata.types';
 import { addMockComment, addMockAttachment, getMockAttachmentContent } from './mock-data-provider';
 import { AppError } from '../utils/error-handler';
@@ -16,7 +16,7 @@ export class PrDetail extends BaseDetail {
         sapUser: string,
         userJwt?: string
     ): Promise<Record<string, any>> {
-        const config = ODATA_DETAIL_CONFIGS[this.objectType];
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
 
         // Retrieve expanded collections from rawHeader (provided by $expand on the main request)
         const rawItems = rawHeader._Item || [];
@@ -25,13 +25,10 @@ export class PrDetail extends BaseDetail {
 
         // Normalize raw items using metadata service
         const normalizedRawItems = await Promise.all(rawItems.map((item: any) => 
-            this.metadataService.normalizeDetail(item, config.servicePath, sapUser, userJwt)
+            this.metadataService.normalizeDetail(item, servicePath, sapUser, userJwt)
         ));
 
-        // Map item properties using config's itemMapper
-        const normalizedItems = normalizedRawItems.map((item: any) => 
-            this.mapItemProperties(item, config.itemMapper!)
-        );
+        const normalizedItems = normalizedRawItems;
 
         // Normalize workflow approval steps
         const normalizedSteps = rawSteps.map((s: any) => ({
@@ -46,16 +43,31 @@ export class PrDetail extends BaseDetail {
             postedTime: s.CommentTime || ''
         }));
 
-        // ZC_PRHEADER does not have attachments exposed in the current schema
-        const normalizedAttachments: any[] = [];
+        // Normalize attachments from _Attachment navigation property
+        const rawAttachments = rawHeader._Attachment || [];
+        const normalizedAttachments = rawAttachments.map((att: any) => {
+            const ext = att.FileExtension || '';
+            const mimeType = ext.toLowerCase() === 'pdf' ? 'application/pdf' : 
+                             ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext.toLowerCase()) ? `image/${ext.toLowerCase()}` : 
+                             'application/octet-stream';
+            return {
+                id: att.DocId,
+                fileName: att.FileExtension ? `${att.FileName}.${att.FileExtension}` : att.FileName,
+                fileDisplayName: att.FileName,
+                mimeType,
+                fileSize: 0,
+                createdBy: att.CreatedBy || '',
+                createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : new Date().toISOString()
+            };
+        });
 
         // Derive PR description from first text element or join them
-        const prDescription = rawTexts.map((t: any) => t.LongText).join('\n') || '';
+        const prDescription = rawTexts.map((t: any) => t.LongText || '').join('\n').replace(/\n{3,}/g, '\n\n').trim();
 
         // Normalize comments from _Comment navigation property
         const rawComments = rawHeader._Comment || [];
         const normalizedRawComments = await Promise.all(rawComments.map((c: any) =>
-            this.metadataService.normalizeDetail(c, config.servicePath, sapUser, userJwt)
+            this.metadataService.normalizeDetail(c, servicePath, sapUser, userJwt)
         ));
 
         const normalizedComments = normalizedRawComments.map((c: any) => ({
@@ -74,8 +86,6 @@ export class PrDetail extends BaseDetail {
         return {
             header: finalHeader,
             items: toCamelCaseKeys(normalizedItems),
-            budget: { status: 'OK' },
-            asset: { assetClass: 'IT Equipment' },
             approvalTree: normalizedSteps,
             comments: normalizedComments,
             attachments: normalizedAttachments,
@@ -107,6 +117,14 @@ export class PrDetail extends BaseDetail {
         if (isMockMode) {
             return getMockAttachmentContent(objectId, attachId);
         }
-        return null; // Not supported in this OData V4 service
+
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const relativePath = `/ZI_DOC_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
+        const res = await this.sapClient.getBinary(servicePath, relativePath, sapUser, userJwt);
+        return {
+            data: res.data,
+            contentType: res.contentType,
+            fileName: res.fileName || `attachment_${attachId}`
+        };
     }
 }

@@ -2,6 +2,8 @@ import { SapClient } from './sap-client';
 import { Detail } from './detail';
 import { PrDetail } from './pr';
 import { PoDetail } from './po';
+import { ReDetail } from './re';
+import { ClaimDetail } from './claim';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { getMockInstances } from './mock-data-provider';
 import { TtlLruCache } from '../utils/cache';
@@ -23,6 +25,8 @@ export class SapOdataAdapter {
     constructor() {
         this.register(new PrDetail(this.sapClient, this.metadataService));
         this.register(new PoDetail(this.sapClient, this.metadataService));
+        this.register(new ReDetail(this.sapClient, this.metadataService));
+        this.register(new ClaimDetail(this.sapClient, this.metadataService));
     }
 
     private register(strategy: Detail) {
