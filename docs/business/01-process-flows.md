@@ -1,11 +1,14 @@
 # Business Process Flows
 
-This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries.
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-07-22 | **Status:** Active
+
+This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
 ---
 
 ## 1. End-to-End User Journey Flow
-The following sequence diagram outlines a user's flow through the approval interface, from logging in to completing an action on a task:
+
+The sequence diagram below outlines a business user's journey through the unified approval interface, from logging into the portal to completing an approval decision on a task:
 
 ```mermaid
 sequenceDiagram
@@ -15,17 +18,17 @@ sequenceDiagram
     participant ERP as SAP S/4HANA Core
 
     Approver->>Portal: Log into workspace
-    Portal->>BFF: Request worklist (Active tasks)
-    BFF->>ERP: Fetch pending instances & details
+    Portal->>BFF: Request active worklist
+    BFF->>ERP: Fetch pending instances across PR, PO, Claim, & Reservation
     ERP-->>BFF: Return raw task data
     BFF-->>Portal: Deliver unified active task queue
     Portal-->>Approver: Display Dashboard with metric badges
 
     Approver->>Portal: Select a task card
     Portal->>BFF: Request complete task context & details
-    BFF->>ERP: Query PR/PO detail, attachments, & workflow status
+    BFF->>ERP: Query document detail, line items, attachments, & workflow status
     ERP-->>BFF: Return full detail structures
-    BFF-->>Portal: Deliver enriched details, comment timeline, & files
+    BFF-->>Portal: Deliver consolidated details, comment timeline, & file list
     Portal-->>Approver: Render split-screen details panel
 
     alt Read Attachment
@@ -53,14 +56,15 @@ sequenceDiagram
 ---
 
 ## 2. Decision-Making Lifecycle Flow
+
 This flowchart maps the lifecycle states of a workflow task and the path to final completion:
 
 ```mermaid
 flowchart TD
-    Start([Task Created in ERP]) --> Sync[Aggregated in BTP Active Queue]
+    Start([Task Created in ERP: PR / PO / Claim / Reservation]) --> Sync[Aggregated in BTP Active Queue]
     Sync --> StateReady{State: IN_PROCESSING}
     
-    StateReady -->|Approver opens task| Review[Review Details, Items & Attachments]
+    StateReady -->|Approver opens task| Review[Review Details, Line Items & Attachments]
     
     Review --> ActionSelected{Decision Action}
     
@@ -85,7 +89,8 @@ flowchart TD
 ---
 
 ## 3. Collaboration & Synchronization Flow
-Comments and attachments are synced directly back to S/4HANA to maintain audit integrity. Here is how collaboration activities are synchronized:
+
+Comments and attachments are synced directly back to S/4HANA to maintain audit integrity across procurement and financial documents:
 
 ```mermaid
 flowchart LR
@@ -101,7 +106,7 @@ flowchart LR
 
     subgraph ERP [SAP S/4HANA ERP Core]
         GOS[Generic Object Services]
-        Notes[Purchase Requisition / Order Notes]
+        Notes[ERP Document Notes: PR / PO / Claim / Reservation]
     end
 
     CommentInput -->|POST request| AuthCheck

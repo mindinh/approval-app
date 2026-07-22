@@ -1,27 +1,30 @@
 # Frontend Component Architecture & Dynamic Registry
 
-This document details the React component hierarchy, state synchronization patterns, and the dynamic UI section rendering registry of the **CNMA Approval** frontend.
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-07-22 | **Status:** Active
+
+This document details the React component hierarchy, state synchronization patterns, canonical data consumption, and dynamic UI section rendering registry of the **CNMA Approval** frontend.
 
 ---
 
 ## 🎨 Page Layouts and Composition
 
-The frontend application uses a clean, mobile-first split-pane structure for the inbox workspace:
+The frontend application uses a clean, mobile-first master-detail layout for the inbox workspace:
 
 ```
-[Dashboard Pages] -> Main summaries and quick status numbers
+[Dashboard Page] -> High-level metrics, KPI summary cards, and quick status links
 [Inbox Page] -> Master-Detail Layout:
   ├── Left Pane: TaskList.tsx
-  │     ├── TaskCard.tsx (Task title, priorities, prices)
+  │     ├── TaskCard.tsx (Task title, badges, document numbers, total amounts)
   │     └── TaskPagination.tsx
   └── Right Pane: TaskDetailView.tsx
-        ├── Dynamic Header & Subtitle
-        ├── Dynamic Rendered Cards & Tables (General Info, Line Items)
+        ├── Dynamic Header & Status Badges
+        ├── Dynamic Rendered Cards & Tables (Driven by uiSchema & TaskDetailSections.registry.ts)
         ├── Tabbed View Panels:
-        │     ├── CommentsPanel.tsx
-        │     ├── AttachmentsPanel.tsx (AttachmentPreviewModal.tsx)
-        │     └── WorkflowApprovalPanel.tsx
-        └── Action Panel: DecisionPanel.tsx (Floating actions Approve/Reject)
+        │     ├── OverviewPanel.tsx (Header fields and schema-driven sections)
+        │     ├── CommentsPanel.tsx (Timeline notes & submission)
+        │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
+        │     └── WorkflowApprovalPanel.tsx (Approval tree timeline)
+        └── Action Panel: DecisionPanel.tsx (Floating Approve/Reject decisions with comment modal)
 ```
 
 ---
@@ -30,39 +33,40 @@ The frontend application uses a clean, mobile-first split-pane structure for the
 
 The frontend relies on **React Query (TanStack Query v5)** for managing asynchronous server states and caching:
 *   **Query Keys**:
-    *   `['tasks', 'active', pagination]`: Key for cache control on active items.
+    *   `['tasks', 'active', pagination]`: Key for cache control on active approval items.
     *   `['tasks', 'history', pagination]`: Key for processed approval history.
-    *   `['tasks', 'detail', instanceId]`: Key for single detail data records.
-    *   `['workflow-approval-tree', documentId]`: Key for progress step elements.
+    *   `['tasks', 'detail', instanceId]`: Key for single task detail payload (consolidated Canonical Business Object).
 *   **Mutations**:
-    *   Posting comment runs `useMutation` which invalidates `['tasks', 'detail', instanceId]`.
-    *   Posting a decision runs `useMutation` which invalidates both `['tasks', 'active']` and `['tasks', 'history']` to trigger automatic re-fetches and list sweeps.
+    *   Posting a decision runs `useMutation` which invalidates `['tasks', 'active']` and `['tasks', 'history']` to trigger automatic re-fetches and list updates.
+    *   Posting a comment invalidates `['tasks', 'detail', instanceId]`.
 
 ---
 
-## 🏛️ Dynamic Detail View Registry
+## 🏛️ Dynamic Detail View Registry (`TaskDetailSections.registry.ts`)
 
-To handle different procurement objects (Purchase Requisition vs Purchase Order) without hardcoding UI controls, the application uses a dynamic registry engine in [TaskDetailSections.registry.ts](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailSections.registry.ts):
+To handle different procurement and financial object types (Purchase Requisitions, Purchase Orders, Expense Claims, Material Reservations) without hardcoding UI controls, the application uses a dynamic section registry engine located at [`TaskDetailSections.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/renderers/TaskDetailSections.registry.ts):
 
 ### 1. Dynamic Layout Schema Engine
-If the backend details response contains a `fieldSchema` and a `uiSchema`:
-*   `fieldSchema`: Defines field paths (JSONPath style `$.header.vendor`), data types (`DATE`, `AMOUNT`, `QUANTITY`, `BOOLEAN`), and labels.
-*   `uiSchema`: Defines the card and table layouts, referencing field keys.
-*   The registry dynamically parses the schemas, queries values via JSONPath, formats the values, and draws sections accordingly.
+When the backend task detail response includes a `uiSchema`:
+*   `uiSchema`: Defines the section cards, titles, types (`CARD`, `TABLE`), and field lists.
+*   `header` / `items` canonical properties: Provide typed data fields for rendering.
+*   The registry dynamically parses the `uiSchema`, maps canonical field paths, formats raw values, and renders UI section components cleanly.
 
 ### 2. Contextual Data Formatters
-*   **DATE**: Formats raw ISO timestamps into readable localized dates (e.g., `YYYY-MM-DD`).
+*   **DATE**: Formats ISO timestamps or SAP date strings into readable localized dates.
 *   **AMOUNT**: Formats values dynamically using original document currencies or VND (e.g. `12,500,000 VND`).
-*   **QUANTITY**: Parses counts and suffixes them with unit descriptors (e.g., `100 PC`).
-*   **BOOLEAN**: Renders as `Yes` or `No`.
+*   **QUANTITY**: Parses counts and appends unit descriptors (e.g., `100 EA`).
+*   **BOOLEAN**: Renders as localized `Yes` or `No` badges.
 
-### 3. Conditional Visibility Engine
-Sections can define a `visibleWhen` block:
-*   **Operators**: `exists`, `eq`, `neq`, `gt`, `lt`.
-*   **Example**: A section showing "Asset Class details" only renders if the general header field `purchaseRequisitionType` matches a specific value, or a "Warning Card" only renders if `budgetStatus` is not `'OK'`.
+### 3. Sub-Panels & Modals
+*   **[`OverviewPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/OverviewPanel.tsx)**: Displays high-level header information, document status badges, and dynamic UI schema card sections.
+*   **[`AttachmentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/AttachmentsPanel.tsx)**: Displays attached documents with file icons, sizes, and direct download/preview links.
+*   **[`AttachmentPreviewModal.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/AttachmentPreviewModal.tsx)**: Renders inline image and PDF previews.
 
-### 4. Static Fallback Renderers
-If no dynamic schema is returned by the BFF:
-*   `poTaskDetailRenderer`: Builds columns and cards suitable for Purchase Orders.
-*   `prTaskDetailRenderer`: Builds columns and cards suitable for Purchase Requisitions.
-*   `defaultTaskDetailRenderer`: Basic catch-all card fallback.
+---
+
+## 🌐 Localization & i18n
+
+The application supports bilingual localization (English & Vietnamese) using standard JSON dictionaries located in [`app/cnma_approval_ui/src/locales/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/locales/):
+*   `en.json`: English translation strings for status codes, document types (PR, PO, Claim, Reservation), tab headers, decision actions, and error messages.
+*   `vi.json`: Vietnamese translation strings for all UI components and document labels.

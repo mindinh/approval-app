@@ -1,6 +1,8 @@
 # Backend BFF REST API Reference
 
-The **CNMA Approval** BFF backend does not expose default CDS OData endpoints. Instead, it exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-07-22 | **Status:** Active
+
+The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
 All API routes below are relative to:
 ```
@@ -55,7 +57,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
     ```
 
 ### 5. GET `/tasks/dashboard`
-*   **Purpose**: Returns high-level metrics for dashboard cards (aggregates total active items, amounts, currencies, and document numbers).
+*   **Purpose**: Returns high-level metrics for dashboard cards (aggregates total active items, amounts, currencies, and document numbers across PR, PO, Claim, and Reservation document types).
 *   **Response Payload Schema**:
     ```json
     {
@@ -65,7 +67,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
           "documentNumber": "10002341",
           "taskType": "PR",
           "documentType": "ZASS",
-          "documentTypeDesc": "ZASS",
+          "documentTypeDesc": "Purchase Requisition",
           "status": "IN_PROCESSING",
           "currency": "VND",
           "totalNetAmount": 12500000,
@@ -93,17 +95,57 @@ These endpoints are designed for troubleshooting token bindings and user identit
 *   **Query Parameters**: Same as active worklist.
 
 ### 8. GET `/tasks/tasks/:id`
-*   **Purpose**: Fetch the complete detail profile for a single task including general details, dynamic field definitions, decisions, comments list, and attachment list.
+*   **Purpose**: Fetch the consolidated canonical detail payload for a single task. Returns header data, line items, workflow steps, comments, attachments, and dynamic UI layout definitions (`uiSchema`).
 *   **URL Parameter**: `id` represents the unique Task Instance ID.
 *   **Query Parameters**:
     *   `typeid` (Optional): Fallback task definition code.
-    *   `instid` (Optional): Target document ID (e.g. PR/PO number).
-    *   `businessObjectType` (Optional): Explicit classification (`PR` or `PO`).
+    *   `instid` (Optional): Target document ID (e.g. PR/PO/Claim/Reservation number).
+    *   `businessObjectType` (Optional): Explicit document classification (`PR`, `PO`, `CLAIM`, or `RE`).
+*   **Response Payload Schema (Canonical Business Object format)**:
+    ```json
+    {
+      "object": {
+        "header": {
+          "documentNumber": "10002341",
+          "documentType": "ZASS",
+          "createdByName": "John Doe",
+          "createdAt": "2026-07-01T08:00:00.000Z",
+          "totalNetAmount": 12500000,
+          "currency": "VND"
+        },
+        "items": [
+          {
+            "itemNumber": "00010",
+            "shortText": "MacBook Pro M3 Max",
+            "quantity": 2,
+            "unitOfMeasure": "EA",
+            "netAmount": 12500000
+          }
+        ],
+        "workflow": {
+          "steps": [
+            { "approver": "Manager A", "status": "APPROVED", "timestamp": "2026-07-02T10:00:00.000Z" }
+          ],
+          "comments": [
+            { "author": "John Doe", "text": "Urgent request for Q3 project", "createdAt": "2026-07-01T08:05:00.000Z" }
+          ]
+        },
+        "attachments": [
+          { "id": "ATT_001", "fileName": "Quote_Sheet.pdf", "fileSize": 1048576, "mimeType": "application/pdf" }
+        ],
+        "uiSchema": {
+          "title": "{{header.documentNumber}}",
+          "sections": [
+            { "id": "basic", "type": "CARD", "title": "Basic Data", "fields": ["documentNumber", "createdByName"] }
+          ]
+        }
+      }
+    }
+    ```
 
-### 9. GET `/tasks/tasks/:id/workflow-approval-tree`
-*   **Purpose**: Fetch the timeline and release steps for the target document.
-*   **Query Parameters**:
-    *   `documentId`: Purchase Requisition/Order number.
+### 9. GET `/tasks/tasks/:id/workflow-approval-tree` [DEPRECATED]
+*   **Status**: **Deprecated.**
+*   **Deprecation Note**: Workflow approval steps and comment logs are now included directly inside `object.workflow.steps` and `object.workflow.comments` within the primary `GET /tasks/tasks/:id` response, eliminating redundant network roundtrips.
 
 ---
 
@@ -126,7 +168,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ### 11. POST `/tasks/tasks/:id/comments`
 *   **Purpose**: Upload a text note into the timeline.
-*   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the unified OData V4 service is read-only.
+*   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the underlying OData V4 service is read-only.
 *   **Payload Schema**:
     ```json
     {
@@ -139,15 +181,16 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ### 12. POST `/tasks/tasks/:id/attachments`
 *   **Purpose**: Upload a raw file attachment to the Generic Object Service (GOS).
-*   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the unified OData V4 service is read-only.
+*   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the underlying OData V4 service is read-only.
 *   **Headers**:
     *   `slug`: URI-encoded file name.
     *   `content-type`: MIME specification (e.g., `application/pdf`).
-    *   `x-document-id`: Associated PR/PO number.
+    *   `x-document-id`: Associated document number.
 *   **Payload**: Raw binary stream in body.
 
 ### 13. GET `/tasks/tasks/:id/attachments/:attId/content`
 *   **Purpose**: Stream and download the binary contents of an attachment.
-*   **Availability**: **Mock-only.** Returns `null` / `404 Not Found` in direct SAP mode (`USE_MOCK_SAP=false`) as attachments are not exposed in the current schema.
+*   **Availability**: **Supported in both Mock and Real S/4HANA modes.** In real mode, it fetches the binary stream directly from S/4HANA's `ZI_DOC_ATTACH_CONTENT` OData service.
 *   **Query Parameters**:
-    *   `documentId`: Associated PR/PO number.
+    *   `documentId` (Optional): Associated document number. If omitted in request query, the backend resolves `documentId` dynamically from the task context.
+    *   `disposition` (Optional): `'inline'` (default, for browser preview) or `'attachment'` (to force download).
