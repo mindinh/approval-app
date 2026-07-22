@@ -1,0 +1,145 @@
+{
+  "object": {
+    "objectType": "CLAIM",
+    "displayName": "Claim Form",
+    "version": 1,
+    "adapter": "CLAIM_DETAIL",
+    "aliases": ["ZCLAIM"],
+    "enabledSections": {
+      "header": true,
+      "items": true,
+      "workflow": true,
+      "comments": true,
+      "attachments": true
+    }
+  },
+  "source": {
+    "service": "APPROVAL_SRV",
+    "rootEntity": "ZC_CLAIMHEADER",
+    "key": [
+      { "name": "DocCategory", "value": "ZCLAIM" },
+      { "name": "DocumentNumber", "fromContext": "documentId" }
+    ],
+    "navigations": {
+      "items": "_Item",
+      "comments": "_Comment"
+    }
+  },
+  "mappings": {
+    "root": [
+      { "sourcePath": "claimNumber", "targetPath": "header.claimNumber", "type": "string", "required": true },
+      { "sourcePath": "claimant", "targetPath": "header.claimant", "type": "string" },
+      { "sourcePath": "department", "targetPath": "header.department", "type": "string" },
+      { "sourcePath": "claimDate", "targetPath": "header.claimDate", "transform": "sapDateToIso" },
+      { "sourcePath": "totalAmount", "targetPath": "header.totalAmount", "transform": "number" },
+      { "sourcePath": "currency", "targetPath": "header.currency", "type": "string" },
+      { "sourcePath": "justification", "targetPath": "header.justification", "type": "string" },
+      { "sourcePath": "projectRef", "targetPath": "header.projectRef", "type": "string" }
+    ],
+    "collections": {
+      "items": {
+        "navigationKey": "items",
+        "targetPath": "items",
+        "fields": [
+          { "sourcePath": "itemNo", "targetPath": "itemNo", "required": true },
+          { "sourcePath": "receiptDate", "targetPath": "receiptDate", "transform": "sapDateToIso" },
+          { "sourcePath": "expenseType", "targetPath": "expenseType", "type": "string" },
+          { "sourcePath": "amount", "targetPath": "amount", "transform": "number" },
+          { "sourcePath": "description", "targetPath": "description", "type": "string" }
+        ]
+      },
+      "projectDistributions": {
+        "navigationKey": "projectDistributions",
+        "targetPath": "projectDistributions",
+        "fields": [
+          { "sourcePath": "projectCode", "targetPath": "distProject" },
+          { "sourcePath": "projectName", "targetPath": "distProjectName" },
+          { "sourcePath": "allocatedAmount", "targetPath": "distAmount", "transform": "number" },
+          { "sourcePath": "approvedBy", "targetPath": "distApprover" }
+        ]
+      }
+    }
+  },
+  "uiSchema": {
+    "title": "Expense Claim {{header.claimNumber}}",
+    "subtitle": "Submitted by: {{header.claimant}}",
+    "sections": [
+      {
+        "id": "basic",
+        "type": "CARD",
+        "title": "Claim Information",
+        "fields": [
+          "claimNumber",
+          "claimant",
+          "department",
+          "claimDate",
+          "totalAmount"
+        ]
+      },
+      {
+        "id": "justificationCard",
+        "type": "CARD",
+        "title": "Business Justification",
+        "fields": [
+          "justification",
+          "projectRef"
+        ]
+      },
+      {
+        "id": "items",
+        "type": "TABLE",
+        "title": "Receipts / Expenses",
+        "dataPath": "items",
+        "columns": ["itemNo", "receiptDate", "expenseType", "amount", "description"]
+      },
+      {
+        "id": "projectDistributions",
+        "type": "TABLE",
+        "title": "Project Budget Allocations",
+        "dataPath": "projectDistributions",
+        "columns": ["distProject", "distProjectName", "distAmount", "distApprover"]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "key": "APPROVE",
+      "label": "Approve",
+      "variant": "PRIMARY",
+      "requiresComment": false,
+      "sapDecisionKey": "0001"
+    },
+    {
+      "key": "REJECT",
+      "label": "Reject",
+      "variant": "DANGER",
+      "requiresComment": true,
+      "sapDecisionKey": "0002"
+    }
+  ],
+  "cardChips": [
+    {
+      "label": "Total",
+      "dataPath": "header.totalAmount",
+      "dataType": "AMOUNT",
+      "isPrimary": true
+    },
+    {
+      "label": "Claimant",
+      "dataPath": "header.claimant",
+      "dataType": "TEXT"
+    },
+    {
+      "label": "Dept",
+      "dataPath": "header.department",
+      "dataType": "TEXT"
+    }
+  ],
+  "profiles": {
+    "detail": {
+      "includeUiFields": true,
+      "requiredCanonicalPaths": ["header.claimNumber", "header.currency"],
+      "usageTags": ["identity", "action"]
+    }
+  }
+}

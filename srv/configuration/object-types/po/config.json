@@ -1,0 +1,1174 @@
+{
+  "object": {
+    "objectType": "PO",
+    "Name": "Purchase Order",
+    "version": 1,
+    "adapter": "PO_DETAIL",
+    "aliases": [
+      "BUS2012"
+    ],
+    "enabledSections": {
+      "header": true,
+      "items": true,
+      "workflow": true,
+      "comments": true,
+      "attachments": true
+    }
+  },
+  "source": {
+    "service": "APPROVAL_SRV",
+    "rootEntity": "ZC_POHEADER",
+    "key": [
+      {
+        "name": "DocCategory",
+        "value": "BUS2012"
+      },
+      {
+        "name": "DocumentNumber",
+        "fromContext": "documentId"
+      }
+    ],
+    "navigations": {
+      "items": "_Item",
+      "workflowSteps": "_ApprovalStep",
+      "headerTexts": "_HeaderText",
+      "comments": "_Comment",
+      "attachments": "_Attachment"
+    }
+  },
+  "mappings": {
+    "root": [
+      {
+        "sourcePath": "purchaseOrder",
+        "targetPath": "header.purchaseOrder",
+        "label": "PO Number",
+        "type": "string",
+        "required": true
+      },
+      {
+        "sourcePath": "purchaseOrderText",
+        "targetPath": "header.purchaseOrderText",
+        "label": "Header Note",
+        "type": "string"
+      },
+      {
+        "sourcePath": "purchaseOrderType",
+        "targetPath": "header.purchaseOrderType",
+        "label": "Purchase Order Type",
+        "type": "string"
+      },
+      {
+        "sourcePath": "supplierName",
+        "targetPath": "header.supplierName",
+        "label": "Supplier Name",
+        "type": "string"
+      },
+      {
+        "sourcePath": "createdByUser",
+        "targetPath": "header.createdByUser",
+        "label": "Created By User",
+        "type": "string"
+      },
+      {
+        "sourcePath": "paymentTermsDescription",
+        "targetPath": "header.paymentTermsDescription",
+        "label": "Payment Terms Description",
+        "type": "string"
+      },
+      {
+        "sourcePath": "incotermsClassification",
+        "targetPath": "header.incotermsClassification",
+        "label": "Incoterms Classification",
+        "type": "string"
+      },
+      {
+        "sourcePath": "purchaseOrderNetAmount",
+        "targetPath": "header.purchaseOrderNetAmount",
+        "label": "Purchase Order Net Amount",
+        "transform": "number"
+      },
+      {
+        "sourcePath": "documentCurrency",
+        "targetPath": "header.documentCurrency",
+        "label": "Document Currency",
+        "type": "string"
+      },
+      {
+        "sourcePath": "companyCode",
+        "targetPath": "header.companyCode",
+        "label": "Company Code",
+        "type": "string"
+      },
+      {
+        "sourcePath": "purchasingOrganization",
+        "targetPath": "header.purchasingOrganization",
+        "label": "Purchasing Organization",
+        "type": "string"
+      },
+      {
+        "sourcePath": "priority",
+        "targetPath": "header.priority",
+        "label": "Priority",
+        "type": "string"
+      },
+      {
+        "sourcePath": "createdOn",
+        "targetPath": "header.createdOn",
+        "label": "Created On",
+        "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "assetClass",
+        "targetPath": "header.assetClass",
+        "type": "string"
+      },
+      {
+        "sourcePath": "assetNumber",
+        "targetPath": "header.assetNumber",
+        "type": "string"
+      },
+      {
+        "sourcePath": "assetSubnumber",
+        "targetPath": "header.assetSubnumber",
+        "type": "string"
+      },
+      {
+        "sourcePath": "wbsElement",
+        "targetPath": "header.wbsElement",
+        "type": "string"
+      },
+      {
+        "sourcePath": "capDate",
+        "targetPath": "header.capDate",
+        "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "costCenter",
+        "targetPath": "header.costCenter",
+        "type": "string"
+      },
+      {
+        "sourcePath": "costCenterName",
+        "targetPath": "header.costCenterName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "glAccount",
+        "targetPath": "header.glAccount",
+        "type": "string"
+      },
+      {
+        "sourcePath": "glAccountName",
+        "targetPath": "header.glAccountName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "internalOrder",
+        "targetPath": "header.internalOrder",
+        "type": "string"
+      },
+      {
+        "sourcePath": "budgetPeriod",
+        "targetPath": "header.budgetPeriod",
+        "type": "string"
+      },
+      {
+        "sourcePath": "fund",
+        "targetPath": "header.fund",
+        "type": "string"
+      },
+      {
+        "sourcePath": "marketingCampaign",
+        "targetPath": "header.marketingCampaign",
+        "type": "string"
+      },
+      {
+        "sourcePath": "campaignName",
+        "targetPath": "header.campaignName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "campaignBudget",
+        "targetPath": "header.campaignBudget",
+        "transform": "number"
+      },
+      {
+        "sourcePath": "targetAudience",
+        "targetPath": "header.targetAudience",
+        "type": "string"
+      },
+      {
+        "sourcePath": "campaignManager",
+        "targetPath": "header.campaignManager",
+        "type": "string"
+      },
+      {
+        "sourcePath": "consignmentAgreement",
+        "targetPath": "header.consignmentAgreement",
+        "type": "string"
+      },
+      {
+        "sourcePath": "agreementExpiry",
+        "targetPath": "header.agreementExpiry",
+        "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "priceRule",
+        "targetPath": "header.priceRule",
+        "type": "string"
+      },
+      {
+        "sourcePath": "originalPO",
+        "targetPath": "header.originalPO",
+        "type": "string"
+      },
+      {
+        "sourcePath": "returnReason",
+        "targetPath": "header.returnReason",
+        "type": "string"
+      },
+      {
+        "sourcePath": "disposalAction",
+        "targetPath": "header.disposalAction",
+        "type": "string"
+      },
+      {
+        "sourcePath": "importLicense",
+        "targetPath": "header.importLicense",
+        "type": "string"
+      },
+      {
+        "sourcePath": "customsDuty",
+        "targetPath": "header.customsDuty",
+        "transform": "number"
+      },
+      {
+        "sourcePath": "tariffCode",
+        "targetPath": "header.tariffCode",
+        "type": "string"
+      },
+      {
+        "sourcePath": "originCountry",
+        "targetPath": "header.originCountry",
+        "type": "string"
+      },
+      {
+        "sourcePath": "dutyRate",
+        "targetPath": "header.dutyRate",
+        "type": "string"
+      },
+      {
+        "sourcePath": "receivingPlant",
+        "targetPath": "header.receivingPlant",
+        "type": "string"
+      },
+      {
+        "sourcePath": "storageLocation",
+        "targetPath": "header.storageLocation",
+        "type": "string"
+      },
+      {
+        "sourcePath": "storageBin",
+        "targetPath": "header.storageBin",
+        "type": "string"
+      },
+      {
+        "sourcePath": "minStock",
+        "targetPath": "header.minStock",
+        "type": "string"
+      },
+      {
+        "sourcePath": "reorderPoint",
+        "targetPath": "header.reorderPoint",
+        "type": "string"
+      },
+      {
+        "sourcePath": "stockController",
+        "targetPath": "header.stockController",
+        "type": "string"
+      },
+      {
+        "sourcePath": "returnCustomsRef",
+        "targetPath": "header.returnCustomsRef",
+        "type": "string"
+      },
+      {
+        "sourcePath": "defectCategory",
+        "targetPath": "header.defectCategory",
+        "type": "string"
+      },
+      {
+        "sourcePath": "creditMemoInd",
+        "targetPath": "header.creditMemoInd",
+        "type": "string"
+      },
+      {
+        "sourcePath": "toolSetCode",
+        "targetPath": "header.toolSetCode",
+        "type": "string"
+      },
+      {
+        "sourcePath": "assignedCustodian",
+        "targetPath": "header.assignedCustodian",
+        "type": "string"
+      },
+      {
+        "sourcePath": "safetyCert",
+        "targetPath": "header.safetyCert",
+        "type": "string"
+      },
+      {
+        "sourcePath": "custodianDept",
+        "targetPath": "header.custodianDept",
+        "type": "string"
+      },
+      {
+        "sourcePath": "calibrationDue",
+        "targetPath": "header.calibrationDue",
+        "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "supplyingPlant",
+        "targetPath": "header.supplyingPlant",
+        "type": "string"
+      },
+      {
+        "sourcePath": "shippingMethod",
+        "targetPath": "header.shippingMethod",
+        "type": "string"
+      },
+      {
+        "sourcePath": "transitDays",
+        "targetPath": "header.transitDays",
+        "type": "string"
+      }
+    ],
+    "collections": {
+      "items": {
+        "navigationKey": "items",
+        "targetPath": "items",
+        "fields": [
+          {
+            "sourcePath": "purchaseOrderItem",
+            "targetPath": "item",
+            "required": true
+          },
+          {
+            "sourcePath": "purchaseOrderItemText",
+            "targetPath": "shortText",
+            "type": "string"
+          },
+          {
+            "sourcePath": "materialGroup",
+            "targetPath": "materialGroup",
+            "type": "string"
+          },
+          {
+            "sourcePath": "firstDeliveryDate",
+            "targetPath": "deliveryDate",
+            "transform": "sapDateToIso"
+          },
+          {
+            "sourcePath": "orderQuantity",
+            "targetPath": "quantity",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "netPriceAmount",
+            "targetPath": "netPrice",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "netAmount",
+            "targetPath": "netAmount",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "plant",
+            "targetPath": "plant",
+            "type": "string"
+          }
+        ]
+      },
+      "workflowSteps": {
+        "navigationKey": "approvalTree",
+        "targetPath": "workflow.steps",
+        "fields": [
+          {
+            "sourcePath": "documentId",
+            "targetPath": "documentId"
+          },
+          {
+            "sourcePath": "level",
+            "targetPath": "level",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "releaseCode",
+            "targetPath": "releaseCode"
+          },
+          {
+            "sourcePath": "approver",
+            "targetPath": "approver"
+          },
+          {
+            "sourcePath": "approverUserId",
+            "targetPath": "approverUserId"
+          },
+          {
+            "sourcePath": "status",
+            "targetPath": "status"
+          },
+          {
+            "sourcePath": "noteText",
+            "targetPath": "noteText"
+          },
+          {
+            "sourcePath": "postedOn",
+            "targetPath": "postedOn"
+          },
+          {
+            "sourcePath": "postedTime",
+            "targetPath": "postedTime"
+          }
+        ]
+      },
+      "comments": {
+        "navigationKey": "comments",
+        "targetPath": "workflow.comments",
+        "fields": [
+          {
+            "sourcePath": "author",
+            "targetPath": "author"
+          },
+          {
+            "sourcePath": "text",
+            "targetPath": "text"
+          },
+          {
+            "sourcePath": "postedOn",
+            "targetPath": "postedOn"
+          },
+          {
+            "sourcePath": "postedTime",
+            "targetPath": "postedTime"
+          }
+        ]
+      },
+      "attachments": {
+        "navigationKey": "attachments",
+        "targetPath": "attachments",
+        "fields": [
+          {
+            "sourcePath": "id",
+            "targetPath": "id"
+          },
+          {
+            "sourcePath": "fileName",
+            "targetPath": "fileName"
+          },
+          {
+            "sourcePath": "mimeType",
+            "targetPath": "mimeType"
+          },
+          {
+            "sourcePath": "fileSize",
+            "targetPath": "fileSize",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "createdBy",
+            "targetPath": "createdBy"
+          },
+          {
+            "sourcePath": "createdAt",
+            "targetPath": "createdAt",
+            "transform": "sapDateToIso"
+          }
+        ]
+      },
+      "accountAssignments": {
+        "navigationKey": "accountAssignments",
+        "targetPath": "accountAssignments",
+        "fields": [
+          {
+            "sourcePath": "purchaseOrderItem",
+            "targetPath": "item"
+          },
+          {
+            "sourcePath": "accountAssignmentNumber",
+            "targetPath": "assignment"
+          },
+          {
+            "sourcePath": "distributionPercentage",
+            "targetPath": "distributionPercentage"
+          },
+          {
+            "sourcePath": "glAccount",
+            "targetPath": "glAccount"
+          },
+          {
+            "sourcePath": "costCenter",
+            "targetPath": "costCenter"
+          },
+          {
+            "sourcePath": "profitCenter",
+            "targetPath": "profitCenter"
+          }
+        ]
+      },
+      "scheduleLines": {
+        "navigationKey": "scheduleLines",
+        "targetPath": "scheduleLines",
+        "fields": [
+          {
+            "sourcePath": "purchaseOrderItem",
+            "targetPath": "item"
+          },
+          {
+            "sourcePath": "scheduleLine",
+            "targetPath": "scheduleLine"
+          },
+          {
+            "sourcePath": "scheduleLineDeliveryDate",
+            "targetPath": "scheduleLineDeliveryDate",
+            "transform": "sapDateToIso"
+          },
+          {
+            "sourcePath": "scheduleLineOrderQuantity",
+            "targetPath": "scheduleLineOrderQuantity",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "purchaseOrderQuantityUnit",
+            "targetPath": "purchaseOrderQuantityUnit"
+          }
+        ]
+      },
+      "transitMilestones": {
+        "navigationKey": "transitMilestones",
+        "targetPath": "transitMilestones",
+        "fields": [
+          {
+            "sourcePath": "milestone",
+            "targetPath": "milestoneName"
+          },
+          {
+            "sourcePath": "location",
+            "targetPath": "milestoneLoc"
+          },
+          {
+            "sourcePath": "plannedDate",
+            "targetPath": "milestoneDate",
+            "transform": "sapDateToIso"
+          },
+          {
+            "sourcePath": "carrier",
+            "targetPath": "milestoneCarrier"
+          }
+        ]
+      },
+      "tariffsBreakdown": {
+        "navigationKey": "tariffsBreakdown",
+        "targetPath": "tariffsBreakdown",
+        "fields": [
+          {
+            "sourcePath": "item",
+            "targetPath": "item"
+          },
+          {
+            "sourcePath": "hsCode",
+            "targetPath": "hsCodeItem"
+          },
+          {
+            "sourcePath": "description",
+            "targetPath": "hsDescItem"
+          },
+          {
+            "sourcePath": "customsDutyRate",
+            "targetPath": "hsDutyRate"
+          },
+          {
+            "sourcePath": "estimatedDuty",
+            "targetPath": "hsEstDuty",
+            "transform": "number"
+          }
+        ]
+      }
+    }
+  },
+  "uiSchema": {
+    "title": "{{header.purchaseOrder}}",
+    "subtitle": "{{header.supplierName}}",
+    "sections": [
+      {
+        "id": "basic",
+        "type": "CARD",
+        "title": "Basic Data",
+        "fields": [
+          "purchaseOrder",
+          "purchaseOrderText",
+          "purchaseOrderType",
+          "supplierName",
+          "createdByUser"
+        ]
+      },
+      {
+        "id": "deliveryPayment",
+        "type": "CARD",
+        "title": "Delivery & Payment",
+        "fields": [
+          "paymentTermsDescription",
+          "incotermsClassification",
+          "purchaseOrderNetAmount"
+        ]
+      },
+      {
+        "id": "org",
+        "type": "CARD",
+        "title": "Recipient Data",
+        "fields": [
+          "companyCode",
+          "purchasingOrganization",
+          "priority"
+        ]
+      },
+      {
+        "id": "items",
+        "type": "TABLE",
+        "title": "Items",
+        "dataPath": "items",
+        "columns": [
+          "item",
+          "shortText",
+          "materialGroup",
+          "deliveryDate",
+          "quantity",
+          "netPrice",
+          "netAmount"
+        ]
+      },
+      {
+        "id": "accountAssignments",
+        "type": "TABLE",
+        "title": "Account Assignment",
+        "dataPath": "accountAssignments",
+        "columns": [
+          "item",
+          "assignment",
+          "distributionPercentage",
+          "glAccount",
+          "costCenter",
+          "profitCenter"
+        ]
+      },
+      {
+        "id": "scheduleLines",
+        "type": "TABLE",
+        "title": "Schedule Lines",
+        "dataPath": "scheduleLines",
+        "columns": [
+          "item",
+          "scheduleLine",
+          "scheduleLineDeliveryDate",
+          "scheduleLineOrderQuantity"
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "key": "APPROVE",
+      "label": "Approve",
+      "variant": "PRIMARY",
+      "requiresComment": false,
+      "sapDecisionKey": "0001"
+    },
+    {
+      "key": "REJECT",
+      "label": "Reject",
+      "variant": "DANGER",
+      "requiresComment": true,
+      "sapDecisionKey": "0002"
+    }
+  ],
+  "cardChips": [
+    {
+      "label": "Total",
+      "dataPath": "header.purchaseOrderNetAmount",
+      "dataType": "AMOUNT",
+      "formatter": "currency",
+      "isPrimary": true
+    },
+    {
+      "label": "Type",
+      "dataPath": "header.purchaseOrderType",
+      "dataType": "TEXT"
+    },
+    {
+      "label": "Supplier",
+      "dataPath": "header.supplierName",
+      "dataType": "TEXT"
+    }
+  ],
+  "profiles": {
+    "detail": {
+      "includeUiFields": true,
+      "requiredCanonicalPaths": [
+        "header.purchaseOrder",
+        "header.documentCurrency"
+      ],
+      "usageTags": [
+        "identity",
+        "action",
+        "download"
+      ]
+    }
+  },
+  "documentTypes": {
+    "ZASS": {
+      "name": "Asset PO",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "assetAssignment",
+            "type": "CARD",
+            "title": "Asset Accounting Assignments",
+            "fields": [
+              "assetClass",
+              "assetNumber",
+              "assetSubnumber",
+              "wbsElement"
+            ]
+          },
+          {
+            "id": "assetLifecycle",
+            "type": "CARD",
+            "title": "Asset Lifecycle Information",
+            "fields": [
+              "capDate"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "materialGroup",
+              "deliveryDate",
+              "quantity",
+              "netPrice",
+              "netAmount"
+            ]
+          },
+          {
+            "id": "accountAssignments",
+            "type": "TABLE",
+            "title": "Account Cost Distributions",
+            "dataPath": "accountAssignments",
+            "columns": [
+              "item",
+              "itemCostCenter",
+              "itemGlAccount",
+              "itemPercentage",
+              "itemValue"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.purchaseOrderNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Asset",
+          "dataPath": "header.assetClass",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "WBS",
+          "dataPath": "header.wbsElement",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZEXP": {
+      "name": "Expense PO",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "expenseAllocation",
+            "type": "CARD",
+            "title": "Expense Cost Assignments",
+            "fields": [
+              "costCenter",
+              "costCenterName",
+              "glAccount",
+              "glAccountName",
+              "internalOrder"
+            ]
+          },
+          {
+            "id": "expenseFunding",
+            "type": "CARD",
+            "title": "Funding & Budgeting Details",
+            "fields": [
+              "budgetPeriod",
+              "fund"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "materialGroup",
+              "deliveryDate",
+              "quantity",
+              "netPrice",
+              "netAmount"
+            ]
+          },
+          {
+            "id": "accountAssignments",
+            "type": "TABLE",
+            "title": "Account Cost Distributions",
+            "dataPath": "accountAssignments",
+            "columns": [
+              "item",
+              "itemCostCenter",
+              "itemGlAccount",
+              "itemPercentage",
+              "itemValue"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.purchaseOrderNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Cost Center",
+          "dataPath": "header.costCenter",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Internal Order",
+          "dataPath": "header.internalOrder",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZMAK": {
+      "name": "Marketing PO",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "marketingInfo",
+            "type": "CARD",
+            "title": "Marketing Campaign Details",
+            "fields": [
+              "marketingCampaign",
+              "campaignName",
+              "campaignBudget"
+            ]
+          },
+          {
+            "id": "marketingAudience",
+            "type": "CARD",
+            "title": "Target Audience & Coordinator",
+            "fields": [
+              "targetAudience",
+              "campaignManager"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "materialGroup",
+              "deliveryDate",
+              "quantity",
+              "netPrice",
+              "netAmount"
+            ]
+          },
+          {
+            "id": "channelBreakdown",
+            "type": "TABLE",
+            "title": "Advertising Channels Breakdown",
+            "dataPath": "channelBreakdown",
+            "columns": [
+              "distChannel",
+              "distImpressions",
+              "distShare",
+              "distDate"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.purchaseOrderNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Campaign ID",
+          "dataPath": "header.marketingCampaign",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZNB1": {
+      "name": "Trading PO",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "tradeInfo",
+            "type": "CARD",
+            "title": "Trading details",
+            "fields": [
+              "salesChannel",
+              "targetCustomer"
+            ]
+          },
+          {
+            "id": "customsInfo",
+            "type": "CARD",
+            "title": "HS Code & Customs Duty",
+            "fields": [
+              "tariffCode",
+              "originCountry",
+              "dutyRate"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "materialGroup",
+              "deliveryDate",
+              "quantity",
+              "netPrice",
+              "netAmount"
+            ]
+          },
+          {
+            "id": "tariffsBreakdown",
+            "type": "TABLE",
+            "title": "Customs HS Code Details",
+            "dataPath": "tariffsBreakdown",
+            "columns": [
+              "item",
+              "hsCodeItem",
+              "hsDescItem",
+              "hsDutyRate",
+              "hsEstDuty"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.purchaseOrderNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Sales Channel",
+          "dataPath": "header.salesChannel",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZNB2": {
+      "name": "Non-Trade PO (Stock)",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "stockAlloc",
+            "type": "CARD",
+            "title": "Stock Storage Allocation",
+            "fields": [
+              "storageLocation",
+              "receivingPlant",
+              "storageBin"
+            ]
+          },
+          {
+            "id": "stockControl",
+            "type": "CARD",
+            "title": "Inventory Control Parameters",
+            "fields": [
+              "minStock",
+              "reorderPoint",
+              "stockController"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "materialGroup",
+              "deliveryDate",
+              "quantity",
+              "netPrice",
+              "netAmount"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.purchaseOrderNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Storage",
+          "dataPath": "header.storageLocation",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZTOL": {
+      "name": "Tools PO",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "tools",
+            "type": "CARD",
+            "title": "Safety & Tool Classification",
+            "fields": [
+              "toolCategory",
+              "safetyLevel",
+              "safetyCert"
+            ]
+          },
+          {
+            "id": "toolLifecycle",
+            "type": "CARD",
+            "title": "Tool Custody & Calibration",
+            "fields": [
+              "custodianDept",
+              "calibrationDue"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "materialGroup",
+              "deliveryDate",
+              "quantity",
+              "netPrice",
+              "netAmount"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.purchaseOrderNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Custodian",
+          "dataPath": "header.safetyLevel",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZUB": {
+      "name": "Transfer PO",
+      "uiSchema": {
+        "sections": [
+          {
+            "id": "transferLogistics",
+            "type": "CARD",
+            "title": "Transfer Logistics",
+            "fields": [
+              "supplyingPlant",
+              "shippingMethod",
+              "transitDays"
+            ]
+          },
+          {
+            "id": "items",
+            "type": "TABLE",
+            "title": "Items to Transfer",
+            "dataPath": "items",
+            "columns": [
+              "item",
+              "shortText",
+              "deliveryDate",
+              "quantity",
+              "plant"
+            ]
+          },
+          {
+            "id": "transitMilestones",
+            "type": "TABLE",
+            "title": "Logistical Transit Milestones",
+            "dataPath": "transitMilestones",
+            "columns": [
+              "milestoneName",
+              "milestoneLoc",
+              "milestoneDate",
+              "milestoneCarrier"
+            ]
+          }
+        ]
+      },
+      "cardChips": [
+        {
+          "label": "Source Plant",
+          "dataPath": "header.supplyingPlant",
+          "dataType": "TEXT",
+          "isPrimary": true
+        }
+      ]
+    }
+  }
+}

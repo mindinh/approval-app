@@ -1,0 +1,146 @@
+{
+  "object": {
+    "objectType": "RE",
+    "displayName": "Reservation",
+    "version": 1,
+    "adapter": "RE_DETAIL",
+    "aliases": ["BUS2093"],
+    "enabledSections": {
+      "header": true,
+      "items": true,
+      "workflow": true,
+      "comments": true,
+      "attachments": true
+    }
+  },
+  "source": {
+    "service": "APPROVAL_SRV",
+    "rootEntity": "ZC_REHEADER",
+    "key": [
+      { "name": "DocCategory", "value": "BUS2093" },
+      { "name": "DocumentNumber", "fromContext": "documentId" }
+    ],
+    "navigations": {
+      "items": "_Item",
+      "comments": "_Comment"
+    }
+  },
+  "mappings": {
+    "root": [
+      { "sourcePath": "reservationNumber", "targetPath": "header.reservationNumber", "type": "string", "required": true },
+      { "sourcePath": "goodsRecipient", "targetPath": "header.goodsRecipient", "type": "string" },
+      { "sourcePath": "movementType", "targetPath": "header.movementType", "type": "string" },
+      { "sourcePath": "costCenter", "targetPath": "header.costCenter", "type": "string" },
+      { "sourcePath": "requirementDate", "targetPath": "header.requirementDate", "transform": "sapDateToIso" },
+      { "sourcePath": "assetNumber", "targetPath": "header.assetNumber", "type": "string" },
+      { "sourcePath": "internalOrder", "targetPath": "header.internalOrder", "type": "string" }
+    ],
+    "collections": {
+      "items": {
+        "navigationKey": "items",
+        "targetPath": "items",
+        "fields": [
+          { "sourcePath": "reservationItem", "targetPath": "item", "required": true },
+          { "sourcePath": "material", "targetPath": "material", "type": "string" },
+          { "sourcePath": "quantity", "targetPath": "quantity", "transform": "number" },
+          { "sourcePath": "unit", "targetPath": "unit", "type": "string" },
+          { "sourcePath": "storageLocation", "targetPath": "storageLocation", "type": "string" }
+        ]
+      },
+      "accountAssignments": {
+        "navigationKey": "accountAssignments",
+        "targetPath": "accountAssignments",
+        "fields": [
+          { "sourcePath": "item", "targetPath": "item" },
+          { "sourcePath": "costCenter", "targetPath": "itemCostCenter" },
+          { "sourcePath": "glAccount", "targetPath": "itemGlAccount" },
+          { "sourcePath": "percentage", "targetPath": "itemPercentage" },
+          { "sourcePath": "value", "targetPath": "itemValue", "transform": "number" }
+        ]
+      }
+    }
+  },
+  "uiSchema": {
+    "title": "Reservation {{header.reservationNumber}}",
+    "subtitle": "Recipient: {{header.goodsRecipient}}",
+    "sections": [
+      {
+        "id": "basic",
+        "type": "CARD",
+        "title": "Basic Data",
+        "fields": [
+          "reservationNumber",
+          "goodsRecipient",
+          "movementType",
+          "requirementDate"
+        ]
+      },
+      {
+        "id": "recipientAssignment",
+        "type": "CARD",
+        "title": "Cost Allocation Details",
+        "fields": [
+          "costCenter",
+          "internalOrder"
+        ]
+      },
+      {
+        "id": "reservationReference",
+        "type": "CARD",
+        "title": "Target Reference Assignment",
+        "fields": [
+          "assetNumber"
+        ]
+      },
+      {
+        "id": "items",
+        "type": "TABLE",
+        "title": "Reservation Items",
+        "dataPath": "items",
+        "columns": ["item", "material", "quantity", "unit", "storageLocation"]
+      },
+      {
+        "id": "internalCostAllocation",
+        "type": "TABLE",
+        "title": "Internal Cost Allocations",
+        "dataPath": "accountAssignments",
+        "columns": ["item", "itemCostCenter", "itemGlAccount", "itemPercentage", "itemValue"]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "key": "APPROVE",
+      "label": "Approve",
+      "variant": "PRIMARY",
+      "requiresComment": false,
+      "sapDecisionKey": "0001"
+    },
+    {
+      "key": "REJECT",
+      "label": "Reject",
+      "variant": "DANGER",
+      "requiresComment": true,
+      "sapDecisionKey": "0002"
+    }
+  ],
+  "cardChips": [
+    {
+      "label": "Recipient",
+      "dataPath": "header.goodsRecipient",
+      "dataType": "TEXT"
+    },
+    {
+      "label": "Cost Center",
+      "dataPath": "header.costCenter",
+      "dataType": "TEXT"
+    }
+  ],
+  "profiles": {
+    "detail": {
+      "includeUiFields": true,
+      "requiredCanonicalPaths": ["header.reservationNumber"],
+      "usageTags": ["identity", "action"]
+    }
+  }
+}
