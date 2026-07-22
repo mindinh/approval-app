@@ -1,14 +1,16 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { ScrollArea, Skeleton, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@cnma/react-ui';
 
 import { DecisionPanel } from './DecisionPanel';
 import type { TaskDetail as TaskDetailType } from '@/services/inbox/inbox.types';
-import { ArrowLeft, FileText, Undo2 } from 'lucide-react';
+import { ArrowLeft, FileText, Undo2, AlertTriangle, RotateCcw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { invalidateAfterComment } from '@/pages/Inbox/hooks/inboxInvalidation';
 import { useQueryClient } from '@tanstack/react-query';
+import { useErrorModal } from '@/contexts/ErrorContext';
+import { parseError } from '@/utils/parseError';
 import {
     ActivityPanel,
     AttachmentsPanel,
@@ -25,6 +27,9 @@ import { useTranslation } from 'react-i18next';
 interface TaskDetailViewProps {
     detail: TaskDetailType | undefined;
     isLoading: boolean;
+    isError?: boolean;
+    error?: unknown;
+    onRetry?: () => void;
     isSecondaryLoading?: boolean;
     onBack: () => void;
     onDecision: (decisionKey: string, comment: string) => void;
@@ -37,6 +42,9 @@ interface TaskDetailViewProps {
 export function TaskDetailView({
     detail,
     isLoading,
+    isError = false,
+    error,
+    onRetry,
     isSecondaryLoading = false,
     onBack,
     onDecision,
@@ -108,8 +116,51 @@ export function TaskDetailView({
         [detail, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
     );
 
+    const { showError } = useErrorModal();
+
+    // Automatically trigger ErrorModal when a detail loading error occurs
+    useEffect(() => {
+        if (isError && error) {
+            showError(error, { onRetry, onClose: onBack });
+        }
+    }, [isError, error, showError, onRetry, onBack]);
+
     if (isLoading) {
         return <TaskDetailSkeleton onBack={onBack} isMobile={isMobile} />;
+    }
+
+    if (isError && !detail) {
+        const parsed = parseError(error);
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 max-w-md mx-auto space-y-4">
+                <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                    <AlertTriangle className="size-8" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">
+                    {parsed.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                    {parsed.message}
+                </p>
+                <div className="flex items-center gap-3 pt-2">
+                    {onRetry && (
+                        <Button variant="default" size="sm" onClick={onRetry} className="gap-1.5 text-xs">
+                            <RotateCcw className="size-3.5" />
+                            {t('common.retry', 'Retry')}
+                        </Button>
+                    )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => showError(error, { onRetry })}
+                        className="gap-1.5 text-xs"
+                    >
+                        <Info className="size-3.5" />
+                        {t('error.viewDetails', 'View Diagnostics')}
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     if (!detail) {
@@ -260,8 +311,8 @@ export function TaskDetailView({
                         ))}
                     </TabsList>
 
-                    <ScrollArea className={cn(
-                        "flex-1 min-h-0",
+                    <div className={cn(
+                        "flex-1 min-h-0 overflow-y-auto overflow-x-hidden",
                         activeTab === 'attachments' && "hidden"
                     )}>
                         <div className="w-full px-5 py-4 space-y-4 pb-6">
@@ -314,7 +365,7 @@ export function TaskDetailView({
                                 )}
                             </TabsContent>
                         </div>
-                    </ScrollArea>
+                    </div>
 
                     <TabsContent value="attachments" className="mt-0 w-full flex-1 min-h-0 px-5 py-4 data-[state=active]:flex data-[state=active]:flex-col">
                         <AttachmentsPanel 

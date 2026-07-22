@@ -6,8 +6,11 @@ import App from './App.tsx'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './queryClient'
 import { FioriThemeProvider } from './contexts/FioriThemeContext.tsx'
+import { ErrorProvider } from './contexts/ErrorProvider.tsx'
 import { initFLPMessageListener } from './hooks/useFLPSync'
 import { SessionTimeoutProvider } from './components/providers/SessionTimeoutProvider.tsx'
+
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 // Initialize FLP message listener for iframe communication
 initFLPMessageListener();
@@ -25,13 +28,17 @@ if (appleTouchIcon) {
 }
 
 createRoot(document.getElementById('root')!).render(
-    <QueryClientProvider client={queryClient}>
-        <FioriThemeProvider>
-            <SessionTimeoutProvider>
-                <App />
-            </SessionTimeoutProvider>
-        </FioriThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+            <FioriThemeProvider>
+                <ErrorProvider>
+                    <SessionTimeoutProvider>
+                        <App />
+                    </SessionTimeoutProvider>
+                </ErrorProvider>
+            </FioriThemeProvider>
+        </QueryClientProvider>
+    </ErrorBoundary>
 )
 
 // Register Service Worker in production mode
@@ -52,4 +59,3 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
             });
     });
 }
-

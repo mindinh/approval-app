@@ -33,7 +33,7 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
     // Helper to format values
     const formatFieldValue = (value: unknown, fieldDef: DynamicFieldDefinition, contextObj?: unknown): string => {
         if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
-            return fieldDef.fallbackValue || 'N/A';
+            return fieldDef.fallbackValue || '-';
         }
         
         const dataType = fieldDef.dataType;
@@ -85,7 +85,7 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
 
     const getFormattedFieldVal = (fieldKey: string, contextObj: unknown): string => {
         const fieldDef = fieldSchema[fieldKey];
-        if (!fieldDef) return 'N/A';
+        if (!fieldDef) return '-';
         const rawVal = resolveJsonPath(contextObj, fieldDef.dataPath);
         return formatFieldValue(rawVal, fieldDef, contextObj);
     };
@@ -138,10 +138,14 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
                 const fieldDef = fieldSchema[fieldKey];
                 const label = fieldDef?.label || fieldKey;
                 const val = getFormattedFieldVal(fieldKey, businessObject);
+                const dataType = fieldDef?.dataType || 'TEXT';
+                const isLongText = dataType === 'LONG_TEXT' || dataType === 'TEXTAREA';
                 return {
                     key: fieldKey,
                     label,
-                    value: val
+                    value: val,
+                    dataType,
+                    isLongText
                 };
             });
 
@@ -170,7 +174,7 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
                         const rawVal = resolveJsonPath(rowObj, fieldDef.dataPath);
                         values[colKey] = formatFieldValue(rawVal, fieldDef, rowObj);
                     } else {
-                        values[colKey] = 'N/A';
+                        values[colKey] = '-';
                     }
                 });
 

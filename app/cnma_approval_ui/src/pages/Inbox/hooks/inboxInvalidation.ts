@@ -17,7 +17,6 @@ export function invalidateAfterDecision(
 ) {
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskInformation(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(instanceId) });
 }
@@ -29,7 +28,6 @@ export function invalidateAfterForward(
     instanceId: string,
 ) {
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskInformation(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(instanceId) });
 }
@@ -40,7 +38,6 @@ export function invalidateAfterComment(
     queryClient: QueryClient,
     instanceId: string,
 ) {
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskInformation(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(instanceId) });
 }
@@ -51,7 +48,6 @@ export function invalidateAfterAttachment(
     queryClient: QueryClient,
     instanceId: string,
 ) {
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskInformation(instanceId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
 }
 

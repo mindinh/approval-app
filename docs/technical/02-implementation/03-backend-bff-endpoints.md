@@ -12,9 +12,26 @@ All API routes below are relative to:
 ---
 
 ## 🛠️ Debug Endpoints
-These endpoints are designed for troubleshooting token bindings and user identities. Access requires the Solution Administrator role (`.admin` scope).
+These endpoints are designed for troubleshooting configurations, token bindings, and user identities.
 
-### 1. GET `/tasks/debug/current-user`
+### 1. GET `/debug-config`
+*   **Purpose**: Get a diagnostics dump of all loaded JSON configuration objects, alias maps, and configuration directory resolution status.
+*   **Authentication**: Unauthenticated (bypasses JWT checks for easy browser/curl diagnostic access).
+*   **Response Payload Schema**:
+    ```json
+    {
+      "resolvedConfigDir": "d:\\learning\\test\\cnma_approval\\srv\\configuration\\object-types",
+      "configDirExists": true,
+      "configsLoaded": ["CLAIM", "PO", "PR", "RESERVATION"],
+      "aliases": {
+        "BUS2081": "PO",
+        "BUS2105": "PR"
+      },
+      "configs": { ... }
+    }
+    ```
+
+### 2. GET `/tasks/debug/current-user`
 *   **Purpose**: Get details about the resolved SAP User and BTP Identity.
 *   **Response Headers Analyzed**: Reads incoming `x-sap-user` (for development mocks) and standard JWT authorization.
 *   **Response Payload Schema**:
@@ -30,18 +47,18 @@ These endpoints are designed for troubleshooting token bindings and user identit
     }
     ```
 
-### 2. GET `/tasks/debug/jwt`
+### 3. GET `/tasks/debug/jwt`
 *   **Purpose**: Read and decode the raw JWT authorization token payload.
 *   **Response Payload Schema**: Returns raw token preview, decoded claims, and raw claims envelope.
 
-### 3. GET `/tasks/debug/auth-summary`
+### 4. GET `/tasks/debug/auth-summary`
 *   **Purpose**: Returns a diagnostic summary mapping BTP configuration variables, Cloud Connector destination links, and parsed authorization header presence.
 
 ---
 
 ## 👤 Identity & Dashboard Endpoints
 
-### 4. GET `/tasks/me`
+### 5. GET `/tasks/me`
 *   **Purpose**: Resolves logged-in user profile, displaying name, email, and resolved role scope (Admin vs User).
 *   **Response Payload Schema**:
     ```json
@@ -56,7 +73,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
     }
     ```
 
-### 5. GET `/tasks/dashboard`
+### 6. GET `/tasks/dashboard`
 *   **Purpose**: Returns high-level metrics for dashboard cards (aggregates total active items, amounts, currencies, and document numbers across PR, PO, Claim, and Reservation document types).
 *   **Response Payload Schema**:
     ```json
@@ -83,18 +100,18 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ## 📥 Worklist & Detail Endpoints
 
-### 6. GET `/tasks/tasks`
+### 7. GET `/tasks/tasks`
 *   **Purpose**: Retrieve the current user's active approval queue (`IN PROCESSING` state).
 *   **Query Parameters**:
     *   `top` (Optional): Maximum number of entries to return (for pagination).
     *   `skip` (Optional): Number of entries to skip.
-*   **Response**: Standardized array containing unified metadata and basic document headers.
+*   **Response**: Standardized array containing unified metadata and basic document headers. Evaluates only the paginated subset of tasks against the SAP Gateway rather than pulling the full queue, preventing high latencies.
 
-### 7. GET `/tasks/tasks/approved`
+### 8. GET `/tasks/tasks/approved`
 *   **Purpose**: Retrieve historical queue containing tasks processed by the user (`COMPLETED` state).
 *   **Query Parameters**: Same as active worklist.
 
-### 8. GET `/tasks/tasks/:id`
+### 9. GET `/tasks/tasks/:id`
 *   **Purpose**: Fetch the consolidated canonical detail payload for a single task. Returns header data, line items, workflow steps, comments, attachments, and dynamic UI layout definitions (`uiSchema`).
 *   **URL Parameter**: `id` represents the unique Task Instance ID.
 *   **Query Parameters**:
@@ -143,7 +160,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
     }
     ```
 
-### 9. GET `/tasks/tasks/:id/workflow-approval-tree` [DEPRECATED]
+### 10. GET `/tasks/tasks/:id/workflow-approval-tree` [DEPRECATED]
 *   **Status**: **Deprecated.**
 *   **Deprecation Note**: Workflow approval steps and comment logs are now included directly inside `object.workflow.steps` and `object.workflow.comments` within the primary `GET /tasks/tasks/:id` response, eliminating redundant network roundtrips.
 
@@ -151,7 +168,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
 
 ## ✍️ Collaboration & Action Endpoints
 
-### 10. POST `/tasks/tasks/:id/decision`
+### 11. POST `/tasks/tasks/:id/decision`
 *   **Purpose**: Executes an approval or rejection decision.
 *   **Payload Schema**:
     ```json
@@ -166,7 +183,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
     }
     ```
 
-### 11. POST `/tasks/tasks/:id/comments`
+### 12. POST `/tasks/tasks/:id/comments`
 *   **Purpose**: Upload a text note into the timeline.
 *   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the underlying OData V4 service is read-only.
 *   **Payload Schema**:
@@ -179,7 +196,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
     }
     ```
 
-### 12. POST `/tasks/tasks/:id/attachments`
+### 13. POST `/tasks/tasks/:id/attachments`
 *   **Purpose**: Upload a raw file attachment to the Generic Object Service (GOS).
 *   **Availability**: **Mock-only.** In direct SAP mode (`USE_MOCK_SAP=false`), this endpoint returns `405 Method Not Allowed` because the underlying OData V4 service is read-only.
 *   **Headers**:
@@ -188,7 +205,7 @@ These endpoints are designed for troubleshooting token bindings and user identit
     *   `x-document-id`: Associated document number.
 *   **Payload**: Raw binary stream in body.
 
-### 13. GET `/tasks/tasks/:id/attachments/:attId/content`
+### 14. GET `/tasks/tasks/:id/attachments/:attId/content`
 *   **Purpose**: Stream and download the binary contents of an attachment.
 *   **Availability**: **Supported in both Mock and Real S/4HANA modes.** In real mode, it fetches the binary stream directly from S/4HANA's `ZI_DOC_ATTACH_CONTENT` OData service.
 *   **Query Parameters**:

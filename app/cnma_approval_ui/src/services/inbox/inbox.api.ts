@@ -81,20 +81,7 @@ export const inboxApi = {
     /**
      * Get full detail for a single task.
      */
-    getTaskDetail: async (instanceId: string): Promise<TaskDetailResponse> => {
-        const { data } = await axiosInstance.get<TaskDetailResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}`
-        );
-        return data;
-    },
-
-    /**
-     * Get ultra-lightweight task overview for fastest initial detail render.
-     * Uses a 3-segment SAP $batch (excludes heavy TaskObjects and Attachments).
-     * Accepts optional hints from the task list item to help the backend
-     * skip redundant SAP round-trips and run enrichment in parallel.
-     */
-    getTaskOverview: async (
+    getTaskDetail: async (
         instanceId: string,
         hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string }
     ): Promise<TaskDetailResponse> => {
@@ -104,30 +91,11 @@ export const inboxApi = {
         if (hints?.businessObjectType) query.set('businessObjectType', hints.businessObjectType);
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskDetailResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/overview${qs ? `?${qs}` : ''}`
+            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}${qs ? `?${qs}` : ''}`
         );
         return data;
     },
 
-    /**
-     * Get information-first task detail for fast initial detail render.
-     * Accepts optional hints from the task list item to help the backend
-     * skip redundant SAP round-trips and run enrichment in parallel.
-     */
-    getTaskInformation: async (
-        instanceId: string,
-        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string }
-    ): Promise<TaskDetailResponse> => {
-        const query = new URLSearchParams();
-        if (hints?.sapOrigin) query.set('sapOrigin', hints.sapOrigin);
-        if (hints?.documentId) query.set('documentId', hints.documentId);
-        if (hints?.businessObjectType) query.set('businessObjectType', hints.businessObjectType);
-        const qs = query.toString();
-        const { data } = await axiosInstance.get<TaskDetailResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/information${qs ? `?${qs}` : ''}`
-        );
-        return data;
-    },
 
     /**
      * Get approval workflow tree for PR tasks.

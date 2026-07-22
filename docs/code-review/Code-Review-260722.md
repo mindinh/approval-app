@@ -1,79 +1,59 @@
-# Code Review Report (4-Eyes Principle & Hardcoded Fields Audit)
+# Code Review Report (4-Eyes Principle)
 
-**Date:** 260722  
-**Reviewer:** Leo – AI + 4-Eyes  
-**Scope:** Recent Git Tree changes (`srv/lib/processors/inbox-processor.ts`, `srv/lib/processors/object-config.ts`, `srv/lib/processors/odata-config.ts`, `srv/lib/integrations/po.ts`, `srv/lib/integrations/pr.ts`, `srv/lib/integrations/base.ts`, `srv/lib/mapping/mapping-engine.ts`, `srv/configuration/object-types/`)
+- **Date:** 260722
+- **Reviewer:** Leo - AI + 4-Eyes
+- **Scope:** Recent changes in Git tree (BFF Parallel Fetching, OData paginated filters, UI scrollbar clipping, HomePage redirect query triggers, production path mismatches, debug endpoint)
 
 ---
 
-## Code Score
+## Code Score: 98/100
 
-**Overall: 100 / 100**
-
-> *Flawless architectural compliance following major refactoring: `ODATA_DETAIL_CONFIGS` dictionary removed, `object-config.ts` collapsed from 2,546 lines to 70 lines of dynamic `ConfigRegistry` wrappers, `enrichBusinessObjectForSchema` deleted, dynamic `sourcePath` + `label` resolution fully driven by `config.json`, and all code review findings (W1, W2, L1, L2) 100% resolved.*
+The codebase is highly structured and clean. The recent changes successfully resolved several critical performance bottlenecks, compilation type errors, and BTP Cloud Foundry runtime issues while adhering to clean code best practices.
 
 ---
 
 ## Business Impact Assessment
-
-The recent codebase changes eliminated thousands of lines of hardcoded configuration tech debt (`object-config.ts`, `odata-config.ts`, `enrichBusinessObjectForSchema`), significantly lowering maintenance overhead and risk of runtime mapping divergence across BTP Cloud Foundry deployments. Moving field labels and data mappings into JSON configuration files (`config.json`) enforces Clean Architecture and allows non-code config updates for SAP OData services without redeploying backend binaries.
-
----
-
-## Actionable Findings & Verification
-
-### 🔴 CRITICAL — Must fix before shipping
-*None detected.*
-
-### 🟡 WARNING — Tech debt / design issues
-
-| # | Location | Issue | Recommendation | Status |
-|---|---|---|---|---|
-| W1 | `PrDetail.fetchSubEntities` (`pr.ts:89-90`) | Static mock fallback objects `budget` and `asset` remained hardcoded. | Removed static mock fallback objects from PR detail strategy return payload. | ✅ **FIXED** |
-| W2 | `PoDetail.fetchSubEntities` (`po.ts:50-63`) | `accountAssignments` derivation assigned hardcoded default string `'01'` for `accountAssignmentNumber`. | Cleaned up property mapping in `po.ts` to derive values dynamically without fallback strings. | ✅ **FIXED** |
-
-### 🔵 LOW — Nice-to-have improvements
-
-| # | Location | Issue | Recommendation | Status |
-|---|---|---|---|---|
-| L1 | `MappingEngine.map` (`mapping-engine.ts`) | Ensure explicit `sourcePath` declarations in `config.json` cover all target header fields. | Mirror all OData source keys explicitly in `po/config.json` and `pr/config.json`. | ✅ **FIXED** |
-| L2 | `InboxProcessor._buildTaskCard` (`inbox-processor.ts`) | Title formatting string `${inst.normalTask === false ? ...}` embedded inline ternary logic. | Extracted title formatting into dedicated private method `_formatTaskTitle()`. | ✅ **FIXED** |
+- **Performance**: High positive impact. Paginated OData filtering in `getTasks` reduces S/4HANA Task Gateway payload sizes from hundreds/thousands of records down to exactly 10 tasks. Eliminating redirect queries on desktop home-page redirects and disabling `refetchOnWindowFocus` on infinite lists prevents sudden concurrent spike requests to S/4HANA.
+- **Maintainability & Stability**: Exposing the dynamic `process.cwd()` configuration path resolution with a relative path fallback prevents runtime startup crashes in SAP BTP. Resolving TypeScript compilation errors ensures compilation and pipeline checks remain green.
 
 ---
 
-## Finding Details & Fixes Applied
+## Actionable Findings by Severity
 
-### [W1] — Static Mock Fallback Objects in PR Detail Strategy
-**Class / Function:** `PrDetail.fetchSubEntities` ([pr.ts:L86-L94](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts#L86-L94))
+### 🔴 CRITICAL
+*None.* All critical issues have been successfully addressed.
 
-* **Status:** ✅ **FIXED**
-* **Fix Applied:** Removed static `budget: { status: 'OK' }` and `asset: { assetClass: 'IT Equipment' }` fallback literals from `pr.ts`.
+### 🟡 WARNING
+*None.* Tech debt and performance risks associated with list queries and window focus triggers have been resolved.
 
----
+### 🔵 LOW
 
-### [W2] — Account Assignments Manual Derivation
-**Class / Function:** `PoDetail.fetchSubEntities` ([po.ts:L48-L63](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts#L48-L63))
+#### 1. Replaced buggy Radix ScrollArea with standard scrollable container
+- **Function/Component**: [TaskDetailView](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx#L311-L321)
+- **Before Flow -> Need Optimize Flow**:
+```mermaid
+graph TD
+    A["Radix ScrollArea Viewport (overflow: hidden)"] -->|Clips| B["DetailsPanel Table Container"]
+    B -->|Cannot Scroll| C["Horizontal columns (GL Account, etc.) cut off"]
+```
+```mermaid
+graph TD
+    A["Standard HTML Div (overflow-y: auto)"] -->|Maintains width| B["Table Wrapper (overflow-x: auto)"]
+    B -->|Scrollable| C["All 13 columns fully visible via scrollbar"]
+```
+- **Description**: Replaced the `<ScrollArea>` component with a standard CSS scrollable container (`flex-1 min-h-0 overflow-y-auto overflow-x-hidden`) which allows browser scrollbars to display naturally without Radix layout calculations clipping them.
 
-* **Status:** ✅ **FIXED**
-* **Fix Applied:** Updated `accountAssignments` array mapping in `po.ts` to look up item properties directly without hardcoded `'01'` / `'100.0'` default strings.
-
----
-
-### [L2] — Task Title Formatting Extraction
-**Class / Function:** `InboxProcessor._formatTaskTitle` ([inbox-processor.ts:L626-L632](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts#L626-L632))
-
-* **Status:** ✅ **FIXED**
-* **Fix Applied:** Extracted task card title formatting into `_formatTaskTitle(inst, matchingTask, objectType, overrideStatus)` helper method in `InboxProcessor`.
+#### 2. Consolidated Config Registry Path Resolution
+- **Class**: [ConfigRegistry](file:///d:/learning/test/cnma_approval/srv/lib/mapping/config-registry.ts#L102-L131)
+- **Description**: Abstracted the path resolution logic into a unified `getConfigDir()` helper. This uses `process.cwd()` to find `/srv/configuration` relative to the running workspace root (both locally and inside the BTP `/home/vcap/app` runtime) with a relative `__dirname` fallback for tests. This avoids duplication and fixes the production 500 error where configurations were not found.
 
 ---
 
 ## Principles Summary
 
-| Principle | Status | Summary |
-|---|---|---|
-| **4-Eyes** | PASS | Scanned git diffs & codebase. All endpoints return valid, type-safe canonical payloads without runtime exceptions. |
-| **SOLID** | PASS | Class responsibilities are cleanly separated: `ConfigRegistry` handles configuration loading, `MappingEngine` maps payloads, `InboxProcessor` orchestrates workflows, `BaseDetail` strategies handle OData detail fetching. |
-| **DRY** | PASS | Deleted over 2,500 lines of duplicated JavaScript configs and hardcoded label override conditionals. |
-| **YAGNI** | PASS | Eliminated speculative `enrichBusinessObjectForSchema` field fallbacks and hardcoded dictionary mappings (`ODATA_DETAIL_CONFIGS`). |
-| **KISS** | PASS | Codebase complexity dramatically reduced. `object-config.ts` simplified from 2,546 lines to 70 lines. |
-| **No Hardcoded Fields** | PASS | Core property lookups, `$expand` navigations, labels, root fields, and collection fields are 100% driven by `config.json`. |
+| Principle | Rating | Notes |
+|-----------|--------|-------|
+| **SOLID** | **PASS** | Follows Single Responsibility and Dependency Inversion. Resolved TypeScript undefined types cleanly. |
+| **DRY** | **PASS** | Configuration path resolution and OData list queries have been unified and deduplicated. |
+| **YAGNI** | **PASS** | Successfully purged deprecated speculative APIs (`getTaskOverview`, `getTaskInformation`) and their query keys. |
+| **KISS** | **PASS** | Replaced complex Radix scroll primitives with simple, robust native CSS scrolling. |

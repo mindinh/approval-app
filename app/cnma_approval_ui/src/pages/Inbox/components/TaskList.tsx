@@ -23,12 +23,14 @@ import {
     Filter,
     Search,
     Loader2,
+    AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
 import { useTaskSelection } from '@/pages/Inbox/hooks/useTaskSelection';
 import { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
 import { useTranslation } from 'react-i18next';
+import { parseError } from '@/utils/parseError';
 
 
 interface TaskListProps {
@@ -36,6 +38,8 @@ interface TaskListProps {
     selectedTaskId: string | null;
     onSelectTask: (task: InboxTask) => void;
     isLoading: boolean;
+    isError?: boolean;
+    error?: unknown;
     onRefresh: () => void;
     isRefreshing: boolean;
     totalItems?: number;
@@ -65,6 +69,8 @@ export function TaskList({
     selectedTaskId,
     onSelectTask,
     isLoading,
+    isError = false,
+    error,
     onRefresh,
     isRefreshing,
     totalItems = tasks.length,
@@ -219,7 +225,9 @@ export function TaskList({
 
             {/* ── Task Results — native scroll so the scrollbar gutter sits OUTSIDE cards ── */}
             <div className="flex-1 min-h-0 overflow-y-auto">
-                {filters.filteredTasks.length === 0 ? (
+                {isError && tasks.length === 0 ? (
+                    <ListErrorState error={error} onRefresh={onRefresh} isRefreshing={isRefreshing} />
+                ) : filters.filteredTasks.length === 0 ? (
                     <EmptyState hasSearch={!!filters.appliedValues.search?.trim()} hasFilters={true} />
                 ) : (
                     <div
@@ -602,7 +610,40 @@ function MobileHeader({
     );
 }
 
-// ─── Shared presentational helpers ─────────────────────────
+function ListErrorState({
+    error,
+    onRefresh,
+    isRefreshing,
+}: {
+    error: unknown;
+    onRefresh: () => void;
+    isRefreshing: boolean;
+}) {
+    const { t } = useTranslation();
+    const parsed = parseError(error);
+
+    return (
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center space-y-3">
+            <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <AlertTriangle className="size-6" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground">{parsed.title}</h3>
+            <p className="max-w-60 text-xs text-muted-foreground leading-relaxed">
+                {parsed.message}
+            </p>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="gap-1.5 text-xs mt-1"
+            >
+                <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
+                <span>{t('common.retry', 'Retry')}</span>
+            </Button>
+        </div>
+    );
+}
 
 function EmptyState({
     hasSearch,

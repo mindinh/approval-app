@@ -51,16 +51,16 @@ export function DetailsPanel({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full overflow-hidden">
             {filteredTables.map((table) => (
-                    <Card key={table.id} className="gap-0 bg-card border-border/70 shadow-sm">
+                    <Card key={table.id} className="gap-0 bg-card border-border/70 shadow-sm w-full overflow-hidden">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">{table.title}</CardTitle>
                             {!isMobile && table.rows.length > 0 && (
                                 <CardDescription>{t('task.clickRowDetails', 'Click a row to view complete details')}</CardDescription>
                             )}
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="w-full overflow-hidden">
                             {isMobile ? (
                                 <div className="divide-y divide-border/60">
                                     {table.rows.length === 0 && (
@@ -87,8 +87,8 @@ export function DetailsPanel({
                                     ))}
                                 </div>
                             ) : (
-                                <div className="max-h-96 overflow-auto rounded-xl border border-border/60 bg-white">
-                                    <Table>
+                                <div className="overflow-x-auto rounded-xl border border-border/60 bg-white w-full">
+                                    <Table className="min-w-max">
                                         <TableHeader className="bg-muted/90">
                                             <TableRow className="border-border/70 bg-transparent hover:bg-transparent">
                                                 {table.columns.map((column) => (

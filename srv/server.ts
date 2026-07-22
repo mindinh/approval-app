@@ -6,6 +6,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import { XssecPassportStrategy, XsuaaService } from '@sap/xssec';
 import { createInboxRouter } from './handlers/inbox-handler';
 import { AppError } from './lib/utils/error-handler';
+import { ConfigRegistry } from './lib/mapping/config-registry';
 
 cds.on('bootstrap', (app: express.Application) => {
     // Health check
@@ -15,6 +16,16 @@ cds.on('bootstrap', (app: express.Application) => {
             service: 'cnma-approval-bff',
             timestamp: new Date().toISOString()
         });
+    });
+
+    // Debug Configuration Endpoint (Bypasses JWT authentication for easy debugging)
+    app.get('/api/cnma/APPROVAL_SRV/debug-config', (_req: express.Request, res: express.Response) => {
+        try {
+            const registry = ConfigRegistry.getInstance();
+            res.json(registry.dump());
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
     });
 
     // Swagger UI Configuration

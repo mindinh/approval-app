@@ -4,6 +4,8 @@ export interface DetailField {
     key: string;
     label: string;
     value: string;
+    dataType?: string;
+    isLongText?: boolean;
 }
 
 export interface DetailCardModel {

@@ -25,7 +25,7 @@
     "dev:all": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be\" \"npm run dev:fe\"",
     "dev:hybrid": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be:hybrid\" \"npm run dev:fe\"",
     "dev:be:hybrid": "set PORT=4005&& cds serve --profile hybrid --with-mocks",
-    "dev:be": "cds serve",
+    "dev:be": "set PORT=4005&& cds serve",
     "dev:fe": "npm --prefix app/cnma_approval_ui run dev",
     "start": "cds-serve",
     "start:dev": "node -r ts-node/register node_modules/@sap/cds/bin/serve.js",

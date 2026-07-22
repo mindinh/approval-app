@@ -4,6 +4,31 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ---
 
+## [1.0.3] - 2026-07-22
+
+### Added
+*   **BFF Debug Config Endpoint**: Exposed a public, unauthenticated GET endpoint `/api/cnma/APPROVAL_SRV/debug-config` to inspect loaded JSON configurations, alias mappings, and directory resolution status.
+*   **Dynamic production configuration directory path resolution**: Implemented `process.cwd()` path resolution with a `__dirname` fallback in the BFF `ConfigRegistry` to fix path mismatch crashes inside the SAP BTP Cloud Foundry runtime.
+
+### Changed
+*   **Unified Items Table & Standardized Columns**:
+    *   Consolidated all auxiliary tables under a single unified `items` table section for all PR types.
+    *   Configured a 12-column table displaying code-and-text combined labels for Plant, Storage Location, GL Account, Material Group, and Commitment Item.
+    *   Stripped the `"item"` prefix from all collection target paths (e.g. `itemStorageLocation` -> `storageLocation`).
+*   **OData List Fetch Optimizations**:
+    *   Implemented paginated `InstanceID` filtering on active worklist fetches (`getTasks`), reducing query overhead from fetching all user tasks down to exactly the 10 paginated tasks.
+    *   Parallelized the S/4HANA OData fetching pipeline inside BFF when list-level performance hints are provided.
+*   **Query Focus & Redirect Optimizations**:
+    *   Added `enabled: isMobileViewport` check to queries inside `HomePage.tsx` to stop redundant API requests on desktop pages prior to redirecting to `/inbox`.
+    *   Disabled `refetchOnWindowFocus` on infinite list queries to prevent duplicate parallel requests to S/4HANA on tab refocus.
+*   **Scroll Area & Horizontal Scrollbars**:
+    *   Replaced the Radix `<ScrollArea>` component with a standard CSS scrollable container inside `TaskDetailView` to prevent vertical/horizontal scrollbar clipping.
+    *   Added `min-w-max` to table elements and constrained card widths to force horizontal scrollbars to render correctly.
+
+### Fixed
+*   **CAP TS Build Compilation Errors**: Updated `ObjectConfig` interface declarations to declare metadata properties and resolved nullable `objectType` references in `inbox-processor.ts`.
+*   **API Purge**: Purged deprecated APIs (`getTaskOverview`, `getTaskInformation`) and their query keys from both frontend and backend layers.
+
 ## [1.0.2] - 2026-07-17
 
 ### Added

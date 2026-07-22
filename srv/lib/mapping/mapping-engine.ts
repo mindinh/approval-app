@@ -74,26 +74,27 @@ export class MappingEngine {
     const rootMappings = config.mappings.root;
     const rawHeader = raw.header || {};
     
-    // We also search dependencies across rawHeader to resolve values.
     for (const mapping of rootMappings) {
-      // 1. Primary lookup by mapping.sourcePath
-      let rawVal = this.getNestedValue(rawHeader, mapping.sourcePath);
-      if (rawVal === undefined) {
-        rawVal = this.getNestedValue(raw, mapping.sourcePath);
+      // Build candidate paths from sourcePath (string or array), altSourcePaths, and targetKey
+      const candidatePaths: string[] = [];
+      if (Array.isArray(mapping.sourcePath)) {
+        candidatePaths.push(...mapping.sourcePath);
+      } else if (mapping.sourcePath) {
+        candidatePaths.push(mapping.sourcePath);
+      }
+      if (Array.isArray((mapping as any).altSourcePaths)) {
+        candidatePaths.push(...(mapping as any).altSourcePaths);
+      }
+      const targetKey = mapping.targetPath.split('.').pop();
+      if (targetKey && !candidatePaths.includes(targetKey)) {
+        candidatePaths.push(targetKey);
       }
 
-      // 2. Secondary lookup by targetPath field key
-      if (rawVal === undefined) {
-        const targetKey = mapping.targetPath.split('.').pop() || '';
-        rawVal = this.getNestedValue(rawHeader, targetKey) ?? this.getNestedValue(raw, targetKey);
-      }
-
-      // 3. Fallbacks for total amount and document type display
-      if (rawVal === undefined) {
-        if (mapping.targetPath.endsWith('NetAmount') || mapping.targetPath.endsWith('totalNetAmount')) {
-          rawVal = rawHeader.totalNetAmountDocCrcy ?? rawHeader.totalNetAmountLocalCrcy ?? rawHeader.netAmount ?? rawHeader.total ?? raw.total;
-        } else if (mapping.targetPath.endsWith('TypeDisplay') || mapping.targetPath.endsWith('Type')) {
-          rawVal = rawHeader.purchaseRequisitionType ?? rawHeader.purchaseOrderType ?? rawHeader.documentType ?? rawHeader.doctyp ?? raw.doctyp;
+      let rawVal: any = undefined;
+      for (const pathCandidate of candidatePaths) {
+        rawVal = this.getNestedValue(rawHeader, pathCandidate) ?? this.getNestedValue(raw, pathCandidate);
+        if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+          break;
         }
       }
 
@@ -101,11 +102,10 @@ export class MappingEngine {
         let finalVal = rawVal;
         if (mapping.transform) {
           const transformFn = getTransform(mapping.transform);
-          // Resolve dependencies if any
           const dependencies: Record<string, any> = {};
           if (mapping.dependencies) {
             for (const dep of mapping.dependencies) {
-              dependencies[dep] = this.getNestedValue(rawHeader, dep);
+              dependencies[dep] = this.getNestedValue(rawHeader, dep) ?? this.getNestedValue(raw, dep);
             }
           }
           finalVal = transformFn(rawVal, dependencies);
@@ -129,7 +129,27 @@ export class MappingEngine {
       for (const item of rawCollection) {
         const mappedItem: any = {};
         for (const field of colConfig.fields) {
-          const rawVal = this.getNestedValue(item, field.sourcePath);
+          const candidatePaths: string[] = [];
+          if (Array.isArray(field.sourcePath)) {
+            candidatePaths.push(...field.sourcePath);
+          } else if (field.sourcePath) {
+            candidatePaths.push(field.sourcePath);
+          }
+          if (Array.isArray((field as any).altSourcePaths)) {
+            candidatePaths.push(...(field as any).altSourcePaths);
+          }
+          const targetKey = field.targetPath.split('.').pop();
+          if (targetKey && !candidatePaths.includes(targetKey)) {
+            candidatePaths.push(targetKey);
+          }
+
+          let rawVal: any = undefined;
+          for (const pathCandidate of candidatePaths) {
+            rawVal = this.getNestedValue(item, pathCandidate);
+            if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+              break;
+            }
+          }
 
           if (rawVal !== undefined) {
             let finalVal = rawVal;

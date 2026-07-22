@@ -18,6 +18,7 @@ import { STALE, REFRESH } from '@/pages/Inbox/utils/constants';
 import { isSapUserMappingMissing, extractErrorMessage } from '@/pages/Inbox/utils/predicates';
 import { inboxKeys } from './inboxKeys';
 import type { TaskDetailResponse } from '@/services/inbox/inbox.types';
+import { useErrorModal } from '@/contexts/useErrorModal';
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -32,17 +33,16 @@ function listRefetchInterval(error: unknown): number | false {
 }
 
 /**
- * Deduplicated error toast — prevents the same message from showing twice.
+ * Automatically triggers the global ErrorModal dialog on query failures.
  */
-function useErrorToast(error: unknown, fallback: string) {
-    const lastRef = useRef<string | null>(null);
+function useErrorModalOnQueryError(error: unknown, fallback: string) {
+    const lastRef = useRef<unknown>(null);
+    const { showError } = useErrorModal();
     useEffect(() => {
-        if (!error) return;
-        const message = extractErrorMessage(error, fallback);
-        if (lastRef.current === message) return;
-        lastRef.current = message;
-        toast.error(message);
-    }, [error, fallback]);
+        if (!error || lastRef.current === error) return;
+        lastRef.current = error;
+        showError(error);
+    }, [error, showError]);
 }
 
 // ─── useCurrentUser ────────────────────────────────────────
@@ -68,7 +68,7 @@ export function useTasks(options?: { enabled?: boolean; top?: number; skip?: num
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,
         placeholderData: keepPreviousData,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
         refetchInterval: (q) => listRefetchInterval(q.state.error),
         retry: (failureCount, error: any) => {
             if (isSapUserMappingMissing(error)) return false;
@@ -76,7 +76,7 @@ export function useTasks(options?: { enabled?: boolean; top?: number; skip?: num
         },
     });
 
-    useErrorToast(query.error, 'Failed to load tasks');
+    useErrorModalOnQueryError(query.error, 'Failed to load tasks');
     return query;
 }
 
@@ -92,7 +92,7 @@ export function useApprovedTasks(options?: { enabled?: boolean; top?: number; sk
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,
         placeholderData: keepPreviousData,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
         refetchInterval: (q) => listRefetchInterval(q.state.error),
         retry: (failureCount, error: any) => {
             if (isSapUserMappingMissing(error)) return false;
@@ -100,7 +100,7 @@ export function useApprovedTasks(options?: { enabled?: boolean; top?: number; sk
         },
     });
 
-    useErrorToast(query.error, 'Failed to load approved tasks');
+    useErrorModalOnQueryError(query.error, 'Failed to load approved tasks');
     return query;
 }
 
@@ -120,14 +120,14 @@ export function useInfiniteTasks(options?: { enabled?: boolean }) {
         },
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
         retry: (failureCount, error: any) => {
             if (isSapUserMappingMissing(error)) return false;
             return failureCount < 1;
         },
     });
 
-    useErrorToast(query.error, 'Failed to load tasks');
+    useErrorModalOnQueryError(query.error, 'Failed to load tasks');
     return query;
 }
 
@@ -145,26 +145,29 @@ export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
         },
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
         retry: (failureCount, error: any) => {
             if (isSapUserMappingMissing(error)) return false;
             return failureCount < 1;
         },
     });
 
-    useErrorToast(query.error, 'Failed to load approved tasks');
+    useErrorModalOnQueryError(query.error, 'Failed to load approved tasks');
     return query;
 }
 
-// ─── useTaskDetail ─────────────────────────────────────────
-export function useTaskDetail(instanceId: string | null, options?: { enabled?: boolean }) {
+export function useTaskDetail(
+    instanceId: string | null,
+    hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string },
+    options?: { enabled?: boolean }
+) {
     const query = useQuery<TaskDetailResponse, Error>({
         queryKey: inboxKeys.taskDetail(instanceId || ''),
-        queryFn: () => inboxApi.getTaskDetail(instanceId!),
+        queryFn: () => inboxApi.getTaskDetail(instanceId!, hints),
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
     });
 
-    useErrorToast(query.error, 'Failed to load task detail');
+    useErrorModalOnQueryError(query.error, 'Failed to load task detail');
     return query;
 }

@@ -88,12 +88,13 @@ export interface TableRow {
 }
 
 // ─── API Query Hook ───────────────────────────────────────
-export function useDashboardQuery() {
+export function useDashboardQuery(options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: inboxKeys.dashboard(),
         queryFn: () => inboxApi.getDashboard(),
         staleTime: 5 * 60 * 1000,  // 5 min
         refetchOnWindowFocus: true,
+        ...options
     });
 }
 

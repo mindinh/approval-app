@@ -25,8 +25,6 @@ export const inboxKeys = {
         [...inboxKeys.all, 'approvedTasks', pagination ?? {}] as const,
 
     // ─── Task Detail ───────────────────────────────────────
-    taskOverview: (id: string) => [...inboxKeys.all, 'task-overview', id] as const,
-    taskInformation: (id: string) => [...inboxKeys.all, 'task-information', id] as const,
     taskDetail: (id: string) => [...inboxKeys.all, 'task', id] as const,
 
     // ─── Workflow ──────────────────────────────────────────

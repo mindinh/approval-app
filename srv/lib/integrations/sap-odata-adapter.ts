@@ -42,7 +42,7 @@ export class SapOdataAdapter {
     }
 
     // ─── WORKLIST FETCHING (from InstanceListAdapter) ───
-    async getInstances(sapUser: string, status?: string | string[], userJwt?: string): Promise<any[]> {
+    async getInstances(sapUser: string, status?: string | string[], userJwt?: string, targetInstanceId?: string): Promise<any[]> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
             return getMockInstances(status);
@@ -56,9 +56,21 @@ export class SapOdataAdapter {
             $orderby: 'WorkflowTaskInternalID desc'
         };
 
+        const filterConditions: string[] = [];
+
         if (status) {
             const statusList = Array.isArray(status) ? status : [status];
-            params.$filter = statusList.map(s => `WorkflowTaskStatus eq '${s}'`).join(' or ');
+            filterConditions.push(`(${statusList.map(s => `WorkflowTaskStatus eq '${s}'`).join(' or ')})`);
+        }
+
+        if (targetInstanceId) {
+            const cleanId = String(targetInstanceId).replace(/^0+/, '');
+            const paddedId = String(cleanId).padStart(12, '0');
+            filterConditions.push(`(WorkflowTaskInternalID eq '${paddedId}' or WorkflowTaskInternalID eq '${cleanId}')`);
+        }
+
+        if (filterConditions.length > 0) {
+            params.$filter = filterConditions.join(' and ');
         }
 
         const response: any = await this.sapClient.get(

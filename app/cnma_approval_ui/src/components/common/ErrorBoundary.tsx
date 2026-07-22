@@ -1,55 +1,63 @@
-import React from 'react';
-import { AccessDenied } from './AccessDenied';
+import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { Button } from '@cnma/react-ui';
 
-interface ErrorBoundaryProps {
-    children: React.ReactNode;
+interface Props {
+    children: ReactNode;
 }
 
-interface ErrorBoundaryState {
+interface State {
     hasError: boolean;
-    isForbidden: boolean;
+    error: Error | null;
+    errorInfo: ErrorInfo | null;
 }
 
-/**
- * Top-level error boundary that catches render-time crashes.
- * If the crash was triggered by a 403, shows AccessDenied.
- */
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    constructor(props: ErrorBoundaryProps) {
-        super(props);
-        this.state = { hasError: false, isForbidden: false };
+export class ErrorBoundary extends Component<Props, State> {
+    public state: State = {
+        hasError: false,
+        error: null,
+        errorInfo: null,
+    };
+
+    public static getDerivedStateFromError(error: Error): State {
+        return { hasError: true, error, errorInfo: null };
     }
 
-    static getDerivedStateFromError(error: any): ErrorBoundaryState {
-        const isForbidden =
-            error?.isForbidden === true ||
-            error?.response?.status === 403 ||
-            (error?.message && error.message.includes('403'));
-
-        return { hasError: true, isForbidden };
+    public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        console.error('[React ErrorBoundary caught error]:', error, errorInfo);
+        this.setState({ errorInfo });
     }
 
-    componentDidCatch(error: any, errorInfo: React.ErrorInfo) {
-        console.error('[ErrorBoundary] Caught error:', error, errorInfo);
-    }
+    private handleReload = () => {
+        window.location.reload();
+    };
 
-    render() {
+    public render() {
         if (this.state.hasError) {
-            if (this.state.isForbidden) {
-                return <AccessDenied />;
-            }
             return (
-                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                    <h2 className="text-2xl font-bold text-foreground">Something went wrong</h2>
-                    <p className="text-muted-foreground text-center max-w-md">
-                        An unexpected error occurred. Please try refreshing the page.
+                <div className="flex h-screen w-screen flex-col items-center justify-center bg-background p-6 text-center">
+                    <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
+                        <AlertTriangle className="size-8" />
+                    </div>
+                    <h1 className="text-xl font-bold text-foreground mb-2">
+                        Application Error
+                    </h1>
+                    <p className="max-w-md text-sm text-muted-foreground mb-6 leading-relaxed">
+                        {this.state.error?.message || 'An unexpected rendering error occurred in the application.'}
                     </p>
-                    <Button
-                        onClick={() => window.location.reload()}
-                        className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                        Refresh Page
+                    {this.state.error?.stack && (
+                        <details className="max-w-xl w-full text-left mb-6 rounded-lg bg-muted p-4 text-xs font-mono text-muted-foreground overflow-x-auto">
+                            <summary className="cursor-pointer font-semibold text-foreground mb-2">
+                                Technical Details & Stack Trace
+                            </summary>
+                            <pre className="whitespace-pre-wrap break-words text-[11px]">
+                                {this.state.error.stack}
+                            </pre>
+                        </details>
+                    )}
+                    <Button onClick={this.handleReload} variant="default" className="gap-2">
+                        <RotateCcw className="size-4" />
+                        Reload Application
                     </Button>
                 </div>
             );

@@ -57,6 +57,15 @@ export const transforms: Record<string, TransformFunction> = {
     const firstName = val || '';
     const lastName = deps?.lastName || '';
     return `${firstName} ${lastName}`.trim();
+  },
+
+  combineCodeAndText: (val, deps) => {
+    const code = String(val || '').trim();
+    if (!code) return undefined;
+    const textVal = deps ? Object.values(deps).find(v => v !== undefined && v !== null && v !== '') : undefined;
+    const text = String(textVal ?? '').trim();
+    if (!text || text === '-' || text === code) return code;
+    return `${code} - ${text}`;
   }
 };
 

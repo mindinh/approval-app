@@ -61,7 +61,14 @@ export class InboxProcessor {
                 return { items: [], total };
             }
 
-            const rawTasks = await this.taskAdapter.getTasks(sapUser, userJwt);
+            // Build filter string for only the paginated instances to prevent fetching all tasks
+            const filterParts = paginatedInstances.map((inst: any) => {
+                const paddedId = String(inst.instanceID).padStart(12, '0');
+                return `InstanceID eq '${paddedId}'`;
+            });
+            const filterStr = filterParts.join(' or ');
+
+            const rawTasks = await this.taskAdapter.getTasks(sapUser, userJwt, filterStr);
 
             // Pre-fetch details in batch to resolve N+1 query issue
             const itemsToFetch = paginatedInstances
@@ -201,9 +208,24 @@ export class InboxProcessor {
         try {
             let inst: any = null;
             let normalTask = true;
-            try {
-                const customInstances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => []);
-                inst = customInstances.find((i: any) => {
+            let taskRuntime: any;
+            let businessObject: any;
+
+            const instid = hints?.documentId || hints?.instid;
+            const objectType = hints?.businessObjectType;
+
+            if (instid && objectType && objectType !== 'UNKNOWN') {
+                this.logger.info(`Parallel fetching details for task ${instanceId}: objectType=${objectType}, instid=${instid}`);
+                const [instancesResult, runtimeResult, detailResult] = await Promise.all([
+                    this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId).catch(() => []),
+                    this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, true).catch((e) => {
+                        this.logger.warn(`Failed to fetch task runtime: ${e.message}`);
+                        return null;
+                    }),
+                    this.sapOdataAdapter.getDetail(objectType, instid, sapUser, userJwt)
+                ]);
+
+                inst = instancesResult.find((i: any) => {
                     const rawId = i.instanceID ? String(i.instanceID).replace(/^0+/, '') : '';
                     const instId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
                     return rawId === instId;
@@ -211,58 +233,100 @@ export class InboxProcessor {
                 if (inst && inst.normalTask === false) {
                     normalTask = false;
                 }
-            } catch (e: any) {
-                this.logger.warn(`Failed to retrieve custom instances for task ${instanceId}: ${e.message}`);
+
+                if (runtimeResult) {
+                    taskRuntime = runtimeResult;
+                    if (!normalTask) {
+                        taskRuntime.decisions = [];
+                    }
+                } else {
+                    taskRuntime = {
+                        InstanceID: instanceId,
+                        SAP__Origin: 'LOCAL',
+                        TaskTitle: inst ? `${inst.normalTask === false ? 'Review' : 'Approve'} ${objectType} ${inst.instid}` : '',
+                        Status: inst ? inst.status : 'READY',
+                        Priority: 'MEDIUM',
+                        CreatedOn: undefined,
+                        CreatedByName: undefined,
+                        TaskDefinitionID: inst ? (inst.typeid || '') : '',
+                        SupportsForward: false,
+                        SupportsComments: true,
+                        decisions: []
+                    };
+                }
+
+                businessObject = detailResult;
+            } else {
+                this.logger.info(`Sequential fallback fetching details for task ${instanceId} (hints missing)`);
+                const [instancesResult, runtimeResult] = await Promise.all([
+                    this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId).catch(() => []),
+                    this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, true).catch((e) => {
+                        this.logger.warn(`Failed to fetch task runtime: ${e.message}`);
+                        return null;
+                    })
+                ]);
+
+                inst = instancesResult.find((i: any) => {
+                    const rawId = i.instanceID ? String(i.instanceID).replace(/^0+/, '') : '';
+                    const instId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
+                    return rawId === instId;
+                });
+                if (inst && inst.normalTask === false) {
+                    normalTask = false;
+                }
+
+                if (runtimeResult) {
+                    taskRuntime = runtimeResult;
+                    if (!normalTask) {
+                        taskRuntime.decisions = [];
+                    }
+                } else {
+                    const resolvedObjectType = inst ? (resolveObjectTypeFromTypeId(inst.typeid) || 'PR') : 'PR';
+                    taskRuntime = {
+                        InstanceID: instanceId,
+                        SAP__Origin: 'LOCAL',
+                        TaskTitle: inst ? `${inst.normalTask === false ? 'Review' : 'Approve'} ${resolvedObjectType} ${inst.instid}` : '',
+                        Status: inst ? inst.status : 'READY',
+                        Priority: 'MEDIUM',
+                        CreatedOn: undefined,
+                        CreatedByName: undefined,
+                        TaskDefinitionID: inst ? (inst.typeid || '') : '',
+                        SupportsForward: false,
+                        SupportsComments: true,
+                        decisions: []
+                    };
+                }
+
+                const resolvedObjectType = await this._resolveObjectType(instanceId, sapUser, userJwt, hints?.businessObjectType, taskRuntime);
+                let resolvedInstid = hints?.documentId || hints?.instid;
+                if (!resolvedInstid) {
+                    resolvedInstid = taskRuntime.TaskTitle?.match(/\d+/)?.[0] || '';
+                }
+
+                if (!resolvedInstid) {
+                    throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
+                }
+
+                businessObject = await this.sapOdataAdapter.getDetail(resolvedObjectType, resolvedInstid, sapUser, userJwt);
             }
 
-            let taskRuntime: any;
-            const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-            if (isMockMode || normalTask) {
-                taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask);
-            } else {
-                this.logger.info(`Omitting TASKPROCESSING API calls for comment-only tagged task ${instanceId}`);
-                const objectType = inst ? (resolveObjectTypeFromTypeId(inst.typeid) || 'PR') : 'PR';
-                taskRuntime = {
-                    InstanceID: instanceId,
-                    SAP__Origin: 'LOCAL',
-                    TaskTitle: inst ? `${inst.normalTask === false ? 'Review' : 'Approve'} ${objectType} ${inst.instid}` : '',
-                    Status: inst ? inst.status : 'READY',
-                    Priority: 'MEDIUM',
-                    CreatedOn: undefined,
-                    CreatedByName: undefined,
-                    TaskDefinitionID: inst ? (inst.typeid || '') : '',
-                    SupportsForward: false,
-                    SupportsComments: true,
-                    decisions: []
-                };
-            }
-            const objectType = await this._resolveObjectType(instanceId, sapUser, userJwt, hints?.businessObjectType, taskRuntime);
+            const resolvedObjectType = objectType || (inst ? (resolveObjectTypeFromTypeId(inst.typeid) || 'PR') : 'PR');
+            const resolvedInstid = instid || taskRuntime.TaskTitle?.match(/\d+/)?.[0] || '';
 
             const configRegistry = ConfigRegistry.getInstance();
             const mappingEngine = MappingEngine.getInstance();
             const resolver = FieldRequirementResolver.getInstance();
             const projector = CanonicalProjector.getInstance();
 
-            const config = configRegistry.get(objectType);
+            const config = configRegistry.get(resolvedObjectType);
             if (!config) {
-                throw new Error(`Configuration not found for objectType: ${objectType}`);
+                throw new Error(`Configuration not found for objectType: ${resolvedObjectType}`);
             }
-
-            let instid = hints?.documentId || hints?.instid;
-            if (!instid) {
-                instid = taskRuntime.TaskTitle?.match(/\d+/)?.[0] || '';
-            }
-
-            if (!instid) {
-                throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
-            }
-
-            let businessObject = await this.sapOdataAdapter.getDetail(objectType, instid, sapUser, userJwt);
 
             const mergedPayload = inst ? { ...inst, ...businessObject, header: { ...inst, ...businessObject.header } } : businessObject;
 
             // Map to Canonical Model using Config mappings
-            const canonicalObject = mappingEngine.map(mergedPayload, config, { documentId: instid });
+            const canonicalObject = mappingEngine.map(mergedPayload, config, { documentId: resolvedInstid });
 
             // Resolve field requirements & Project / Prune
             const fieldPlan = resolver.resolve('detail', config);
@@ -353,7 +417,7 @@ export class InboxProcessor {
                     key,
                     label,
                     dataPath: `$.${m.targetPath}`,
-                    dataType: m.type === 'string' ? 'TEXT' : m.transform === 'number' ? 'AMOUNT' : m.transform === 'sapDateToIso' ? 'DATE' : 'TEXT'
+                    dataType: (m as any).dataType || (m.type === 'string' ? 'TEXT' : m.transform === 'number' ? 'AMOUNT' : m.transform === 'sapDateToIso' ? 'DATE' : 'TEXT')
                 };
             }
 
@@ -370,15 +434,15 @@ export class InboxProcessor {
                         key,
                         label,
                         dataPath: `$.${f.targetPath}`,
-                        dataType: f.type === 'string' ? 'TEXT' : f.transform === 'number' ? 'QUANTITY' : f.transform === 'sapDateToIso' ? 'DATE' : 'TEXT'
+                        dataType: (f as any).dataType || (f.type === 'string' ? 'TEXT' : f.transform === 'number' ? 'QUANTITY' : f.transform === 'sapDateToIso' ? 'DATE' : 'TEXT')
                     };
                 }
             }
 
             const businessContext: Record<string, any> = {
-                type: objectType,
+                type: resolvedObjectType,
                 documentId: instid,
-                [objectType.toLowerCase()]: canonicalObject
+                [resolvedObjectType.toLowerCase()]: canonicalObject
             };
 
             return {
@@ -419,7 +483,10 @@ export class InboxProcessor {
             };
         } catch (error: any) {
             this.logger.error(`Error in getTaskDetail: ${error.message}`);
-            throw new AppError(`Failed to load task detail: ${error.message}`, 500);
+            if (error instanceof AppError) throw error;
+            const isForbidden = error.message?.toLowerCase().includes('no access') || error.message?.toLowerCase().includes('not authorized');
+            const statusCode = isForbidden ? 403 : (error.statusCode || 500);
+            throw new AppError(`Failed to load task detail: ${error.message}`, statusCode);
         }
     }
 

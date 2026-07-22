@@ -19,11 +19,29 @@ export interface ObjectConfig {
     navigations: Record<string, string>;
   };
   mappings: {
-    root: Array<{ sourcePath: string; targetPath: string; type?: string; required?: boolean; transform?: string; dependencies?: string[] }>;
+    root: Array<{ 
+      sourcePath: string; 
+      targetPath: string; 
+      type?: string; 
+      required?: boolean; 
+      transform?: string; 
+      dependencies?: string[];
+      label?: string;
+      dataType?: string;
+    }>;
     collections: Record<string, {
       navigationKey: string;
       targetPath: string;
-      fields: Array<{ sourcePath: string; targetPath: string; type?: string; required?: boolean; transform?: string; dependencies?: string[] }>;
+      fields: Array<{ 
+        sourcePath: string; 
+        targetPath: string; 
+        type?: string; 
+        required?: boolean; 
+        transform?: string; 
+        dependencies?: string[];
+        label?: string;
+        dataType?: string;
+      }>;
     }>;
   };
   uiSchema: {
@@ -44,6 +62,8 @@ export interface ObjectConfig {
     variant: string;
     requiresComment: boolean;
     sapDecisionKey?: string;
+    confirmRequired?: boolean;
+    confirmMessage?: string;
   }>;
   cardChips?: Array<{
     label?: string;
@@ -82,9 +102,31 @@ export class ConfigRegistry {
     return ConfigRegistry.instance;
   }
 
+  public dump(): Record<string, any> {
+    const dumpData: Record<string, any> = {};
+    for (const [key, value] of this.configs.entries()) {
+      dumpData[key] = value;
+    }
+    return {
+      resolvedConfigDir: this.getConfigDir(),
+      configDirExists: fs.existsSync(this.getConfigDir()),
+      configsLoaded: Array.from(this.configs.keys()),
+      aliases: Object.fromEntries(this.aliasMap.entries()),
+      configs: dumpData
+    };
+  }
+
+  private getConfigDir(): string {
+    const cwdPath = path.join(process.cwd(), 'srv', 'configuration', 'object-types');
+    if (fs.existsSync(cwdPath)) {
+      return cwdPath;
+    }
+    return path.join(__dirname, '..', '..', 'configuration', 'object-types');
+  }
+
   private setupFileWatcher() {
     if (process.env.NODE_ENV !== 'production') {
-      const rootConfigDir = path.join(__dirname, '..', '..', 'configuration', 'object-types');
+      const rootConfigDir = this.getConfigDir();
       if (fs.existsSync(rootConfigDir)) {
         try {
           fs.watch(rootConfigDir, { recursive: true }, (eventType, filename) => {
@@ -104,7 +146,7 @@ export class ConfigRegistry {
   }
 
   private loadConfigurations() {
-    const rootConfigDir = path.join(__dirname, '..', '..', 'configuration', 'object-types');
+    const rootConfigDir = this.getConfigDir();
     if (!fs.existsSync(rootConfigDir)) {
       console.warn(`[ConfigRegistry] Warning: Configuration directory does not exist at ${rootConfigDir}`);
       return;

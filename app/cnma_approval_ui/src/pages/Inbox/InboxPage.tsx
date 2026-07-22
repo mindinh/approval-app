@@ -13,12 +13,13 @@ import {
 import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { useIsMobile, useSidebar, Button } from '@cnma/react-ui';
+import { useErrorModal } from '@/contexts/useErrorModal';
 
 type TaskScope = 'my' | 'approved';
 
 export default function InboxPage() {
     const { t } = useTranslation();
-    const DETAIL_PREFETCH_DELAY_MS = 200;
+    const { showError } = useErrorModal();
     const { taskId } = useParams<{ taskId?: string }>();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -30,10 +31,8 @@ export default function InboxPage() {
 
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [detailPrefetchTaskId, setDetailPrefetchTaskId] = useState<string | null>(null);
     const isMobile = useIsMobile();
     const { setOpenMobile } = useSidebar();
-    const { data: userInfo } = useCurrentUser();
 
     // Reset selection state whenever scope changes
     // Refs for auto-selection and scope tracking
@@ -67,24 +66,46 @@ export default function InboxPage() {
         : undefined;
     const informationHints = selectedTask
         ? {
-              sapOrigin: selectedTask.sapOrigin,
-              documentId: selectedTask.businessContext?.documentId,
-              businessObjectType: selectedTask.businessContext?.type,
-          }
+            sapOrigin: selectedTask.sapOrigin,
+            documentId: selectedTask.businessContext?.documentId,
+            businessObjectType: selectedTask.businessContext?.type,
+        }
         : undefined;
 
-    // Consolidate queries to call only useTaskDetail
     const {
         data: detailResponse,
         isLoading: isLoadingDetail,
-    } = useTaskDetail(selectedTaskId);
+        isError: isErrorDetail,
+        error: errorDetail,
+        refetch: refetchDetail,
+    } = useTaskDetail(selectedTaskId, informationHints);
 
     const decisionMutation = useDecision();
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
-    
+
     const activeDetail = detailResponse?.detail;
     const isSecondaryLoading = false;
+
+    // Automatically trigger ErrorModal when worklist loading fails
+    useEffect(() => {
+        if (activeTasksQuery.isError && activeTasksQuery.error) {
+            showError(activeTasksQuery.error, {
+                onRetry: () => void activeTasksQuery.refetch(),
+                onClose: () => navigate('/'),
+            });
+        }
+    }, [activeTasksQuery.isError, activeTasksQuery.error, showError, activeTasksQuery, navigate]);
+
+    // Automatically trigger ErrorModal when task detail loading fails
+    useEffect(() => {
+        if (isErrorDetail && errorDetail) {
+            showError(errorDetail, {
+                onRetry: () => void refetchDetail(),
+                onClose: () => navigate('/'),
+            });
+        }
+    }, [isErrorDetail, errorDetail, showError, refetchDetail, navigate]);
 
     // Auto-select first task on desktop when list loads and no task is selected
     useEffect(() => {
@@ -152,10 +173,16 @@ export default function InboxPage() {
                             navigate(`/inbox${scopeParam}`);
                         }
                     },
+                    onError: (err) => {
+                        showError(err, {
+                            title: 'Decision Failed',
+                            onClose: () => navigate('/'),
+                        });
+                    },
                 }
             );
         },
-        [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, scope]
+        [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, scope, showError]
     );
 
     const handleMassDecision = useCallback(
@@ -231,6 +258,9 @@ export default function InboxPage() {
                                 <TaskDetailView
                                     detail={activeDetail}
                                     isLoading={isLoadingDetail}
+                                    isError={isErrorDetail}
+                                    error={errorDetail}
+                                    onRetry={() => void refetchDetail()}
                                     isSecondaryLoading={isSecondaryLoading}
                                     onBack={handleBack}
                                     onDecision={handleDecision}
@@ -252,6 +282,8 @@ export default function InboxPage() {
                                     selectedTaskId={selectedTaskId}
                                     onSelectTask={handleSelectTask}
                                     isLoading={isLoadingList}
+                                    isError={activeTasksQuery.isError}
+                                    error={activeTasksQuery.error}
                                     onRefresh={handleRefreshTasks}
                                     isRefreshing={isRefetchingList}
                                     totalItems={totalTasks}
@@ -284,6 +316,8 @@ export default function InboxPage() {
                     selectedTaskId={selectedTaskId}
                     onSelectTask={handleSelectTask}
                     isLoading={isLoadingList}
+                    isError={activeTasksQuery.isError}
+                    error={activeTasksQuery.error}
                     onRefresh={handleRefreshTasks}
                     isRefreshing={isRefetchingList}
                     totalItems={totalTasks}
@@ -314,6 +348,9 @@ export default function InboxPage() {
                     <TaskDetailView
                         detail={activeDetail}
                         isLoading={isLoadingDetail && !!selectedTaskId}
+                        isError={isErrorDetail}
+                        error={errorDetail}
+                        onRetry={() => void refetchDetail()}
                         isSecondaryLoading={isSecondaryLoading}
                         onBack={handleBack}
                         onDecision={handleDecision}

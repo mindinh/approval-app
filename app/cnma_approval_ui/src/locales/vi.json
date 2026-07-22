@@ -145,7 +145,17 @@
         "priority": "Mức ưu tiên",
         "dueDate": "Hạn chót",
         "status": "Trạng thái",
-        "description": "Mô tả"
+        "description": "Mô tả",
+        "documentType": "Loại chứng từ",
+        "fundsCenter": "Bộ phận phòng ban (Funds Center)",
+        "releaseStrategyName": "Tên chiến lược duyệt",
+        "totalAmountCurrency": "Tổng tiền + Tiền tệ",
+        "companyCode": "Mã công ty",
+        "headerNote": "Ghi chú header",
+        "purpose": "Mục đích",
+        "paidBy": "Thanh toán bởi",
+        "bankDetails": "Thông tin ngân hàng",
+        "overview": "Tổng quan"
     },
     "decision": {
         "approve": "Phê duyệt",
@@ -197,6 +207,27 @@
         "unauthorized": "Bạn không có quyền thực hiện thao tác này.",
         "serverError": "Lỗi máy chủ. Vui lòng thử lại sau.",
         "notFound": "Không tìm thấy tài nguyên yêu cầu."
+    },
+    "error": {
+        "technicalDetails": "Thông Tin Chẩn Đoán Kỹ Thuật (Dành Cho Hỗ Trợ)",
+        "copyDetails": "Sao Chép Chi Tiết",
+        "copyMessage": "Sao Chép Thông Báo",
+        "copied": "Đã Sao Chép",
+        "viewDetails": "Xem Chẩn Đoán",
+        "titles": {
+            "business": "Lỗi Xác Thực Dữ Liệu",
+            "technical": "Lỗi Hệ Thống Backend",
+            "network": "Kết Nối Thất Bại",
+            "auth": "Từ Chối Truy Cập",
+            "notFound": "Không Tìm Thấy Chứng Từ"
+        },
+        "messages": {
+            "business": "Yêu cầu không thể xử lý do dữ liệu không hợp lệ.",
+            "technical": "Hệ thống gặp sự cố khi kết nối với SAP backend. Vui lòng thử lại hoặc liên hệ bộ phận hỗ trợ CNTT.",
+            "network": "Không thể kết nối tới máy chủ. Vui lòng kiểm tra đường truyền mạng.",
+            "auth": "Bạn không có quyền xem hoặc thực hiện thao tác trên chứng từ này.",
+            "notFound": "Không tìm thấy chứng từ hoặc công việc được yêu cầu."
+        }
     },
     "toasts": {
         "actionInProgress": "Đang xử lý...",

@@ -30,21 +30,26 @@
   },
   "mappings": {
     "root": [
-      { "sourcePath": "purchaseRequisition", "targetPath": "header.purchaseRequisition", "label": "PR Number", "type": "string", "required": true },
-      { "sourcePath": "purchaseRequisitionText", "targetPath": "header.purchaseRequisitionText", "label": "Header Note", "type": "string" },
-      { "sourcePath": "userFullName", "targetPath": "header.userFullName", "label": "Requestor", "type": "string" },
-      { "sourcePath": "doctyp", "targetPath": "header.purchaseRequisitionType", "type": "string" },
-      { "sourcePath": "doctyp", "targetPath": "header.purchaseRequisitionTypeDisplay", "type": "string" },
-      { "sourcePath": "departmentDisplay", "targetPath": "header.departmentDisplay", "type": "string" },
+      { "sourcePath": "purchaseRequisition", "altSourcePaths": ["DocumentNumber"], "targetPath": "header.purchaseRequisition", "label": "Document Number", "type": "string", "required": true },
+      { "sourcePath": "purchaseRequisitionText", "altSourcePaths": ["HeaderNote"], "targetPath": "header.purchaseRequisitionText", "label": "Header Note", "type": "string", "dataType": "LONG_TEXT" },
+      { "sourcePath": "purpose", "targetPath": "header.purpose", "label": "Purpose", "type": "string", "dataType": "LONG_TEXT" },
+      { "sourcePath": "paidBy", "targetPath": "header.paidBy", "label": "Paid By", "type": "string", "dataType": "LONG_TEXT" },
+      { "sourcePath": "bankDetails", "targetPath": "header.bankDetails", "label": "Bank Details", "type": "string", "dataType": "LONG_TEXT" },
+      { "sourcePath": "userFullName", "altSourcePaths": ["CreatedByUser", "createdByUser"], "targetPath": "header.userFullName", "label": "Requester", "type": "string" },
+      { "sourcePath": "doctyp", "altSourcePaths": ["DocumentType"], "targetPath": "header.purchaseRequisitionType", "type": "string" },
+      { "sourcePath": "purchaseRequisitionTypeDisplay", "altSourcePaths": ["DocumentTypeText", "doctyp_desc", "doctyp", "DocumentType"], "targetPath": "header.purchaseRequisitionTypeDisplay", "label": "Document Type", "type": "string" },
+      { "sourcePath": "departmentDisplay", "altSourcePaths": ["FundsCenter", "fundsCenter"], "targetPath": "header.departmentDisplay", "label": "Funds Center", "type": "string" },
+      { "sourcePath": "companyCodeDisplay", "altSourcePaths": ["companyCode", "CompanyCode"], "targetPath": "header.companyCodeDisplay", "label": "Company Code", "type": "string" },
+      { "sourcePath": "companyCode", "altSourcePaths": ["CompanyCode"], "targetPath": "header.companyCode", "label": "Company Code", "type": "string" },
       { "sourcePath": "expenseTypeDisplay", "targetPath": "header.expenseTypeDisplay", "type": "string" },
-      { "sourcePath": "total", "targetPath": "header.totalNetAmount", "transform": "number" },
-      { "sourcePath": "curr_vnd", "targetPath": "header.displayCurrency", "type": "string" },
+      { "sourcePath": "total", "altSourcePaths": ["TotalNetAmountLocalCrcy", "totalNetAmountLocalCrcy", "totalNetAmountDocCrcy", "netAmount"], "targetPath": "header.totalNetAmount", "label": "Total Amount + Currency", "transform": "number", "dataType": "AMOUNT" },
+      { "sourcePath": "curr_vnd", "altSourcePaths": ["LocalCurrency", "docCurrency", "doc_curr"], "targetPath": "header.displayCurrency", "type": "string" },
       { "sourcePath": "total_doc_curr", "targetPath": "header.totalDocNetAmount", "transform": "number" },
       { "sourcePath": "doc_curr", "targetPath": "header.docCurrency", "type": "string" },
       { "sourcePath": "numberOfItems", "targetPath": "header.numberOfItems", "transform": "number" },
-      { "sourcePath": "releaseStrategyName", "targetPath": "header.releaseStrategyName", "type": "string" },
+      { "sourcePath": "releaseStrategyName", "altSourcePaths": ["ReleaseStrategyText", "releaseStrategyText"], "targetPath": "header.releaseStrategyName", "type": "string" },
       { "sourcePath": "priority", "targetPath": "header.priority", "type": "string" },
-      { "sourcePath": "createdOn", "targetPath": "header.createdOn", "transform": "sapDateToIso" },
+      { "sourcePath": "createdOn", "altSourcePaths": ["CreationDate", "taskCreationDateTime"], "targetPath": "header.createdOn", "transform": "sapDateToIso" },
       { "sourcePath": "assetClass", "targetPath": "header.assetClass", "type": "string" },
       { "sourcePath": "assetNumber", "targetPath": "header.assetNumber", "type": "string" },
       { "sourcePath": "assetSubnumber", "targetPath": "header.assetSubnumber", "type": "string" },
@@ -84,23 +89,27 @@
         "navigationKey": "items",
         "targetPath": "items",
         "fields": [
-          { "sourcePath": "purchaseRequisitionItem", "targetPath": "item", "required": true },
-          { "sourcePath": "material", "targetPath": "material", "type": "string" },
-          { "sourcePath": "purchaseRequisitionItemText", "targetPath": "shortText", "type": "string" },
-          { "sourcePath": "materialGroupDisplay", "targetPath": "materialGroup", "type": "string" },
-          { "sourcePath": "requestedQuantity", "targetPath": "quantity", "transform": "number" },
-          { "sourcePath": "purchaseRequisitionPrice", "targetPath": "price", "transform": "number" },
-          { "sourcePath": "purReqnItemTotalAmount", "targetPath": "itemTotalAmount", "transform": "number" },
+          { "sourcePath": "purchaseRequisitionItem", "altSourcePaths": ["ItemNumber"], "targetPath": "item", "required": true },
+          { "sourcePath": "plant", "altSourcePaths": ["Plant"], "targetPath": "plant", "dependencies": ["PlantName", "plantName", "PlantText", "plantText"], "transform": "combineCodeAndText" },
+          { "sourcePath": "storageLocation", "altSourcePaths": ["StorageLocation"], "targetPath": "storageLocation", "dependencies": ["StorageLocationName", "storageLocationName", "StorageLocationText", "storageLocationText"], "transform": "combineCodeAndText" },
+          { "sourcePath": "material", "altSourcePaths": ["Material"], "targetPath": "material", "type": "string" },
+          { "sourcePath": "purchaseRequisitionItemText", "altSourcePaths": ["MaterialText"], "targetPath": "shortText", "type": "string" },
+          { "sourcePath": "materialGroupDisplay", "altSourcePaths": ["MaterialGroup"], "targetPath": "materialGroup", "dependencies": ["MaterialGroupName", "materialGroupName", "MaterialGroupText", "materialGroupText"], "transform": "combineCodeAndText" },
+          { "sourcePath": "requestedQuantity", "altSourcePaths": ["Quantity"], "targetPath": "quantity", "transform": "number", "dataType": "QUANTITY" },
+          { "sourcePath": "unit", "altSourcePaths": ["Unit"], "targetPath": "unit", "type": "string" },
           { "sourcePath": "deliveryDate", "targetPath": "deliveryDate", "transform": "sapDateToIso" },
-          { "sourcePath": "plant", "targetPath": "plant", "type": "string" },
-          { "sourcePath": "assetClass", "targetPath": "itemAssetClass", "type": "string" },
-          { "sourcePath": "costCenter", "targetPath": "itemCostCenter", "type": "string" },
-          { "sourcePath": "glAccount", "targetPath": "itemGlAccount", "type": "string" },
-          { "sourcePath": "percentage", "targetPath": "itemPercentage", "type": "string" },
-          { "sourcePath": "value", "targetPath": "itemValue", "transform": "number" },
-          { "sourcePath": "salesChannel", "targetPath": "itemSalesChannel", "type": "string" },
-          { "sourcePath": "storageLocation", "targetPath": "itemStorageLocation", "type": "string" },
-          { "sourcePath": "toolCategory", "targetPath": "itemToolCategory", "type": "string" }
+          { "sourcePath": "purchaseRequisitionPrice", "altSourcePaths": ["ValuationPrice"], "targetPath": "price", "transform": "number", "dataType": "AMOUNT" },
+          { "sourcePath": "purReqnItemTotalAmount", "altSourcePaths": ["TotalNetAmountDocCrcy"], "targetPath": "totalAmount", "transform": "number", "dataType": "AMOUNT" },
+          { "sourcePath": "glAccount", "altSourcePaths": ["GLAccount"], "targetPath": "glAccount", "dependencies": ["GLAccountText", "glAccountText"], "transform": "combineCodeAndText" },
+          { "sourcePath": "commitmentItemShortId", "altSourcePaths": ["CommitmentItemShortID"], "targetPath": "commitmentItemShortId", "dependencies": ["CommitmentItemShortIDText", "CommitmentItemName", "commitmentItemName"], "transform": "combineCodeAndText" },
+          { "sourcePath": "documentCurrency", "altSourcePaths": ["DocumentCurrency"], "targetPath": "documentCurrency", "type": "string" },
+          { "sourcePath": "localCurrency", "altSourcePaths": ["LocalCurrency"], "targetPath": "localCurrency", "type": "string" },
+          { "sourcePath": "assetClass", "targetPath": "assetClass", "type": "string" },
+          { "sourcePath": "costCenter", "targetPath": "costCenter", "type": "string" },
+          { "sourcePath": "percentage", "targetPath": "percentage", "type": "string" },
+          { "sourcePath": "value", "targetPath": "value", "transform": "number" },
+          { "sourcePath": "salesChannel", "targetPath": "salesChannel", "type": "string" },
+          { "sourcePath": "toolCategory", "targetPath": "toolCategory", "type": "string" }
         ]
       },
       "workflowSteps": {
@@ -179,36 +188,22 @@
     "subtitle": "{{header.userFullName}}",
     "sections": [
       {
-        "id": "basic",
+        "id": "overviewHeader",
         "type": "CARD",
-        "title": "Basic Data",
+        "title": "Overview",
         "fields": [
           "purchaseRequisition",
-          "purchaseRequisitionText",
-          "userFullName",
           "purchaseRequisitionTypeDisplay",
+          "userFullName",
           "departmentDisplay",
-          "expenseTypeDisplay"
-        ]
-      },
-      {
-        "id": "amount",
-        "type": "CARD",
-        "title": "Amount",
-        "fields": [
-          "totalNetAmount",
-          "totalDocNetAmount",
-          "numberOfItems"
-        ]
-      },
-      {
-        "id": "workflow",
-        "type": "CARD",
-        "title": "Workflow",
-        "fields": [
           "createdOn",
-          "priority",
-          "releaseStrategyName"
+          "releaseStrategyName",
+          "totalNetAmount",
+          "companyCodeDisplay",
+          "purchaseRequisitionText",
+          "purpose",
+          "paidBy",
+          "bankDetails"
         ]
       },
       {
@@ -216,7 +211,7 @@
         "type": "TABLE",
         "title": "Items",
         "dataPath": "items",
-        "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "deliveryDate", "plant"]
+        "columns": ["item", "plant", "storageLocation", "material", "shortText", "materialGroup", "quantity", "unit", "deliveryDate", "price", "totalAmount", "glAccount", "commitmentItemShortId"]
       }
     ]
   },
@@ -266,36 +261,6 @@
     "ZASS": {
       "name": "Asset PR",
       "budgetMode": "WARNING",
-      "uiSchema": {
-        "sections": [
-          {
-            "id": "assetAssignment",
-            "type": "CARD",
-            "title": "Asset Accounting Assignments",
-            "fields": ["assetClass", "assetNumber", "assetSubnumber", "wbsElement"]
-          },
-          {
-            "id": "assetLifecycle",
-            "type": "CARD",
-            "title": "Asset Lifecycle Information",
-            "fields": ["capDate"]
-          },
-          {
-            "id": "items",
-            "type": "TABLE",
-            "title": "Items",
-            "dataPath": "items",
-            "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "itemAssetClass", "deliveryDate", "plant"]
-          },
-          {
-            "id": "accountAssignments",
-            "type": "TABLE",
-            "title": "Account Cost Distributions",
-            "dataPath": "accountAssignments",
-            "columns": ["item", "itemCostCenter", "itemGlAccount", "itemPercentage", "itemValue"]
-          }
-        ]
-      },
       "cardChips": [
         { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
         { "label": "Asset", "dataPath": "header.assetClass", "dataType": "TEXT" },
@@ -305,36 +270,6 @@
     "ZEXP": {
       "name": "Expense PR",
       "budgetMode": "WARNING",
-      "uiSchema": {
-        "sections": [
-          {
-            "id": "expenseAllocation",
-            "type": "CARD",
-            "title": "Expense Cost Assignments",
-            "fields": ["costCenter", "costCenterName", "glAccount", "glAccountName", "internalOrder"]
-          },
-          {
-            "id": "expenseFunding",
-            "type": "CARD",
-            "title": "Funding & Budgeting Details",
-            "fields": ["budgetPeriod", "fund"]
-          },
-          {
-            "id": "items",
-            "type": "TABLE",
-            "title": "Items",
-            "dataPath": "items",
-            "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "itemCostCenter", "deliveryDate", "plant"]
-          },
-          {
-            "id": "accountAssignments",
-            "type": "TABLE",
-            "title": "Account Cost Distributions",
-            "dataPath": "accountAssignments",
-            "columns": ["item", "itemCostCenter", "itemGlAccount", "itemPercentage", "itemValue"]
-          }
-        ]
-      },
       "cardChips": [
         { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
         { "label": "Cost Center", "dataPath": "header.costCenter", "dataType": "TEXT" },
@@ -343,36 +278,6 @@
     },
     "ZMAK": {
       "name": "Marketing PR",
-      "uiSchema": {
-        "sections": [
-          {
-            "id": "marketingInfo",
-            "type": "CARD",
-            "title": "Marketing Campaign Details",
-            "fields": ["marketingCampaign", "campaignName", "campaignBudget"]
-          },
-          {
-            "id": "marketingAudience",
-            "type": "CARD",
-            "title": "Target Audience & Coordinator",
-            "fields": ["targetAudience", "campaignManager"]
-          },
-          {
-            "id": "items",
-            "type": "TABLE",
-            "title": "Items",
-            "dataPath": "items",
-            "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "itemMarketingCampaign", "deliveryDate", "plant"]
-          },
-          {
-            "id": "channelBreakdown",
-            "type": "TABLE",
-            "title": "Advertising Channels Breakdown",
-            "dataPath": "channelBreakdown",
-            "columns": ["distChannel", "distImpressions", "distShare", "distDate"]
-          }
-        ]
-      },
       "cardChips": [
         { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
         { "label": "Campaign ID", "dataPath": "header.marketingCampaign", "dataType": "TEXT" }
@@ -380,36 +285,6 @@
     },
     "ZNB1": {
       "name": "Trading PR",
-      "uiSchema": {
-        "sections": [
-          {
-            "id": "tradeInfo",
-            "type": "CARD",
-            "title": "Trading details",
-            "fields": ["salesChannel", "targetCustomer"]
-          },
-          {
-            "id": "customsInfo",
-            "type": "CARD",
-            "title": "HS Code & Customs Duty",
-            "fields": ["tariffCode", "originCountry", "dutyRate"]
-          },
-          {
-            "id": "items",
-            "type": "TABLE",
-            "title": "Items",
-            "dataPath": "items",
-            "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "itemSalesChannel", "deliveryDate", "plant"]
-          },
-          {
-            "id": "tariffsBreakdown",
-            "type": "TABLE",
-            "title": "Customs HS Code Details",
-            "dataPath": "tariffsBreakdown",
-            "columns": ["item", "hsCodeItem", "hsDescItem", "hsDutyRate", "hsEstDuty"]
-          }
-        ]
-      },
       "cardChips": [
         { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
         { "label": "Sales Channel", "dataPath": "header.salesChannel", "dataType": "TEXT" }
@@ -417,29 +292,6 @@
     },
     "ZNB2": {
       "name": "Non-Trade PR (Stock)",
-      "uiSchema": {
-        "sections": [
-          {
-            "id": "stockAlloc",
-            "type": "CARD",
-            "title": "Stock Storage Allocation",
-            "fields": ["storageLocation", "receivingPlant", "storageBin"]
-          },
-          {
-            "id": "stockControl",
-            "type": "CARD",
-            "title": "Inventory Control Parameters",
-            "fields": ["minStock", "reorderPoint", "stockController"]
-          },
-          {
-            "id": "items",
-            "type": "TABLE",
-            "title": "Items",
-            "dataPath": "items",
-            "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "itemStorageLocation", "deliveryDate", "plant"]
-          }
-        ]
-      },
       "cardChips": [
         { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
         { "label": "Storage", "dataPath": "header.storageLocation", "dataType": "TEXT" }
@@ -447,29 +299,6 @@
     },
     "ZTOL": {
       "name": "Tools PR",
-      "uiSchema": {
-        "sections": [
-          {
-            "id": "tools",
-            "type": "CARD",
-            "title": "Safety & Tool Classification",
-            "fields": ["toolCategory", "safetyLevel", "safetyCert"]
-          },
-          {
-            "id": "toolLifecycle",
-            "type": "CARD",
-            "title": "Tool Custody & Calibration",
-            "fields": ["custodianDept", "calibrationDue"]
-          },
-          {
-            "id": "items",
-            "type": "TABLE",
-            "title": "Items",
-            "dataPath": "items",
-            "columns": ["item", "material", "shortText", "materialGroup", "quantity", "price", "itemTotalAmount", "itemToolCategory", "deliveryDate", "plant"]
-          }
-        ]
-      },
       "cardChips": [
         { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
         { "label": "Custodian", "dataPath": "header.safetyLevel", "dataType": "TEXT" }

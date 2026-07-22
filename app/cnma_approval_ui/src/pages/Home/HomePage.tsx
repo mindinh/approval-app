@@ -30,20 +30,21 @@ export default function HomePage() {
     const { setOpenMobile } = useSidebar();
     const { data: userInfo } = useCurrentUser();
 
+    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+
     // Redirect desktop users to inbox — home page is mobile-only
     useEffect(() => {
-        const isMobileViewport = window.innerWidth < 768;
         if (!isMobileViewport) {
             navigate('/inbox', { replace: true });
         }
-    }, [navigate]);
+    }, [navigate, isMobileViewport]);
 
     // Reuse the dashboard query for real stats and task data
-    const { data: dashboardData, isLoading } = useDashboardQuery();
+    const { data: dashboardData, isLoading } = useDashboardQuery({ enabled: isMobileViewport });
     const tasks: DashboardTask[] = dashboardData?.items ?? [];
 
     // Query approved/completed tasks to get the count of completed tasks from the instance list
-    const { data: approvedTasksData, isLoading: isApprovedLoading } = useApprovedTasks();
+    const { data: approvedTasksData, isLoading: isApprovedLoading } = useApprovedTasks({ enabled: isMobileViewport });
     const approvedCount = approvedTasksData?.total ?? 0;
 
     // Compute stats
@@ -57,7 +58,7 @@ export default function HomePage() {
     }, [tasks, approvedCount]);
 
     // Real My Inbox Task data for Newest Tasks feed
-    const { data: inboxData, isLoading: isInboxLoading } = useTasks();
+    const { data: inboxData, isLoading: isInboxLoading } = useTasks({ enabled: isMobileViewport });
     const newestTasks: InboxTask[] = useMemo(() => {
         const rawItems = inboxData?.items || [];
         return [...rawItems]

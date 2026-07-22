@@ -146,7 +146,17 @@
         "priority": "Priority",
         "dueDate": "Due Date",
         "status": "Status",
-        "description": "Description"
+        "description": "Description",
+        "documentType": "Document Type",
+        "fundsCenter": "Funds Center",
+        "releaseStrategyName": "Release Strategy Name",
+        "totalAmountCurrency": "Total Amount + Currency",
+        "companyCode": "Company Code",
+        "headerNote": "Header Note",
+        "purpose": "Purpose",
+        "paidBy": "Paid By",
+        "bankDetails": "Bank Details",
+        "overview": "Overview"
     },
     "decision": {
         "approve": "Approve",
@@ -198,6 +208,27 @@
         "unauthorized": "You are not authorized to perform this action.",
         "serverError": "Server error. Please try again later.",
         "notFound": "The requested resource was not found."
+    },
+    "error": {
+        "technicalDetails": "Technical Diagnostics (for Support)",
+        "copyDetails": "Copy Details",
+        "copyMessage": "Copy Message",
+        "copied": "Copied",
+        "viewDetails": "View Diagnostics",
+        "titles": {
+            "business": "Validation Error",
+            "technical": "System Error",
+            "network": "Connection Failed",
+            "auth": "Access Denied",
+            "notFound": "Document Not Found"
+        },
+        "messages": {
+            "business": "The request could not be processed due to invalid data.",
+            "technical": "The server encountered an issue communicating with the SAP backend. Please try again or contact IT support.",
+            "network": "Unable to connect to the server. Please check your network connection.",
+            "auth": "You do not have permission to view or execute actions on this document.",
+            "notFound": "The requested document or task could not be found."
+        }
     },
     "toasts": {
         "actionInProgress": "Action in progress...",
