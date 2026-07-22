@@ -156,44 +156,6 @@ export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
     return query;
 }
 
-// ─── useTaskOverview (fast-path, 3-segment batch) ──────────
-export function useTaskOverview(
-    instanceId: string | null,
-    options?: {
-        enabled?: boolean;
-        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string };
-    }
-) {
-    const query = useQuery<TaskDetailResponse, Error>({
-        queryKey: inboxKeys.taskOverview(instanceId || ''),
-        queryFn: () => inboxApi.getTaskOverview(instanceId!, options?.hints),
-        enabled: !!instanceId && options?.enabled !== false,
-        staleTime: STALE.OVERVIEW,
-    });
-
-    useErrorToast(query.error, 'Failed to load task overview');
-    return query;
-}
-
-// ─── useTaskInformation ────────────────────────────────────
-export function useTaskInformation(
-    instanceId: string | null,
-    options?: {
-        enabled?: boolean;
-        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string };
-    }
-) {
-    const query = useQuery<TaskDetailResponse, Error>({
-        queryKey: inboxKeys.taskInformation(instanceId || ''),
-        queryFn: () => inboxApi.getTaskInformation(instanceId!, options?.hints),
-        enabled: !!instanceId && options?.enabled !== false,
-        staleTime: STALE.INFORMATION,
-    });
-
-    useErrorToast(query.error, 'Failed to load task information');
-    return query;
-}
-
 // ─── useTaskDetail ─────────────────────────────────────────
 export function useTaskDetail(instanceId: string | null, options?: { enabled?: boolean }) {
     const query = useQuery<TaskDetailResponse, Error>({
@@ -204,38 +166,5 @@ export function useTaskDetail(instanceId: string | null, options?: { enabled?: b
     });
 
     useErrorToast(query.error, 'Failed to load task detail');
-    return query;
-}
-
-// ─── useWorkflowApprovalTree ───────────────────────────────
-export function useWorkflowApprovalTree(
-    instanceId: string | null,
-    documentId?: string,
-    sapOrigin?: string,
-    businessObjectType?: string,
-    options?: { enabled?: boolean }
-) {
-    return useQuery({
-        queryKey: inboxKeys.taskWorkflow(instanceId || '', { documentId, sapOrigin, businessObjectType }),
-        queryFn: () => inboxApi.getWorkflowApprovalTree(instanceId!, documentId, sapOrigin, businessObjectType),
-        enabled: !!instanceId && !!documentId && options?.enabled !== false,
-        staleTime: STALE.WORKFLOW,
-    });
-}
-
-// ─── usePrAttachments (Standalone PR API) ──────────────────
-export function usePrAttachments(
-    documentNumber: string | null | undefined,
-    sapOrigin?: string,
-    options?: { enabled?: boolean }
-) {
-    const query = useQuery({
-        queryKey: inboxKeys.prAttachments(documentNumber || '', sapOrigin),
-        queryFn: () => inboxApi.getPrAttachments(documentNumber!, sapOrigin),
-        enabled: !!documentNumber && options?.enabled !== false,
-        staleTime: STALE.DETAIL,
-    });
-
-    useErrorToast(query.error, 'Failed to load PR attachments');
     return query;
 }

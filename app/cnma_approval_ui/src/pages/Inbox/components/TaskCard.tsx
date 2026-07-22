@@ -137,13 +137,21 @@ export function TaskCard({
 
                 {/* ── Business detail chips ── */}
                 {chips.length > 0 && (
-                    <div className="mt-3 flex w-full flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                    <div className="mt-3 flex w-full flex-wrap gap-1.5 text-xs">
                         {chips.map((chip, i) => (
-                            <span key={i} className="inline-flex min-w-0 max-w-full items-center gap-1">
-                                {chip.label && (
-                                    <span className="shrink-0 text-muted-foreground/80">{chip.label}:</span>
+                            <span
+                                key={i}
+                                className={cn(
+                                    'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
+                                    chip.isPrimary
+                                        ? 'bg-primary/10 text-primary border-primary/20'
+                                        : 'bg-muted/70 text-muted-foreground border-border/80'
                                 )}
-                                <span className="truncate text-foreground">{chip.value}</span>
+                            >
+                                {chip.label && (
+                                    <span className={cn('shrink-0 opacity-85', chip.isPrimary ? 'text-primary' : 'text-muted-foreground')}>{chip.label}:</span>
+                                )}
+                                <span className={cn('truncate', chip.isPrimary ? 'font-semibold' : 'text-foreground')}>{chip.value}</span>
                             </span>
                         ))}
                     </div>
@@ -224,13 +232,21 @@ export function TaskCard({
 
             {/* ── Business detail chips ── */}
             {chips.length > 0 && (
-                <div className="mt-2 flex w-full flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <div className="mt-2.5 flex w-full flex-wrap gap-1.5 text-xs">
                     {chips.map((chip, i) => (
-                        <span key={i} className="inline-flex min-w-0 items-center gap-1 overflow-hidden">
-                            {chip.label && (
-                                <span className="shrink-0 text-muted-foreground/80">{chip.label}:</span>
+                        <span
+                            key={i}
+                            className={cn(
+                                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
+                                chip.isPrimary
+                                    ? 'bg-primary/10 text-primary border-primary/20'
+                                    : 'bg-muted/70 text-muted-foreground border-border/80'
                             )}
-                            <span className="truncate text-foreground">{chip.value}</span>
+                        >
+                            {chip.label && (
+                                <span className={cn('shrink-0 opacity-85', chip.isPrimary ? 'text-primary' : 'text-muted-foreground')}>{chip.label}:</span>
+                            )}
+                            <span className={cn('truncate', chip.isPrimary ? 'font-semibold' : 'text-foreground')}>{chip.value}</span>
                         </span>
                     ))}
                 </div>

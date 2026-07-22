@@ -307,24 +307,6 @@ function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
     // PDF → client-side pdfjs viewer
     if (mime === 'application/pdf') return 'pdf';
 
-    // Other plain text → <iframe>
-    if (mime.startsWith('text/')) return 'iframe';
-    if (mime === 'application/xhtml+xml') return 'iframe';
-
-    // Word docx → client-side docx-preview
-    if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
-
-    // Excel xlsx / CSV → client-side xlsx/SheetJS
-    if (
-        mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        mime === 'text/csv'
-    ) {
-        return 'xlsx';
-    }
-
-    // Office documents → react-doc-viewer
-    if (OFFICE_MIME_TYPES.has(mime)) return 'docviewer';
-
     return 'none';
 }
 

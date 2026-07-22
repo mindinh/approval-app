@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Inpu
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 import { AttachmentPreviewCard, isPreviewableType } from '../AttachmentPreviewModal';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { useAddAttachment, usePrAttachments, useUploadPrAttachment } from '@/pages/Inbox/hooks/useInbox';
+import { useAddAttachment, useUploadPrAttachment } from '@/pages/Inbox/hooks/useInbox';
 import { formatDate, safe } from '@/pages/Inbox/utils/formatters';
 import { formatFileSize } from '../renderers/TaskDetailSections.shared';
 import {
@@ -63,16 +63,8 @@ export function AttachmentsPanel({
     const documentNumber = detail.task.businessContext?.documentId;
     const sapOrigin = detail.task.sapOrigin;
 
-    const { data: prAttachmentsResult } = usePrAttachments(
-        isPR ? documentNumber : null,
-        sapOrigin,
-        { enabled: isPR }
-    );
-
-    // Merge or fallback to PR attachments
-    const displayedAttachments = isPR
-        ? (prAttachmentsResult?.attachments || [])
-        : detail.attachments;
+    // Use attachments from consolidated detail directly
+    const displayedAttachments = detail.attachments || [];
 
     const isLoading = isPrLoading || (isSecLoading && displayedAttachments.length === 0);
 

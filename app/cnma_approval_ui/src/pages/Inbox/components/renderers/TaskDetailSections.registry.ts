@@ -25,10 +25,10 @@ export function resolveJsonPath(obj: unknown, path: string): unknown {
 export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionModel {
     const fieldSchema = detail.fieldSchema || {};
     const uiSchema = detail.uiSchema || { sections: [] };
-    const type = detail.businessContext?.type || 'UNKNOWN';
-    const businessObject = type !== 'UNKNOWN' && detail.businessContext
+    const type = detail.object?.objectType || detail.businessContext?.type || 'UNKNOWN';
+    const businessObject = detail.object || (type !== 'UNKNOWN' && detail.businessContext
         ? (detail.businessContext as unknown as Record<string, unknown>)[type.toLowerCase()]
-        : null;
+        : null);
 
     // Helper to format values
     const formatFieldValue = (value: unknown, fieldDef: DynamicFieldDefinition, contextObj?: unknown): string => {
@@ -99,7 +99,8 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
         if (!template) return '';
         return template.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
             const fieldKey = key.trim();
-            return values[fieldKey] !== undefined ? values[fieldKey] : '';
+            const lastSegment = fieldKey.includes('.') ? fieldKey.split('.').pop()! : fieldKey;
+            return values[fieldKey] !== undefined ? values[fieldKey] : (values[lastSegment] !== undefined ? values[lastSegment] : '');
         });
     };
 

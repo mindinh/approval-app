@@ -3,20 +3,41 @@ import { useQuery } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { inboxKeys } from '@/pages/Inbox/hooks/inboxKeys';
 import type { DashboardTask } from '@/services/inbox/inbox.types';
+import type { FilterValues } from '@/components/filterbar/types';
 
 // ─── Status Constants ─────────────────────────────────────
 // The backend normalizes status to these display labels.
-
-export const STATUS_LABELS = ['In Approving', 'Approved', 'Rejected'] as const;
+export const STATUS_LABELS = ['In Approving', 'Completed'] as const;
 
 export const STATUS_COLORS: Record<string, string> = {
-    'In Approving': 'var(--color-warning)',  // SAP Warning Orange
-    'Approved': 'var(--color-success)',      // SAP Success Green
-    'Rejected': 'var(--color-destructive)',  // SAP Error Red
+    'In Approving': 'var(--color-warning)',  // SAP Warning Orange (#e76500)
+    'Completed': 'var(--color-success)',    // SAP Success Green (#30914c)
 };
 
 /**
- * Client-side normalization: maps any backend status value to our 3 canonical labels.
+ * Mapping code values to human-readable descriptions alongside original codes.
+ */
+export function getDocTypeDescription(code: string): string {
+    const clean = (code || '').toUpperCase().trim();
+    switch (clean) {
+        case 'ZASS': return 'Asset (ZASS)';
+        case 'ZEXP': return 'Expense (ZEXP)';
+        case 'ZMAK': return 'Marketing (ZMAK)';
+        case 'ZNB1': return 'Standard (ZNB1)';
+        case 'ZNB2': return 'Non-Stock 2 (ZNB2)';
+        case 'ZTOL': return 'Tooling (ZTOL)';
+        case 'STANDARD': return 'Standard';
+        case 'NB': return 'Standard (NB)';
+        case 'ZCON': return 'Contract (ZCON)';
+        case 'ZCOR': return 'Core (ZCOR)';
+        case 'ZNBR': return 'Non-Stock (ZNBR)';
+        case 'ZUB': return 'Stock Transfer (ZUB)';
+        default: return code; // Fallback to raw code
+    }
+}
+
+/**
+ * Client-side normalization: maps any backend status value to our 2 canonical labels.
  * Handles both old labels (Ready, In Process) and SAP codes (READY, STARTED, etc.)
  */
 export function normalizeDashboardStatus(raw: string): string {
@@ -32,9 +53,8 @@ export function normalizeDashboardStatus(raw: string): string {
         case 'APPROVED':
         case 'COMPLETED':
         case 'COMPLETE':
-            return 'Approved';
         case 'REJECTED':
-            return 'Rejected';
+            return 'Completed';
         default:
             return 'In Approving'; // Default unknown statuses to In Approving
     }
@@ -51,7 +71,8 @@ export interface DonutSegment {
 export interface BarDataItem {
     label: string;
     total: number;
-    statusCounts: Record<string, number>;
+    'In Approving': number;
+    'Completed': number;
 }
 
 // ─── Table Row ────────────────────────────────────────────
@@ -63,10 +84,10 @@ export interface TableRow {
     status: string;
     totalNetAmount: number | null;
     displayCurrency: string;
+    createdAt?: string;
 }
 
 // ─── API Query Hook ───────────────────────────────────────
-
 export function useDashboardQuery() {
     return useQuery({
         queryKey: inboxKeys.dashboard(),
@@ -77,95 +98,124 @@ export function useDashboardQuery() {
 }
 
 // ─── Data Derivation Hook ─────────────────────────────────
-
 /**
  * Core hook: derives all chart datasets from the flat task array.
- * Cross-filtering is entirely client-side (zero additional API calls).
+ * Cross-filtering and dynamic summaries are entirely client-side (zero additional API calls).
  */
 export function useDashboardData(
     tasks: DashboardTask[],
-    selectedStatus: string | null,
-    selectedType: string | null,
+    appliedFilters: FilterValues,
 ) {
-    // ── Normalize statuses up front ──────────────────────
-    // Maps any backend status (Ready, In Process, STARTED, etc.) to our 3 canonical labels.
-    const normalizedTasks = useMemo(() =>
-        tasks.map((t) => ({ ...t, status: normalizeDashboardStatus(t.status) })),
-        [tasks]
-    );
+    // 1. Normalize statuses and filter data for the main table (fully filtered)
+    const filteredTasks = useMemo(() => {
+        return tasks.map((t) => {
+            const status = normalizeDashboardStatus(t.status);
+            return { ...t, status };
+        }).filter((t) => {
+            // Apply status filter (multiselect status: array of canonical statuses, e.g. ['In Approving'])
+            if (Array.isArray(appliedFilters.status) && appliedFilters.status.length > 0) {
+                if (!appliedFilters.status.includes(t.status)) return false;
+            }
 
-    // ── Chart 1: Donut by Status ─────────────────────────
-    const donutSegments: DonutSegment[] = useMemo(() => {
-        const counts: Record<string, number> = {};
-        for (const t of normalizedTasks) {
+            // Apply documentType filter (select type, e.g. 'PR')
+            if (appliedFilters.documentType) {
+                if (t.documentType !== appliedFilters.documentType) return false;
+            }
+            return true;
+        });
+    }, [tasks, appliedFilters]);
+
+    // 2. Compute visual datasets excluding the Status filter
+    // So that selecting a status doesn't collapse KPI counts & charts to 0 for other statuses
+    const tasksFilteredExcludingStatus = useMemo(() => {
+        return tasks.map((t) => {
+            const status = normalizeDashboardStatus(t.status);
+            return { ...t, status };
+        }).filter((t) => {
+            // Apply documentType filter (select type, e.g. 'PR')
+            if (appliedFilters.documentType) {
+                if (t.documentType !== appliedFilters.documentType) return false;
+            }
+            return true;
+        });
+    }, [tasks, appliedFilters.documentType]);
+
+    // 3. Compute dynamic KPI metrics (counts only)
+    const kpiMetrics = useMemo(() => {
+        let totalCount = 0;
+        const counts: Record<string, number> = { 'In Approving': 0, 'Completed': 0 };
+
+        for (const t of tasksFilteredExcludingStatus) {
+            totalCount++;
             counts[t.status] = (counts[t.status] || 0) + 1;
         }
+
+        return {
+            total: totalCount,
+            'In Approving': counts['In Approving'] || 0,
+            Completed: counts['Completed'] || 0,
+        };
+    }, [tasksFilteredExcludingStatus]);
+
+    // 4. Compute Chart 1: Donut segments (Count only)
+    const donutSegments = useMemo(() => {
         return STATUS_LABELS.map((s) => ({
             label: s,
-            value: counts[s] || 0,
+            value: kpiMetrics[s],
             color: STATUS_COLORS[s],
         }));
-    }, [normalizedTasks]);
+    }, [kpiMetrics]);
 
-    // ── Chart 2: Bar chart — ALWAYS uses all tasks (not filtered by status) ─
-    // Status selection only controls visual highlighting, not data filtering.
-    const barData: BarDataItem[] = useMemo(() => {
-        const groups = new Map<string, { total: number; statusCounts: Record<string, number> }>();
-        for (const t of normalizedTasks) {
-            const key = t.documentTypeDesc || t.taskType;
+    // 5. Compute Chart 2: Stacked Bar Chart (Count only)
+    const barData = useMemo(() => {
+        const groups = new Map<string, { total: number; 'In Approving': number; 'Completed': number }>();
+        for (const t of tasksFilteredExcludingStatus) {
+            const rawKey = t.documentType || t.taskType || 'Standard';
+            const key = getDocTypeDescription(rawKey);
             let g = groups.get(key);
             if (!g) {
-                g = { total: 0, statusCounts: {} };
+                g = { total: 0, 'In Approving': 0, 'Completed': 0 };
                 groups.set(key, g);
             }
             g.total++;
-            g.statusCounts[t.status] = (g.statusCounts[t.status] || 0) + 1;
+            g[t.status as 'In Approving' | 'Completed']++;
         }
         return Array.from(groups.entries())
             .map(([label, data]) => ({ label, ...data }))
             .sort((a, b) => b.total - a.total);
-    }, [normalizedTasks]);
+    }, [tasksFilteredExcludingStatus]);
 
-    // ── Filtered tasks for table (by both status and type) ─
-    const statusFiltered = useMemo(() => {
-        if (!selectedStatus) return normalizedTasks;
-        return normalizedTasks.filter((t) => t.status === selectedStatus);
-    }, [normalizedTasks, selectedStatus]);
+    // 6. Dynamic document type filter dropdown options (distinct values)
+    const documentTypeOptions = useMemo(() => {
+        const unique = new Map<string, string>();
+        for (const t of tasks) {
+            if (t.documentType) {
+                unique.set(t.documentType, getDocTypeDescription(t.documentType));
+            }
+        }
+        return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
+    }, [tasks]);
 
-    const typeFiltered = useMemo(() => {
-        if (!selectedType) return statusFiltered;
-        return statusFiltered.filter(
-            (t) => (t.documentTypeDesc || t.taskType) === selectedType
-        );
-    }, [statusFiltered, selectedType]);
-
-    // ── Chart 3: Table rows ──────────────────────────────
-    const tableRows: TableRow[] = useMemo(() => {
-        return typeFiltered.map((t) => ({
+    // 7. Table rows formatting (fully filtered)
+    const tableRows = useMemo(() => {
+        return filteredTasks.map((t) => ({
             taskType: t.taskType,
-            documentTypeDesc: t.documentTypeDesc || t.taskType,
+            documentTypeDesc: getDocTypeDescription(t.documentType || t.taskType || 'Standard'),
             docNumber: t.documentNumber,
             currency: t.currency,
             status: t.status,
             totalNetAmount: t.totalNetAmount,
             displayCurrency: t.displayCurrency || t.currency,
+            createdAt: t.createdAt,
         }));
-    }, [typeFiltered]);
-
-    // ── Summary counts for stat cards ────────────────────
-    const totalTasks = tasks.length;
-    const totalTypes = useMemo(
-        () => new Set(normalizedTasks.map((t) => t.documentTypeDesc || t.taskType)).size,
-        [normalizedTasks]
-    );
+    }, [filteredTasks]);
 
     return {
+        filteredTasks,
         donutSegments,
         barData,
+        documentTypeOptions,
         tableRows,
-        totalTasks,
-        totalTypes,
-        statusFiltered,
-        typeFiltered,
+        kpiMetrics,
     };
 }

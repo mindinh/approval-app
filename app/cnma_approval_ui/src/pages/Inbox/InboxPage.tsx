@@ -7,8 +7,6 @@ import { TaskList, TaskDetailView, MassSelectionView } from '@/pages/Inbox/compo
 import {
     useInfiniteTasks,
     useInfiniteApprovedTasks,
-    useTaskOverview,
-    useTaskInformation,
     useTaskDetail,
     useDecision,
 } from '@/pages/Inbox/hooks/useInbox';
@@ -75,56 +73,18 @@ export default function InboxPage() {
           }
         : undefined;
 
-    // ─── Stage 1: Ultra-lightweight overview (3-segment batch) ───
-    // Fetches Description, CustomAttributes, DecisionOptions only.
+    // Consolidate queries to call only useTaskDetail
     const {
-        data: overviewResponse,
-        isLoading: isLoadingOverview,
-    } = useTaskOverview(selectedTaskId, { hints: informationHints });
-
-    // ─── Stage 2: Background enrichment with TaskObjects/Attachments ───
-    // Once overview is rendered, trigger the 5-segment batch in background.
-    useEffect(() => {
-        setDetailPrefetchTaskId(null);
-    }, [selectedTaskId]);
-
-    useEffect(() => {
-        if (!selectedTaskId) return;
-        const overviewTaskId = overviewResponse?.detail?.task.instanceId;
-        if (overviewTaskId !== selectedTaskId) return;
-
-        const timer = window.setTimeout(() => {
-            setDetailPrefetchTaskId((current) =>
-                current === selectedTaskId ? current : selectedTaskId
-            );
-        }, DETAIL_PREFETCH_DELAY_MS);
-
-        return () => {
-            window.clearTimeout(timer);
-        };
-    }, [selectedTaskId, overviewResponse?.detail?.task.instanceId, DETAIL_PREFETCH_DELAY_MS]);
-
-    const shouldLoadFullDetail = !!selectedTaskId && detailPrefetchTaskId === selectedTaskId;
-
-    // useTaskInformation now serves as the "enriched" second-tier, fetching
-    // TaskObjects + Attachments that were excluded from the overview.
-    const { data: informationResponse } = useTaskInformation(selectedTaskId, {
-        enabled: shouldLoadFullDetail,
-        hints: informationHints,
-    });
-
-    // Stage 3: Full detail (comments, logs) — deepest tier
-    const { data: detailResponse } = useTaskDetail(selectedTaskId, {
-        enabled: shouldLoadFullDetail && !!informationResponse?.detail,
-    });
+        data: detailResponse,
+        isLoading: isLoadingDetail,
+    } = useTaskDetail(selectedTaskId);
 
     const decisionMutation = useDecision();
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
-    // Progressive merge: detail > information > overview
-    const activeDetail = (detailResponse as any)?.detail ?? (informationResponse as any)?.detail ?? (overviewResponse as any)?.detail;
-    const isLoadingDetail = !!selectedTaskId && isLoadingOverview && !(overviewResponse as any)?.detail;
-    const isSecondaryLoading = !!selectedTaskId && shouldLoadFullDetail && !(detailResponse as any)?.detail;
+    
+    const activeDetail = detailResponse?.detail;
+    const isSecondaryLoading = false;
 
     // Auto-select first task on desktop when list loads and no task is selected
     useEffect(() => {

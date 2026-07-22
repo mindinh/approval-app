@@ -6,7 +6,7 @@ import type { TaskDetail as TaskDetailType } from '@/services/inbox/inbox.types'
 import { ArrowLeft, FileText, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWorkflowApprovalTree, usePrAttachments } from '@/pages/Inbox/hooks/useInbox';
+
 import { invalidateAfterComment } from '@/pages/Inbox/hooks/inboxInvalidation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -71,27 +71,19 @@ export function TaskDetailView({
     const supportsStandaloneAttach = docType === 'PR';
     const documentId = detail?.task.businessContext?.documentId;
 
-    const workflowQuery = useWorkflowApprovalTree(
-        detail?.task.instanceId ?? null,
-        documentId,
-        detail?.task.sapOrigin,
-        docType,
-        { enabled: !!detail && supportsApproval }
-    );
-    const workflowError = workflowQuery.error
-        ? 'Failed to load workflow approval tree.'
-        : undefined;
+    const workflowData = useMemo(() => {
+        if (!detail || !detail.object) return undefined;
+        return {
+            documentId: documentId || '',
+            releaseStrategyName: detail.object.workflow?.strategyName || (detail.object.header?.releaseStrategyName as string),
+            steps: detail.object.workflow?.steps || [],
+            comments: detail.object.workflow?.comments || []
+        };
+    }, [detail, documentId]);
 
-    // Standalone attachment count for the tab badge (e.g. for PR)
-    const prAttachmentsQuery = usePrAttachments(
-        supportsStandaloneAttach ? documentId : null,
-        detail?.task.sapOrigin,
-        { enabled: !!detail && supportsStandaloneAttach }
-    );
-    const prAttachmentCount = supportsStandaloneAttach
-        ? (prAttachmentsQuery.data?.attachments?.length ?? undefined)
-        : undefined;
-    const isPrAttachmentsLoading = supportsStandaloneAttach && prAttachmentsQuery.isLoading;
+    const prAttachmentCount = detail?.object?.attachments?.length || detail?.attachments?.length;
+    const isPrAttachmentsLoading = false;
+    const workflowError = undefined;
 
     const detailsCount = useMemo(() => {
         if (!businessModel) return undefined;
@@ -106,14 +98,14 @@ export function TaskDetailView({
             detail
                 ? makeTabDefinitions({
                       detail,
-                      workflowCount: workflowQuery.data?.steps?.length || 0,
-                      workflowComments: workflowQuery.data?.comments,
+                      workflowCount: workflowData?.steps?.length || 0,
+                      workflowComments: workflowData?.comments,
                       detailsCount,
                       attachmentCount: prAttachmentCount,
                       t,
                   })
                 : [],
-        [detail, workflowQuery.data?.steps?.length, workflowQuery.data?.comments, detailsCount, prAttachmentCount, t]
+        [detail, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
     );
 
     if (isLoading) {
@@ -148,8 +140,8 @@ export function TaskDetailView({
             case 'workflow':
                 return (
                     <WorkflowApprovalPanel
-                        data={workflowQuery.data}
-                        isLoading={workflowQuery.isLoading || workflowQuery.isFetching}
+                        data={workflowData}
+                        isLoading={false}
                         error={workflowError}
                         taskDetail={detail.task}
                     />
@@ -174,8 +166,8 @@ export function TaskDetailView({
                             documentId: detail.task.businessContext?.documentId,
                             businessObjectType: detail.task.businessContext?.type,
                         }}
-                        workflowComments={workflowQuery.data?.comments}
-                        isLoadingWorkflowComments={workflowQuery.isLoading || workflowQuery.isFetching}
+                        workflowComments={workflowData?.comments}
+                        isLoadingWorkflowComments={false}
                     />
                 );
             case 'activity':
@@ -287,8 +279,8 @@ export function TaskDetailView({
                             </TabsContent>
                             <TabsContent value="workflow" className="mt-0 w-full">
                                 <WorkflowApprovalPanel
-                                    data={workflowQuery.data}
-                                    isLoading={workflowQuery.isLoading || workflowQuery.isFetching}
+                                    data={workflowData}
+                                    isLoading={false}
                                     error={workflowError}
                                     taskDetail={detail.task}
                                 />
@@ -307,8 +299,8 @@ export function TaskDetailView({
                                             documentId: detail.task.businessContext?.documentId,
                                             businessObjectType: detail.task.businessContext?.type,
                                         }}
-                                        workflowComments={workflowQuery.data?.comments}
-                                        isLoadingWorkflowComments={workflowQuery.isLoading || workflowQuery.isFetching}
+                                        workflowComments={workflowData?.comments}
+                                        isLoadingWorkflowComments={false}
                                     />
                                 )}
                             </TabsContent>

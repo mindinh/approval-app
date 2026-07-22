@@ -46,6 +46,7 @@
         "myTasks": "My Tasks",
         "approvedTasks": "Approved Tasks",
         "logOut": "Log Out",
+        "openMenu": "Open navigation menu",
         "substitutionInbox": "Substitution Inbox"
     },
     "profile": {
@@ -102,7 +103,16 @@
             "type": "Type: {{type}}",
             "barStatus": "Bar Status: {{status}}"
         },
-        "itemsCount": "{{count}} items"
+        "itemsCount": "{{count}} items",
+        "toggleCount": "By Count",
+        "toggleValue": "By Value",
+        "exportCsv": "Export CSV",
+        "filterLabels": {
+            "search": "Search Task",
+            "status": "Status",
+            "type": "Document Type",
+            "dateRange": "Created Date"
+        }
     },
     "inbox": {
         "title": "prorequest",

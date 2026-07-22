@@ -45,6 +45,7 @@
         "myInbox": "Hộp thư đến",
         "myTasks": "Cần duyệt",
         "approvedTasks": "Đã duyệt",
+        "openMenu": "Mở danh mục điều hướng",
         "substitutionInbox": "Hộp thư thay thế"
     },
     "profile": {
@@ -101,7 +102,16 @@
             "type": "Loại: {{type}}",
             "barStatus": "Trạng thái cột: {{status}}"
         },
-        "itemsCount": "{{count}} mục"
+        "itemsCount": "{{count}} mục",
+        "toggleCount": "Theo Số Lượng",
+        "toggleValue": "Theo Giá Trị",
+        "exportCsv": "Xuất CSV",
+        "filterLabels": {
+            "search": "Tìm kiếm yêu cầu",
+            "status": "Trạng thái",
+            "type": "Loại chứng từ",
+            "dateRange": "Ngày tạo"
+        }
     },
     "inbox": {
         "title": "Hộp thư đến",
