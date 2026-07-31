@@ -81,6 +81,43 @@ describe('Config-driven API Mapping & Registry Suite', () => {
       expect(result.workflow.steps[0].approver).toBe('John Smith');
       expect(result.workflow.steps[0].status).toBe('APPROVED');
     });
+
+    it('should map ZFO8 Expense PO payload stacking Vendor + VendorName1..4 fields vertically in 1 column', () => {
+      const config = registry.get('PO')!;
+      const rawZFO8 = {
+        DocCategory: 'BUS2012',
+        DocumentNumber: '4500002232',
+        DocumentType: 'ZFO8',
+        DocumentTypeText: 'Expense PO',
+        CreatedByUser: 'DUYEN.TRAN',
+        Vendor: '17300050',
+        VendorName1: 'Foreign Supplier US 50 (CA)',
+        VendorName2: 'Test name 2',
+        VendorName3: 'Test name 3',
+        VendorName4: 'Test name 4',
+        TotalNetAmountLocalCrcy: 200.00,
+        LocalCurrency: 'USD',
+        _Item: [
+          {
+            ItemNumber: '10',
+            Material: 'MZ-RM-R300-01',
+            MaterialText: 'BKR-300 Frame',
+            Quantity: 200.0,
+            Unit: 'PC',
+            ValuationPrice: 200.0,
+            TotalNetAmountDocCrcy: 40000.0,
+            GLAccount: '61110000',
+            GLAccountText: 'Expense GL',
+            PurchaseRequisition: '100001838'
+          }
+        ]
+      };
+
+      const result = mapper.map({ header: rawZFO8, items: rawZFO8._Item }, config);
+
+      expect(result.header.vendorDisplay).toBe('17300050\nForeign Supplier US 50 (CA)\nTest name 2\nTest name 3\nTest name 4');
+      expect(result.items[0].shortText).toBe('BKR-300 Frame');
+    });
   });
 
   describe('MappingEngine - Claims (CLAIM)', () => {

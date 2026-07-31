@@ -63,9 +63,9 @@ describe('object-config', () => {
     });
 
     it('should return subtype config if documentType matches registered documentType in config', () => {
-      const zassConfig = getObjectConfig('PR', 'ZASS');
+      const zassConfig = getObjectConfig('PO', 'ZASS');
       expect(zassConfig).toBeDefined();
-      expect(zassConfig.uiSchema.sections.some((s: any) => s.id === 'assetAssignment')).toBe(true);
+      expect(zassConfig.documentTypes.ZASS.name).toBe('Asset PO');
     });
   });
 

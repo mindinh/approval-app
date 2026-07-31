@@ -76,7 +76,7 @@ describe('SapOdataAdapter', () => {
       expect(mockSapClient.get).toHaveBeenCalledWith(
         '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
         '/ZC_WORKFLOWTASK',
-        { $format: 'json', $orderby: 'WorkflowTaskInternalID desc', $filter: "WorkflowTaskStatus eq 'IN PROCESSING'" },
+        { $format: 'json', $orderby: 'WorkflowTaskInternalID desc', $count: 'true', $top: '1000', $filter: "(WorkflowTaskStatus eq 'IN PROCESSING')" },
         'SAP_USER',
         undefined
       );
@@ -248,10 +248,17 @@ describe('SapOdataAdapter', () => {
       ).rejects.toThrow('Attachment upload is disabled for this service.');
     });
 
-    it('should throw an error on addComment in direct SAP mode', async () => {
-      await expect(
-        adapter.addComment('10000001', 'Nice PR', 'SAP_USER', 'jwt')
-      ).rejects.toThrow('Comments posting is disabled for this service.');
+    it('should call sapClient.post on addComment in direct SAP mode with OData v4 comment payload', async () => {
+      mockSapClient.post.mockResolvedValue({});
+      await adapter.addComment('10000001', 'Nice PR', 'SAP_USER', 'jwt', 'NORM');
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
+        "/ZC_PRHEADER(DocCategory='BUS2105',DocumentNumber='0010000001')/SAP__self.comment",
+        { NoteText: 'Nice PR', isApproval: false },
+        {},
+        'SAP_USER',
+        'jwt'
+      );
     });
   });
 });

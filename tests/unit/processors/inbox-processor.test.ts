@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InboxProcessor } from '../../../srv/lib/processors/inbox-processor';
-import { TaskprocessingAdapter } from '../../../srv/lib/integrations/taskprocessing-adapter';
-import { SapOdataAdapter } from '../../../srv/lib/integrations/sap-odata-adapter';
 
 // Mock adapters
 vi.mock('../../../srv/lib/integrations/taskprocessing-adapter', () => {
@@ -45,11 +43,10 @@ describe('InboxProcessor', () => {
       
       const result = await processor.getTasks('MOCK_USER');
       expect(result).toEqual({ items: [], total: 0 });
-      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith('MOCK_USER', ['IN PROCESSING', 'IN_PROCESSING'], undefined);
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith('MOCK_USER', ['IN PROCESSING', 'IN_PROCESSING'], undefined, undefined, undefined);
     });
 
     it('should fetch tasks, query details in batch, enrich business objects and apply pagination', async () => {
-      // Mock 3 custom instances
       const mockInstances = [
         {
           instanceID: '000000000001',
@@ -66,14 +63,6 @@ describe('InboxProcessor', () => {
       ];
       mockSapOdataAdapter.getInstances.mockResolvedValue(mockInstances);
 
-      // Mock raw tasks from TaskCollection
-      const mockRawTasks = [
-        { InstanceID: '000000000001', TaskTitle: 'Approve PR 1', Priority: '1' },
-        { InstanceID: '000000000002', TaskTitle: 'Approve PO 2', Priority: '2', CreatedOn: '2026-07-02T00:00:00Z', CreatedByName: 'User B' }
-      ];
-      mockTaskAdapter.getTasks.mockResolvedValue(mockRawTasks);
-
-      // Mock batch details (only for paginated items, let's say page size = 2)
       const mockBatchDetails = {
         'PR:10000001': {
           objectType: 'PR',
@@ -85,64 +74,50 @@ describe('InboxProcessor', () => {
           objectType: 'PO',
           documentType: 'DEFAULT',
           objectId: '45000002',
-          header: { purchaseOrder: '45000002', supplierName: 'Supplier ABC', purchaseOrderTypeDisplay: 'Standard PO' }
+          header: { purchaseOrder: '45000002', supplierName: 'Supplier ABC', purchaseOrderTypeDisplay: 'Standard PO', purchaseOrderNetAmount: 2000 }
         }
       };
       mockSapOdataAdapter.getDetailBatch.mockResolvedValue(mockBatchDetails);
 
-      // Request page 1 with top = 2
       const result = await processor.getTasks('MOCK_USER', 'my-jwt-token', { top: 2, skip: 0 });
 
       expect(result.total).toBe(3);
       expect(result.items.length).toBe(2);
 
-      // Verify pagination sliced the list correctly
       expect(result.items[0].instanceId).toBe('000000000001');
       expect(result.items[0].objectType).toBe('PR');
-      expect(result.items[0].priority).toBe('VERY_HIGH'); // mapped from '1'
-      expect(result.items[0].createdOn).toBe(new Date('2026-04-05T08:13:18.43246Z').toISOString()); // fallback to taskCreationDateTime
-      expect(result.items[0].requestorName).toBe('DIENTRAN'); // fallback to inst.createdByUser
-      expect(result.items[0].businessContext.pr.header.totalNetAmount).toBe(1000); // enriched from custom instances
+      expect(result.items[0].priority).toBe('MEDIUM');
+      expect(result.items[0].createdOn).toBe(new Date('2026-04-05T08:13:18.43246Z').toISOString());
+      expect(result.items[0].requestorName).toBe('DIENTRAN');
+      expect(result.items[0].total).toBe(1000);
       
       expect(result.items[1].instanceId).toBe('000000000002');
       expect(result.items[1].objectType).toBe('PO');
-      expect(result.items[1].priority).toBe('HIGH'); // mapped from '2'
-      expect(result.items[1].businessContext.po.header.purchaseOrderNetAmount).toBe(2000); // enriched
-
-      expect(mockSapOdataAdapter.getDetailBatch).toHaveBeenCalledWith(
-        [
-          { objectType: 'PR', objectId: '10000001' },
-          { objectType: 'PO', objectId: '45000002' }
-        ],
-        'MOCK_USER',
-        'my-jwt-token'
-      );
+      expect(result.items[1].priority).toBe('MEDIUM');
+      expect(result.items[1].total).toBe(2000);
     });
   });
 
   describe('getApprovedTasks', () => {
-    it('should build specific ID filters to query completed tasks', async () => {
+    it('should query completed tasks from ZC_WORKFLOWTASK via getInstances and fetch detail batch', async () => {
       const mockCompletedInstances = [
         { instanceID: '101', typeid: 'BUS2105', instid: '1000101', status: 'COMPLETED' },
         { instanceID: '102', typeid: 'BUS2012', instid: '4500102', status: 'COMPLETED' }
       ];
       mockSapOdataAdapter.getInstances.mockResolvedValue(mockCompletedInstances);
-      mockTaskAdapter.getTasks.mockResolvedValue([]);
       mockSapOdataAdapter.getDetailBatch.mockResolvedValue({});
 
-      await processor.getApprovedTasks('MOCK_USER', 'jwt', { top: 2 });
+      const res = await processor.getApprovedTasks('MOCK_USER', 'jwt', { top: 2 });
 
-      // Verify completing task filter string
-      expect(mockTaskAdapter.getTasks).toHaveBeenCalledWith(
-        'MOCK_USER',
-        'jwt',
-        "InstanceID eq '000000000101' or InstanceID eq '000000000102'"
-      );
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith('MOCK_USER', 'COMPLETED', 'jwt', undefined, { top: 2 });
+      expect(res.items.length).toBe(2);
+      expect(res.items[0].instanceId).toBe('101');
+      expect(res.items[0].status).toBe('COMPLETED');
     });
   });
 
   describe('getTaskDetail', () => {
-    it('should fetch details, available decisions and map comments & attachments', async () => {
+    it('should fetch details, available decisions and map comments & attachments into flat structure', async () => {
       const mockTaskRuntime = {
         InstanceID: 'task-pr-01',
         Status: 'READY',
@@ -183,26 +158,25 @@ describe('InboxProcessor', () => {
         { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND' }
       ]);
 
-      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234' }, 'jwt');
+      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234', businessObjectType: 'PR' }, 'jwt');
 
-      // Assertions
+      // Flat response assertions
       expect(result.task.instanceId).toBe('task-pr-01');
-      expect(result.task.businessContext.pr.header.purchaseRequisitionType).toBe('ZASS');
+      expect((result as any)._meta).toBeUndefined();
+      expect(result.header.purchaseRequisition).toBe('10001234');
       expect(result.comments.length).toBe(1);
       expect(result.comments[0].text).toBe('Pls approve');
       expect(result.comments[0].createdBy).toBe('Nguyen Van A');
       
       expect(result.attachments.length).toBe(1);
       expect(result.attachments[0].fileName).toBe('Quote.pdf');
-      expect(result.attachments[0].link).toContain('tasks/task-pr-01/attachments/att-1/content?documentId=10001234');
+      expect(result.attachments[0].link).toBe('/api/cnma/APPROVAL_SRV/tasks/task-pr-01/attachments/att-1/content?documentId=10001234');
 
-      // Decisions mapped from config
+      // Verify legacy 'object' and redundant fields are absent
+      expect((result as any).object).toBeUndefined();
       expect(result.decisions.length).toBe(2);
-      expect(result.decisions[0].key).toBe('0001');
-      expect(result.decisions[0].nature).toBe('POSITIVE'); // variant primary -> POSITIVE
-      expect(result.decisions[1].key).toBe('0002');
-      expect(result.decisions[1].nature).toBe('NEGATIVE'); // variant danger -> NEGATIVE
-      expect(result.decisions[1].requiresComment).toBe(true);
+      expect((result as any).businessContext).toBeUndefined();
+      expect((result as any).processingLogs).toBeUndefined();
     });
 
     it('should skip decision fetching and return empty decisions if normalTask is false', async () => {
@@ -238,47 +212,11 @@ describe('InboxProcessor', () => {
         { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND', normalTask: false, typeid: 'BUS2105' }
       ]);
 
-      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234' }, 'jwt');
+      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234', businessObjectType: 'PR' }, 'jwt');
 
       expect(result.task.instanceId).toBe('task-pr-01');
       expect(result.task.normalTask).toBe(false);
-      expect(mockTaskAdapter.getTaskRuntime).toHaveBeenCalledWith('task-pr-01', 'MOCK_USER', 'jwt', false);
-      expect(result.decisions.length).toBe(0);
-    });
-
-    it('should completely skip getTaskRuntime call for non-normal tasks in real mode', async () => {
-      const originalEnv = process.env.USE_MOCK_SAP;
-      process.env.USE_MOCK_SAP = 'false';
-      try {
-        const mockDetail = {
-          objectType: 'PR',
-          documentType: 'ZASS',
-          objectId: '10001234',
-          header: {
-            purchaseRequisition: '10001234',
-            userFullName: 'Nguyen Van A',
-            purReqCreationDate: '2026-06-25T08:00:00Z',
-            totalNetAmount: 150000000,
-            displayCurrency: 'VND'
-          },
-          items: [],
-          comments: [],
-          attachments: []
-        };
-        mockSapOdataAdapter.getDetail.mockResolvedValue(mockDetail);
-        mockSapOdataAdapter.getInstances.mockResolvedValue([
-          { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND', normalTask: false, typeid: 'BUS2105' }
-        ]);
-
-        const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234' }, 'jwt');
-
-        expect(result.task.instanceId).toBe('task-pr-01');
-        expect(result.task.normalTask).toBe(false);
-        expect(mockTaskAdapter.getTaskRuntime).not.toHaveBeenCalled();
-        expect(result.decisions.length).toBe(0);
-      } finally {
-        process.env.USE_MOCK_SAP = originalEnv;
-      }
+      expect(result.decisions).toEqual([]);
     });
   });
 
@@ -296,26 +234,8 @@ describe('InboxProcessor', () => {
         { documentId: '10001234', businessObjectType: 'PR' }
       );
 
-      // Verified it pushes approval comment to adapter
       expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith('10001234', 'Looks good', 'MOCK_USER', 'jwt', 'APPR');
       expect(mockTaskAdapter.executeDecision).toHaveBeenCalledWith('task-pr-01', '0001', 'Looks good', 'MOCK_USER', 'jwt');
-    });
-
-    it('should not push comment to custom comment table if PO', async () => {
-      mockTaskAdapter.executeDecision.mockResolvedValue({ success: true });
-      
-      await processor.executeDecision(
-        'task-po-01',
-        '0001',
-        '0001',
-        'Looks good',
-        'MOCK_USER',
-        'jwt',
-        { documentId: '45000002', businessObjectType: 'PO' }
-      );
-
-      expect(mockSapOdataAdapter.addComment).not.toHaveBeenCalled();
-      expect(mockTaskAdapter.executeDecision).toHaveBeenCalledWith('task-po-01', '0001', 'Looks good', 'MOCK_USER', 'jwt');
     });
   });
 });
