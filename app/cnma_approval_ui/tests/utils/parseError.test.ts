@@ -106,4 +106,28 @@ describe('parseError Utility', () => {
         expect(result.details?.code).toBe('INTERNAL_SERVER_ERROR');
         expect(result.details?.rawMessage).toContain('Unspecified provider error occurred');
     });
+
+    it('should extract primitive string message from nested SAP OData v4 error object', () => {
+        const odataV4Error = {
+            response: {
+                status: 400,
+                data: {
+                    error: {
+                        code: '400',
+                        message: {
+                            lang: 'en',
+                            value: 'Comment text NoteText exceeds maximum allowed length of 1000 characters',
+                        },
+                    },
+                },
+            },
+        };
+
+        const result = parseError(odataV4Error);
+
+        expect(result.category).toBe('business');
+        expect(result.title).toBe('Validation Error');
+        expect(typeof result.message).toBe('string');
+        expect(result.message).toContain('Comment text NoteText exceeds maximum allowed length');
+    });
 });

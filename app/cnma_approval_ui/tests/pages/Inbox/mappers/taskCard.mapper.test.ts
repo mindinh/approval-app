@@ -115,10 +115,10 @@ describe('mapBusinessChips', () => {
         expect(chips.find((c) => c.label === 'Type')?.value).toBe('NB');
     });
 
-    it('always includes hardcoded dept for PR', () => {
+    it('includes department for PR when available', () => {
         const task = {
             ...baseTask,
-            businessContext: { type: 'PR', pr: { header: {} } },
+            businessContext: { type: 'PR', pr: { header: { departmentDisplay: '1001201000 - IT department' } } },
         };
         const chips = mapBusinessChips(task as any);
         const dept = chips.find((c) => c.label === 'Dept');

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBusinessSectionModel } from '@/pages/Inbox/components/renderers/TaskDetailSections.registry';
+import { resolveBusinessSectionModel } from '@/renderers/TaskDetailSections.registry';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 
 describe('resolveBusinessSectionModel with dynamic schema', () => {
@@ -29,7 +29,7 @@ describe('resolveBusinessSectionModel with dynamic schema', () => {
         };
 
         const result = resolveBusinessSectionModel(detail);
-        expect(result.title).toBe('PR Business Data');
+        expect(result.title).toBe('PR Details');
         expect(result.subtitle).toBe('Document 10001');
     });
 
