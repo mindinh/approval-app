@@ -34,7 +34,7 @@ export class MappingEngine {
    * Resolves a value from a nested object based on a dot-separated path or direct key.
    * Performs exact property lookup first, then fallback case-insensitive key lookup.
    */
-  private getNestedValue(obj: any, path: string): any {
+  public getNestedValue(obj: any, path: string): any {
     if (!obj || !path) return undefined;
     const parts = path.split('.');
     let current = obj;
@@ -98,7 +98,15 @@ export class MappingEngine {
         }
       }
 
-      if (rawVal !== undefined) {
+      const hasDeps = Boolean(
+        mapping.dependencies &&
+          mapping.dependencies.some((dep: string) => {
+            const dVal = this.getNestedValue(rawHeader, dep) ?? this.getNestedValue(raw, dep);
+            return dVal !== undefined && dVal !== null && dVal !== '';
+          })
+      );
+
+      if (rawVal !== undefined || hasDeps) {
         let finalVal = rawVal;
         if (mapping.transform) {
           const transformFn = getTransform(mapping.transform);
@@ -110,7 +118,9 @@ export class MappingEngine {
           }
           finalVal = transformFn(rawVal, dependencies);
         }
-        this.setNestedValue(result, mapping.targetPath, finalVal);
+        if (finalVal !== undefined) {
+          this.setNestedValue(result, mapping.targetPath, finalVal);
+        }
       } else if (mapping.required) {
         console.warn(`[MappingEngine] Warning: Missing required field ${mapping.sourcePath} in raw header payload`);
       }

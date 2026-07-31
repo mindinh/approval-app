@@ -16,31 +16,28 @@ export function createInboxRouter(): Router {
     // 3. Dashboard metrics aggregation
     router.get('/dashboard', controller.getDashboard);
 
-    // 4. Main worklists
-    router.get('/tasks', controller.getTasks);
-    router.get('/tasks/approved', controller.getApprovedTasks);
+    // 4. Object type configurations
+    router.get('/object-configs', controller.getObjectConfigs);
 
-    // 5. Task Detail & informational overlays
-    router.get('/tasks/:id', controller.getTaskDetail);
-    router.get('/tasks/:id/overview', controller.getTaskOverview);
-    router.get('/tasks/:id/information', controller.getTaskInformation);
-    router.get('/tasks/:id/workflow-approval-tree', controller.getWorkflowApprovalTree);
-
-    // 6. Comments, decisions, and uploads
-    router.post('/tasks/:id/comments', controller.postComment);
-    router.post('/tasks/:id/attachments', controller.postAttachment);
-    router.get('/tasks/:id/attachments/:attId/content', controller.streamAttachment);
-
-    // 7. Purchase Requisition attachments metadata & streaming
+    // 5. Worklists
+    router.get('/approved', controller.getApprovedTasks);
     router.get('/pr/:docNum/attachments', controller.getPrAttachments);
     router.get('/pr/:docNum/attachments/:attachId/content', controller.streamPrAttachment);
-    router.post('/pr/:docNum/attachments', controller.uploadPrAttachment);
+    router.get('/attachments/:attachId/content', controller.streamAttachment);
 
-    // 8. Decisions posting
-    router.post('/tasks/:id/decision', controller.postDecision);
+    // 6. Root tasks list (must be before /:id)
+    router.get('/', controller.getTasks);
 
-    // 9. Catch-all fallback list
-    router.get('/', controller.getFallbackTasks);
+    // 7. Single Task Details & Sub-resources
+    router.get('/:id', controller.getTaskDetail);
+    router.get('/:id/overview', controller.getTaskOverview);
+    router.get('/:id/information', controller.getTaskInformation);
+    router.get('/:id/workflow-approval-tree', controller.getWorkflowApprovalTree);
+
+    // 8. Actions on specific task
+    router.post('/:id/comments', controller.postComment);
+    router.get('/:id/attachments/:attId/content', controller.streamAttachment);
+    router.post('/:id/decision', controller.postDecision);
 
     return router;
 }

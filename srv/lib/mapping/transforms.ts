@@ -62,10 +62,47 @@ export const transforms: Record<string, TransformFunction> = {
   combineCodeAndText: (val, deps) => {
     const code = String(val || '').trim();
     if (!code) return undefined;
-    const textVal = deps ? Object.values(deps).find(v => v !== undefined && v !== null && v !== '') : undefined;
-    const text = String(textVal ?? '').trim();
-    if (!text || text === '-' || text === code) return code;
-    return `${code} - ${text}`;
+    if (!deps) return code;
+    const textValues = Object.values(deps)
+      .filter((v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-')
+      .map((v) => String(v).trim());
+    if (textValues.length === 0) return code;
+    const uniqueTexts = Array.from(new Set(textValues)).filter((t) => t !== code);
+    if (uniqueTexts.length === 0) return code;
+    const textCombined = uniqueTexts.join(' ');
+    if (
+      textCombined.startsWith(`${code} -`) ||
+      textCombined.startsWith(`${code}-`) ||
+      textCombined.startsWith(`${code} `)
+    ) {
+      return textCombined;
+    }
+    return `${code} - ${textCombined}`;
+  },
+
+  combineVendorNames: (val, deps) => {
+    const slot1Raw = deps?.vendor ?? deps?.Vendor ?? deps?.supplier ?? deps?.Supplier ?? val;
+    let slot2Raw = deps?.vendorName1 ?? deps?.VendorName1 ?? deps?.vendorName ?? deps?.VendorName ?? deps?.supplierName1 ?? deps?.SupplierName1 ?? deps?.supplierName ?? deps?.SupplierName;
+    const slot3Raw = deps?.vendorName2 ?? deps?.VendorName2 ?? deps?.supplierName2 ?? deps?.SupplierName2;
+    const slot4Raw = deps?.vendorName3 ?? deps?.VendorName3 ?? deps?.supplierName3 ?? deps?.SupplierName3;
+    const slot5Raw = deps?.vendorName4 ?? deps?.VendorName4 ?? deps?.supplierName4 ?? deps?.SupplierName4;
+
+    // If slot 2 is identical to slot 1 (e.g. both are code "17300001"), clear slot 2 to avoid duplicating the code line
+    if (slot1Raw && slot2Raw && String(slot1Raw).trim() === String(slot2Raw).trim()) {
+      slot2Raw = undefined;
+    }
+
+    const slots = [slot1Raw, slot2Raw, slot3Raw, slot4Raw, slot5Raw];
+    const hasAnySlot = slots.some((s) => s !== undefined && s !== null);
+    if (!hasAnySlot) return undefined;
+
+    const formattedSlots = slots.map((s) => {
+      if (s === undefined || s === null) return '-';
+      const str = String(s).trim();
+      return str !== '' ? str : '-';
+    });
+
+    return formattedSlots.join('\n');
   }
 };
 

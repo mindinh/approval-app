@@ -1,5 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { executeHttpRequest } from '@sap-cloud-sdk/http-client';
+import http from 'http';
+import https from 'https';
 import { Logger } from '../utils/logger';
 import { handleSapError } from '../utils/error-handler';
 
@@ -16,9 +18,14 @@ export class SapClient {
         const baseURL = process.env.SAP_TASK_BASE_URL || 'http://s4hanadev.ais-tech.vn:8000';
         this.logger.info(`Initializing direct Axios instance. Base URL: ${baseURL}`);
 
+        const isHttps = baseURL.startsWith('https:');
+        const agentOptions = { keepAlive: true, maxSockets: 50 };
+
         this.http = axios.create({
             baseURL,
             timeout: 30000,
+            httpAgent: isHttps ? undefined : new http.Agent(agentOptions),
+            httpsAgent: isHttps ? new https.Agent(agentOptions) : undefined,
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',

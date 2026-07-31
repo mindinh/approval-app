@@ -42,6 +42,15 @@ export function getMockAttachmentContent(objectId: string, attachId: string) {
     return mockAttachmentContentCache[`${paddedId}-${attachId}`] || null;
 }
 
+export function getMockAttachmentContentById(attachId: string) {
+    const suffix = `-${attachId}`;
+    const key = Object.keys(mockAttachmentContentCache).find(k => k.endsWith(suffix));
+    if (key) {
+        return mockAttachmentContentCache[key];
+    }
+    return mockAttachmentContentCache[attachId] || null;
+}
+
 export function getMockComments(objectId: string) {
     const paddedId = objectId.padStart(10, '0');
     return mockCommentsCache[paddedId] || [];
@@ -323,22 +332,15 @@ export function getMockInstances(status?: string | string[]) {
 
 export function getMockTasks() {
     const list = getMockInstances();
-    return list.map(inst => {
-        let prefix = 'Approve';
-        if (inst.typeid === 'BUS2093') {
-            prefix = 'Approve Reservation';
-        } else if (inst.typeid === 'ZCLAIM') {
-            prefix = 'Approve Expense Claim';
-        } else if (inst.typeid === 'BUS2105') {
-            prefix = 'Approve Purchase Requisition';
-        } else if (inst.typeid === 'BUS2012') {
-            prefix = 'Approve Purchase Order';
-        }
+    return list.map((inst: any) => {
+        const isCompleted = inst.status === 'COMPLETED';
+        const actionPrefix = isCompleted ? 'Approved' : 'Approve';
+        const docDesc = inst.doctyp_desc || inst.doctyp || inst.typeid;
         return {
             InstanceID: inst.instanceID,
             Status: inst.status === 'COMPLETED' ? 'COMPLETED' : 'READY',
             TaskDefinitionID: inst.typeid,
-            TaskTitle: `${prefix} ${inst.instid}`,
+            TaskTitle: inst.TaskTitle || `${actionPrefix} ${docDesc} ${inst.instid}`,
             CreatedOn: new Date(inst.credate + 'T' + inst.cretime + 'Z').toISOString(),
             CreatedByName: inst.typeid === 'BUS2105' ? 'Nguyen Van A' : inst.typeid === 'BUS2012' ? 'Tran Thi B' : inst.typeid === 'BUS2093' ? 'Le Van C' : 'Pham Van D',
             Priority: inst.total > 100000000 ? 'HIGH' : 'MEDIUM'
@@ -347,7 +349,7 @@ export function getMockTasks() {
 }
 
 export function getMockTaskRuntime(instanceId: string) {
-    const inst = getMockInstances().find(i => i.instanceID === instanceId);
+    const inst = getMockInstances().find(i => i.instanceID === instanceId) as any;
     if (!inst) {
         return {
             InstanceID: instanceId,
@@ -362,21 +364,14 @@ export function getMockTaskRuntime(instanceId: string) {
         };
     }
 
-    let prefix = 'Approve';
-    if (inst.typeid === 'BUS2093') {
-        prefix = 'Approve Reservation';
-    } else if (inst.typeid === 'ZCLAIM') {
-        prefix = 'Approve Expense Claim';
-    } else if (inst.typeid === 'BUS2105') {
-        prefix = 'Approve Purchase Requisition';
-    } else if (inst.typeid === 'BUS2012') {
-        prefix = 'Approve Purchase Order';
-    }
+    const isCompleted = inst.status === 'COMPLETED';
+    const actionPrefix = isCompleted ? 'Approved' : 'Approve';
+    const docDesc = inst.doctyp_desc || inst.doctyp || inst.typeid;
 
     return {
         InstanceID: instanceId,
         Status: inst.status === 'COMPLETED' ? 'COMPLETED' : 'READY',
-        TaskTitle: `${prefix} ${inst.instid}`,
+        TaskTitle: inst.TaskTitle || `${actionPrefix} ${docDesc} ${inst.instid}`,
         CreatedOn: new Date(inst.credate + 'T' + inst.cretime + 'Z').toISOString(),
         CreatedByName: inst.typeid === 'BUS2105' ? 'Nguyen Van A' : inst.typeid === 'BUS2012' ? 'Tran Thi B' : inst.typeid === 'BUS2093' ? 'Le Van C' : 'Pham Van D',
         decisions: inst.status === 'COMPLETED' ? [] : [
@@ -1325,3 +1320,46 @@ export function getMockDetail(objectType: string, objectId: string) {
 
     return detail;
 }
+
+export function getMockDocTypeCounts() {
+    return [
+        {
+            DocumentType: 'ZEXP',
+            DocCategory: 'BUS2105',
+            DocumentTypeText: 'Expense PR',
+            RequestCount: 63,
+            SumNetAmountLocalCrcy: 44715.85,
+            LocalCurrency: 'EUR'
+        },
+        {
+            DocumentType: 'ZEXP',
+            DocCategory: 'BUS2105',
+            DocumentTypeText: 'Expense PR',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 4.26,
+            LocalCurrency: 'USD'
+        },
+        {
+            DocumentType: 'ZFO8',
+            DocCategory: 'BUS2012',
+            DocumentTypeText: 'Expense PO',
+            RequestCount: 2,
+            SumNetAmountLocalCrcy: 3000.00,
+            LocalCurrency: 'USD'
+        }
+    ];
+}
+
+export function getMockStatusCounts() {
+    return [
+        {
+            WorkflowTaskStatus: 'COMPLETED',
+            RequestCount: 48
+        },
+        {
+            WorkflowTaskStatus: 'IN PROCESSING',
+            RequestCount: 18
+        }
+    ];
+}
+

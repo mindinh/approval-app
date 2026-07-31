@@ -4,7 +4,9 @@
     "displayName": "Purchase Requisition",
     "version": 1,
     "adapter": "PR_DETAIL",
-    "aliases": ["BUS2105"],
+    "aliases": [
+      "BUS2105"
+    ],
     "enabledSections": {
       "header": true,
       "items": true,
@@ -17,8 +19,14 @@
     "service": "APPROVAL_SRV",
     "rootEntity": "ZC_PRHEADER",
     "key": [
-      { "name": "DocCategory", "value": "BUS2105" },
-      { "name": "DocumentNumber", "fromContext": "documentId" }
+      {
+        "name": "DocCategory",
+        "value": "BUS2105"
+      },
+      {
+        "name": "DocumentNumber",
+        "fromContext": "documentId"
+      }
     ],
     "navigations": {
       "items": "_Item",
@@ -30,190 +38,734 @@
   },
   "mappings": {
     "root": [
-      { "sourcePath": "purchaseRequisition", "altSourcePaths": ["DocumentNumber"], "targetPath": "header.purchaseRequisition", "label": "Document Number", "type": "string", "required": true },
-      { "sourcePath": "purchaseRequisitionText", "altSourcePaths": ["HeaderNote"], "targetPath": "header.purchaseRequisitionText", "label": "Header Note", "type": "string", "dataType": "LONG_TEXT" },
-      { "sourcePath": "purpose", "targetPath": "header.purpose", "label": "Purpose", "type": "string", "dataType": "LONG_TEXT" },
-      { "sourcePath": "paidBy", "targetPath": "header.paidBy", "label": "Paid By", "type": "string", "dataType": "LONG_TEXT" },
-      { "sourcePath": "bankDetails", "targetPath": "header.bankDetails", "label": "Bank Details", "type": "string", "dataType": "LONG_TEXT" },
-      { "sourcePath": "userFullName", "altSourcePaths": ["CreatedByUser", "createdByUser"], "targetPath": "header.userFullName", "label": "Requester", "type": "string" },
-      { "sourcePath": "doctyp", "altSourcePaths": ["DocumentType"], "targetPath": "header.purchaseRequisitionType", "type": "string" },
-      { "sourcePath": "purchaseRequisitionTypeDisplay", "altSourcePaths": ["DocumentTypeText", "doctyp_desc", "doctyp", "DocumentType"], "targetPath": "header.purchaseRequisitionTypeDisplay", "label": "Document Type", "type": "string" },
-      { "sourcePath": "departmentDisplay", "altSourcePaths": ["FundsCenter", "fundsCenter"], "targetPath": "header.departmentDisplay", "label": "Funds Center", "type": "string" },
-      { "sourcePath": "companyCodeDisplay", "altSourcePaths": ["companyCode", "CompanyCode"], "targetPath": "header.companyCodeDisplay", "label": "Company Code", "type": "string" },
-      { "sourcePath": "companyCode", "altSourcePaths": ["CompanyCode"], "targetPath": "header.companyCode", "label": "Company Code", "type": "string" },
-      { "sourcePath": "expenseTypeDisplay", "targetPath": "header.expenseTypeDisplay", "type": "string" },
-      { "sourcePath": "total", "altSourcePaths": ["TotalNetAmountLocalCrcy", "totalNetAmountLocalCrcy", "totalNetAmountDocCrcy", "netAmount"], "targetPath": "header.totalNetAmount", "label": "Total Amount + Currency", "transform": "number", "dataType": "AMOUNT" },
-      { "sourcePath": "curr_vnd", "altSourcePaths": ["LocalCurrency", "docCurrency", "doc_curr"], "targetPath": "header.displayCurrency", "type": "string" },
-      { "sourcePath": "total_doc_curr", "targetPath": "header.totalDocNetAmount", "transform": "number" },
-      { "sourcePath": "doc_curr", "targetPath": "header.docCurrency", "type": "string" },
-      { "sourcePath": "numberOfItems", "targetPath": "header.numberOfItems", "transform": "number" },
-      { "sourcePath": "releaseStrategyName", "altSourcePaths": ["ReleaseStrategyText", "releaseStrategyText"], "targetPath": "header.releaseStrategyName", "type": "string" },
-      { "sourcePath": "priority", "targetPath": "header.priority", "type": "string" },
-      { "sourcePath": "createdOn", "altSourcePaths": ["CreationDate", "taskCreationDateTime"], "targetPath": "header.createdOn", "transform": "sapDateToIso" },
-      { "sourcePath": "assetClass", "targetPath": "header.assetClass", "type": "string" },
-      { "sourcePath": "assetNumber", "targetPath": "header.assetNumber", "type": "string" },
-      { "sourcePath": "assetSubnumber", "targetPath": "header.assetSubnumber", "type": "string" },
-      { "sourcePath": "wbsElement", "targetPath": "header.wbsElement", "type": "string" },
-      { "sourcePath": "capDate", "targetPath": "header.capDate", "transform": "sapDateToIso" },
-      { "sourcePath": "costCenter", "targetPath": "header.costCenter", "type": "string" },
-      { "sourcePath": "costCenterName", "targetPath": "header.costCenterName", "type": "string" },
-      { "sourcePath": "glAccount", "targetPath": "header.glAccount", "type": "string" },
-      { "sourcePath": "glAccountName", "targetPath": "header.glAccountName", "type": "string" },
-      { "sourcePath": "internalOrder", "targetPath": "header.internalOrder", "type": "string" },
-      { "sourcePath": "budgetPeriod", "targetPath": "header.budgetPeriod", "type": "string" },
-      { "sourcePath": "fund", "targetPath": "header.fund", "type": "string" },
-      { "sourcePath": "marketingCampaign", "targetPath": "header.marketingCampaign", "type": "string" },
-      { "sourcePath": "campaignName", "targetPath": "header.campaignName", "type": "string" },
-      { "sourcePath": "campaignBudget", "targetPath": "header.campaignBudget", "transform": "number" },
-      { "sourcePath": "targetAudience", "targetPath": "header.targetAudience", "type": "string" },
-      { "sourcePath": "campaignManager", "targetPath": "header.campaignManager", "type": "string" },
-      { "sourcePath": "salesChannel", "targetPath": "header.salesChannel", "type": "string" },
-      { "sourcePath": "targetCustomer", "targetPath": "header.targetCustomer", "type": "string" },
-      { "sourcePath": "tariffCode", "targetPath": "header.tariffCode", "type": "string" },
-      { "sourcePath": "originCountry", "targetPath": "header.originCountry", "type": "string" },
-      { "sourcePath": "dutyRate", "targetPath": "header.dutyRate", "type": "string" },
-      { "sourcePath": "storageLocation", "targetPath": "header.storageLocation", "type": "string" },
-      { "sourcePath": "receivingPlant", "targetPath": "header.receivingPlant", "type": "string" },
-      { "sourcePath": "storageBin", "targetPath": "header.storageBin", "type": "string" },
-      { "sourcePath": "minStock", "targetPath": "header.minStock", "type": "string" },
-      { "sourcePath": "reorderPoint", "targetPath": "header.reorderPoint", "type": "string" },
-      { "sourcePath": "stockController", "targetPath": "header.stockController", "type": "string" },
-      { "sourcePath": "toolCategory", "targetPath": "header.toolCategory", "type": "string" },
-      { "sourcePath": "safetyLevel", "targetPath": "header.safetyLevel", "type": "string" },
-      { "sourcePath": "safetyCert", "targetPath": "header.safetyCert", "type": "string" },
-      { "sourcePath": "custodianDept", "targetPath": "header.custodianDept", "type": "string" },
-      { "sourcePath": "calibrationDue", "targetPath": "header.calibrationDue", "transform": "sapDateToIso" }
+      {
+        "sourcePath": "purchaseRequisition",
+        "altSourcePaths": [
+          "DocumentNumber"
+        ],
+        "targetPath": "header.purchaseRequisition",
+        "label": "Document Number",
+        "type": "string",
+        "required": true
+      },
+      {
+        "sourcePath": "purchaseRequisitionText",
+        "altSourcePaths": [
+          "HeaderNote"
+        ],
+        "targetPath": "header.purchaseRequisitionText",
+        "label": "Header Note",
+        "type": "string",
+        "dataType": "LONG_TEXT"
+      },
+      {
+        "sourcePath": "purpose",
+        "targetPath": "header.purpose",
+        "label": "Purpose",
+        "type": "string",
+        "dataType": "LONG_TEXT"
+      },
+      {
+        "sourcePath": "paidBy",
+        "targetPath": "header.paidBy",
+        "label": "Paid By",
+        "type": "string",
+        "dataType": "LONG_TEXT"
+      },
+      {
+        "sourcePath": "bankDetails",
+        "targetPath": "header.bankDetails",
+        "label": "Bank Details",
+        "type": "string",
+        "dataType": "LONG_TEXT"
+      },
+      {
+        "sourcePath": "userFullName",
+        "altSourcePaths": [
+          "CreatedByUser",
+          "createdByUser"
+        ],
+        "targetPath": "header.userFullName",
+        "label": "Requester",
+        "type": "string"
+      },
+      {
+        "sourcePath": "doctyp",
+        "altSourcePaths": [
+          "DocumentType"
+        ],
+        "targetPath": "header.purchaseRequisitionType",
+        "type": "string"
+      },
+      {
+        "sourcePath": "doctyp",
+        "altSourcePaths": [
+          "DocumentType",
+          "purchaseRequisitionType",
+          "purchaseRequisitionTypeDisplay"
+        ],
+        "targetPath": "header.purchaseRequisitionTypeDisplay",
+        "dependencies": [
+          "DocumentTypeText",
+          "doctyp_desc",
+          "purchaseRequisitionTypeDisplay"
+        ],
+        "transform": "combineCodeAndText",
+        "label": "Document Type",
+        "type": "string"
+      },
+      {
+        "sourcePath": "departmentDisplay",
+        "altSourcePaths": [
+          "FundsCenter",
+          "fundsCenter"
+        ],
+        "targetPath": "header.departmentDisplay",
+        "dependencies": [
+          "FundsCenterName",
+          "fundsCenterName",
+          "FundsCenterText",
+          "fundsCenterText"
+        ],
+        "transform": "combineCodeAndText",
+        "label": "Funds Center",
+        "type": "string"
+      },
+      {
+        "sourcePath": "companyCodeDisplay",
+        "altSourcePaths": [
+          "CompanyCodeDisplay",
+          "companyCode",
+          "CompanyCode"
+        ],
+        "targetPath": "header.companyCodeDisplay",
+        "dependencies": [
+          "CompanyCodeName",
+          "companyCodeName",
+          "CompanyCodeText",
+          "companyCodeText"
+        ],
+        "transform": "combineCodeAndText",
+        "label": "Company Code",
+        "type": "string"
+      },
+      {
+        "sourcePath": "companyCode",
+        "altSourcePaths": [
+          "CompanyCode"
+        ],
+        "targetPath": "header.companyCode",
+        "label": "Company Code",
+        "type": "string"
+      },
+      {
+        "sourcePath": "expenseTypeDisplay",
+        "targetPath": "header.expenseTypeDisplay",
+        "type": "string"
+      },
+      {
+        "sourcePath": "total",
+        "altSourcePaths": [
+          "TotalNetAmountLocalCrcy",
+          "totalNetAmountLocalCrcy",
+          "totalNetAmountDocCrcy",
+          "netAmount"
+        ],
+        "targetPath": "header.totalNetAmount",
+        "label": "Total Amount + Currency",
+        "transform": "number",
+        "dataType": "AMOUNT"
+      },
+      {
+        "sourcePath": "curr_vnd",
+        "altSourcePaths": [
+          "LocalCurrency",
+          "docCurrency",
+          "doc_curr"
+        ],
+        "targetPath": "header.displayCurrency",
+        "type": "string"
+      },
+      {
+        "sourcePath": "total_doc_curr",
+        "targetPath": "header.totalDocNetAmount",
+        "transform": "number"
+      },
+      {
+        "sourcePath": "doc_curr",
+        "targetPath": "header.docCurrency",
+        "type": "string"
+      },
+      {
+        "sourcePath": "numberOfItems",
+        "targetPath": "header.numberOfItems",
+        "transform": "number"
+      },
+      {
+        "sourcePath": "releaseStrategyName",
+        "altSourcePaths": [
+          "ReleaseStrategyText",
+          "releaseStrategyText"
+        ],
+        "targetPath": "header.releaseStrategyName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "priority",
+        "targetPath": "header.priority",
+        "type": "string"
+      },
+      {
+        "sourcePath": "createdOn",
+        "altSourcePaths": [
+          "CreationDate",
+          "taskCreationDateTime"
+        ],
+        "targetPath": "header.createdOn",
+        "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "assetClass",
+        "targetPath": "header.assetClass",
+        "type": "string"
+      },
+      {
+        "sourcePath": "assetNumber",
+        "targetPath": "header.assetNumber",
+        "type": "string"
+      },
+      {
+        "sourcePath": "assetSubnumber",
+        "targetPath": "header.assetSubnumber",
+        "type": "string"
+      },
+      {
+        "sourcePath": "wbsElement",
+        "targetPath": "header.wbsElement",
+        "type": "string"
+      },
+      {
+        "sourcePath": "capDate",
+        "targetPath": "header.capDate",
+        "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "costCenter",
+        "targetPath": "header.costCenter",
+        "type": "string"
+      },
+      {
+        "sourcePath": "costCenterName",
+        "targetPath": "header.costCenterName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "glAccount",
+        "targetPath": "header.glAccount",
+        "type": "string"
+      },
+      {
+        "sourcePath": "glAccountName",
+        "targetPath": "header.glAccountName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "internalOrder",
+        "targetPath": "header.internalOrder",
+        "type": "string"
+      },
+      {
+        "sourcePath": "budgetPeriod",
+        "targetPath": "header.budgetPeriod",
+        "type": "string"
+      },
+      {
+        "sourcePath": "fund",
+        "targetPath": "header.fund",
+        "type": "string"
+      },
+      {
+        "sourcePath": "marketingCampaign",
+        "targetPath": "header.marketingCampaign",
+        "type": "string"
+      },
+      {
+        "sourcePath": "campaignName",
+        "targetPath": "header.campaignName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "campaignBudget",
+        "targetPath": "header.campaignBudget",
+        "transform": "number"
+      },
+      {
+        "sourcePath": "targetAudience",
+        "targetPath": "header.targetAudience",
+        "type": "string"
+      },
+      {
+        "sourcePath": "campaignManager",
+        "targetPath": "header.campaignManager",
+        "type": "string"
+      },
+      {
+        "sourcePath": "salesChannel",
+        "targetPath": "header.salesChannel",
+        "type": "string"
+      },
+      {
+        "sourcePath": "targetCustomer",
+        "targetPath": "header.targetCustomer",
+        "type": "string"
+      },
+      {
+        "sourcePath": "tariffCode",
+        "targetPath": "header.tariffCode",
+        "type": "string"
+      },
+      {
+        "sourcePath": "originCountry",
+        "targetPath": "header.originCountry",
+        "type": "string"
+      },
+      {
+        "sourcePath": "dutyRate",
+        "targetPath": "header.dutyRate",
+        "type": "string"
+      },
+      {
+        "sourcePath": "storageLocation",
+        "targetPath": "header.storageLocation",
+        "type": "string"
+      },
+      {
+        "sourcePath": "receivingPlant",
+        "targetPath": "header.receivingPlant",
+        "type": "string"
+      },
+      {
+        "sourcePath": "storageBin",
+        "targetPath": "header.storageBin",
+        "type": "string"
+      },
+      {
+        "sourcePath": "minStock",
+        "targetPath": "header.minStock",
+        "type": "string"
+      },
+      {
+        "sourcePath": "reorderPoint",
+        "targetPath": "header.reorderPoint",
+        "type": "string"
+      },
+      {
+        "sourcePath": "stockController",
+        "targetPath": "header.stockController",
+        "type": "string"
+      },
+      {
+        "sourcePath": "toolCategory",
+        "targetPath": "header.toolCategory",
+        "type": "string"
+      },
+      {
+        "sourcePath": "safetyLevel",
+        "targetPath": "header.safetyLevel",
+        "type": "string"
+      },
+      {
+        "sourcePath": "safetyCert",
+        "targetPath": "header.safetyCert",
+        "type": "string"
+      },
+      {
+        "sourcePath": "custodianDept",
+        "targetPath": "header.custodianDept",
+        "type": "string"
+      },
+      {
+        "sourcePath": "calibrationDue",
+        "targetPath": "header.calibrationDue",
+        "transform": "sapDateToIso"
+      }
     ],
     "collections": {
       "items": {
         "navigationKey": "items",
         "targetPath": "items",
         "fields": [
-          { "sourcePath": "purchaseRequisitionItem", "altSourcePaths": ["ItemNumber"], "targetPath": "item", "required": true },
-          { "sourcePath": "plant", "altSourcePaths": ["Plant"], "targetPath": "plant", "dependencies": ["PlantName", "plantName", "PlantText", "plantText"], "transform": "combineCodeAndText" },
-          { "sourcePath": "storageLocation", "altSourcePaths": ["StorageLocation"], "targetPath": "storageLocation", "dependencies": ["StorageLocationName", "storageLocationName", "StorageLocationText", "storageLocationText"], "transform": "combineCodeAndText" },
-          { "sourcePath": "material", "altSourcePaths": ["Material"], "targetPath": "material", "type": "string" },
-          { "sourcePath": "purchaseRequisitionItemText", "altSourcePaths": ["MaterialText"], "targetPath": "shortText", "type": "string" },
-          { "sourcePath": "materialGroupDisplay", "altSourcePaths": ["MaterialGroup"], "targetPath": "materialGroup", "dependencies": ["MaterialGroupName", "materialGroupName", "MaterialGroupText", "materialGroupText"], "transform": "combineCodeAndText" },
-          { "sourcePath": "requestedQuantity", "altSourcePaths": ["Quantity"], "targetPath": "quantity", "transform": "number", "dataType": "QUANTITY" },
-          { "sourcePath": "unit", "altSourcePaths": ["Unit"], "targetPath": "unit", "type": "string" },
-          { "sourcePath": "deliveryDate", "targetPath": "deliveryDate", "transform": "sapDateToIso" },
-          { "sourcePath": "purchaseRequisitionPrice", "altSourcePaths": ["ValuationPrice"], "targetPath": "price", "transform": "number", "dataType": "AMOUNT" },
-          { "sourcePath": "purReqnItemTotalAmount", "altSourcePaths": ["TotalNetAmountDocCrcy"], "targetPath": "totalAmount", "transform": "number", "dataType": "AMOUNT" },
-          { "sourcePath": "glAccount", "altSourcePaths": ["GLAccount"], "targetPath": "glAccount", "dependencies": ["GLAccountText", "glAccountText"], "transform": "combineCodeAndText" },
-          { "sourcePath": "commitmentItemShortId", "altSourcePaths": ["CommitmentItemShortID"], "targetPath": "commitmentItemShortId", "dependencies": ["CommitmentItemShortIDText", "CommitmentItemName", "commitmentItemName"], "transform": "combineCodeAndText" },
-          { "sourcePath": "documentCurrency", "altSourcePaths": ["DocumentCurrency"], "targetPath": "documentCurrency", "type": "string" },
-          { "sourcePath": "localCurrency", "altSourcePaths": ["LocalCurrency"], "targetPath": "localCurrency", "type": "string" },
-          { "sourcePath": "assetClass", "targetPath": "assetClass", "type": "string" },
-          { "sourcePath": "costCenter", "targetPath": "costCenter", "type": "string" },
-          { "sourcePath": "percentage", "targetPath": "percentage", "type": "string" },
-          { "sourcePath": "value", "targetPath": "value", "transform": "number" },
-          { "sourcePath": "salesChannel", "targetPath": "salesChannel", "type": "string" },
-          { "sourcePath": "toolCategory", "targetPath": "toolCategory", "type": "string" }
+          {
+            "sourcePath": "purchaseRequisitionItem",
+            "altSourcePaths": [
+              "ItemNumber"
+            ],
+            "targetPath": "item",
+            "required": true
+          },
+          {
+            "sourcePath": "plant",
+            "altSourcePaths": [
+              "Plant"
+            ],
+            "targetPath": "plant",
+            "dependencies": [
+              "PlantName",
+              "plantName",
+              "PlantText",
+              "plantText"
+            ],
+            "transform": "combineCodeAndText"
+          },
+          {
+            "sourcePath": "storageLocation",
+            "altSourcePaths": [
+              "StorageLocation"
+            ],
+            "targetPath": "storageLocation",
+            "dependencies": [
+              "StorageLocationName",
+              "storageLocationName",
+              "StorageLocationText",
+              "storageLocationText"
+            ],
+            "transform": "combineCodeAndText"
+          },
+          {
+            "sourcePath": "material",
+            "altSourcePaths": [
+              "Material"
+            ],
+            "targetPath": "material",
+            "type": "string"
+          },
+          {
+            "sourcePath": "purchaseRequisitionItemText",
+            "altSourcePaths": [
+              "MaterialText"
+            ],
+            "targetPath": "shortText",
+            "type": "string"
+          },
+          {
+            "sourcePath": "materialGroupDisplay",
+            "altSourcePaths": [
+              "MaterialGroup"
+            ],
+            "targetPath": "materialGroup",
+            "dependencies": [
+              "MaterialGroupName",
+              "materialGroupName",
+              "MaterialGroupText",
+              "materialGroupText"
+            ],
+            "transform": "combineCodeAndText"
+          },
+          {
+            "sourcePath": "requestedQuantity",
+            "altSourcePaths": [
+              "Quantity"
+            ],
+            "targetPath": "quantity",
+            "transform": "number",
+            "dataType": "QUANTITY"
+          },
+          {
+            "sourcePath": "unit",
+            "altSourcePaths": [
+              "Unit"
+            ],
+            "targetPath": "unit",
+            "type": "string"
+          },
+          {
+            "sourcePath": "deliveryDate",
+            "targetPath": "deliveryDate",
+            "transform": "sapDateToIso"
+          },
+          {
+            "sourcePath": "purchaseRequisitionPrice",
+            "altSourcePaths": [
+              "ValuationPrice",
+              "price"
+            ],
+            "targetPath": "price",
+            "currencyPath": "documentCurrency",
+            "transform": "number",
+            "dataType": "AMOUNT",
+            "label": "Valuation Price"
+          },
+          {
+            "sourcePath": "purReqnItemTotalAmount",
+            "altSourcePaths": [
+              "TotalNetAmountDocCrcy",
+              "totalAmount"
+            ],
+            "targetPath": "totalAmount",
+            "currencyPath": "documentCurrency",
+            "transform": "number",
+            "dataType": "AMOUNT",
+            "label": "Total Value"
+          },
+          {
+            "sourcePath": "glAccount",
+            "altSourcePaths": [
+              "GLAccount"
+            ],
+            "targetPath": "glAccount",
+            "dependencies": [
+              "GLAccountText",
+              "glAccountText",
+              "GLAccountName",
+              "glAccountName"
+            ],
+            "transform": "combineCodeAndText",
+            "label": "G/L Account"
+          },
+          {
+            "sourcePath": "commitmentItemShortId",
+            "altSourcePaths": [
+              "CommitmentItemShortID",
+              "commitmentItem",
+              "CommitmentItem"
+            ],
+            "targetPath": "commitmentItemShortId",
+            "dependencies": [
+              "CommitmentItemDescription",
+              "commitmentItemDescription",
+              "CommitmentItemShortIDText",
+              "CommitmentItemName",
+              "commitmentItemName",
+              "CommitmentItemText",
+              "commitmentItemText"
+            ],
+            "transform": "combineCodeAndText",
+            "label": "Commitment Item"
+          },
+          {
+            "sourcePath": "documentCurrency",
+            "altSourcePaths": [
+              "DocumentCurrency",
+              "purReqnItemCurrency"
+            ],
+            "targetPath": "documentCurrency",
+            "type": "string"
+          },
+          {
+            "sourcePath": "localCurrency",
+            "altSourcePaths": [
+              "LocalCurrency"
+            ],
+            "targetPath": "localCurrency",
+            "type": "string"
+          },
+          {
+            "sourcePath": "assetClass",
+            "targetPath": "assetClass",
+            "type": "string"
+          },
+          {
+            "sourcePath": "costCenter",
+            "targetPath": "costCenter",
+            "type": "string"
+          },
+          {
+            "sourcePath": "percentage",
+            "targetPath": "percentage",
+            "type": "string"
+          },
+          {
+            "sourcePath": "value",
+            "targetPath": "value",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "salesChannel",
+            "targetPath": "salesChannel",
+            "type": "string"
+          },
+          {
+            "sourcePath": "toolCategory",
+            "targetPath": "toolCategory",
+            "type": "string"
+          }
         ]
       },
       "workflowSteps": {
         "navigationKey": "approvalTree",
         "targetPath": "workflow.steps",
         "fields": [
-          { "sourcePath": "documentId", "targetPath": "documentId" },
-          { "sourcePath": "level", "targetPath": "level", "transform": "number" },
-          { "sourcePath": "releaseCode", "targetPath": "releaseCode" },
-          { "sourcePath": "approver", "targetPath": "approver" },
-          { "sourcePath": "approverUserId", "targetPath": "approverUserId" },
-          { "sourcePath": "status", "targetPath": "status" },
-          { "sourcePath": "noteText", "targetPath": "noteText" },
-          { "sourcePath": "postedOn", "targetPath": "postedOn" },
-          { "sourcePath": "postedTime", "targetPath": "postedTime" }
+          {
+            "sourcePath": "documentId",
+            "targetPath": "documentId"
+          },
+          {
+            "sourcePath": "level",
+            "targetPath": "level",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "releaseCode",
+            "targetPath": "releaseCode"
+          },
+          {
+            "sourcePath": "approver",
+            "targetPath": "approver"
+          },
+          {
+            "sourcePath": "approverUserId",
+            "targetPath": "approverUserId"
+          },
+          {
+            "sourcePath": "status",
+            "targetPath": "status"
+          },
+          {
+            "sourcePath": "noteText",
+            "targetPath": "noteText"
+          },
+          {
+            "sourcePath": "postedOn",
+            "targetPath": "postedOn"
+          },
+          {
+            "sourcePath": "postedTime",
+            "targetPath": "postedTime"
+          }
         ]
       },
       "comments": {
         "navigationKey": "comments",
         "targetPath": "workflow.comments",
         "fields": [
-          { "sourcePath": "author", "targetPath": "author" },
-          { "sourcePath": "text", "targetPath": "text" },
-          { "sourcePath": "postedOn", "targetPath": "postedOn" },
-          { "sourcePath": "postedTime", "targetPath": "postedTime" }
+          {
+            "sourcePath": "author",
+            "targetPath": "author"
+          },
+          {
+            "sourcePath": "text",
+            "targetPath": "text"
+          },
+          {
+            "sourcePath": "postedOn",
+            "targetPath": "postedOn"
+          },
+          {
+            "sourcePath": "postedTime",
+            "targetPath": "postedTime"
+          }
         ]
       },
       "attachments": {
         "navigationKey": "attachments",
         "targetPath": "attachments",
         "fields": [
-          { "sourcePath": "id", "targetPath": "id" },
-          { "sourcePath": "fileName", "targetPath": "fileName" },
-          { "sourcePath": "mimeType", "targetPath": "mimeType" },
-          { "sourcePath": "fileSize", "targetPath": "fileSize", "transform": "number" },
-          { "sourcePath": "createdBy", "targetPath": "createdBy" },
-          { "sourcePath": "createdAt", "targetPath": "createdAt", "transform": "sapDateToIso" }
+          {
+            "sourcePath": "id",
+            "targetPath": "id"
+          },
+          {
+            "sourcePath": "fileName",
+            "targetPath": "fileName"
+          },
+          {
+            "sourcePath": "mimeType",
+            "targetPath": "mimeType"
+          },
+          {
+            "sourcePath": "fileSize",
+            "targetPath": "fileSize",
+            "transform": "number"
+          },
+          {
+            "sourcePath": "createdBy",
+            "targetPath": "createdBy"
+          },
+          {
+            "sourcePath": "createdAt",
+            "targetPath": "createdAt",
+            "transform": "sapDateToIso"
+          }
         ]
       },
       "accountAssignments": {
         "navigationKey": "accountAssignments",
         "targetPath": "accountAssignments",
         "fields": [
-          { "sourcePath": "item", "targetPath": "item" },
-          { "sourcePath": "itemCostCenter", "targetPath": "itemCostCenter" },
-          { "sourcePath": "itemGlAccount", "targetPath": "itemGlAccount" },
-          { "sourcePath": "itemPercentage", "targetPath": "itemPercentage" },
-          { "sourcePath": "itemValue", "targetPath": "itemValue", "transform": "number" }
+          {
+            "sourcePath": "item",
+            "targetPath": "item"
+          },
+          {
+            "sourcePath": "itemCostCenter",
+            "targetPath": "itemCostCenter"
+          },
+          {
+            "sourcePath": "itemGlAccount",
+            "targetPath": "itemGlAccount"
+          },
+          {
+            "sourcePath": "itemPercentage",
+            "targetPath": "itemPercentage"
+          },
+          {
+            "sourcePath": "itemValue",
+            "targetPath": "itemValue",
+            "transform": "number"
+          }
         ]
       },
       "channelBreakdown": {
         "navigationKey": "channelBreakdown",
         "targetPath": "channelBreakdown",
         "fields": [
-          { "sourcePath": "channel", "targetPath": "distChannel" },
-          { "sourcePath": "targetImpressions", "targetPath": "distImpressions" },
-          { "sourcePath": "budgetShare", "targetPath": "distShare" },
-          { "sourcePath": "startDate", "targetPath": "distDate", "transform": "sapDateToIso" }
+          {
+            "sourcePath": "channel",
+            "targetPath": "distChannel"
+          },
+          {
+            "sourcePath": "targetImpressions",
+            "targetPath": "distImpressions"
+          },
+          {
+            "sourcePath": "budgetShare",
+            "targetPath": "distShare"
+          },
+          {
+            "sourcePath": "startDate",
+            "targetPath": "distDate",
+            "transform": "sapDateToIso"
+          }
         ]
       },
       "tariffsBreakdown": {
         "navigationKey": "tariffsBreakdown",
         "targetPath": "tariffsBreakdown",
         "fields": [
-          { "sourcePath": "item", "targetPath": "item" },
-          { "sourcePath": "hsCodeItem", "targetPath": "hsCodeItem" },
-          { "sourcePath": "hsDescItem", "targetPath": "hsDescItem" },
-          { "sourcePath": "hsDutyRate", "targetPath": "hsDutyRate" },
-          { "sourcePath": "hsEstDuty", "targetPath": "hsEstDuty", "transform": "number" }
+          {
+            "sourcePath": "item",
+            "targetPath": "item"
+          },
+          {
+            "sourcePath": "hsCodeItem",
+            "targetPath": "hsCodeItem"
+          },
+          {
+            "sourcePath": "hsDescItem",
+            "targetPath": "hsDescItem"
+          },
+          {
+            "sourcePath": "hsDutyRate",
+            "targetPath": "hsDutyRate"
+          },
+          {
+            "sourcePath": "hsEstDuty",
+            "targetPath": "hsEstDuty",
+            "transform": "number"
+          }
         ]
       }
     }
-  },
-  "uiSchema": {
-    "title": "{{header.purchaseRequisition}}",
-    "subtitle": "{{header.userFullName}}",
-    "sections": [
-      {
-        "id": "overviewHeader",
-        "type": "CARD",
-        "title": "Overview",
-        "fields": [
-          "purchaseRequisition",
-          "purchaseRequisitionTypeDisplay",
-          "userFullName",
-          "departmentDisplay",
-          "createdOn",
-          "releaseStrategyName",
-          "totalNetAmount",
-          "companyCodeDisplay",
-          "purchaseRequisitionText",
-          "purpose",
-          "paidBy",
-          "bankDetails"
-        ]
-      },
-      {
-        "id": "items",
-        "type": "TABLE",
-        "title": "Items",
-        "dataPath": "items",
-        "columns": ["item", "plant", "storageLocation", "material", "shortText", "materialGroup", "quantity", "unit", "deliveryDate", "price", "totalAmount", "glAccount", "commitmentItemShortId"]
-      }
-    ]
   },
   "actions": [
     {
@@ -245,16 +797,24 @@
       "dataType": "TEXT"
     },
     {
-      "label": "Dept",
-      "dataPath": "header.departmentDisplay",
+      "label": "Company Code",
+      "dataPath": "header.companyCodeDisplay",
       "dataType": "TEXT"
     }
   ],
   "profiles": {
     "detail": {
       "includeUiFields": true,
-      "requiredCanonicalPaths": ["header.purchaseRequisition", "header.displayCurrency", "header.purchaseRequisitionType"],
-      "usageTags": ["identity", "action", "download"]
+      "requiredCanonicalPaths": [
+        "header.purchaseRequisition",
+        "header.displayCurrency",
+        "header.purchaseRequisitionType"
+      ],
+      "usageTags": [
+        "identity",
+        "action",
+        "download"
+      ]
     }
   },
   "documentTypes": {
@@ -262,46 +822,172 @@
       "name": "Asset PR",
       "budgetMode": "WARNING",
       "cardChips": [
-        { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
-        { "label": "Asset", "dataPath": "header.assetClass", "dataType": "TEXT" },
-        { "label": "WBS", "dataPath": "header.wbsElement", "dataType": "TEXT" }
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Asset",
+          "dataPath": "header.assetClass",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "WBS",
+          "dataPath": "header.wbsElement",
+          "dataType": "TEXT"
+        }
+      ]
+    },
+    "ZFO7": {
+      "name": "Expense PR",
+      "budgetMode": "WARNING",
+      "cardChips": [
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Cost Center",
+          "dataPath": "header.costCenter",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Internal Order",
+          "dataPath": "header.internalOrder",
+          "dataType": "TEXT"
+        }
       ]
     },
     "ZEXP": {
       "name": "Expense PR",
       "budgetMode": "WARNING",
       "cardChips": [
-        { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
-        { "label": "Cost Center", "dataPath": "header.costCenter", "dataType": "TEXT" },
-        { "label": "Internal Order", "dataPath": "header.internalOrder", "dataType": "TEXT" }
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Cost Center",
+          "dataPath": "header.costCenter",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Internal Order",
+          "dataPath": "header.internalOrder",
+          "dataType": "TEXT"
+        }
       ]
     },
     "ZMAK": {
       "name": "Marketing PR",
       "cardChips": [
-        { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
-        { "label": "Campaign ID", "dataPath": "header.marketingCampaign", "dataType": "TEXT" }
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Campaign ID",
+          "dataPath": "header.marketingCampaign",
+          "dataType": "TEXT"
+        }
       ]
     },
     "ZNB1": {
       "name": "Trading PR",
       "cardChips": [
-        { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
-        { "label": "Sales Channel", "dataPath": "header.salesChannel", "dataType": "TEXT" }
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Sales Channel",
+          "dataPath": "header.salesChannel",
+          "dataType": "TEXT"
+        }
       ]
     },
     "ZNB2": {
       "name": "Non-Trade PR (Stock)",
       "cardChips": [
-        { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
-        { "label": "Storage", "dataPath": "header.storageLocation", "dataType": "TEXT" }
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Storage",
+          "dataPath": "header.storageLocation",
+          "dataType": "TEXT"
+        }
       ]
     },
     "ZTOL": {
       "name": "Tools PR",
       "cardChips": [
-        { "label": "Total", "dataPath": "header.totalNetAmount", "dataType": "AMOUNT", "formatter": "currency", "isPrimary": true },
-        { "label": "Custodian", "dataPath": "header.safetyLevel", "dataType": "TEXT" }
+        {
+          "label": "Total",
+          "dataPath": "header.totalNetAmount",
+          "dataType": "AMOUNT",
+          "formatter": "currency",
+          "isPrimary": true
+        },
+        {
+          "label": "Company Code",
+          "dataPath": "header.companyCodeDisplay",
+          "dataType": "TEXT"
+        },
+        {
+          "label": "Custodian",
+          "dataPath": "header.safetyLevel",
+          "dataType": "TEXT"
+        }
       ]
     }
   }

@@ -3,6 +3,7 @@ import { ObjectTypeCode } from '../processors/object-config';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { RawODataEntity } from '../types/sap-odata.types';
 import { AppError } from '../utils/error-handler';
+import { getMimeTypeFromExtension } from '../utils/mime';
 
 export class PoDetail extends BaseDetail {
     readonly objectType: ObjectTypeCode = 'PO';
@@ -79,15 +80,17 @@ export class PoDetail extends BaseDetail {
         const rawAttachments = rawHeader._Attachment || [];
         const normalizedAttachments = rawAttachments.map((att: any) => {
             const ext = att.FileExtension || '';
-            const mimeType = ext.toLowerCase() === 'pdf' ? 'application/pdf' : 
-                             ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext.toLowerCase()) ? `image/${ext.toLowerCase()}` : 
-                             'application/octet-stream';
+            let fileName = att.FileName || '';
+            if (ext && !fileName.toLowerCase().endsWith('.' + ext.toLowerCase())) {
+                fileName = `${fileName}.${ext}`;
+            }
+            const mimeType = att.MimeType || att.ContentType || getMimeTypeFromExtension(ext, fileName);
             return {
                 id: att.DocId,
-                fileName: att.FileExtension ? `${att.FileName}.${att.FileExtension}` : att.FileName,
+                fileName,
                 fileDisplayName: att.FileName,
                 mimeType,
-                fileSize: 0,
+                fileSize: Number(att.Length || 0),
                 createdBy: att.CreatedBy || '',
                 createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : new Date().toISOString()
             };

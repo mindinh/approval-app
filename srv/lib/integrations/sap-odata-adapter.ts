@@ -5,11 +5,12 @@ import { PoDetail } from './po';
 import { ReDetail } from './re';
 import { ClaimDetail } from './claim';
 import { ODATA_SERVICES } from '../processors/odata-config';
-import { getMockInstances } from './mock-data-provider';
+import { getMockInstances, getMockDocTypeCounts, getMockStatusCounts } from './mock-data-provider';
 import { TtlLruCache } from '../utils/cache';
 import { MetadataService } from '../metadata-service';
 
 const detailCache = new TtlLruCache<string, any>(500, 5 * 60 * 1000); // 5 minutes TTL, 500 capacity
+const instanceCache = new TtlLruCache<string, any[]>(200, 60 * 1000); // 1 minute TTL for instance lookups
 
 export function clearDetailCache(objectType: string, objectId: string) {
     const keyPrefix = `${objectType}:${objectId}:`;
@@ -42,10 +43,30 @@ export class SapOdataAdapter {
     }
 
     // ─── WORKLIST FETCHING (from InstanceListAdapter) ───
-    async getInstances(sapUser: string, status?: string | string[], userJwt?: string, targetInstanceId?: string): Promise<any[]> {
+    async getInstances(
+        sapUser: string,
+        status?: string | string[],
+        userJwt?: string,
+        targetInstanceId?: string,
+        pagination?: { top?: number; skip?: number }
+    ): Promise<any[]> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
-            return getMockInstances(status);
+            const mockItems = getMockInstances(status);
+            const total = mockItems.length;
+            let result = mockItems;
+            if (pagination?.skip !== undefined || pagination?.top !== undefined) {
+                const skip = pagination.skip ?? 0;
+                const top = pagination.top ?? result.length;
+                result = result.slice(skip, skip + top);
+            }
+            (result as any).totalCount = total;
+            return result;
+        }
+
+        const cacheKey = `${sapUser}:${targetInstanceId || ''}:${Array.isArray(status) ? status.join(',') : (status || '')}`;
+        if (targetInstanceId && instanceCache.has(cacheKey)) {
+            return instanceCache.get(cacheKey)!;
         }
 
         const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
@@ -53,8 +74,14 @@ export class SapOdataAdapter {
 
         const params: Record<string, string> = {
             $format: 'json',
-            $orderby: 'WorkflowTaskInternalID desc'
+            $orderby: 'WorkflowTaskInternalID desc',
+            $count: 'true',
+            $top: String(pagination?.top ?? 1000)
         };
+
+        if (pagination?.skip !== undefined) {
+            params.$skip = String(pagination.skip);
+        }
 
         const filterConditions: string[] = [];
 
@@ -84,7 +111,9 @@ export class SapOdataAdapter {
         console.log(`[SapOdataAdapter] raw response status: ${response ? 'object' : 'null'}, keys: ${response ? Object.keys(response).join(', ') : 'none'}, value length: ${response?.value?.length ?? 'undefined'}`);
 
         // Map V4 service properties back to the internal model
-        const rawItems = response?.value || [];
+        const rawItems = response?.value || response?.d?.results || response?.d || [];
+        const totalCount = Number(response?.['@odata.count'] ?? response?.d?.__count ?? rawItems.length);
+
         const items = rawItems.map((item: any) => ({
             instanceID: item.WorkflowTaskInternalID,
             status: item.WorkflowTaskStatus,
@@ -100,7 +129,9 @@ export class SapOdataAdapter {
             taskCreationDateTime: item.TaskCreationDateTime,
             createdByUser: item.CreatedByUser,
             creationDate: item.CreationDate,
-            creationTime: item.CreationTime
+            creationTime: item.CreationTime,
+            companyCode: item.CompanyCode || item.companyCode,
+            companyCodeName: item.CompanyCodeName || item.companyCodeName
         }));
 
         // Local sort fallback by instance ID descending
@@ -109,6 +140,12 @@ export class SapOdataAdapter {
             const idB = b.instanceID || '';
             return idB.localeCompare(idA);
         });
+
+        (items as any).totalCount = totalCount;
+
+        if (targetInstanceId && items.length > 0) {
+            instanceCache.set(cacheKey, items);
+        }
 
         return items;
     }
@@ -219,6 +256,38 @@ export class SapOdataAdapter {
             return await strategy.fetchAttachmentContent(objectId, attachId, sapUser, userJwt);
         } else {
             throw new Error(`fetchAttachmentContent not supported for strategy: ${strategy.objectType}`);
+        }
+    }
+
+    async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<any[]> {
+        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+        if (isMockMode) {
+            return getMockDocTypeCounts();
+        }
+
+        const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        try {
+            const response = await this.sapClient.get<any>(path, '/ZC_WFTASK_DOCTYPECNT', { $format: 'json' }, sapUser, userJwt);
+            return response?.value ?? [];
+        } catch (err: any) {
+            console.error(`[SapOdataAdapter] Failed to fetch ZC_WFTASK_DOCTYPECNT:`, err.message);
+            return getMockDocTypeCounts();
+        }
+    }
+
+    async getStatusCounts(sapUser: string, userJwt?: string): Promise<any[]> {
+        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+        if (isMockMode) {
+            return getMockStatusCounts();
+        }
+
+        const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        try {
+            const response = await this.sapClient.get<any>(path, '/ZC_WFTASK_STATUSCNT', { $format: 'json' }, sapUser, userJwt);
+            return response?.value ?? [];
+        } catch (err: any) {
+            console.error(`[SapOdataAdapter] Failed to fetch ZC_WFTASK_STATUSCNT:`, err.message);
+            return getMockStatusCounts();
         }
     }
 }

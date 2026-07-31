@@ -13,7 +13,7 @@ cds.on('bootstrap', (app: express.Application) => {
     app.get('/api/cnma/APPROVAL_SRV/health', (_req: express.Request, res: express.Response) => {
         res.json({
             status: 'ok',
-            service: 'cnma-approval-bff',
+            service: 'cnma_prorequest_s4h-bff',
             timestamp: new Date().toISOString()
         });
     });

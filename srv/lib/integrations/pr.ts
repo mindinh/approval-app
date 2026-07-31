@@ -2,8 +2,9 @@ import { BaseDetail, toCamelCaseKeys } from './base';
 import { ObjectTypeCode } from '../processors/object-config';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { RawODataEntity } from '../types/sap-odata.types';
-import { addMockComment, addMockAttachment, getMockAttachmentContent } from './mock-data-provider';
+import { addMockComment, addMockAttachment, getMockAttachmentContent, getMockAttachmentContentById } from './mock-data-provider';
 import { AppError } from '../utils/error-handler';
+import { getMimeTypeFromExtension } from '../utils/mime';
 
 export class PrDetail extends BaseDetail {
     readonly objectType: ObjectTypeCode = 'PR';
@@ -47,15 +48,17 @@ export class PrDetail extends BaseDetail {
         const rawAttachments = rawHeader._Attachment || [];
         const normalizedAttachments = rawAttachments.map((att: any) => {
             const ext = att.FileExtension || '';
-            const mimeType = ext.toLowerCase() === 'pdf' ? 'application/pdf' : 
-                             ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext.toLowerCase()) ? `image/${ext.toLowerCase()}` : 
-                             'application/octet-stream';
+            let fileName = att.FileName || '';
+            if (ext && !fileName.toLowerCase().endsWith('.' + ext.toLowerCase())) {
+                fileName = `${fileName}.${ext}`;
+            }
+            const mimeType = att.MimeType || att.ContentType || getMimeTypeFromExtension(ext, fileName);
             return {
                 id: att.DocId,
-                fileName: att.FileExtension ? `${att.FileName}.${att.FileExtension}` : att.FileName,
+                fileName,
                 fileDisplayName: att.FileName,
                 mimeType,
-                fileSize: 0,
+                fileSize: Number(att.Length || 0),
                 createdBy: att.CreatedBy || '',
                 createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : new Date().toISOString()
             };
@@ -100,7 +103,18 @@ export class PrDetail extends BaseDetail {
             addMockComment(objectId, text, sapUser);
             return;
         }
-        throw new AppError('Comments posting is disabled for this service.', 405);
+
+        const paddedId = objectId.padStart(10, '0');
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const relativePath = `/ZC_PRHEADER(DocCategory='BUS2105',DocumentNumber='${paddedId}')/SAP__self.comment`;
+        
+        const cleanText = text ? text.trim().substring(0, 255) : '';
+        const payload = {
+            NoteText: cleanText,
+            isApproval: type === 'APPR'
+        };
+
+        await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, userJwt);
     }
 
     async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string): Promise<void> {
@@ -115,14 +129,27 @@ export class PrDetail extends BaseDetail {
     async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
-            return getMockAttachmentContent(objectId, attachId);
+            if (objectId) {
+                return getMockAttachmentContent(objectId, attachId);
+            }
+            return getMockAttachmentContentById(attachId);
         }
 
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const relativePath = `/ZI_DOC_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
         const res = await this.sapClient.getBinary(servicePath, relativePath, sapUser, userJwt);
+        
+        let data = res.data;
+        if (data && data.length > 0) {
+            let lastNonNull = data.length - 1;
+            while (lastNonNull >= 0 && data[lastNonNull] === 0) {
+                lastNonNull--;
+            }
+            data = data.subarray(0, lastNonNull + 1);
+        }
+
         return {
-            data: res.data,
+            data,
             contentType: res.contentType,
             fileName: res.fileName || `attachment_${attachId}`
         };

@@ -66,7 +66,7 @@ export abstract class BaseDetail implements Detail {
         const docCategoryKey = objConfig?.source?.key?.find((k: any) => k.name === 'DocCategory');
         const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : 'BUS2012');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Comment,_Attachment';
+        const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Attachment,_Comment';
 
         const paddedId = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
 

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { InboxProcessor } from '../lib/processors/inbox-processor';
+import { ConfigRegistry } from '../lib/mapping/config-registry';
 import { AppError } from '../lib/utils/error-handler';
+import { buildFieldSchema } from '../lib/processors/inbox-utils';
 import {
     resolveIdentity,
     getSapUser,
@@ -200,6 +202,47 @@ export class InboxController {
 
     /**
      * @openapi
+     * /tasks/object-configs:
+     *   get:
+     *     summary: Fetch object type UI schemas
+     *     description: Returns UI schema and field configuration maps loaded from srv/configuration/object-types JSON files.
+     *     security:
+     *       - BearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Config map dictionary by object type
+     */
+    getObjectConfigs = (_req: Request, res: Response): void => {
+        const configs = ConfigRegistry.getInstance().list();
+        const configMap: Record<string, any> = {};
+
+        for (const c of configs) {
+            const objectType = c.object.objectType.toUpperCase();
+            const fieldSchema = buildFieldSchema(c);
+
+            const schemaPayload = {
+                objectType,
+                displayName: c.object.displayName,
+                aliases: c.object.aliases || [],
+                uiSchema: c.uiSchema,
+                fieldSchema,
+                cardChips: c.cardChips || [],
+                actions: c.actions || []
+            };
+
+            configMap[objectType] = schemaPayload;
+            if (c.object.aliases) {
+                for (const alias of c.object.aliases) {
+                    configMap[alias.toUpperCase()] = schemaPayload;
+                }
+            }
+        }
+
+        res.json({ configs: configMap });
+    };
+
+    /**
+     * @openapi
      * /tasks/dashboard:
      *   get:
      *     summary: Fetch dashboard aggregation
@@ -249,7 +292,6 @@ export class InboxController {
 
             const result = await this.processor.getTasks(sapUser, userJwt, { top, skip });
             res.json({
-                identity: getIdentity(sapUser),
                 items: result.items,
                 total: result.total
             });
@@ -287,7 +329,6 @@ export class InboxController {
 
             const result = await this.processor.getApprovedTasks(sapUser, userJwt, { top, skip });
             res.json({
-                identity: getIdentity(sapUser),
                 items: result.items,
                 total: result.total
             });
@@ -339,13 +380,11 @@ export class InboxController {
                 instid: req.query.instid ? String(req.query.instid) : undefined,
                 businessObjectType: req.query.businessObjectType ? String(req.query.businessObjectType) : undefined,
                 documentId: req.query.documentId ? String(req.query.documentId) : undefined,
+                status: req.query.status ? String(req.query.status) : undefined,
             };
 
             const detail = await this.processor.getTaskDetail(instanceId, sapUser, hints, userJwt);
-            res.json({
-                identity: getIdentity(sapUser),
-                detail
-            });
+            res.json(detail);
         } catch (error) {
             next(error);
         }
@@ -378,13 +417,11 @@ export class InboxController {
                 instid: req.query.instid ? String(req.query.instid) : undefined,
                 businessObjectType: req.query.businessObjectType ? String(req.query.businessObjectType) : undefined,
                 documentId: req.query.documentId ? String(req.query.documentId) : undefined,
+                status: req.query.status ? String(req.query.status) : undefined,
             };
 
             const detail = await this.processor.getTaskDetail(instanceId, sapUser, hints, userJwt);
-            res.json({
-                identity: getIdentity(sapUser),
-                detail
-            });
+            res.json(detail);
         } catch (error) {
             next(error);
         }
@@ -417,13 +454,11 @@ export class InboxController {
                 instid: req.query.instid ? String(req.query.instid) : undefined,
                 businessObjectType: req.query.businessObjectType ? String(req.query.businessObjectType) : undefined,
                 documentId: req.query.documentId ? String(req.query.documentId) : undefined,
+                status: req.query.status ? String(req.query.status) : undefined,
             };
 
             const detail = await this.processor.getTaskDetail(instanceId, sapUser, hints, userJwt);
-            res.json({
-                identity: getIdentity(sapUser),
-                detail
-            });
+            res.json(detail);
         } catch (error) {
             next(error);
         }
@@ -548,21 +583,10 @@ export class InboxController {
      *       200:
      *         description: Success envelope
      */
-    postAttachment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    postAttachment = async (_req: Request, _res: Response, next: NextFunction): Promise<void> => {
         try {
-            const docNum = String(req.query.documentId || req.headers['x-document-id'] || '');
-            const fileName = req.headers['slug'] ? decodeURIComponent(String(req.headers['slug'])) : 'attachment.pdf';
-            const rawMime = req.headers['content-type'];
-            const mimeType = Array.isArray(rawMime) ? rawMime[0] : (rawMime || 'application/octet-stream');
-            const { sapUser, userJwt } = resolveIdentity(req);
-            
-            if (!docNum || docNum === 'undefined') {
-                throw new AppError('Missing documentId', 400);
-            }
-
-            const buffer = await readRawBody(req);
-            await this.processor.uploadAttachment(docNum, fileName, String(mimeType), buffer, sapUser, userJwt);
-            res.json({ success: true, message: 'Attachment uploaded successfully.' });
+            // Attachment upload disabled per request
+            throw new AppError('Attachment upload is disabled.', 403);
         } catch (error) {
             next(error);
         }
@@ -597,23 +621,21 @@ export class InboxController {
      */
     streamAttachment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const attId = String(req.params.attId);
+            const attId = String(req.params.attachId || req.params.attId);
             let docNum = req.query.documentId ? String(req.query.documentId) : '';
             const { sapUser, userJwt } = resolveIdentity(req);
 
             const isMockMode = process.env.USE_MOCK_SAP !== 'false';
             if (isMockMode && (!docNum || docNum === 'undefined')) {
                 const taskId = String(req.params.id);
-                try {
-                    const detail = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
-                    docNum = detail.object?.objectId || '';
-                } catch (e: any) {
-                    console.warn(`Failed to resolve documentId for task ${taskId}: ${e.message}`);
+                if (taskId && taskId !== 'undefined') {
+                    try {
+                        const detail = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
+                        docNum = detail.task.businessContext?.documentId || '';
+                    } catch (e: any) {
+                        console.warn(`Failed to resolve documentId for task ${taskId}: ${e.message}`);
+                    }
                 }
-            }
-
-            if (isMockMode && !docNum) {
-                throw new AppError('Missing documentId (required in mock mode)', 400);
             }
 
             const file = await this.processor.getAttachmentContent(docNum, attId, sapUser, userJwt);
@@ -723,17 +745,10 @@ export class InboxController {
      *       200:
      *         description: Success envelope
      */
-    uploadPrAttachment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    uploadPrAttachment = async (_req: Request, _res: Response, next: NextFunction): Promise<void> => {
         try {
-            const docNum = String(req.params.docNum);
-            const fileName = req.headers['slug'] ? decodeURIComponent(String(req.headers['slug'])) : 'attachment.pdf';
-            const rawMime = req.headers['content-type'];
-            const mimeType = Array.isArray(rawMime) ? rawMime[0] : (rawMime || 'application/octet-stream');
-            const { sapUser, userJwt } = resolveIdentity(req);
-
-            const buffer = await readRawBody(req);
-            await this.processor.uploadAttachment(docNum, fileName, String(mimeType), buffer, sapUser, userJwt);
-            res.json({ success: true, message: 'Attachment uploaded successfully.' });
+            // Attachment upload disabled per request
+            throw new AppError('Attachment upload is disabled.', 403);
         } catch (error) {
             next(error);
         }

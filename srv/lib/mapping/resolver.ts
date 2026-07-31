@@ -1,4 +1,5 @@
 import { ObjectConfig } from './config-registry';
+import { resolveUiSchema } from '../processors/inbox-utils';
 
 export interface FieldRequirementPlan {
   profile: string;
@@ -21,7 +22,7 @@ export class FieldRequirementResolver {
   /**
    * Resolves the required canonical and source paths for a given profile and configuration.
    */
-  public resolve(profileName: string, config: ObjectConfig): FieldRequirementPlan {
+  public resolve(profileName: string, config: ObjectConfig, documentType?: string): FieldRequirementPlan {
     const profile = config.profiles[profileName] || config.profiles[config.object.defaultProfile || 'detail'];
     if (!profile) {
       throw new Error(`Profile ${profileName} not found in configuration for ${config.object.objectType}`);
@@ -30,22 +31,39 @@ export class FieldRequirementResolver {
     const canonicalPaths = new Set<string>();
 
     // 1. Add paths from uiSchema if includeUiFields is true
-    if (profile.includeUiFields !== false && config.uiSchema?.sections) {
-      for (const section of config.uiSchema.sections) {
-        // CARD sections list fields by ID. In this case, we look up the mapping that matches the field ID.
-        if (section.fields) {
-          for (const fieldId of section.fields) {
-            // Find mapping in root where sourcePath or targetPath contains fieldId, or assume targetPath is header.fieldId
-            const mappedPath = `header.${fieldId}`;
-            canonicalPaths.add(mappedPath);
+    const uiSchema = resolveUiSchema(config, documentType);
+    if (profile.includeUiFields !== false) {
+      if (uiSchema?.sections) {
+        for (const section of uiSchema.sections) {
+          if (section.fields) {
+            for (const fieldId of section.fields) {
+              const mappedPath = `header.${fieldId}`;
+              canonicalPaths.add(mappedPath);
+            }
+          }
+          if (section.dataPath && section.columns) {
+            const cleanDataPath = section.dataPath.replace(/^\$\./, '').replace(/^\$/, '');
+            for (const col of section.columns) {
+              const mappedPath = cleanDataPath ? `${cleanDataPath}.${col}` : col;
+              canonicalPaths.add(mappedPath);
+            }
           }
         }
-        // TABLE sections have dataPath (e.g. $.items) and columns list
-        if (section.dataPath && section.columns) {
-          const cleanDataPath = section.dataPath.replace(/^\$\./, '').replace(/^\$/, '');
-          for (const col of section.columns) {
-            const mappedPath = cleanDataPath ? `${cleanDataPath}.${col}` : col;
-            canonicalPaths.add(mappedPath);
+      } else if (config.mappings) {
+        if (config.mappings.root) {
+          for (const m of config.mappings.root) {
+            canonicalPaths.add(m.targetPath);
+          }
+        }
+        if (config.mappings.collections) {
+          for (const colKey of Object.keys(config.mappings.collections)) {
+            const col = config.mappings.collections[colKey];
+            if (col.fields) {
+              for (const f of col.fields) {
+                const itemProp = f.targetPath.includes('.') ? f.targetPath : `${colKey}.${f.targetPath}`;
+                canonicalPaths.add(itemProp);
+              }
+            }
           }
         }
       }
