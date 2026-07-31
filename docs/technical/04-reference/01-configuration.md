@@ -1,6 +1,6 @@
 # System Configuration & Object Mapping Reference
 
-> **Owner:** Lead CAP Architect | **Last Updated:** 2026-07-22 | **Status:** Active
+> **Owner:** Lead CAP Architect | **Last Updated:** 2026-07-31 | **Status:** Active
 
 This document provides a reference guide for runtime environment variables, BTP destination settings, and declarative object type mapping configurations (`config.json`).
 
@@ -116,6 +116,18 @@ In development mode (`NODE_ENV !== 'production'`), the [`ConfigRegistry`](file:/
 2.  **Schema Validation**: The registry parses and validates the modified JSON.
 3.  **Atomic Memory Swap**: If validation passes, the active in-memory configuration is atomically swapped without restarting the Node.js process.
 4.  **Error Recovery**: If the modified file has invalid JSON or fails schema validation, the swap is aborted, preserving the current valid in-memory configuration and logging an error.
+
+---
+
+## 🚀 Build & Performance Testing Scripts (`package.json`)
+
+| Command | Description |
+| :--- | :--- |
+| `npm run dev:all` | Launches both backend BFF and frontend React dev servers concurrently. |
+| `npm run test` | Runs complete Vitest unit test suite (82+ unit tests across adapters and processors). |
+| `npm run test:perf` | Runs the API Stress & Performance Benchmark Suite (11 load test scenarios under 50 concurrent virtual users). |
+| `npm run clean` | Cleans build output directories (`ui_resources/`, `gen/`, `mta_archives/`, `app/cnma_approval_ui/dist/`, `app/router/resources/`), preventing legacy asset accumulation. |
+| `npm run predeploy` | Performs clean build & generates BTP Cloud Foundry deployment MTA archive (`.mtar`). |
 
 ---
 

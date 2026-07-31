@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Dynamic Registry
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-07-22 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-07-31 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, canonical data consumption, and dynamic UI section rendering registry of the **CNMA Approval** frontend.
 
@@ -18,11 +18,11 @@ The frontend application uses a clean, mobile-first master-detail layout for the
   │     └── TaskPagination.tsx
   └── Right Pane: TaskDetailView.tsx
         ├── Dynamic Header & Status Badges
-        ├── Dynamic Rendered Cards & Tables (Driven by uiSchema & TaskDetailSections.registry.ts)
+        ├── Dynamic Rendered Cards & Tables (Driven by uiSchema & src/renderers/TaskDetailSections.registry.ts)
         ├── Tabbed View Panels:
         │     ├── OverviewPanel.tsx (Header fields and schema-driven sections)
         │     ├── CommentsPanel.tsx (Timeline notes & submission)
-        │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
+        │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx with TextViewer)
         │     └── WorkflowApprovalPanel.tsx (Approval tree timeline)
         └── Action Panel: DecisionPanel.tsx (Floating Approve/Reject decisions with comment modal)
 ```
@@ -44,7 +44,7 @@ The frontend relies on **React Query (TanStack Query v5)** for managing asynchro
 
 ## 🏛️ Dynamic Detail View Registry (`TaskDetailSections.registry.ts`)
 
-To handle different procurement and financial object types (Purchase Requisitions, Purchase Orders, Expense Claims, Material Reservations) without hardcoding UI controls, the application uses a dynamic section registry engine located at [`TaskDetailSections.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/renderers/TaskDetailSections.registry.ts):
+To handle different procurement and financial object types (Purchase Requisitions, Purchase Orders, Expense Claims, Material Reservations) without hardcoding UI controls, the application uses a dynamic section registry engine located at [`src/renderers/TaskDetailSections.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/TaskDetailSections.registry.ts):
 
 ### 1. Dynamic Layout Schema Engine
 When the backend task detail response includes a `uiSchema`:

@@ -1,49 +1,118 @@
 # CNMA Approval — Developer & AI Agent Context Guide
 
-> **Project Stack:** SAP CAP Node.js (BFF) · Express · Vite React (TypeScript) · Config-Driven Mapping Engine
+> **Project Stack:** SAP CAP Node.js (BFF) · Express · Vite React (TypeScript) · Config-Driven Mapping Engine · @cnma/react-ui
 
-This document is automatically read by AI coding agents at session start. It contains mandatory rules, architectural workflows, and step-by-step instructions for adding new fields, modifying APIs, or onboarding new business object types.
+This document is automatically read by AI coding agents at session start. It contains mandatory rules, architectural workflows, and step-by-step instructions for adding new fields, modifying APIs, or onboarding new business object types across the application (`PR`, `PO`, `CLAIM`, `RESERVATION`, `CONTRACT`, `INVOICE`, etc.).
 
 ---
 
-## 🎯 MANDATORY WORKFLOW: Adding Fields, Fixing APIs & Scaffolding Objects
+## 🏗️ Data Field Architecture & Display Mechanism
 
-When modifying APIs, adding new fields to UI/payloads, or adding new business object types, follow this exact workflow matrix:
+Data fields flow end-to-end through a **Config-Driven Architecture**:
+
+```
+[S/4HANA OData / SAP API] 
+       │ (1. Raw OData Fetch)
+       ▼
+[srv/lib/integrations/[type].ts]  <-- Adapter queries S/4HANA & nav paths
+       │ (2. Declarative Mapping & Transforms)
+       ▼
+[srv/configuration/object-types/[type]/config.json] <-- Single Source of Truth
+       │ (3. Canonical DTO + uiSchema + fieldSchema projection)
+       ▼
+[BFF REST API: /tasks/tasks/:id]
+       │ (4. JSON Payload with fieldSchema + uiSchema)
+       ▼
+[app/cnma_approval_ui/src/pages/Inbox/components/renderers/TaskDetailSections.registry.ts]
+       │ ── Primary: buildDynamicBusinessModel() dynamically builds cards & tables
+       │ ── Fallback: modules/[type]/[type].builder.ts (Static builders if schema missing)
+       ▼
+[React UI Components: BusinessDetailCard, BusinessDetailTable, CardChips]
+```
+
+---
+
+## 🎯 MANDATORY WORKFLOW: Adding, Updating & Fixing Data Fields
+
+Follow this exact workflow matrix when modifying fields, adding object types, or updating UI displays:
 
 ### 1. Showing a New Field (From Existing SAP OData Payload)
 If the raw OData response already returns the SAP property:
 1. **`srv/configuration/object-types/[type]/config.json`**:
-   * Add mapping item to `mappings.root` (for header fields) or `mappings.collections.[key].fields` (for item fields).
+   * Add mapping entry under `mappings.root` (for header fields) or `mappings.collections.[collectionKey].fields` (for collection items):
      ```json
-     { "sourcePath": "purReqCreationDate", "targetPath": "header.purReqCreationDate", "transform": "sapDateToIso" }
+     {
+       "sourcePath": "purReqCreationDate",
+       "targetPath": "header.purReqCreationDate",
+       "transform": "sapDateToIso",
+       "type": "string",
+       "dataType": "DATE",
+       "label": "Creation Date"
+     }
      ```
-   * Add the target field name (e.g. `"purReqCreationDate"`) to `uiSchema.sections.[sectionId].fields` if you want it to appear in UI card sections.
-   * If `profiles.detail.includeUiFields` is `true`, the field will automatically be projected.
-2. **`srv/lib/mapping/canonical-business-object.ts`**:
-   * Add the typed field to `CanonicalHeader` or `CanonicalItem` interfaces to ensure full TypeScript type safety.
+   * Add field definition to `fieldSchema` (if explicit field schema definition is used):
+     ```json
+     "purReqCreationDate": {
+       "dataPath": "header.purReqCreationDate",
+       "label": "Creation Date",
+       "dataType": "DATE"
+     }
+     ```
+   * Add the field key (`"purReqCreationDate"`) to `uiSchema.sections.[sectionId].fields` (for cards) or `columns` (for tables) to render on screen.
+2. **TypeScript Contracts**:
+   * Update `CanonicalHeader` or `CanonicalItem` interfaces in [`srv/lib/mapping/canonical-business-object.ts`](file:///d:/learning/test/cnma_approval/srv/lib/mapping/canonical-business-object.ts).
+   * Update frontend `TaskDetail` / header types in [`app/cnma_approval_ui/src/services/inbox/inbox.types.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/services/inbox/inbox.types.ts).
 3. **Frontend UI (`app/cnma_approval_ui/`)**:
-   * **Zero UI code required!** The dynamic section renderer registry ([`TaskDetailSections.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/renderers/TaskDetailSections.registry.ts)) automatically reads `uiSchema` and renders/formats the field on screen.
-   * Add field label translations in [`app/cnma_approval_ui/src/locales/en.json`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/locales/en.json) and `vi.json` if necessary.
+   * **Zero UI Component Code Required for Dynamic Render!** [`TaskDetailSections.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/renderers/TaskDetailSections.registry.ts) automatically parses `uiSchema` + `fieldSchema` and renders card fields & table columns with auto-formatting (`AMOUNT`, `DATE`, `QUANTITY`, `BOOLEAN`, `LONG_TEXT`).
+   * **Static Fallback Builder (Mandatory Sync):** If static fallback is used for offline/mock modes, also add the field to [`app/cnma_approval_ui/src/pages/Inbox/components/renderers/modules/[type]/[type].builder.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/renderers/modules/pr/pr.builder.ts).
+   * **i18n Translations:** Add translation keys in `app/cnma_approval_ui/src/locales/en.json` and `vi.json` for new labels.
 
 ---
 
-### 2. Showing a New Field Requiring New SAP OData Sub-Entities / Queries
-If fetching the new field requires querying an additional SAP navigation path or OData entity:
-1. **`srv/lib/integrations/[type].ts`** (e.g. `pr.ts`, `po.ts`, `claim.ts`, `re.ts`):
-   * Extend `fetchSubEntities()` in the strategy class to query the new navigation/entity path from S/4HANA OData service.
+### 2. Showing a New Field Requiring New SAP OData Sub-Entities / Navigations
+If fetching the field requires querying an additional SAP navigation path or entity:
+1. **`srv/lib/integrations/[type].ts`** (e.g. `pr.ts`, `po.ts`, `claim.ts`, `reservation.ts`):
+   * Extend `fetchSubEntities()` in the strategy class to query the new OData navigation property from S/4HANA.
 2. **`srv/configuration/object-types/[type]/config.json`**:
    * Add navigation alias under `source.navigations`.
    * Add mapping rule under `mappings.collections` or `mappings.root`.
    * Include field key in `uiSchema.sections`.
-3. **`srv/lib/mapping/canonical-business-object.ts`**:
-   * Update TypeScript interface contracts.
+3. **TypeScript Contracts**:
+   * Update `canonical-business-object.ts` and `inbox.types.ts`.
 
 ---
 
-### 3. Adding a Completely New Business Object Type (e.g., `CONTRACT`, `INVOICE`)
-Follow these step-by-step instructions to scaffold a new object type:
-1. **Create Configuration**:
-   Create directory `srv/configuration/object-types/[newType]/` and add `config.json` defining `object`, `source`, `mappings`, `uiSchema`, and `profiles`.
+### 3. Adding Card Chips & Document Type Overrides
+To display summary chips on task list cards in the Inbox:
+1. **Global Card Chips:** Edit `cardChips` array in `srv/configuration/object-types/[type]/config.json`:
+   ```json
+   {
+     "label": "Cost Center",
+     "dataPath": "header.costCenter",
+     "dataType": "TEXT"
+   }
+   ```
+2. **Document Type Specific Chips (e.g., Asset PR vs Expense PR vs Marketing PR):**
+   Add subtype definition under `documentTypes.[docType].cardChips` in `config.json` (e.g. `ZASS`, `ZFO7`, `ZMAK`, `ZNB1`).
+
+---
+
+### 4. Adding Dynamic Section Visibility Rules
+To show/hide cards or tables conditionally based on field values:
+* Add `visibleWhen` block inside section definition in `uiSchema.sections`:
+  ```json
+  "visibleWhen": {
+    "field": "assetClass",
+    "operator": "exists" // operators: 'exists' | 'eq' | 'neq' | 'gt' | 'lt'
+  }
+  ```
+
+---
+
+### 5. Adding a Completely New Business Object Type (e.g., `CONTRACT`, `INVOICE`, `PAYMENT`)
+Follow this step-by-step guide to onboard a new object type across the system:
+1. **Create Configuration Folder**:
+   Create directory `srv/configuration/object-types/[newType]/` and add `config.json` defining `object`, `source`, `mappings`, `uiSchema`, `fieldSchema`, `cardChips`, and `profiles`.
 2. **Implement Detail Strategy Class**:
    Create `srv/lib/integrations/[newType].ts` extending `BaseDetail`:
    ```typescript
@@ -57,16 +126,22 @@ Follow these step-by-step instructions to scaffold a new object type:
    ```typescript
    this.registerStrategy(new ContractDetail(this.sapClient, this.metadataService));
    ```
-4. **Update Code Constants**:
-   Update `ObjectTypeCode` union in `canonical-business-object.ts` and `srv/lib/processors/object-config.ts`.
-5. **Add Localized Labels**:
+4. **Update Code Constants & Types**:
+   * Add `'CONTRACT'` to `ObjectTypeCode` union in `canonical-business-object.ts` and `object-config.ts`.
+5. **Add Frontend Static Fallback Builder (Optional but Recommended)**:
+   Create `app/cnma_approval_ui/src/pages/Inbox/components/renderers/modules/[newType]/[newType].builder.ts` and register in `STRATEGY_MAP` in `TaskDetailSections.registry.ts`.
+6. **Add Localized Labels**:
    Add document type labels in `app/cnma_approval_ui/src/locales/en.json` and `vi.json`.
 
 ---
 
-### 4. Fixing Field Mapping or Transforming Data Format
-* **Raw OData Field Name Changed**: Update `sourcePath` in `srv/configuration/object-types/[type]/config.json`.
-* **Value Formatting Needed**: Check [`srv/lib/mapping/transforms.ts`](file:///d:/learning/test/cnma_approval/srv/lib/mapping/transforms.ts) (`sapDateToIso`, `number`, `uppercase`, `lowercase`, `boolean`). Specify `"transform": "transformName"` in `config.json`.
+### 6. Fixing Field Mapping or Transforming Data Format
+* **Raw OData Field Name Changed**: Update `sourcePath` / `altSourcePaths` in `config.json`.
+* **Value Formatting Needed**: Use available transforms in [`srv/lib/mapping/transforms.ts`](file:///d:/learning/test/cnma_approval/srv/lib/mapping/transforms.ts):
+  - `sapDateToIso`: Formats `/Date(1620000000000)/` or SAP date string to ISO date `YYYY-MM-DD`.
+  - `combineCodeAndText`: Combines code and description text (e.g., `1000 - Plant Munich`).
+  - `number`: Parses string to numeric float.
+  - `uppercase` / `lowercase` / `boolean`.
 * **BFF Payload Pre-processing**: Inspect `enrichBusinessObjectForSchema()` in [`srv/lib/processors/inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts).
 
 ---

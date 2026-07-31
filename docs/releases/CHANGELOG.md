@@ -2,6 +2,69 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [1.0.6] - 2026-07-31
+
+### Added
+*   **Workzone App Renaming ("My Approval")**:
+    *   Renamed HTML5 application title and tile descriptors from `"CNMA Prorequest S4H"` / `"App Title"` to `"My Approval"` across `manifest.json`, `web-manifest.json`, `index.html`, `Component.js`, `i18n.properties`, `METADATA.xml`, `xs-app.json`, and `mta.yaml` for SAP Build Workzone Content Explorer integration.
+*   **Developer & AI Agent Context Guide (`CLAUDE.md`)**:
+    *   Created comprehensive guide documenting end-to-end data flows, declarative field mapping workflows (`config.json`), dynamic visibility rules (`visibleWhen`), card chips, document-type overrides (`documentTypes` e.g., `ZASS`, `ZFO7`, `ZMAK`, `ZNB1`), and step-by-step onboarding for new object types (`CONTRACT`, `INVOICE`, etc.).
+*   **Text File Attachment Viewer (`TextViewer.tsx`)**:
+    *   Added plain text viewer component for attachment preview modal supporting `.txt`, `.md`, `.json`, `.csv`, `.log`, and `.xml` files.
+*   **Subtype Card Chips & Document Type Overrides**:
+    *   Extended `srv/configuration/object-types/*/config.json` with dynamic `cardChips` and `documentTypes` subtype overrides for Asset PR (`ZASS`), Expense PR (`ZFO7`), Marketing PR (`ZMAK`), and Stock PR (`ZNB1`).
+
+### Changed
+*   **CAP Task Detail API Payload Flattening**:
+    *   Flattened task detail response shape in `inbox-processor.ts` by removing the legacy `object` wrapper and promoting `header`, `items`, `workflow`, `attachments`, `decisions`, `comments`, `fieldSchema`, and `uiSchema` directly to the top-level REST JSON response payload.
+    *   Added top-level `_meta: { objectType, objectId, documentType }` metadata block for explicit object type identification.
+*   **Modular BFF Processor Architecture**:
+    *   Decomposed `srv/lib/processors/inbox-processor.ts` into a slim orchestrator, extracting comment filtering logic into `inbox-utils.ts` and object-type determination into `object-type-resolver.ts`.
+*   **BFF Router Prefix Normalization**:
+    *   Cleaned Express router mount point in `srv/handlers/inbox-handler.ts` and `srv/server.ts` to mount directly at `/api/cnma/APPROVAL_SRV`, eliminating doubled URL prefixes (`/tasks/tasks/` -> `/tasks/`).
+*   **Frontend Renderers Directory Promotion**:
+    *   Relocated dynamic section renderers from `app/cnma_approval_ui/src/pages/Inbox/components/renderers/` to top-level src module [`app/cnma_approval_ui/src/renderers/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/).
+    *   Updated import paths across `OverviewPanel.tsx`, `DetailsPanel.tsx`, `AttachmentsPanel.tsx`, `TaskDetailView.tsx`, and vitest test specs to import directly from `@/renderers`.
+
+---
+
+## [1.0.5] - 2026-07-24
+
+### Changed
+*   **Inbox Task-Detail API Refactor**:
+    *   Flattened task detail response shape by removing the `object` wrapper and promoting `header`, `items`, `workflow`, `attachments`, `decisions`, `comments`, `fieldSchema`, and `uiSchema` to the top level.
+    *   Added top-level `_meta: { objectType, objectId, documentType }` block.
+    *   Refactored `srv/lib/processors/inbox-processor.ts` into a slim orchestrator, pure utility module (`inbox-utils.ts`), and resolution component (`object-type-resolver.ts`).
+
+### Fixed
+*   **Duplicated Routing Prefix**: Moved Express router mount point in `srv/server.ts` from `/api/cnma/APPROVAL_SRV/tasks` to `/api/cnma/APPROVAL_SRV`, removing the doubled `/tasks/tasks/` URL path.
+*   **Comment Cleaning**: Implemented `filterComments()` in `inbox-utils.ts` to automatically filter out empty text, null values, and System noise entries.
+
+---
+
+## [1.0.4] - 2026-07-23
+
+### Added
+*   **Comprehensive File Type & MIME Resolver (`mime.ts` & `shared.tsx`)**:
+    *   Created `srv/lib/utils/mime.ts` supporting 40+ file extensions across Documents (`.pdf`, `.docx`, `.xlsx`, `.csv`, `.pptx`, `.txt`, `.md`), Images (`.png`, `.jpg`, `.webp`, `.svg`, `.heic`), Archives (`.zip`, `.rar`, `.7z`, `.gz`), Code/Web (`.json`, `.xml`, `.html`, `.yaml`), and Media (`.mp3`, `.mp4`).
+    *   Enhanced frontend `friendlyFileType(mimeType?, fileName?)` with file extension fallback so generic `application/octet-stream` MIME types display as human-readable labels (`CSV`, `Excel Spreadsheet`, `Word Document`, etc.) instead of `'Binary File'`.
+*   **API Stress & Performance Benchmark Suite (`tests/performance/`)**:
+    *   Added `tests/performance/load-generator.ts` and `tests/performance/api-performance.test.ts` executing 11 performance benchmark scenarios under 50-virtual-user burst load.
+    *   Added `npm run test:perf` script to root `package.json` measuring throughput (3,500+ RPS), latency percentiles (p50: ~5ms, p95: <15ms), and memory delta.
+
+### Changed
+*   **TASKPROCESSING Query Optimization**:
+    *   Deprecated redundant `TASKPROCESSING/TaskCollection` calls in `getTasks` and `getApprovedTasks`.
+    *   Task list fetching now relies 100% on CDS V4 view `ZC_WORKFLOWTASK` (`SapOdataAdapter.getInstances()`), cutting query overhead in half.
+*   **App Router MTA Archive Size Optimization**:
+    *   Updated `package.json` `clean` script to include `app/router/resources/`, eliminating 49.26 MB of accumulated legacy Vite builds and shrinking `.mtar` archive size from 17.05 MiB down to ~2.5 MiB.
+
+### Fixed
+*   **Approve Decision Comment Area**: Fixed `commentSupported` decision mapping in `inbox-processor.ts` (`sapDec.CommentSupported !== false`) to preserve optional decision comment text areas in non-mock/production SAP environments.
+*   **Empty Sonner Toast Box**: Added fallback message extraction in `inboxMutations.ts` (`data?.message || data?.result?.message || 'Decision processed successfully.'`) to prevent empty toast notifications.
+*   **Task Detail Page Reload Sync**: Synchronized `isDetailLoading` in `InboxPage.tsx` and validated `activeDetail` instance IDs, ensuring symmetrical skeleton loaders render across both split panels during initial page reload and task switching.
+*   **Attachment Upload Security**: Disabled attachment upload UI buttons in `AttachmentsPanel.tsx` and configured backend endpoints `POST /tasks/:id/attachments` and `POST /pr/:docNum/attachments` to return `403 Forbidden`.
+
 ---
 
 ## [1.0.3] - 2026-07-22

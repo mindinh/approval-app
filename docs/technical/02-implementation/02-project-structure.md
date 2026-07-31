@@ -1,6 +1,6 @@
 # Project Codebase Structure
 
-> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-07-22 | **Status:** Active
+> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-07-31 | **Status:** Active
 
 This document provides a comprehensive folder structure walkthrough mapping key components of both the CAP backend BFF and the Vite React frontend.
 
@@ -17,17 +17,17 @@ cnma-approval/
 │   │   │   ├── config/                # App-level configs & environment settings
 │   │   │   ├── contexts/              # Global React context providers (Theme, Auth, Toast)
 │   │   │   ├── locales/               # i18n translation files (en.json, vi.json)
+│   │   │   ├── renderers/             # Dynamic UI section registry & object builders (TaskDetailSections.registry.ts)
 │   │   │   ├── pages/                 # Full page view structures
 │   │   │   │   ├── Dashboard/         # Dashboard metrics page & custom hooks
 │   │   │   │   │   ├── DashboardPage.tsx
 │   │   │   │   │   └── use-dashboard-data.ts
 │   │   │   │   └── Inbox/             # Unified inbox workspace page
-│   │   │   │       ├── components/    # Sub-panels, modals, and dynamic renderers
+│   │   │   │       ├── components/    # Sub-panels, modals, and panel views
 │   │   │   │       │   ├── AttachmentPreviewModal.tsx
 │   │   │   │       │   ├── TaskCard.tsx
 │   │   │   │       │   ├── TaskDetailView.tsx
-│   │   │   │       │   ├── panels/    # OverviewPanel, AttachmentsPanel, CommentsPanel, WorkflowApprovalPanel
-│   │   │   │       │   └── renderers/ # TaskDetailSections.registry.ts (Dynamic UI section registry)
+│   │   │   │       │   └── panels/    # OverviewPanel, AttachmentsPanel, CommentsPanel, WorkflowApprovalPanel
 │   │   │   │       ├── hooks/         # Inbox query hooks (useInbox, inboxQueries)
 │   │   │   │       └── index.tsx      # Inbox page composition root
 │   │   │   ├── services/              # API Client fetch queries (Axios REST clients)
@@ -74,11 +74,12 @@ cnma-approval/
 │   │   │   ├── inbox-processor.ts     # Main orchestrator linking adapters to mapping engine
 │   │   │   ├── object-config.ts       # Object configuration facade delegating to ConfigRegistry
 │   │   │   └── odata-config.ts        # OData service constants and path mappings
-│   │   └── utils/                     # Cache engine (ttl-lru-cache), logging, and auth helpers
+│   │   └── utils/                     # Cache engine (ttl-lru-cache), MIME type resolver (mime.ts), logging, and auth helpers
 │   ├── server.ts                      # Express bootstrap logic (passport, XSUAA JWT, REST routing)
 │   └── service.cds                    # CDS BFF Service path definitions
-├── tests/                             # Backend Unit & integration tests
-│   └── unit/
+├── tests/                             # Backend Unit, Integration & Performance tests
+│   ├── performance/                   # Stress & Performance benchmark suite (api-performance.test.ts, load-generator.ts)
+│   └── unit/                          # Unit test suite
 │       ├── integrations/              # Tests for SAP adapters & strategy implementations
 │       └── processors/                # Tests for processors & mapping engine (config-mapping.test.ts)
 ├── mta.yaml                           # Multi-Target Application deployment descriptor
