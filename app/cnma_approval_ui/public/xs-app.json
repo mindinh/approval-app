@@ -12,7 +12,7 @@
       "authenticationType": "xsuaa",
       "identityProvider": "sap.default",
       "target": "/odata/v4/$1",
-      "destination": "cnma_approval_destination",
+      "destination": "cnma_prorequest_s4h_destination",
       "csrfProtection": false
     },
     {
@@ -20,7 +20,7 @@
       "authenticationType": "xsuaa",
       "identityProvider": "sap.default",
       "target": "/api/cnma/$1",
-      "destination": "cnma_approval_destination",
+      "destination": "cnma_prorequest_s4h_destination",
       "csrfProtection": false
     },
     {
@@ -28,7 +28,7 @@
       "authenticationType": "xsuaa",
       "identityProvider": "sap.default",
       "target": "/api/inbox/$1",
-      "destination": "cnma_approval_destination",
+      "destination": "cnma_prorequest_s4h_destination",
       "csrfProtection": false
     },
     {

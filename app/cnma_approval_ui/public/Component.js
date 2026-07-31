@@ -4,7 +4,7 @@ sap.ui.define([
 ], function (UIComponent, HTML) {
     "use strict";
 
-    return UIComponent.extend("cnma.vjinbox.Component", {
+    return UIComponent.extend("cnma_prorequest_s4h.Component", {
         metadata: {
             manifest: "json"
         },
@@ -15,7 +15,7 @@ sap.ui.define([
         },
 
         createContent: function () {
-            var sAppPath = sap.ui.require.toUrl("cnma/vjinbox");
+            var sAppPath = sap.ui.require.toUrl("cnma_prorequest_s4h");
             var sIndexUrl = sAppPath + "/index.html";
 
             var that = this;

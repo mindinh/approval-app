@@ -1,5 +1,5 @@
 {
-  "xsappname": "cnma-approval",
+  "xsappname": "cnma_prorequest_s4h",
   "tenant-mode": "dedicated",
   "scopes": [
     {
@@ -30,14 +30,14 @@
   ],
   "role-collections": [
     {
-      "name": "CNMA-APPROVAL-Admin",
+      "name": "CNMA_PROREQUEST_S4H-Admin",
       "description": "Administrators with full access to CNMA Approval",
       "role-template-references": [
         "$XSAPPNAME.Admin"
       ]
     },
     {
-      "name": "CNMA-APPROVAL-User",
+      "name": "CNMA_PROREQUEST_S4H-User",
       "description": "Users who can view and process approval tasks",
       "role-template-references": [
         "$XSAPPNAME.User"

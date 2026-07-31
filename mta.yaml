@@ -1,7 +1,7 @@
 _schema-version: "3.3.0"
-ID: cnma-approval
+ID: cnma_prorequest_s4h
 version: 1.0.0
-description: "CNMA Approval - Workflow task management and approvals"
+description: "My Approval - Workflow task management and approvals"
 
 parameters:
   enable-parallel-deployments: true
@@ -21,7 +21,7 @@ modules:
   # ─────────────────────────────────────────────────────────────────────────────
   # CAP Backend Server
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-srv
+  - name: cnma-prorequest-s4h-srv
     type: nodejs
     path: gen/srv
     parameters:
@@ -38,10 +38,10 @@ modules:
       ignore:
         - "node_modules/"
     requires:
-      - name: cnma-approval-auth
-      - name: cnma-approval-identity
-      - name: cnma-approval-destination
-      - name: cnma-approval-connectivity
+      - name: cnma-prorequest-s4h-auth
+      - name: cnma-prorequest-s4h-identity
+      - name: cnma-prorequest-s4h-destination
+      - name: cnma-prorequest-s4h-connectivity
     provides:
       - name: srv-api
         properties:
@@ -50,7 +50,7 @@ modules:
   # ─────────────────────────────────────────────────────────────────────────────
   # Standalone App Router (Direct URL access)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-approuter
+  - name: cnma-prorequest-s4h-approuter
     type: approuter.nodejs
     path: app/router
     parameters:
@@ -59,7 +59,7 @@ modules:
     properties:
       DYNAMIC_IDENTITY_PROVIDER: true
     requires:
-      - name: cnma-approval-auth
+      - name: cnma-prorequest-s4h-auth
       - name: srv-api
         group: destinations
         properties:
@@ -71,14 +71,14 @@ modules:
       ignore:
         - "node_modules/"
       requires:
-        - name: cnma-approval-ui
+        - name: cnma-prorequest-s4h-ui
           artifacts:
             - ./*
           target-path: resources/cnma
   # ─────────────────────────────────────────────────────────────────────────────
   # React Frontend UI Build
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-ui
+  - name: cnma-prorequest-s4h-ui
     type: html5
     path: app/cnma_approval_ui
     build-parameters:
@@ -92,11 +92,11 @@ modules:
   # ─────────────────────────────────────────────────────────────────────────────
   # UI Deployer (pushes UI zip to HTML5 App Repo for WorkZone)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-ui-deployer
+  - name: cnma-prorequest-s4h-ui-deployer
     type: com.sap.application.content
     path: .
     requires:
-      - name: cnma-approval-html5-repo-host
+      - name: cnma-prorequest-s4h-html5-repo-host
         parameters:
           content-target: true
     build-parameters:
@@ -104,9 +104,22 @@ modules:
       disk-quota: 256M
       ignore:
         - "*node_modules*"
+        - "node_modules/"
+        - "mta_archives/"
+        - "gen/"
+        - "*.db"
+        - "tests/"
+        - ".git/"
+        - ".github/"
+        - ".agent/"
+        - ".agents/"
+        - "app/cnma_approval_ui/"
+        - "app/router/"
+        - "srv/"
+        - "db/"
       build-result: ui_resources
       requires:
-        - name: cnma-approval-ui
+        - name: cnma-prorequest-s4h-ui
           artifacts:
             - cnma_approval_ui.zip
           target-path: ui_resources/
@@ -114,21 +127,21 @@ modules:
   # ─────────────────────────────────────────────────────────────────────────────
   # Destination Content Registry (for WorkZone managed app router)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-destination-content
+  - name: cnma-prorequest-s4h-destination-content
     type: com.sap.application.content
     requires:
       - name: srv-api
-      - name: cnma-approval-destination
+      - name: cnma-prorequest-s4h-destination
         parameters:
           content-target: true
-      - name: cnma-approval-auth
+      - name: cnma-prorequest-s4h-auth
         parameters:
           service-key:
-            name: cnma-approval-auth-key
-      - name: cnma-approval-html5-repo-host
+            name: cnma-prorequest-s4h-auth-key
+      - name: cnma-prorequest-s4h-html5-repo-host
         parameters:
           service-key:
-            name: cnma-approval-html5-repo-host-key
+            name: cnma-prorequest-s4h-html5-repo-host-key
 
     build-parameters:
       no-source: true
@@ -138,17 +151,17 @@ modules:
           existing_destinations_policy: update
           destinations:
             # XSUAA Destination
-            - Name: cnma_approval_xsuaa_dest
+            - Name: cnma_prorequest_s4h_xsuaa_dest
               Authentication: OAuth2UserTokenExchange
-              ServiceInstanceName: cnma-approval-auth
-              ServiceKeyName: cnma-approval-auth-key
-              sap.cloud.service: cnma.approval
+              ServiceInstanceName: cnma-prorequest-s4h-auth
+              ServiceKeyName: cnma-prorequest-s4h-auth-key
+              sap.cloud.service: cnma_prorequest_s4h
             # Html5 Repo Destination
-            - Name: cnma_approval_html5_repo_host_dest
+            - Name: cnma_prorequest_s4h_html5_repo_host_dest
               Authentication: OAuth2UserTokenExchange
-              ServiceInstanceName: cnma-approval-html5-repo-host
-              ServiceKeyName: cnma-approval-html5-repo-host-key
-              sap.cloud.service: cnma.approval
+              ServiceInstanceName: cnma-prorequest-s4h-html5-repo-host
+              ServiceKeyName: cnma-prorequest-s4h-html5-repo-host-key
+              sap.cloud.service: cnma_prorequest_s4h
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #                              RESOURCES
@@ -158,7 +171,7 @@ resources:
   # ─────────────────────────────────────────────────────────────────────────────
   # XSUAA (Authentication & Authorization)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-auth
+  - name: cnma-prorequest-s4h-auth
     type: org.cloudfoundry.managed-service
     parameters:
       service: xsuaa
@@ -168,7 +181,7 @@ resources:
   # ─────────────────────────────────────────────────────────────────────────────
   # Destination Service (for SAP backend + WorkZone routing)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-destination
+  - name: cnma-prorequest-s4h-destination
     type: org.cloudfoundry.managed-service
     requires:
       - name: srv-api
@@ -183,8 +196,8 @@ resources:
           instance:
             existing_destinations_policy: update
             destinations:
-              - Name: cnma_approval_destination
-                Description: CNMA Approval Service Destination
+              - Name: cnma_prorequest_s4h_destination
+                Description: CNMA ProRequest S4H Service Destination
                 Authentication: NoAuthentication
                 Type: HTTP
                 ProxyType: Internet
@@ -196,7 +209,7 @@ resources:
   # ─────────────────────────────────────────────────────────────────────────────
   # Connectivity Service (for on-premise destinations via Cloud Connector)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-connectivity
+  - name: cnma-prorequest-s4h-connectivity
     type: org.cloudfoundry.managed-service
     parameters:
       service: connectivity
@@ -205,19 +218,19 @@ resources:
   # ─────────────────────────────────────────────────────────────────────────────
   # Identity Service (for mobile IAS OIDC support)
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-identity
+  - name: cnma-prorequest-s4h-identity
     type: org.cloudfoundry.managed-service
     parameters:
       service: identity
       service-plan: application
       config:
         xsuaa-cross-consumption: true
-        display-name: CNMA Approval Identity
+        display-name: CNMA ProRequest S4H Identity
 
   # ─────────────────────────────────────────────────────────────────────────────
   # HTML5 Application Repository Host
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-html5-repo-host
+  - name: cnma-prorequest-s4h-html5-repo-host
     type: org.cloudfoundry.managed-service
     parameters:
       service: html5-apps-repo
@@ -226,7 +239,7 @@ resources:
   # ─────────────────────────────────────────────────────────────────────────────
   # HTML5 Application Repository Runtime
   # ─────────────────────────────────────────────────────────────────────────────
-  - name: cnma-approval-html5-runtime
+  - name: cnma-prorequest-s4h-html5-runtime
     type: org.cloudfoundry.managed-service
     parameters:
       service: html5-apps-repo

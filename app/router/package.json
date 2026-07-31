@@ -1,7 +1,7 @@
 {
-  "name": "cnma-approval-approuter",
+  "name": "cnma-prorequest-s4h-approuter",
   "version": "1.0.0",
-  "description": "App Router for CNMA Approval",
+  "description": "App Router for CNMA ProRequest S4H",
   "scripts": {
     "start": "node node_modules/@sap/approuter/approuter.js"
   },

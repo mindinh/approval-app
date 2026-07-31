@@ -1,6 +1,6 @@
 {
-  "name": "prorequest",
-  "short_name": "prorequest",
+  "name": "My Approval",
+  "short_name": "My Approval",
   "description": "Workflow Task Management and Approvals",
   "id": "./",
   "start_url": "./",
