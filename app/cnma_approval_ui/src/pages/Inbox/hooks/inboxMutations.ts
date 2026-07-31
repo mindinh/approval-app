@@ -45,7 +45,8 @@ export function useDecision() {
             if (mutationContext?.toastId) {
                 toast.dismiss(mutationContext.toastId);
             }
-            toast.success(data.message);
+            const successMsg = data?.message || (data as any)?.result?.message || 'Decision processed successfully.';
+            toast.success(successMsg);
             invalidateAfterDecision(queryClient, variables.instanceId);
         },
         onError: (error: any, _variables, mutationContext) => {
@@ -77,7 +78,8 @@ export function useForward() {
             if (mutationContext?.toastId) {
                 toast.dismiss(mutationContext.toastId);
             }
-            toast.success(data.message);
+            const successMsg = data?.message || (data as any)?.result?.message || 'Task forwarded successfully.';
+            toast.success(successMsg);
             invalidateAfterForward(queryClient, variables.instanceId);
         },
         onError: (error: any, _variables, mutationContext) => {

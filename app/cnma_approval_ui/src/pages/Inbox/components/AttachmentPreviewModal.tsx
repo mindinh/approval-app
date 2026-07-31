@@ -5,6 +5,7 @@ import { useState, lazy, Suspense } from 'react';
 import { toast } from '@cnma/react-ui';
 import { DocxViewer } from './DocxViewer';
 import { ExcelViewer } from './ExcelViewer';
+import { TextViewer } from './TextViewer';
 
 // Lazy-load react-doc-viewer to avoid bundling it upfront
 const DocViewer = lazy(() => import('@cyntler/react-doc-viewer'));
@@ -43,8 +44,8 @@ export function AttachmentPreviewCard({
     previewUrl: customPreviewUrl,
     downloadUrl: customDownloadUrl,
 }: AttachmentPreviewCardProps) {
-    const previewUrl = customPreviewUrl || inboxApi.getAttachmentContentUrl(instanceId, attachmentId, 'inline');
-    const downloadUrl = customDownloadUrl || inboxApi.getAttachmentContentUrl(instanceId, attachmentId, 'attachment');
+    const previewUrl = customPreviewUrl || inboxApi.getAttachmentContentUrl(attachmentId, undefined, undefined, 'inline');
+    const downloadUrl = customDownloadUrl || inboxApi.getAttachmentContentUrl(attachmentId, undefined, undefined, 'attachment');
     const displayName = fileName || attachmentId;
     const previewKind = getPreviewKind(mimeType, fileName);
 
@@ -63,6 +64,10 @@ export function AttachmentPreviewCard({
             <CardContent className="w-full min-w-0 max-w-full flex-1 min-h-0 p-0 overflow-hidden bg-muted/30 relative">
                 {previewKind === 'image' && (
                     <ImagePreview src={previewUrl} alt={displayName} downloadUrl={downloadUrl} />
+                )}
+
+                {previewKind === 'txt' && (
+                    <TextViewer url={previewUrl} fileName={displayName} />
                 )}
 
                 {(previewKind === 'pdf' || previewKind === 'iframe') && (
@@ -261,7 +266,7 @@ function FallbackPreview({
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
-type PreviewKind = 'image' | 'pdf' | 'iframe' | 'docx' | 'xlsx' | 'docviewer' | 'none';
+type PreviewKind = 'image' | 'pdf' | 'txt' | 'iframe' | 'docx' | 'xlsx' | 'docviewer' | 'none';
 
 function getMimeTypeFromExtension(fileName?: string): string | undefined {
     if (!fileName) return undefined;
@@ -279,6 +284,10 @@ function getMimeTypeFromExtension(fileName?: string): string | undefined {
         'gif': 'image/gif',
         'webp': 'image/webp',
         'txt': 'text/plain',
+        'log': 'text/plain',
+        'md': 'text/plain',
+        'json': 'application/json',
+        'xml': 'application/xml',
         'html': 'text/html',
         'htm': 'text/html',
     };
@@ -306,6 +315,20 @@ function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
 
     // PDF → client-side pdfjs viewer
     if (mime === 'application/pdf') return 'pdf';
+
+    // Plain text, log, csv, json, xml, markdown → TextViewer
+    if (
+        mime === 'text/plain' ||
+        mime === 'text/csv' ||
+        mime === 'text/markdown' ||
+        mime === 'text/log' ||
+        mime === 'text/html' ||
+        mime === 'application/json' ||
+        mime === 'application/xml' ||
+        mime === 'text/xml'
+    ) {
+        return 'txt';
+    }
 
     return 'none';
 }

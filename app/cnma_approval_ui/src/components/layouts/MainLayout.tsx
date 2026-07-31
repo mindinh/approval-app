@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate, useLocation, useSearchParams, Outlet } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     ClipboardCheck,
@@ -137,7 +137,6 @@ Sidebar.displayName = "Sidebar";
 function AppSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [searchParams] = useSearchParams();
     const { t, i18n } = useTranslation();
     const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
     const { data: userInfo } = useCurrentUser();
@@ -176,28 +175,31 @@ function AppSidebar() {
 
     React.useEffect(() => {
         setLocalActiveTab(null);
-    }, [location.pathname, searchParams]);
+    }, [location.pathname]);
 
     const isDashboard = location.pathname === '/dashboard';
     const isHome = location.pathname === '/' || location.pathname === '/home';
     const isInbox = location.pathname.startsWith('/inbox') || location.pathname.startsWith('/tasks');
+    const isApproved = location.pathname.startsWith('/approved');
 
-    // Determine active navigation state — read scope from URL search param
+    // Determine active navigation state
     let activeValue = localActiveTab || 'my';
     if (!localActiveTab) {
         if (isDashboard) {
             activeValue = 'dashboard';
         } else if (isHome) {
             activeValue = 'home';
+        } else if (isApproved) {
+            activeValue = 'approved';
         } else if (isInbox) {
-            activeValue = searchParams.get('scope') === 'approved' ? 'approved' : 'my';
+            activeValue = 'my';
         }
     }
 
     const items = [
         { value: 'home', label: t('nav.home', 'Home'), icon: Home, route: '/home', mobileOnly: true },
-        { value: 'my', label: t('nav.myTasks', 'My Tasks'), icon: Inbox, route: '/inbox', state: { scope: 'my' } },
-        { value: 'approved', label: t('nav.approvedTasks', 'Approved Tasks'), icon: ClipboardCheck, route: '/inbox', state: { scope: 'approved' } },
+        { value: 'my', label: t('nav.myTasks', 'My Tasks'), icon: Inbox, route: '/inbox' },
+        { value: 'approved', label: t('nav.approvedTasks', 'Approved Tasks'), icon: ClipboardCheck, route: '/approved' },
         { value: 'dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard, route: '/dashboard' },
     ];
 
@@ -209,16 +211,7 @@ function AppSidebar() {
         if (isMobile) {
             setOpenMobile(false);
         }
-        if (item.route === '/inbox') {
-            // Use ?scope= URL param so React Router v7 reliably re-renders
-            // useSearchParams subscribers even when navigating to the same path
-            const scopeParam = item.state?.scope && item.state.scope !== 'my'
-                ? `?scope=${item.state.scope}`
-                : '';
-            navigate(`/inbox${scopeParam}`);
-        } else {
-            navigate(item.route);
-        }
+        navigate(item.route);
     };
 
     return (

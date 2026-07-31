@@ -104,8 +104,14 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
                     if (prTypeVal) {
                         chips.push({ label: 'Type', value: prTypeVal });
                     }
-                    // Department: hardcoded per business requirement
-                    chips.push({ label: 'Dept', value: '1001201000 - IT department' });
+                    const compCodeVal = hdr.companyCodeDisplay || (hdr.companyCode ? (hdr.companyCodeName ? `${hdr.companyCode} - ${hdr.companyCodeName}` : `${hdr.companyCode} - `) : task.companyCodeDisplay);
+                    if (compCodeVal) {
+                        chips.push({ label: 'Company Code', value: compCodeVal });
+                    }
+                    const deptVal = hdr.departmentDisplay || hdr.department;
+                    if (deptVal) {
+                        chips.push({ label: 'Dept', value: deptVal });
+                    }
                 }
             }
         }
@@ -119,6 +125,24 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
             label: 'Total',
             value: formatAmountWithCurrency(task.total, totalCurrency),
             isPrimary: true,
+        });
+    }
+
+    // 4. Root-level Company Code fallback
+    const hasCompCodeChip = chips.some((c) => c.label === 'Company Code');
+    if (!hasCompCodeChip && task.companyCodeDisplay) {
+        chips.push({
+            label: 'Company Code',
+            value: task.companyCodeDisplay,
+        });
+    }
+
+    // 5. Root-level Document Type fallback (e.g. Type: ZFO8 - Expense PO)
+    const hasTypeChip = chips.some((c) => c.label === 'Type');
+    if (!hasTypeChip && task.documentTypeDisplay) {
+        chips.push({
+            label: 'Type',
+            value: task.documentTypeDisplay,
         });
     }
 

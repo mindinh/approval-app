@@ -103,6 +103,14 @@ export function TaskList({
 
     const filters = useTaskFilters(tasks);
 
+    const handleCardClick = useCallback((task: InboxTask) => {
+        if (showTaskActions && selection.selectionMode) {
+            selection.toggleSelection(task.instanceId);
+        } else {
+            onSelectTask(task);
+        }
+    }, [showTaskActions, selection.selectionMode, selection.toggleSelection, onSelectTask]);
+
     // ─── Infinite scroll sentinel ───────────────────────────
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
@@ -250,11 +258,7 @@ export function TaskList({
                                     <TaskCard
                                         task={task}
                                         isSelected={task.instanceId === selectedTaskId}
-                                        onClick={() =>
-                                            showTaskActions && selection.selectionMode
-                                                ? selection.toggleSelection(task.instanceId)
-                                                : onSelectTask(task)
-                                        }
+                                        onClick={handleCardClick}
                                         variant={isMobile ? 'mobile' : 'desktop'}
                                     />
                                 </div>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
@@ -9,8 +9,8 @@ import {
     useInfiniteApprovedTasks,
     useTaskDetail,
     useDecision,
+    useObjectConfigs,
 } from '@/pages/Inbox/hooks/useInbox';
-import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { useIsMobile, useSidebar, Button } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
@@ -19,15 +19,14 @@ type TaskScope = 'my' | 'approved';
 
 export default function InboxPage() {
     const { t } = useTranslation();
+    useObjectConfigs(); // Preload backend object type JSON schemas (PR, PO, CLAIM, etc.) for Frame 1 placeholders
     const { showError } = useErrorModal();
     const { taskId } = useParams<{ taskId?: string }>();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
 
     const selectedTaskId = taskId ? decodeURIComponent(taskId) : null;
-    // Derive scope from URL search param — React Router v7 reliably re-renders
-    // useSearchParams subscribers whenever params change, even on same-path navigations.
-    const scope: TaskScope = searchParams.get('scope') === 'approved' ? 'approved' : 'my';
+    const scope: TaskScope = location.pathname.startsWith('/approved') ? 'approved' : 'my';
 
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -64,48 +63,39 @@ export default function InboxPage() {
     const selectedTask = selectedTaskId
         ? tasks.find((t) => t.instanceId === selectedTaskId)
         : undefined;
-    const informationHints = selectedTask
-        ? {
+    const informationHints = useMemo(() => {
+        if (!selectedTask) return undefined;
+        return {
             sapOrigin: selectedTask.sapOrigin,
             documentId: selectedTask.businessContext?.documentId,
             businessObjectType: selectedTask.businessContext?.type,
-        }
-        : undefined;
+            status: selectedTask.status,
+        };
+    }, [selectedTask]);
 
     const {
         data: detailResponse,
         isLoading: isLoadingDetail,
+        isFetching: isFetchingDetail,
         isError: isErrorDetail,
         error: errorDetail,
         refetch: refetchDetail,
-    } = useTaskDetail(selectedTaskId, informationHints);
+    } = useTaskDetail(selectedTaskId, informationHints, undefined, selectedTask);
 
     const decisionMutation = useDecision();
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
 
-    const activeDetail = detailResponse?.detail;
-    const isSecondaryLoading = false;
+    const rawDetail = detailResponse;
+    const isDetailMatchingSelected = (rawDetail?.instanceId || rawDetail?.taskId || rawDetail?.task?.instanceId) === selectedTaskId;
+    const activeDetail = isDetailMatchingSelected ? rawDetail : undefined;
 
-    // Automatically trigger ErrorModal when worklist loading fails
-    useEffect(() => {
-        if (activeTasksQuery.isError && activeTasksQuery.error) {
-            showError(activeTasksQuery.error, {
-                onRetry: () => void activeTasksQuery.refetch(),
-                onClose: () => navigate('/'),
-            });
-        }
-    }, [activeTasksQuery.isError, activeTasksQuery.error, showError, activeTasksQuery, navigate]);
+    const isDetailLoading =
+        (isLoadingDetail && !activeDetail) ||
+        (isLoadingList && tasks.length === 0) ||
+        (!!selectedTaskId && !isDetailMatchingSelected);
 
-    // Automatically trigger ErrorModal when task detail loading fails
-    useEffect(() => {
-        if (isErrorDetail && errorDetail) {
-            showError(errorDetail, {
-                onRetry: () => void refetchDetail(),
-                onClose: () => navigate('/'),
-            });
-        }
-    }, [isErrorDetail, errorDetail, showError, refetchDetail, navigate]);
+    const isSecondaryLoading = isFetchingDetail && !!activeDetail;
 
     // Auto-select first task on desktop when list loads and no task is selected
     useEffect(() => {
@@ -117,22 +107,18 @@ export default function InboxPage() {
         if (tasks.length === 0) return;
 
         hasAutoSelected.current = true;
-        // Preserve ?scope= so switching to Approved Tasks isn't overridden here
-        const scopeParam = scope !== 'my' ? `?scope=${scope}` : '';
-        navigate(`/tasks/${encodeURIComponent(tasks[0].instanceId)}${scopeParam}`, { replace: true });
+        const basePath = scope === 'approved' ? '/approved' : '/inbox';
+        navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
     }, [selectedTaskId, isLoadingList, tasks, navigate, scope]);
 
 
     const handleSelectTask = useCallback((task: InboxTask) => {
-        // Preserve scope param when navigating to task detail
-        const scopeParam = scope !== 'my' ? `?scope=${scope}` : '';
-        navigate(`/tasks/${encodeURIComponent(task.instanceId)}${scopeParam}`);
+        const basePath = scope === 'approved' ? '/approved' : '/inbox';
+        navigate(`${basePath}/${encodeURIComponent(task.instanceId)}`);
     }, [navigate, scope]);
 
     const handleBack = useCallback(() => {
-        // Return to inbox preserving scope
-        const scopeParam = scope !== 'my' ? `?scope=${scope}` : '';
-        navigate(`/inbox${scopeParam}`);
+        navigate(scope === 'approved' ? '/approved' : '/inbox');
     }, [navigate, scope]);
 
     const handleDecision = useCallback(
@@ -166,17 +152,16 @@ export default function InboxPage() {
                             }
                         }
 
-                        const scopeParam = scope !== 'my' ? `?scope=${scope}` : '';
+                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
                         if (nextTaskId) {
-                            navigate(`/tasks/${encodeURIComponent(nextTaskId)}${scopeParam}`);
+                            navigate(`${basePath}/${encodeURIComponent(nextTaskId)}`);
                         } else {
-                            navigate(`/inbox${scopeParam}`);
+                            navigate(basePath);
                         }
                     },
                     onError: (err) => {
                         showError(err, {
                             title: 'Decision Failed',
-                            onClose: () => navigate('/'),
                         });
                     },
                 }
@@ -257,7 +242,7 @@ export default function InboxPage() {
                             >
                                 <TaskDetailView
                                     detail={activeDetail}
-                                    isLoading={isLoadingDetail}
+                                    isLoading={isDetailLoading}
                                     isError={isErrorDetail}
                                     error={errorDetail}
                                     onRetry={() => void refetchDetail()}
@@ -331,7 +316,7 @@ export default function InboxPage() {
                     showTaskActions={showTaskActions && isMyScope}
                     scope={scope}
                     onScopeChange={(nextScope) => {
-                        setSearchParams(nextScope !== 'my' ? { scope: nextScope } : {});
+                        navigate(nextScope === 'approved' ? '/approved' : '/inbox');
                     }}
                 />
             </aside>
@@ -347,7 +332,7 @@ export default function InboxPage() {
                 ) : (
                     <TaskDetailView
                         detail={activeDetail}
-                        isLoading={isLoadingDetail && !!selectedTaskId}
+                        isLoading={isDetailLoading}
                         isError={isErrorDetail}
                         error={errorDetail}
                         onRetry={() => void refetchDetail()}

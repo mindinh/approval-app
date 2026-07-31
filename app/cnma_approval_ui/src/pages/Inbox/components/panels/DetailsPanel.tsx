@@ -15,10 +15,11 @@ import {
     SheetContent,
     SheetDescription,
     SheetHeader,
-    SheetTitle
+    SheetTitle,
+    Skeleton
 } from '@cnma/react-ui';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
-import type { BusinessSectionModel } from '../renderers/TaskDetailSections.types';
+import type { BusinessSectionModel } from '@/renderers/TaskDetailSections.types';
 import { cn } from '@/lib/utils';
 import { safe, prettifyFieldLabel } from '@/pages/Inbox/utils/formatters';
 import { useTranslation } from 'react-i18next';
@@ -27,10 +28,12 @@ export function DetailsPanel({
     model,
     detail,
     isMobile = false,
+    isSecondaryLoading = false,
 }: {
     model: BusinessSectionModel;
     detail: TaskDetail;
     isMobile?: boolean;
+    isSecondaryLoading?: boolean;
 }) {
     const { t } = useTranslation();
     const [selectedRow, setSelectedRow] = useState<{
@@ -43,6 +46,22 @@ export function DetailsPanel({
         .filter((table) => !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title));
 
     if (filteredTables.length === 0) {
+        if (isSecondaryLoading) {
+            return (
+                <div className="space-y-4">
+                    <Card className="gap-0 bg-card border-border/70 shadow-sm w-full overflow-hidden">
+                        <CardHeader className="pb-3">
+                            <Skeleton className="h-5 w-40" />
+                        </CardHeader>
+                        <CardContent className="space-y-3 p-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </CardContent>
+                    </Card>
+                </div>
+            );
+        }
         return (
             <div className="rounded-xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
                 {t('task.noDetailsAvailable', 'No detail items available for this task.')}

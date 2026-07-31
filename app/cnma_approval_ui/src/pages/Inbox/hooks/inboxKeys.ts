@@ -12,6 +12,9 @@ export const inboxKeys = {
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: () => [...inboxKeys.all, 'dashboard'] as const,
 
+    // ─── Object Configs ────────────────────────────────────
+    objectConfigs: () => [...inboxKeys.all, 'objectConfigs'] as const,
+
     // ─── Current User ──────────────────────────────────────
     currentUser: () => [...inboxKeys.all, 'currentUser'] as const,
 

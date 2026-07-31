@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@cnma/react-ui';
 import type { InboxTask } from '@/services/inbox/inbox.types';
@@ -6,11 +6,14 @@ import { Clock, User, ChevronRight, FileText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { mapBusinessChips, type BusinessChip } from '@/pages/Inbox/mappers/taskCard.mapper';
 import { PriorityBadge, StatusBadge, TaskTypeBadge } from './TaskBadges';
+import { useQueryClient } from '@tanstack/react-query';
+import { inboxKeys } from '../hooks/inboxKeys';
+import { inboxApi } from '@/services/inbox/inbox.api';
 
 interface TaskCardProps {
     task: InboxTask;
     isSelected: boolean;
-    onClick: () => void;
+    onClick: (task: InboxTask) => void;
     variant?: 'desktop' | 'mobile';
 }
 
@@ -37,12 +40,26 @@ function getObjectTypeStyle(type?: string) {
     return map[type.toUpperCase()] || defaultStyle;
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
     task,
     isSelected,
     onClick,
     variant = 'desktop',
 }: TaskCardProps) {
+    const queryClient = useQueryClient();
+    const handlePrefetch = useCallback(() => {
+        const hints = {
+            sapOrigin: task.sapOrigin,
+            documentId: task.businessContext?.documentId,
+            businessObjectType: task.businessContext?.type,
+            status: task.status,
+        };
+        void queryClient.prefetchQuery({
+            queryKey: inboxKeys.taskDetail(task.instanceId),
+            queryFn: () => inboxApi.getTaskDetail(task.instanceId, hints),
+            staleTime: 5 * 60 * 1000,
+        });
+    }, [queryClient, task]);
     const contextType =
         task.businessContext?.type && task.businessContext.type !== 'UNKNOWN'
             ? task.businessContext.type
@@ -66,7 +83,9 @@ export function TaskCard({
             <Button
                 variant="ghost"
                 id={`task-card-${task.instanceId}`}
-                onClick={onClick}
+                onClick={() => onClick(task)}
+                onMouseEnter={handlePrefetch}
+                onFocus={handlePrefetch}
                 className={cn(
                     // Layout — override Button defaults (items-center → items-stretch, h-auto)
                     'relative w-full h-auto overflow-hidden rounded-2xl border',
@@ -179,7 +198,9 @@ export function TaskCard({
         <Button
             variant="ghost"
             id={`task-card-${task.instanceId}`}
-            onClick={onClick}
+            onClick={() => onClick(task)}
+            onMouseEnter={handlePrefetch}
+            onFocus={handlePrefetch}
             className={cn(
                 // Layout — override Button defaults
                 'group relative w-full h-auto overflow-hidden rounded-2xl border',
@@ -280,4 +301,4 @@ export function TaskCard({
             />
         </Button>
     );
-}
+});

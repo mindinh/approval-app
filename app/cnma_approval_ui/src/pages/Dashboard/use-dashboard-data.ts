@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { inboxKeys } from '@/pages/Inbox/hooks/inboxKeys';
-import type { DashboardTask } from '@/services/inbox/inbox.types';
+import type { DashboardTask, StatusCountItem, DocTypeCountItem } from '@/services/inbox/inbox.types';
 import type { FilterValues } from '@/components/filterbar/types';
 
 // ─── Status Constants ─────────────────────────────────────
@@ -17,11 +17,18 @@ export const STATUS_COLORS: Record<string, string> = {
 /**
  * Mapping code values to human-readable descriptions alongside original codes.
  */
-export function getDocTypeDescription(code: string): string {
+export function getDocTypeDescription(code: string, text?: string): string {
+    if (text && text.trim()) {
+        const cleanCode = (code || '').toUpperCase().trim();
+        if (cleanCode && !text.includes(`(${cleanCode})`)) {
+            return `${text.trim()} (${cleanCode})`;
+        }
+        return text.trim();
+    }
     const clean = (code || '').toUpperCase().trim();
     switch (clean) {
         case 'ZASS': return 'Asset (ZASS)';
-        case 'ZEXP': return 'Expense (ZEXP)';
+        case 'ZEXP': return 'Expense PR (ZEXP)';
         case 'ZMAK': return 'Marketing (ZMAK)';
         case 'ZNB1': return 'Standard (ZNB1)';
         case 'ZNB2': return 'Non-Stock 2 (ZNB2)';
@@ -32,13 +39,14 @@ export function getDocTypeDescription(code: string): string {
         case 'ZCOR': return 'Core (ZCOR)';
         case 'ZNBR': return 'Non-Stock (ZNBR)';
         case 'ZUB': return 'Stock Transfer (ZUB)';
+        case 'ZFO8': return 'Expense PO (ZFO8)';
         default: return code; // Fallback to raw code
     }
 }
 
 /**
  * Client-side normalization: maps any backend status value to our 2 canonical labels.
- * Handles both old labels (Ready, In Process) and SAP codes (READY, STARTED, etc.)
+ * Handles both old labels (Ready, In Process) and SAP codes (READY, STARTED, IN PROCESSING, etc.)
  */
 export function normalizeDashboardStatus(raw: string): string {
     const upper = (raw || '').toUpperCase().trim().replace(/\s+/g, '_');
@@ -48,6 +56,7 @@ export function normalizeDashboardStatus(raw: string): string {
         case 'RESERVED':
         case 'IN_PROGRESS':
         case 'IN_PROCESS':
+        case 'IN_PROCESSING':
         case 'STARTED':
             return 'In Approving';
         case 'APPROVED':
@@ -72,7 +81,7 @@ export interface BarDataItem {
     label: string;
     total: number;
     'In Approving': number;
-    'Completed': number;
+    'Completed'?: number;
 }
 
 // ─── Table Row ────────────────────────────────────────────
@@ -100,12 +109,14 @@ export function useDashboardQuery(options?: { enabled?: boolean }) {
 
 // ─── Data Derivation Hook ─────────────────────────────────
 /**
- * Core hook: derives all chart datasets from the flat task array.
- * Cross-filtering and dynamic summaries are entirely client-side (zero additional API calls).
+ * Core hook: derives all chart datasets from aggregated OData counts and task list.
+ * Cross-filtering and dynamic summaries are calculated client-side.
  */
 export function useDashboardData(
     tasks: DashboardTask[],
     appliedFilters: FilterValues,
+    statusCounts?: StatusCountItem[],
+    docTypeCounts?: DocTypeCountItem[]
 ) {
     // 1. Normalize statuses and filter data for the main table (fully filtered)
     const filteredTasks = useMemo(() => {
@@ -127,15 +138,14 @@ export function useDashboardData(
     }, [tasks, appliedFilters]);
 
     // 2. Compute visual datasets excluding the Status filter
-    // So that selecting a status doesn't collapse KPI counts & charts to 0 for other statuses
     const tasksFilteredExcludingStatus = useMemo(() => {
         return tasks.map((t) => {
             const status = normalizeDashboardStatus(t.status);
             return { ...t, status };
         }).filter((t) => {
-            // Apply documentType filter (select type, e.g. 'PR')
             if (appliedFilters.documentType) {
-                if (t.documentType !== appliedFilters.documentType) return false;
+                const docType = t.documentType || t.taskType || '';
+                if (docType !== appliedFilters.documentType) return false;
             }
             return true;
         });
@@ -146,9 +156,23 @@ export function useDashboardData(
         let totalCount = 0;
         const counts: Record<string, number> = { 'In Approving': 0, 'Completed': 0 };
 
-        for (const t of tasksFilteredExcludingStatus) {
-            totalCount++;
-            counts[t.status] = (counts[t.status] || 0) + 1;
+        // When a document type filter is active, derive status counts specifically for that document type
+        if (appliedFilters.documentType) {
+            for (const t of tasksFilteredExcludingStatus) {
+                totalCount++;
+                counts[t.status] = (counts[t.status] || 0) + 1;
+            }
+        } else if (statusCounts && statusCounts.length > 0) {
+            for (const s of statusCounts) {
+                const label = s.statusLabel || normalizeDashboardStatus(s.WorkflowTaskStatus);
+                counts[label] = (counts[label] || 0) + Number(s.RequestCount || 0);
+                totalCount += Number(s.RequestCount || 0);
+            }
+        } else {
+            for (const t of tasksFilteredExcludingStatus) {
+                totalCount++;
+                counts[t.status] = (counts[t.status] || 0) + 1;
+            }
         }
 
         return {
@@ -156,7 +180,7 @@ export function useDashboardData(
             'In Approving': counts['In Approving'] || 0,
             Completed: counts['Completed'] || 0,
         };
-    }, [tasksFilteredExcludingStatus]);
+    }, [statusCounts, tasksFilteredExcludingStatus, appliedFilters.documentType]);
 
     // 4. Compute Chart 1: Donut segments (Count only)
     const donutSegments = useMemo(() => {
@@ -169,39 +193,66 @@ export function useDashboardData(
 
     // 5. Compute Chart 2: Stacked Bar Chart (Count only)
     const barData = useMemo(() => {
-        const groups = new Map<string, { total: number; 'In Approving': number; 'Completed': number }>();
+        if (docTypeCounts && docTypeCounts.length > 0) {
+            const groups = new Map<string, { total: number; 'In Approving': number }>();
+            for (const item of docTypeCounts) {
+                const rawKey = item.DocumentType || 'Standard';
+                const key = getDocTypeDescription(rawKey, item.DocumentTypeText);
+                let g = groups.get(key);
+                if (!g) {
+                    g = { total: 0, 'In Approving': 0 };
+                    groups.set(key, g);
+                }
+                const count = Number(item.RequestCount || 0);
+                g.total += count;
+                g['In Approving'] += count;
+            }
+            return Array.from(groups.entries())
+                .map(([label, data]) => ({ label, ...data }))
+                .sort((a, b) => b.total - a.total);
+        }
+
+        const groups = new Map<string, { total: number; 'In Approving': number }>();
         for (const t of tasksFilteredExcludingStatus) {
             const rawKey = t.documentType || t.taskType || 'Standard';
-            const key = getDocTypeDescription(rawKey);
+            const key = getDocTypeDescription(rawKey, t.documentTypeDesc);
             let g = groups.get(key);
             if (!g) {
-                g = { total: 0, 'In Approving': 0, 'Completed': 0 };
+                g = { total: 0, 'In Approving': 0 };
                 groups.set(key, g);
             }
             g.total++;
-            g[t.status as 'In Approving' | 'Completed']++;
+            g['In Approving']++;
         }
         return Array.from(groups.entries())
             .map(([label, data]) => ({ label, ...data }))
             .sort((a, b) => b.total - a.total);
-    }, [tasksFilteredExcludingStatus]);
+    }, [docTypeCounts, tasksFilteredExcludingStatus]);
 
     // 6. Dynamic document type filter dropdown options (distinct values)
     const documentTypeOptions = useMemo(() => {
         const unique = new Map<string, string>();
-        for (const t of tasks) {
-            if (t.documentType) {
-                unique.set(t.documentType, getDocTypeDescription(t.documentType));
+        if (docTypeCounts && docTypeCounts.length > 0) {
+            for (const item of docTypeCounts) {
+                if (item.DocumentType) {
+                    unique.set(item.DocumentType, getDocTypeDescription(item.DocumentType, item.DocumentTypeText));
+                }
+            }
+        } else {
+            for (const t of tasks) {
+                if (t.documentType) {
+                    unique.set(t.documentType, getDocTypeDescription(t.documentType, t.documentTypeDesc));
+                }
             }
         }
         return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
-    }, [tasks]);
+    }, [docTypeCounts, tasks]);
 
     // 7. Table rows formatting (fully filtered)
     const tableRows = useMemo(() => {
         return filteredTasks.map((t) => ({
             taskType: t.taskType,
-            documentTypeDesc: getDocTypeDescription(t.documentType || t.taskType || 'Standard'),
+            documentTypeDesc: getDocTypeDescription(t.documentType || t.taskType || 'Standard', t.documentTypeDesc),
             docNumber: t.documentNumber,
             currency: t.currency,
             status: t.status,
@@ -220,3 +271,4 @@ export function useDashboardData(
         kpiMetrics,
     };
 }
+

@@ -81,15 +81,15 @@ export function CommentsPanel({
                     {merged.map((comment) => (
                         <div
                             key={comment.id}
-                            className="rounded-lg border border-border/60 p-3 space-y-1.5 bg-muted/10"
+                            className="rounded-lg border border-border/60 p-3 space-y-1.5 bg-muted/10 min-w-0 max-w-full overflow-hidden"
                         >
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <User className="size-3" />
-                                <span className="font-medium text-foreground/80">{comment.createdBy}</span>
+                                <User className="size-3 shrink-0" />
+                                <span className="font-medium text-foreground/80 truncate">{comment.createdBy}</span>
                                 <span>·</span>
-                                <span>{formatDateTime(comment.createdAt)}</span>
+                                <span className="shrink-0">{formatDateTime(comment.createdAt)}</span>
                             </div>
-                            <div className="text-sm whitespace-pre-wrap text-foreground">{comment.text}</div>
+                            <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground min-w-0">{comment.text}</div>
                         </div>
                     ))}
                 </div>
@@ -101,6 +101,7 @@ export function CommentsPanel({
                             placeholder="Write a comment..."
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
+                            maxLength={255}
                             rows={3}
                             className="resize-none bg-card border-border focus-visible:ring-ring"
                             onKeyDown={(e) => {
@@ -110,7 +111,9 @@ export function CommentsPanel({
                             }}
                         />
                         <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground/60">Ctrl+Enter to submit</span>
+                            <span className="text-xs text-muted-foreground/60">
+                                Ctrl+Enter to submit {commentText.length > 0 && `· ${commentText.length}/255`}
+                            </span>
                             <Button
                                 onClick={handleSubmit}
                                 disabled={!commentText.trim() || addCommentMutation.isPending}

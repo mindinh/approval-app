@@ -236,6 +236,13 @@ export interface InboxTask {
     scenarioId?: string;
     taskDefinitionId?: string;
     taskDefinitionName?: string;
+    instid?: string;
+    documentId?: string;
+    objectType?: string;
+    documentTypeDisplay?: string;
+    companyCodeDisplay?: string;
+    companyCode?: string;
+    releaseStrategyName?: string;
     startDeadline?: string;
     completionDeadline?: string;
     expiryDate?: string;
@@ -355,15 +362,26 @@ export interface DynamicUiSchema {
     sections: DynamicUiSection[];
 }
 
+export interface TaskDetailMeta {
+    objectType: string;
+    objectId: string;
+    documentType?: string;
+}
+
 export interface TaskDetail {
     task: InboxTask;
+    _meta?: TaskDetailMeta;
+    header?: Record<string, any>;
+    items?: Record<string, any>[];
+    workflow?: Record<string, any>;
+    object?: Record<string, any>;
     description?: TaskDescription;
-    decisions: Decision[];
-    customAttributes: CustomAttribute[];
-    taskObjects: TaskObject[];
+    decisions?: Decision[];
+    customAttributes?: CustomAttribute[];
+    taskObjects?: TaskObject[];
     comments: TaskComment[];
-    processingLogs: ProcessingLog[];
-    workflowLogs: WorkflowLog[];
+    processingLogs?: ProcessingLog[];
+    workflowLogs?: WorkflowLog[];
     attachments: TaskAttachment[];
     businessContext?: BusinessContext;
     fieldSchema?: Record<string, DynamicFieldDefinition>;
@@ -385,23 +403,36 @@ export interface DashboardTask {
     createdAt?: string;
 }
 
+export interface DocTypeCountItem {
+    DocumentType: string;
+    DocCategory: string;
+    DocumentTypeText?: string;
+    RequestCount: number;
+    SumNetAmountLocalCrcy: number;
+    LocalCurrency: string;
+}
+
+export interface StatusCountItem {
+    WorkflowTaskStatus: string;
+    statusLabel?: string;
+    RequestCount: number;
+}
+
 export interface DashboardResponse {
-    items: DashboardTask[];
-    total: number;
+    statusCounts?: StatusCountItem[];
+    docTypeCounts?: DocTypeCountItem[];
+    items?: DashboardTask[];
+    total?: number;
 }
 
 // ─── API Responses ────────────────────────────────────────
 
 export interface TaskListResponse {
-    identity: InboxIdentity;
     items: InboxTask[];
     total: number;
 }
 
-export interface TaskDetailResponse {
-    identity: InboxIdentity;
-    detail: TaskDetail;
-}
+export type TaskDetailResponse = TaskDetail;
 
 export interface TaskActionResponse {
     success: boolean;

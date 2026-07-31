@@ -6,7 +6,7 @@ import { ActivityTimeline } from '@/pages/Inbox/utils/shared';
 
 export function ActivityPanel({ detail }: { detail: TaskDetail }) {
     const { t } = useTranslation();
-    const processingRows = detail.processingLogs.map((log, idx) => ({
+    const processingRows = (detail.processingLogs || []).map((log, idx) => ({
         id: `proc-${log.orderId ?? idx}`,
         timestamp: formatDate(log.timestamp),
         actor: safe(log.performedByName || log.performedBy),
@@ -14,7 +14,7 @@ export function ActivityPanel({ detail }: { detail: TaskDetail }) {
         details: safe(log.comments),
     }));
 
-    const workflowRows = detail.workflowLogs.map((log, idx) => ({
+    const workflowRows = (detail.workflowLogs || []).map((log, idx) => ({
         id: `wf-${log.id || idx}`,
         timestamp: formatDate(log.timestamp),
         actor: safe(log.userName || log.user),

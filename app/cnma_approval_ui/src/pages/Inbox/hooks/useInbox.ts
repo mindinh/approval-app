@@ -21,6 +21,7 @@ export {
     useInfiniteTasks,
     useInfiniteApprovedTasks,
     useTaskDetail,
+    useObjectConfigs,
 } from './inboxQueries';
 
 // Mutation hooks

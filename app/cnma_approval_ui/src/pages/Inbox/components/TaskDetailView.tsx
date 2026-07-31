@@ -21,7 +21,7 @@ import {
     WorkflowApprovalPanel,
     makeTabDefinitions,
 } from './panels';
-import { resolveBusinessSectionModel } from './renderers';
+import { resolveBusinessSectionModel } from '@/renderers';
 import { useTranslation } from 'react-i18next';
 
 interface TaskDetailViewProps {
@@ -68,28 +68,32 @@ export function TaskDetailView({
     const queryClient = useQueryClient();
     const handleCommentAdded = useCallback(() => {
         if (!detail) return;
-        invalidateAfterComment(queryClient, detail.task.instanceId);
+        const currentTaskId = detail.instanceId || detail.taskId || detail.task?.instanceId || '';
+        invalidateAfterComment(queryClient, currentTaskId);
     }, [detail, queryClient]);
 
+    const activeTaskId = detail?.instanceId || detail?.taskId || detail?.task?.instanceId || '';
     const activeTab =
-        detail && tabState.taskId === detail.task.instanceId ? tabState.tab : 'overview';
+        detail && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
 
-    const docType = detail?.task.businessContext?.type;
+    const docType = detail?.objectType || detail?.task?.businessContext?.type;
     const supportsApproval = docType === 'PR' || docType === 'PO';
     const supportsStandaloneAttach = docType === 'PR';
-    const documentId = detail?.task.businessContext?.documentId;
+    const documentId = detail?.documentId || detail?.task?.businessContext?.documentId;
 
     const workflowData = useMemo(() => {
-        if (!detail || !detail.object) return undefined;
+        if (!detail) return undefined;
+        const wf = detail.workflow || detail.object?.workflow;
+        const hd = detail.header || detail.object?.header;
         return {
             documentId: documentId || '',
-            releaseStrategyName: detail.object.workflow?.strategyName || (detail.object.header?.releaseStrategyName as string),
-            steps: detail.object.workflow?.steps || [],
-            comments: detail.object.workflow?.comments || []
+            releaseStrategyName: detail.releaseStrategyName || wf?.strategyName || (hd?.releaseStrategyName as string),
+            steps: detail.approvalSteps || wf?.steps || [],
+            comments: wf?.comments || []
         };
     }, [detail, documentId]);
 
-    const prAttachmentCount = detail?.object?.attachments?.length || detail?.attachments?.length;
+    const prAttachmentCount = detail?.attachments?.length || detail?.object?.attachments?.length;
     const isPrAttachmentsLoading = false;
     const workflowError = undefined;
 
@@ -105,13 +109,13 @@ export function TaskDetailView({
         () =>
             detail
                 ? makeTabDefinitions({
-                      detail,
-                      workflowCount: workflowData?.steps?.length || 0,
-                      workflowComments: workflowData?.comments,
-                      detailsCount,
-                      attachmentCount: prAttachmentCount,
-                      t,
-                  })
+                    detail,
+                    workflowCount: workflowData?.steps?.length || 0,
+                    workflowComments: workflowData?.comments,
+                    detailsCount,
+                    attachmentCount: prAttachmentCount,
+                    t,
+                })
                 : [],
         [detail, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
     );
@@ -179,14 +183,14 @@ export function TaskDetailView({
         switch (tabValue) {
             case 'overview':
                 return businessModel ? (
-                    <OverviewPanel model={businessModel} detail={detail} isMobile={mobile} />
+                    <OverviewPanel model={businessModel} detail={detail} isMobile={mobile} isSecondaryLoading={isSecondaryLoading} />
                 ) : null;
             case 'details':
                 if (isSecondaryLoading && businessModel && businessModel.tables.length === 0) {
                     return <SecondaryTabSkeleton message={t('task.loadingDetails', 'Loading details...')} />;
                 }
                 return businessModel ? (
-                    <DetailsPanel model={businessModel} detail={detail} isMobile={mobile} />
+                    <DetailsPanel model={businessModel} detail={detail} isMobile={mobile} isSecondaryLoading={isSecondaryLoading} />
                 ) : null;
             case 'workflow':
                 return (
@@ -224,8 +228,8 @@ export function TaskDetailView({
             case 'activity':
                 if (
                     isSecondaryLoading &&
-                    detail.processingLogs.length === 0 &&
-                    detail.workflowLogs.length === 0
+                    (detail.processingLogs?.length || 0) === 0 &&
+                    (detail.workflowLogs?.length || 0) === 0
                 ) {
                     return <SecondaryTabSkeleton message={t('task.loadingActivity', 'Loading activity...')} />;
                 }
@@ -245,7 +249,12 @@ export function TaskDetailView({
     };
 
     return (
-        <div className="flex h-full min-w-0 w-full max-w-full overflow-hidden flex-col bg-muted/30">
+        <div className="flex h-full min-w-0 w-full max-w-full overflow-hidden flex-col bg-muted/30 relative">
+            {isSecondaryLoading && (
+                <div className="h-0.5 w-full bg-primary/10 overflow-hidden absolute top-0 inset-x-0 z-50">
+                    <div className="h-full bg-primary animate-pulse w-full" />
+                </div>
+            )}
             {/* ── Header ── */}
             {isMobile ? (
                 <div className="px-4 pt-4 pb-0 bg-muted/30 shrink-0">
@@ -254,9 +263,13 @@ export function TaskDetailView({
                             <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 mt-0.5 size-8 p-0 rounded-md hover:bg-muted transition-colors">
                                 <ArrowLeft className="size-5 text-foreground" />
                             </Button>
-                            <h2 className="text-lg font-bold text-foreground leading-snug line-clamp-2 flex-1">
-                                {detail.task.title}
-                            </h2>
+                            {isSecondaryLoading ? (
+                                <Skeleton className="h-6 w-3/4 my-0.5 rounded-md animate-pulse bg-muted/60" />
+                            ) : (
+                                <h2 className="text-lg font-bold text-foreground leading-snug line-clamp-2 flex-1">
+                                    {detail.task.title}
+                                </h2>
+                            )}
                         </div>
                         <div className="pl-7">
                             <StatusHeaderBadges detail={detail} />
@@ -267,9 +280,13 @@ export function TaskDetailView({
                 <div className="border-b border-border/60 bg-background px-5 py-4">
                     <div className="flex items-start gap-3">
                         <div className="min-w-0 flex-1 space-y-2">
-                            <h2 className="text-xl font-semibold text-foreground truncate">
-                                {detail.task.title}
-                            </h2>
+                            {isSecondaryLoading ? (
+                                <Skeleton className="h-7 w-80 my-0.5 rounded-md animate-pulse bg-muted/60" />
+                            ) : (
+                                <h2 className="text-xl font-semibold text-foreground truncate">
+                                    {detail.task.title}
+                                </h2>
+                            )}
                             <StatusHeaderBadges detail={detail} />
                         </div>
                     </div>
@@ -318,14 +335,14 @@ export function TaskDetailView({
                         <div className="w-full px-5 py-4 space-y-4 pb-6">
                             <TabsContent value="overview" className="mt-0 w-full">
                                 {businessModel && (
-                                    <OverviewPanel model={businessModel} detail={detail} isMobile={false} />
+                                    <OverviewPanel model={businessModel} detail={detail} isMobile={false} isSecondaryLoading={isSecondaryLoading} />
                                 )}
                             </TabsContent>
                             <TabsContent value="details" className="mt-0 w-full">
                                 {isSecondaryLoading && businessModel && businessModel.tables.length === 0 ? (
                                     <SecondaryTabSkeleton message={t('task.loadingDetails', 'Loading details...')} />
                                 ) : (
-                                    businessModel && <DetailsPanel model={businessModel} detail={detail} isMobile={false} />
+                                    businessModel && <DetailsPanel model={businessModel} detail={detail} isMobile={false} isSecondaryLoading={isSecondaryLoading} />
                                 )}
                             </TabsContent>
                             <TabsContent value="workflow" className="mt-0 w-full">
@@ -357,8 +374,8 @@ export function TaskDetailView({
                             </TabsContent>
                             <TabsContent value="activity" className="mt-0 w-full">
                                 {isSecondaryLoading &&
-                                    detail.processingLogs.length === 0 &&
-                                    detail.workflowLogs.length === 0 ? (
+                                    (detail.processingLogs?.length || 0) === 0 &&
+                                    (detail.workflowLogs?.length || 0) === 0 ? (
                                     <SecondaryTabSkeleton message={t('task.loadingActivity', 'Loading activity...')} />
                                 ) : (
                                     <ActivityPanel detail={detail} />
@@ -368,9 +385,9 @@ export function TaskDetailView({
                     </div>
 
                     <TabsContent value="attachments" className="mt-0 w-full flex-1 min-h-0 px-5 py-4 data-[state=active]:flex data-[state=active]:flex-col">
-                        <AttachmentsPanel 
-                            detail={detail} 
-                            allowUpload={showActionPanel} 
+                        <AttachmentsPanel
+                            detail={detail}
+                            allowUpload={showActionPanel}
                             isPrLoading={isPrAttachmentsLoading}
                             isSecLoading={isSecondaryLoading}
                         />
@@ -385,47 +402,47 @@ export function TaskDetailView({
                     <div className="px-4 pb-2 bg-muted/30 shrink-0">
                         <div className="rounded-b-xl border border-x-border/40 border-b-border/40 border-t-0 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
                             <div className="flex overflow-x-auto no-scrollbar">
-                            {tabs.map((tab) => {
-                                const isActive = activeTab === tab.value;
-                                return (
-                                    <Button
-                                        variant="ghost"
-                                        key={tab.value}
-                                        onClick={() => handleMobileTabChange(tab.value)}
-                                        className={cn(
-                                            'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full h-auto',
-                                            'focus-visible:outline-none',
-                                            isActive
-                                                ? 'bg-primary text-white shadow-sm'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                                        )}
-                                    >
-                                        <tab.icon className={cn("size-3.5", isActive ? "text-white" : "text-muted-foreground/60")} />
-                                        <span>{tab.label}</span>
-                                        {tab.count !== undefined && tab.count > 0 && (
-                                            <span className={cn(
-                                                'ml-0.5 rounded-full px-1.5 py-0 text-xs font-semibold',
+                                {tabs.map((tab) => {
+                                    const isActive = activeTab === tab.value;
+                                    return (
+                                        <Button
+                                            variant="ghost"
+                                            key={tab.value}
+                                            onClick={() => handleMobileTabChange(tab.value)}
+                                            className={cn(
+                                                'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full h-auto',
+                                                'focus-visible:outline-none',
                                                 isActive
-                                                    ? 'bg-white/20 text-white'
-                                                    : 'bg-muted text-muted-foreground'
-                                            )}>
-                                                {tab.count}
-                                            </span>
-                                        )}
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId={`mobile-tab-indicator-${detail.task.instanceId}`}
-                                                className="absolute inset-0 rounded-full bg-primary"
-                                                style={{ zIndex: -1 }}
-                                                transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-                                            />
-                                        )}
-                                    </Button>
-                                );
-                            })}
+                                                    ? 'bg-primary text-white shadow-sm'
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                            )}
+                                        >
+                                            <tab.icon className={cn("size-3.5", isActive ? "text-white" : "text-muted-foreground/60")} />
+                                            <span>{tab.label}</span>
+                                            {tab.count !== undefined && tab.count > 0 && (
+                                                <span className={cn(
+                                                    'ml-0.5 rounded-full px-1.5 py-0 text-xs font-semibold',
+                                                    isActive
+                                                        ? 'bg-white/20 text-white'
+                                                        : 'bg-muted text-muted-foreground'
+                                                )}>
+                                                    {tab.count}
+                                                </span>
+                                            )}
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId={`mobile-tab-indicator-${detail.task.instanceId}`}
+                                                    className="absolute inset-0 rounded-full bg-primary"
+                                                    style={{ zIndex: -1 }}
+                                                    transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                                                />
+                                            )}
+                                        </Button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
-                </div>
 
                     {/* Animated tab content */}
                     <div className="flex-1 min-h-0 w-full min-w-0 overflow-hidden relative">
@@ -506,14 +523,15 @@ function TaskActionPanel({
         );
     }
 
-    const hasAction = detail.decisions.length > 0;
+    const decisions = detail.decisions || detail.task?.decisions || [];
+    const hasAction = decisions.length > 0;
     if (!hasAction) return null;
 
     return (
         <div className="flex w-full items-center justify-end gap-2">
-            {detail.decisions.length > 0 && (
+            {decisions.length > 0 && (
                 <DecisionPanel
-                    decisions={detail.decisions}
+                    decisions={decisions}
                     onExecute={onDecision}
                     isExecuting={isExecuting}
                     isMobile={isMobile}

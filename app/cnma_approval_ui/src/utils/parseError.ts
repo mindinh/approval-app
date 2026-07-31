@@ -35,20 +35,39 @@ export function parseError(error: unknown): AppError {
         };
     }
 
-    const errObj = error as Record<string, any>;
+    const errObj = (error || {}) as Record<string, any>;
     const response = errObj.response;
     const responseData = response?.data;
 
-    // Extract nested error properties if server returns { error: { message, code } }
+    // Helper to safely extract string message from unknown/nested values
+    const extractString = (val: unknown): string | undefined => {
+        if (val === undefined || val === null) return undefined;
+        if (typeof val === 'string') return val;
+        if (typeof val === 'object') {
+            const obj = val as Record<string, any>;
+            if (typeof obj.value === 'string') return obj.value;
+            if (typeof obj.message === 'string') return obj.message;
+            if (typeof obj.text === 'string') return obj.text;
+            if (obj.message && typeof obj.message === 'object') {
+                return extractString(obj.message);
+            }
+            try {
+                return JSON.stringify(val);
+            } catch {
+                return String(val);
+            }
+        }
+        return String(val);
+    };
+
     const responseErr = responseData?.error;
-    const responseErrMsg = typeof responseErr === 'object' ? responseErr?.message : (typeof responseErr === 'string' ? responseErr : undefined);
-    const responseErrCode = typeof responseErr === 'object' ? responseErr?.code : undefined;
+    const responseErrMsg = extractString(responseErr?.message) || extractString(responseErr);
 
     // Extract status code & error code
     const statusCode: number | undefined = responseData?.statusCode || response?.status || errObj.statusCode || errObj.status;
-    const code: string | undefined = responseErrCode || responseData?.code || errObj.code;
-    const rawMessage: string = responseErrMsg || responseData?.message || errObj.message || String(error);
-    const stack: string | undefined = responseData?.stack || errObj.stack;
+    const code: string | undefined = (typeof responseErr === 'object' ? responseErr?.code : undefined) || responseData?.code || errObj.code;
+    const rawMessage: string = responseErrMsg || extractString(responseData?.message) || extractString(errObj.message) || extractString(error) || 'Unexpected Error';
+    const stack: string | undefined = typeof responseData?.stack === 'string' ? responseData.stack : (typeof errObj.stack === 'string' ? errObj.stack : undefined);
 
     const details: AppErrorDetails = {
         statusCode,

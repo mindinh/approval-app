@@ -76,21 +76,18 @@ export default function HomePage() {
             iconClass: 'text-warning bg-warning-bg',
             label: t('nav.myTasks', 'My Tasks'),
             to: '/inbox',
-            state: { scope: 'my' },
         },
         {
             icon: <CheckCheck className="w-6 h-6" />,
             iconClass: 'text-success bg-success-bg',
             label: t('nav.approvedTasks', 'Approved Tasks'),
-            to: '/inbox',
-            state: { scope: 'approved' },
+            to: '/approved',
         },
         {
             icon: <BarChart3 className="w-6 h-6" />,
             iconClass: 'text-info bg-info-bg',
             label: t('nav.dashboard', 'Dashboard'),
             to: '/dashboard',
-            state: undefined,
         },
     ];
 
@@ -169,7 +166,7 @@ export default function HomePage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.35, delay: 0.08 }}
                             className="rounded-2xl px-4 py-4 flex items-center gap-3 cursor-pointer active:scale-[0.97] transition-transform bg-marketing-attention-bg border-2 border-marketing-attention-border shadow-sm"
-                            onClick={() => navigate('/inbox', { state: { scope: 'my' } })}
+                            onClick={() => navigate('/inbox')}
                         >
                             <div
                                 className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-marketing-attention-border"
@@ -196,7 +193,7 @@ export default function HomePage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.35, delay: 0.16 }}
                             className="rounded-2xl px-4 py-4 flex items-center gap-3 cursor-pointer active:scale-[0.97] transition-transform bg-marketing-positive-bg border-2 border-marketing-positive-border shadow-sm"
-                            onClick={() => navigate('/inbox', { state: { scope: 'approved' } })}
+                            onClick={() => navigate('/approved')}
                         >
                             <div
                                 className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-marketing-positive-border"
@@ -227,7 +224,7 @@ export default function HomePage() {
                         </h2>
                         <Button
                             variant="link"
-                            onClick={() => navigate('/inbox', { state: { scope: 'my' } })}
+                            onClick={() => navigate('/inbox')}
                             className="text-sm font-semibold hover:underline text-primary p-0 h-auto"
                         >
                             {t('home.viewAll', 'View All')}
@@ -267,7 +264,7 @@ export default function HomePage() {
                                     <TaskCard 
                                         task={task}
                                         isSelected={false}
-                                        onClick={() => navigate(`/tasks/${task.instanceId}`, { state: { scope: 'my' } })}
+                                        onClick={() => navigate(`/inbox/${task.instanceId}`)}
                                         variant="mobile"
                                     />
                                 </motion.div>
@@ -289,7 +286,7 @@ export default function HomePage() {
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: i * 0.06 }}
-                                onClick={() => navigate(item.to, item.state ? { state: item.state } : undefined)}
+                                onClick={() => navigate(item.to)}
                                 className="rounded-xl p-4 border text-center hover:shadow-lg active:scale-[0.97] transition-all bg-card border-border shadow-md"
                             >
                                 <div

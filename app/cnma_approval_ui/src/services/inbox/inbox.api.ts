@@ -25,9 +25,18 @@ export interface UserInfo {
 
 /**
  * Inbox API — All backend calls for the inbox feature.
- * Uses the existing axiosInstance which handles CSRF tokens, auth, and error retries.
  */
 export const inboxApi = {
+    /**
+     * Get dynamic UI schemas and field mappings loaded from srv/configuration/object-types.
+     */
+    getObjectConfigs: async (): Promise<{ configs: Record<string, any> }> => {
+        const { data } = await axiosInstance.get<{ configs: Record<string, any> }>(
+            `${BASE_URL}/object-configs`
+        );
+        return data;
+    },
+
     /**
      * Get current user display info (name, email) from JWT claims.
      */
@@ -59,7 +68,7 @@ export const inboxApi = {
         if (params?.skip != null) query.set('skip', String(params.skip));
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskListResponse>(
-            `${BASE_URL}/tasks${qs ? `?${qs}` : ''}`
+            `${BASE_URL}${qs ? `?${qs}` : ''}`
         );
         return data;
     },
@@ -73,7 +82,7 @@ export const inboxApi = {
         if (params?.skip != null) query.set('skip', String(params.skip));
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskListResponse>(
-            `${BASE_URL}/tasks/approved${qs ? `?${qs}` : ''}`
+            `${BASE_URL}/approved${qs ? `?${qs}` : ''}`
         );
         return data;
     },
@@ -83,15 +92,16 @@ export const inboxApi = {
      */
     getTaskDetail: async (
         instanceId: string,
-        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string }
+        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string; status?: string }
     ): Promise<TaskDetailResponse> => {
         const query = new URLSearchParams();
         if (hints?.sapOrigin) query.set('sapOrigin', hints.sapOrigin);
         if (hints?.documentId) query.set('documentId', hints.documentId);
         if (hints?.businessObjectType) query.set('businessObjectType', hints.businessObjectType);
+        if (hints?.status) query.set('status', hints.status);
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskDetailResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}${qs ? `?${qs}` : ''}`
+            `${BASE_URL}/${encodeURIComponent(instanceId)}${qs ? `?${qs}` : ''}`
         );
         return data;
     },
@@ -106,7 +116,7 @@ export const inboxApi = {
         sapOrigin?: string,
         businessObjectType?: string
     ): Promise<WorkflowApprovalTreeResponse> => {
-        let url = `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/workflow-approval-tree`;
+        let url = `${BASE_URL}/${encodeURIComponent(instanceId)}/workflow-approval-tree`;
         const params = new URLSearchParams();
         if (documentId) params.append('documentId', documentId);
         if (sapOrigin) params.append('sapOrigin', sapOrigin);
@@ -126,7 +136,7 @@ export const inboxApi = {
         request: DecisionRequest
     ): Promise<TaskActionResponse> => {
         const { data } = await axiosInstance.post<TaskActionResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/decision`,
+            `${BASE_URL}/${encodeURIComponent(instanceId)}/decision`,
             request
         );
         return data;
@@ -140,7 +150,7 @@ export const inboxApi = {
         request: ForwardRequest
     ): Promise<TaskActionResponse> => {
         const { data } = await axiosInstance.post<TaskActionResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/forward`,
+            `${BASE_URL}/${encodeURIComponent(instanceId)}/forward`,
             request
         );
         return data;
@@ -155,7 +165,7 @@ export const inboxApi = {
         context?: { sapOrigin?: string; documentId?: string; businessObjectType?: string }
     ): Promise<TaskActionResponse> => {
         const { data } = await axiosInstance.post<TaskActionResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/comments`,
+            `${BASE_URL}/${encodeURIComponent(instanceId)}/comments`,
             { text, _context: context }
         );
         return data;
@@ -180,7 +190,7 @@ export const inboxApi = {
         }
 
         const { data } = await axiosInstance.post<TaskActionResponse>(
-            `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/attachments`,
+            `${BASE_URL}/${encodeURIComponent(instanceId)}/attachments`,
             buffer,
             { headers }
         );
@@ -188,15 +198,57 @@ export const inboxApi = {
     },
 
     /**
-     * Get the URL for streaming attachment binary content.
-     * Use disposition='attachment' for download, 'inline' (default) for preview.
+     * Get the URL for previewing or downloading an attachment's binary content.
+     * Uses the unified attachment endpoint.
      */
     getAttachmentContentUrl: (
-        instanceId: string,
         attachmentId: string,
+        documentId?: string,
+        sapOrigin?: string,
         disposition: 'inline' | 'attachment' = 'inline'
     ): string => {
-        return `${BASE_URL}/tasks/${encodeURIComponent(instanceId)}/attachments/${encodeURIComponent(attachmentId)}/content?disposition=${disposition}`;
+        const query = new URLSearchParams();
+        query.set('disposition', disposition);
+        if (documentId) query.set('documentId', documentId);
+        if (sapOrigin) query.set('sapOrigin', sapOrigin);
+        return `${BASE_URL}/attachments/${encodeURIComponent(attachmentId)}/content?${query.toString()}`;
+    },
+
+    /**
+     * Download the attachment content as a binary Blob via Axios.
+     * This allows tracking download progress and managing UI loading states precisely.
+     */
+    downloadAttachment: async (
+        attachmentId: string,
+        documentId?: string,
+        sapOrigin?: string
+    ): Promise<{ data: Blob; fileName: string }> => {
+        const query = new URLSearchParams();
+        query.set('disposition', 'attachment');
+        if (documentId) query.set('documentId', documentId);
+        if (sapOrigin) query.set('sapOrigin', sapOrigin);
+
+        const response = await axiosInstance.get<Blob>(
+            `${BASE_URL}/attachments/${encodeURIComponent(attachmentId)}/content`,
+            {
+                params: Object.fromEntries(query.entries()),
+                responseType: 'blob'
+            }
+        );
+
+        let fileName = '';
+        const disposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];
+        if (disposition) {
+            const match = disposition.match(/filename="?([^";]+)"?/i);
+            if (match) {
+                fileName = decodeURIComponent(match[1]);
+            }
+        }
+
+        return {
+            data: response.data,
+            fileName
+        };
     },
 
     // ─── PR Attachment API (Standalone) ─────────────────────
@@ -219,7 +271,7 @@ export const inboxApi = {
 
     /**
      * Get the URL for downloading a PR attachment's binary content.
-     * Uses attach_id to identify a specific file.
+     * Deprecated: use getAttachmentContentUrl instead.
      */
     getPrAttachmentContentUrl: (
         documentNumber: string,
@@ -227,10 +279,7 @@ export const inboxApi = {
         sapOrigin?: string,
         disposition: 'inline' | 'attachment' = 'attachment'
     ): string => {
-        const query = new URLSearchParams();
-        query.set('disposition', disposition);
-        if (sapOrigin) query.set('sapOrigin', sapOrigin);
-        return `${BASE_URL}/pr/${encodeURIComponent(documentNumber)}/attachments/${encodeURIComponent(attachId)}/content?${query.toString()}`;
+        return inboxApi.getAttachmentContentUrl(attachId, documentNumber, sapOrigin, disposition);
     },
 
     /**

@@ -18,7 +18,7 @@ import { AttachmentPreviewCard, isPreviewableType } from '../AttachmentPreviewMo
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { useAddAttachment, useUploadPrAttachment } from '@/pages/Inbox/hooks/useInbox';
 import { formatDate, safe } from '@/pages/Inbox/utils/formatters';
-import { formatFileSize } from '../renderers/TaskDetailSections.shared';
+import { formatFileSize } from '@/renderers/TaskDetailSections.shared';
 import {
     ALLOWED_ATTACHMENT_TYPES,
     MAX_ATTACHMENT_SIZE_MB,
@@ -39,7 +39,7 @@ function FileIcon({ mimeType }: { mimeType?: string }) {
 export function AttachmentsPanel({
     detail,
     isMobile = false,
-    allowUpload = true,
+    allowUpload = false,
     isPrLoading = false,
     isSecLoading = false,
 }: {
@@ -103,18 +103,41 @@ export function AttachmentsPanel({
         }
     };
 
-    const getPreviewUrl = (attachmentId: string, _fileName?: string) => {
-        if (isPR && documentNumber) {
-            return inboxApi.getPrAttachmentContentUrl(documentNumber, attachmentId, sapOrigin, 'inline');
-        }
-        return inboxApi.getAttachmentContentUrl(instanceId, attachmentId, 'inline');
+    const getPreviewUrl = (attachmentId: string) => {
+        return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'inline');
     };
 
-    const getDownloadUrl = (attachmentId: string, _fileName?: string) => {
-        if (isPR && documentNumber) {
-            return inboxApi.getPrAttachmentContentUrl(documentNumber, attachmentId, sapOrigin, 'attachment');
+    const getDownloadUrl = (attachmentId: string) => {
+        return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'attachment');
+    };
+
+    const handleDownload = async (attachmentId: string, defaultFileName: string) => {
+        setDownloadingAttachmentId(attachmentId);
+        const toastId = toast.loading('Preparing file for download...');
+        try {
+            const { data, fileName: returnedFileName } = await inboxApi.downloadAttachment(
+                attachmentId,
+                documentNumber,
+                sapOrigin
+            );
+
+            const fileName = returnedFileName || defaultFileName || 'download';
+            const url = URL.createObjectURL(data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+
+            toast.success('Download completed successfully.', { id: toastId });
+        } catch (error: any) {
+            console.error('Failed to download attachment:', error);
+            toast.error(error.message || 'Failed to download attachment.', { id: toastId });
+        } finally {
+            setDownloadingAttachmentId(null);
         }
-        return inboxApi.getAttachmentContentUrl(instanceId, attachmentId, 'attachment');
     };
 
     return (
@@ -151,7 +174,7 @@ export function AttachmentsPanel({
                         ) : (
                             displayedAttachments.map((attachment) => {
                                 const fileName = safe(cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id);
-                                const fileType = friendlyFileType(attachment.mimeType);
+                                const fileType = friendlyFileType(attachment.mimeType, fileName);
                                 const fileSize = formatFileSize(attachment.fileSize);
                                 const author = safe(attachment.createdByName || attachment.createdBy);
                                 const date = formatDate(attachment.createdAt);
@@ -200,19 +223,7 @@ export function AttachmentsPanel({
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => {
-                                                    const downloadUrl = getDownloadUrl(attachment.id, fileName);
-                                                    setDownloadingAttachmentId(attachment.id);
-                                                    const link = document.createElement('a');
-                                                    link.href = downloadUrl;
-                                                    if (fileName) link.download = fileName;
-                                                    document.body.appendChild(link);
-                                                    link.click();
-                                                    link.remove();
-                                                    window.setTimeout(() => {
-                                                        setDownloadingAttachmentId((current) =>
-                                                            current === attachment.id ? null : current
-                                                        );
-                                                    }, 1500);
+                                                    handleDownload(attachment.id, fileName);
                                                 }}
                                                 disabled={downloadingAttachmentId === attachment.id}
                                                 className="shrink-0 size-9 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -229,7 +240,8 @@ export function AttachmentsPanel({
                             })
                         )}
 
-                        {allowUpload && (
+                        {/* Mobile upload attachment button disabled/hidden per request */}
+                        {/* {allowUpload && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -244,7 +256,7 @@ export function AttachmentsPanel({
                                 )}
                                 {isUploading ? 'Uploading...' : 'Upload Attachment'}
                             </Button>
-                        )}
+                        )} */}
                     </div>
                 ) : (
                     /* ── Desktop: original card layout ── */
@@ -255,7 +267,8 @@ export function AttachmentsPanel({
                                     <CardTitle className="text-base">Attachments</CardTitle>
                                     <CardDescription>Files and links attached to this task</CardDescription>
                                 </div>
-                                {allowUpload && (
+                                {/* Upload attachment button disabled/hidden per request */}
+                                {/* {allowUpload && (
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -270,7 +283,7 @@ export function AttachmentsPanel({
                                         )}
                                         {isUploading ? 'Uploading...' : 'Upload'}
                                     </Button>
-                                )}
+                                )} */}
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto pb-4 space-y-2 flex flex-col min-h-0">
@@ -298,7 +311,7 @@ export function AttachmentsPanel({
                                                 {safe(cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id)}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                {friendlyFileType(attachment.mimeType)} · {formatFileSize(attachment.fileSize)}
+                                                {friendlyFileType(attachment.mimeType, attachment.fileName || attachment.fileDisplayName)} · {formatFileSize(attachment.fileSize)}
                                             </div>
                                         </div>
                                         <div className={cn(
@@ -339,22 +352,8 @@ export function AttachmentsPanel({
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => {
-                                                    const fName = cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName);
-                                                    const downloadUrl = getDownloadUrl(attachment.id, fName);
-                                                    setDownloadingAttachmentId(attachment.id);
-                                                    const toastId = toast.loading('Preparing file for download...');
-                                                    const link = document.createElement('a');
-                                                    link.href = downloadUrl;
-                                                    if (fName) link.download = fName;
-                                                    document.body.appendChild(link);
-                                                    link.click();
-                                                    link.remove();
-                                                    window.setTimeout(() => {
-                                                        toast.dismiss(toastId);
-                                                        setDownloadingAttachmentId((current) =>
-                                                            current === attachment.id ? null : current
-                                                        );
-                                                    }, 1500);
+                                                    const fName = cleanFileName(attachment.fileName) || cleanFileName(attachment.fileDisplayName) || attachment.id;
+                                                    handleDownload(attachment.id, fName);
                                                 }}
                                                 disabled={downloadingAttachmentId === attachment.id}
                                                 className="inline-flex items-center gap-1 border border-border/60 px-2 py-1.5 h-auto font-medium text-muted-foreground hover:bg-primary/5 hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-70"

@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile, useSidebar, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@cnma/react-ui';
 import {
@@ -12,18 +11,15 @@ import {
     ChevronRight,
     RefreshCw,
     Download,
-    Layers,
-    Clock,
-    CheckCircle2,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
 import { useDashboardQuery, useDashboardData, STATUS_COLORS, STATUS_LABELS, getDocTypeDescription } from './use-dashboard-data';
 import type { DonutSegment, BarDataItem } from './use-dashboard-data';
 import { StatusBadge } from '@/pages/Inbox/components/TaskBadges';
-import { cn } from '@/lib/utils';
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import type { FilterValues } from '@/components/filterbar/types';
+import { cn } from '@/lib/utils';
 
 // ═══════════════════════════════════════════════════════════
 // Refetch Overlay — shown over each chart card while refreshing
@@ -116,8 +112,8 @@ function DonutChart({
 // ═══════════════════════════════════════════════════════════
 function ClickableYAxisTick({ x, y, payload, onBarClick }: any) {
     return (
-        <g 
-            transform={`translate(${x},${y})`} 
+        <g
+            transform={`translate(${x},${y})`}
             className="cursor-pointer group"
             onClick={() => onBarClick(payload.value)}
         >
@@ -148,6 +144,7 @@ function StackedBarChart({
     data: BarDataItem[];
     selectedStatus: string | null;
     onBarClick: (label: string) => void;
+    onStatusClick?: (label: string) => void;
     noDataText?: string;
 }) {
     if (data.length === 0) {
@@ -200,25 +197,19 @@ function StackedBarChart({
                             fontSize: '12px'
                         }}
                     />
-                    {/* Clicking ANY segment of a bar filters the dashboard by its Document Type */}
-                    {STATUS_LABELS.map((status) => {
-                        const isFiltered = selectedStatus != null && selectedStatus !== status;
-                        return (
-                            <Bar
-                                key={status}
-                                dataKey={status}
-                                stackId="status-stack"
-                                fill={isFiltered ? '#d1d5db' : STATUS_COLORS[status]}
-                                onClick={(entry) => {
-                                    if (entry && entry.payload && entry.payload.label) {
-                                        onBarClick(entry.payload.label);
-                                    }
-                                }}
-                                cursor="pointer"
-                                style={{ transition: 'all 0.3s ease' }}
-                            />
-                        );
-                    })}
+                    <Bar
+                        key="In Approving"
+                        dataKey="In Approving"
+                        name="In Approving"
+                        fill={STATUS_COLORS['In Approving']}
+                        onClick={(entry) => {
+                            if (entry && entry.payload && entry.payload.label) {
+                                onBarClick(entry.payload.label);
+                            }
+                        }}
+                        cursor="pointer"
+                        style={{ transition: 'all 0.3s ease' }}
+                    />
                 </BarChart>
             </ResponsiveContainer>
         </div>
@@ -232,7 +223,6 @@ export default function DashboardPage() {
     const { t } = useTranslation();
     const isMobile = useIsMobile();
     const { setOpenMobile } = useSidebar();
-    const navigate = useNavigate();
 
     // ── Filter States (Applied states for visual drilling) ──
     const [appliedFilters, setAppliedFilters] = useState<FilterValues>(() => ({
@@ -251,7 +241,7 @@ export default function DashboardPage() {
         documentTypeOptions,
         tableRows,
         kpiMetrics,
-    } = useDashboardData(tasks, appliedFilters);
+    } = useDashboardData(tasks, appliedFilters, dashboardData?.statusCounts, dashboardData?.docTypeCounts);
 
     // ── Handlers ─────────────────────────────────────────
     const handleFilterClear = useCallback(() => {
@@ -281,14 +271,6 @@ export default function DashboardPage() {
             return { ...prev, documentType: nextType };
         });
     }, [tasks]);
-
-    const handleKpiCardClick = useCallback((status: string) => {
-        handleStatusClick(status);
-    }, [handleStatusClick]);
-
-    const handleTotalKpiClick = useCallback(() => {
-        setAppliedFilters((prev) => ({ ...prev, status: [] }));
-    }, []);
 
     const clearAllFilters = useCallback(() => {
         handleFilterClear();
@@ -446,81 +428,6 @@ export default function DashboardPage() {
                             )}
                         </div>
                     )}
-
-                    {/* ── KPI Overview Cards Row (3 Cards Grid) ─────────────── */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* KPI 1: Total Tasks (Accessible div role="button", resets status filter) */}
-                        <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={handleTotalKpiClick}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTotalKpiClick(); }}
-                            className={cn(
-                                "rounded-2xl p-4 flex items-center gap-4 border-2 text-left cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all duration-200 bg-marketing-info-blue-bg border-marketing-info-blue-border text-marketing-info-blue shadow-xs",
-                                (!appliedFilters.status || appliedFilters.status.length === 0) && "ring-2 ring-marketing-info-blue ring-offset-2"
-                            )}
-                        >
-                            <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-marketing-info-blue-border/50">
-                                <Layers className="w-5.5 h-5.5 text-marketing-info-blue" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold uppercase tracking-wider text-marketing-info-blue/80">
-                                    {t('dashboard.statCards.totalTasks', 'Total Tasks')}
-                                </p>
-                                <p className="text-lg md:text-xl font-extrabold leading-none mt-2 truncate tabular-nums text-marketing-info-blue">
-                                    {kpiMetrics.total}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* KPI 2: Pending (In Approving) */}
-                        <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleKpiCardClick('In Approving')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('In Approving'); }}
-                            className={cn(
-                                "rounded-2xl p-4 flex items-center gap-4 border-2 text-left cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all duration-200 bg-marketing-attention-bg border-marketing-attention-border text-marketing-attention shadow-xs",
-                                appliedFilters.status?.includes('In Approving') && "ring-2 ring-marketing-attention ring-offset-2"
-                            )}
-                        >
-                            <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-marketing-attention-border/50">
-                                <Clock className="w-5.5 h-5.5 text-marketing-attention" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold uppercase tracking-wider text-marketing-attention/80">
-                                    {t('dashboard.statCards.inApproving', 'Pending')}
-                                </p>
-                                <p className="text-lg md:text-xl font-extrabold leading-none mt-2 truncate tabular-nums text-marketing-attention">
-                                    {kpiMetrics['In Approving']}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* KPI 3: Completed */}
-                        <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleKpiCardClick('Completed')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('Completed'); }}
-                            className={cn(
-                                "rounded-2xl p-4 flex items-center gap-4 border-2 text-left cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all duration-200 bg-marketing-positive-bg border-marketing-positive-border text-marketing-positive shadow-xs",
-                                appliedFilters.status?.includes('Completed') && "ring-2 ring-marketing-positive ring-offset-2"
-                            )}
-                        >
-                            <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-marketing-positive-border/50">
-                                <CheckCircle2 className="w-5.5 h-5.5 text-marketing-positive" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold uppercase tracking-wider text-marketing-positive/80">
-                                    {t('dashboard.statCards.approved', 'Completed')}
-                                </p>
-                                <p className="text-lg md:text-xl font-extrabold leading-none mt-2 truncate tabular-nums text-marketing-positive">
-                                    {kpiMetrics.Completed}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* ── Main Charts Grid ───────────────────── */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">

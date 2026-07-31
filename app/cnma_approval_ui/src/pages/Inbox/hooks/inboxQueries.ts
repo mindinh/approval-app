@@ -11,13 +11,12 @@
  * - Own page-level UI state
  */
 import { useEffect, useRef } from 'react';
-import { keepPreviousData, useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { toast } from '@cnma/react-ui';
 import { STALE, REFRESH } from '@/pages/Inbox/utils/constants';
-import { isSapUserMappingMissing, extractErrorMessage } from '@/pages/Inbox/utils/predicates';
+import { isSapUserMappingMissing } from '@/pages/Inbox/utils/predicates';
 import { inboxKeys } from './inboxKeys';
-import type { TaskDetailResponse } from '@/services/inbox/inbox.types';
+import type { TaskDetailResponse, InboxTask } from '@/services/inbox/inbox.types';
 import { useErrorModal } from '@/contexts/useErrorModal';
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -43,6 +42,17 @@ function useErrorModalOnQueryError(error: unknown, fallback: string) {
         lastRef.current = error;
         showError(error);
     }, [error, showError]);
+}
+
+// ─── useObjectConfigs ──────────────────────────────────────
+export function useObjectConfigs() {
+    return useQuery({
+        queryKey: inboxKeys.objectConfigs(),
+        queryFn: () => inboxApi.getObjectConfigs(),
+        staleTime: Infinity,
+        gcTime: Infinity,
+        retry: 2,
+    });
 }
 
 // ─── useCurrentUser ────────────────────────────────────────
@@ -158,14 +168,51 @@ export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
 
 export function useTaskDetail(
     instanceId: string | null,
-    hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string },
-    options?: { enabled?: boolean }
+    hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string; status?: string },
+    options?: { enabled?: boolean },
+    placeholderTask?: InboxTask
 ) {
+    const queryClient = useQueryClient();
+
     const query = useQuery<TaskDetailResponse, Error>({
         queryKey: inboxKeys.taskDetail(instanceId || ''),
         queryFn: () => inboxApi.getTaskDetail(instanceId!, hints),
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
+        placeholderData: (previousData) => {
+            if (previousData && (previousData.instanceId === instanceId || previousData.taskId === instanceId || previousData.task?.instanceId === instanceId)) {
+                return previousData;
+            }
+            if (placeholderTask && placeholderTask.instanceId === instanceId) {
+                const docType = hints?.businessObjectType || placeholderTask.objectType || 'PR';
+                const docId = hints?.documentId || placeholderTask.documentId || '';
+
+                return {
+                    taskId: placeholderTask.instanceId,
+                    instanceId: placeholderTask.instanceId,
+                    status: placeholderTask.status,
+                    priority: placeholderTask.priority || 'MEDIUM',
+                    createdOn: placeholderTask.createdOn,
+                    requestorName: placeholderTask.requestorName,
+                    objectType: docType,
+                    documentId: docId,
+                    documentType: placeholderTask.documentType,
+                    documentTypeDisplay: placeholderTask.documentTypeDisplay,
+                    companyCodeDisplay: placeholderTask.companyCodeDisplay,
+                    companyCode: placeholderTask.companyCode,
+                    total: placeholderTask.total,
+                    currency: placeholderTask.currency,
+                    normalTask: placeholderTask.normalTask,
+                    decisions: [],
+                    approvalSteps: [],
+                    items: [],
+                    attachments: [],
+                    comments: [],
+                    task: placeholderTask,
+                } as TaskDetailResponse;
+            }
+            return undefined;
+        },
     });
 
     useErrorModalOnQueryError(query.error, 'Failed to load task detail');

@@ -6,8 +6,12 @@ export function PriorityBadge({ priority }: { priority?: string }) {
     const { t } = useTranslation();
     if (!priority) return null;
 
-    // Normalize input to handle different cases
-    const normalizedPriority = priority.toUpperCase().replace(/\s+/g, '_');
+    // Handle SAP OData NOT_VALID unmapped values
+    const cleanPriority = (priority.toUpperCase().includes('NOT_VALID') || priority.toUpperCase().includes('NOT VALID'))
+        ? 'MEDIUM'
+        : priority;
+
+    const normalizedPriority = cleanPriority.toUpperCase().replace(/\s+/g, '_');
 
     const priorityKeyMap: Record<string, string> = {
         VERY_HIGH: 'veryHigh',
@@ -16,18 +20,21 @@ export function PriorityBadge({ priority }: { priority?: string }) {
         LOW: 'low'
     };
 
-    const { variant, label: fallbackLabel } = PRIORITY_CONFIG[normalizedPriority] || {
+    const config = PRIORITY_CONFIG[normalizedPriority] || {
         ...PRIORITY_FALLBACK,
-        label: priority,
+        label: 'Medium',
     };
+    const { variant, label: defaultLabel } = config;
 
     const mappedKey = priorityKeyMap[normalizedPriority];
-    // Cast translated value to string
-    const translatedLabel = mappedKey ? (t(`priority.${mappedKey}`) as string) : fallbackLabel;
+    const rawTranslation = mappedKey ? (t(`priority.${mappedKey}`, { defaultValue: defaultLabel }) as string) : defaultLabel;
+    const finalLabel = !rawTranslation || rawTranslation === `priority.${mappedKey}` || rawTranslation.toUpperCase().includes('NOT_VALID')
+        ? defaultLabel || 'Medium'
+        : rawTranslation;
 
     return (
         <Badge variant={variant as any} className="px-2.5 py-0.5 text-xs font-normal">
-            {translatedLabel}
+            {finalLabel}
         </Badge>
     );
 }
@@ -36,12 +43,15 @@ export function StatusBadge({ status }: { status?: string }) {
     const { t } = useTranslation();
     if (!status) return null;
 
-    // Normalize: try uppercase underscore form first
-    const normalizedStatus = status.toUpperCase().replace(/\s+/g, '_');
+    // Handle SAP OData NOT_VALID unmapped values
+    const cleanStatus = (status.toUpperCase().includes('NOT_VALID') || status.toUpperCase().includes('NOT VALID'))
+        ? 'IN_APPROVING'
+        : status;
+
+    const normalizedStatus = cleanStatus.toUpperCase().replace(/\s+/g, '_');
 
     let config = STATUS_CONFIG[normalizedStatus];
 
-    // Fallbacks for mapping dashboard text formats internally
     if (!config) {
         if (normalizedStatus === 'IN_PROCESS' || normalizedStatus === 'STARTED' || normalizedStatus === 'IN_PROCESSING') {
             config = STATUS_CONFIG['NEW'];
@@ -50,9 +60,9 @@ export function StatusBadge({ status }: { status?: string }) {
         }
     }
 
-    const { variant, label: fallbackLabel } = config || {
+    const { variant, label: defaultLabel } = config || {
         ...STATUS_FALLBACK,
-        label: status, // Render whatever text was given if unknown
+        label: 'In Approving',
     };
 
     const statusKeyMap: Record<string, string> = {
@@ -73,12 +83,14 @@ export function StatusBadge({ status }: { status?: string }) {
     };
 
     const mappedKey = statusKeyMap[normalizedStatus];
-    // Cast translated value to string
-    const translatedLabel = mappedKey ? (t(`status.${mappedKey}`) as string) : fallbackLabel;
+    const rawTranslation = mappedKey ? (t(`status.${mappedKey}`, { defaultValue: defaultLabel }) as string) : defaultLabel;
+    const finalLabel = !rawTranslation || rawTranslation === `status.${mappedKey}` || rawTranslation.toUpperCase().includes('NOT_VALID')
+        ? defaultLabel || 'In Approving'
+        : rawTranslation;
 
     return (
         <Badge variant={variant as any} className="px-2.5 py-0.5 text-xs font-normal">
-            {translatedLabel}
+            {finalLabel}
         </Badge>
     );
 }

@@ -37,6 +37,9 @@ export function mergeAndDeduplicateComments(
 
     // 1. Process workflow comments first (they are the "primary" source)
     for (const c of workflowComments || []) {
+        const text = (c.noteText || (c as any).text || '').trim();
+        if (!text) continue;
+
         let dateStr = c.postedOn || '';
         if (c.postedOn && c.postedTime) {
             let t = c.postedTime;
@@ -48,8 +51,8 @@ export function mergeAndDeduplicateComments(
         const dateObj = parseDate(dateStr);
         unified.push({
             id: `wc-${c.docNum}-${dateStr}-${unified.length}`,
-            text: c.noteText || '',
-            createdBy: c.userComment || 'System',
+            text,
+            createdBy: c.userComment || (c as any).author || 'System',
             createdAt: dateStr,
             dateObj: Number.isNaN(dateObj.getTime()) ? new Date(0) : dateObj,
         });

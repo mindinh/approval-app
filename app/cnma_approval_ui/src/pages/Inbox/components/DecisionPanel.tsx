@@ -107,6 +107,7 @@ export function DecisionPanel({ decisions, onExecute, isExecuting, isMobile }: D
                                 }
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
+                                maxLength={255}
                                 className="min-h-24 resize-none text-sm"
                                 autoFocus
                             />

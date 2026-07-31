@@ -116,10 +116,62 @@ export function cleanFileName(name?: string): string | undefined {
     return name;
 }
 
-/** Map a MIME type to a short, human-readable label */
-export function friendlyFileType(mimeType?: string): string {
-    if (!mimeType) return 'File';
-    const map: Record<string, string> = {
+const EXT_LABEL_MAP: Record<string, string> = {
+    pdf: 'PDF',
+    doc: 'Word Document',
+    docx: 'Word Document',
+    xls: 'Excel Spreadsheet',
+    xlsx: 'Excel Spreadsheet',
+    xlsm: 'Excel Spreadsheet',
+    xlsb: 'Excel Spreadsheet',
+    csv: 'CSV',
+    ppt: 'PowerPoint',
+    pptx: 'PowerPoint',
+    txt: 'Text File',
+    log: 'Text File',
+    rtf: 'Rich Text',
+    md: 'Markdown',
+    odt: 'ODF Text',
+    ods: 'ODF Spreadsheet',
+    odp: 'ODF Presentation',
+    png: 'PNG Image',
+    jpg: 'JPEG Image',
+    jpeg: 'JPEG Image',
+    gif: 'GIF Image',
+    webp: 'WebP Image',
+    svg: 'SVG Image',
+    tif: 'TIFF Image',
+    tiff: 'TIFF Image',
+    bmp: 'BMP Image',
+    ico: 'Icon Image',
+    heic: 'HEIC Image',
+    heif: 'HEIF Image',
+    zip: 'ZIP Archive',
+    rar: 'RAR Archive',
+    '7z': '7-Zip Archive',
+    tar: 'TAR Archive',
+    gz: 'GZIP Archive',
+    json: 'JSON',
+    xml: 'XML',
+    html: 'HTML',
+    htm: 'HTML',
+    css: 'CSS',
+    js: 'JavaScript',
+    ts: 'TypeScript',
+    yaml: 'YAML',
+    yml: 'YAML',
+    mp3: 'Audio',
+    wav: 'Audio',
+    mp4: 'Video',
+    avi: 'Video',
+    mov: 'Video',
+};
+
+/** Map a MIME type or file name to a short, human-readable label */
+export function friendlyFileType(mimeType?: string, fileName?: string): string {
+    const rawMime = (mimeType || '').toLowerCase().trim();
+
+    const mimeMap: Record<string, string> = {
         'application/pdf': 'PDF',
         'application/msword': 'Word Document',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word Document',
@@ -132,10 +184,12 @@ export function friendlyFileType(mimeType?: string): string {
         'application/vnd.oasis.opendocument.presentation': 'ODF Presentation',
         'application/zip': 'ZIP Archive',
         'application/x-zip-compressed': 'ZIP Archive',
+        'application/x-rar-compressed': 'RAR Archive',
+        'application/vnd.rar': 'RAR Archive',
+        'application/x-7z-compressed': '7-Zip Archive',
         'application/gzip': 'GZIP Archive',
         'application/json': 'JSON',
         'application/xml': 'XML',
-        'application/octet-stream': 'Binary File',
         'text/plain': 'Text File',
         'text/csv': 'CSV',
         'text/html': 'HTML',
@@ -145,5 +199,23 @@ export function friendlyFileType(mimeType?: string): string {
         'image/webp': 'WebP Image',
         'image/svg+xml': 'SVG Image',
     };
-    return map[mimeType.toLowerCase()] || mimeType;
+
+    if (rawMime && rawMime !== 'application/octet-stream' && mimeMap[rawMime]) {
+        return mimeMap[rawMime];
+    }
+
+    // Fallback to extension matching if MIME is missing or generic octet-stream
+    if (fileName) {
+        const cleanName = cleanFileName(fileName) || fileName;
+        const ext = cleanName.split('.').pop()?.toLowerCase();
+        if (ext && EXT_LABEL_MAP[ext]) {
+            return EXT_LABEL_MAP[ext];
+        }
+    }
+
+    if (rawMime && rawMime !== 'application/octet-stream') {
+        return mimeMap[rawMime] || mimeType!;
+    }
+
+    return 'File';
 }

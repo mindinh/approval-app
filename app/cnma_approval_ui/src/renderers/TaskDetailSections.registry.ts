@@ -25,10 +25,13 @@ export function resolveJsonPath(obj: unknown, path: string): unknown {
 export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionModel {
     const fieldSchema = detail.fieldSchema || {};
     const uiSchema = detail.uiSchema || { sections: [] };
-    const type = detail.object?.objectType || detail.businessContext?.type || 'UNKNOWN';
-    const businessObject = detail.object || (type !== 'UNKNOWN' && detail.businessContext
-        ? (detail.businessContext as unknown as Record<string, unknown>)[type.toLowerCase()]
-        : null);
+    const type = detail.task?.businessContext?.type || detail._meta?.objectType || detail.object?.objectType || detail.businessContext?.type || 'UNKNOWN';
+    const businessObject = (detail.header
+        ? { header: detail.header, items: detail.items, workflow: detail.workflow, attachments: detail.attachments }
+        : detail.object)
+        ?? (type !== 'UNKNOWN' && detail.businessContext
+            ? (detail.businessContext as unknown as Record<string, unknown>)[type.toLowerCase()]
+            : null);
 
     // Helper to format values
     const formatFieldValue = (value: unknown, fieldDef: DynamicFieldDefinition, contextObj?: unknown): string => {
@@ -45,24 +48,26 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
         if (dataType === 'AMOUNT') {
             let currency = '';
             if (fieldDef.currencyPath) {
-                currency = String(resolveJsonPath(businessObject, fieldDef.currencyPath) || resolveJsonPath(contextObj, fieldDef.currencyPath) || '');
+                currency = String(resolveJsonPath(contextObj, fieldDef.currencyPath) || resolveJsonPath(businessObject, fieldDef.currencyPath) || '');
             }
             if (!currency && contextObj) {
                 const rec = contextObj as Record<string, unknown>;
-                const localKey = Object.keys(rec).find(k => k.toLowerCase().includes('currency') || k.toLowerCase() === 'waers');
-                if (localKey) {
-                    currency = String(rec[localKey] || '');
-                }
-            }
-            if (!currency) {
-                const currencyFieldKey = Object.keys(fieldSchema).find(k => k.toLowerCase().includes('currency'));
-                if (currencyFieldKey) {
-                    currency = String(resolveJsonPath(businessObject, fieldSchema[currencyFieldKey].dataPath) || '');
-                }
+                currency = String(
+                    rec['documentCurrency'] ||
+                    rec['purReqnItemCurrency'] ||
+                    rec['currency'] ||
+                    rec['docCurrency'] ||
+                    rec['doc_curr'] ||
+                    rec['waers'] ||
+                    ''
+                );
             }
             if (!currency && businessObject) {
                 const header = resolveJsonPath(businessObject, 'header') as Record<string, unknown> | undefined;
-                currency = String(header?.currency || header?.displayCurrency || header?.documentCurrency || '');
+                currency = String(header?.displayCurrency || header?.documentCurrency || header?.currency || header?.docCurrency || '');
+            }
+            if (!currency && detail?.currency) {
+                currency = detail.currency;
             }
             return formatAmount(String(value), currency);
         }
@@ -171,10 +176,11 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
                 (section.columns || []).forEach((colKey: string) => {
                     const fieldDef = fieldSchema[colKey];
                     if (fieldDef) {
-                        const rawVal = resolveJsonPath(rowObj, fieldDef.dataPath);
+                        const rawVal = resolveJsonPath(rowObj, fieldDef.dataPath) ?? (rowObj as Record<string, unknown>)?.[colKey];
                         values[colKey] = formatFieldValue(rawVal, fieldDef, rowObj);
                     } else {
-                        values[colKey] = '-';
+                        const directVal = (rowObj as Record<string, unknown>)?.[colKey];
+                        values[colKey] = directVal != null && String(directVal).trim() !== '' ? String(directVal) : '-';
                     }
                 });
 
@@ -202,14 +208,33 @@ export function buildDynamicBusinessModel(detail: TaskDetail): BusinessSectionMo
     };
 }
 
+import { buildPoModel } from './modules/po/po.builder';
+import { buildPrModel } from './modules/pr/pr.builder';
+import { buildClaimModel } from './modules/claim/claim.builder';
+import { buildReservationModel } from './modules/reservation/reservation.builder';
+
+const STRATEGY_MAP: Record<string, (detail: TaskDetail) => BusinessSectionModel> = {
+    PO: buildPoModel,
+    BUS2012: buildPoModel,
+    PR: buildPrModel,
+    BUS2105: buildPrModel,
+    CLAIM: buildClaimModel,
+    RE: buildReservationModel,
+    RESERVATION: buildReservationModel,
+};
+
 /**
  * Resolver for task object presentation.
- * Returns the dynamic business model if fieldSchema and uiSchema are defined,
- * otherwise falls back to a clean default business model representation.
+ * Uses modular strategy renderers based on objectType, or falls back to legacy/dynamic models.
  */
 export function resolveBusinessSectionModel(detail: TaskDetail): BusinessSectionModel {
     if (detail.fieldSchema && detail.uiSchema && Object.keys(detail.fieldSchema).length > 0 && detail.uiSchema.sections && detail.uiSchema.sections.length > 0) {
         return buildDynamicBusinessModel(detail);
+    }
+    const type = (detail.objectType || detail.businessContext?.type || detail.task?.TaskDefinitionID || '').toUpperCase();
+    const strategy = STRATEGY_MAP[type];
+    if (strategy) {
+        return strategy(detail);
     }
     return buildDefaultBusinessModel(detail);
 }

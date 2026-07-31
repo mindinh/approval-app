@@ -68,6 +68,22 @@ export default function App() {
                                 <InboxPage />
                             </Suspense>
                         } />
+                        <Route path="/inbox/:taskId" element={
+                            <Suspense fallback={<InboxSkeleton />}>
+                                <InboxPage />
+                            </Suspense>
+                        } />
+                        <Route path="/approved" element={
+                            <Suspense fallback={<InboxSkeleton />}>
+                                <InboxPage />
+                            </Suspense>
+                        } />
+                        <Route path="/approved/:taskId" element={
+                            <Suspense fallback={<InboxSkeleton />}>
+                                <InboxPage />
+                            </Suspense>
+                        } />
+                        {/* Backward compatibility for direct task links */}
                         <Route path="/tasks/:taskId" element={
                             <Suspense fallback={<InboxSkeleton />}>
                                 <InboxPage />

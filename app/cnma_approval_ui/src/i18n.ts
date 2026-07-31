@@ -10,6 +10,13 @@ i18n
     .init({
         fallbackLng: 'en',
         interpolation: { escapeValue: false },
+        parseMissingKeyHandler: (key: string, defaultValue?: string) => {
+            if (defaultValue && defaultValue !== key && defaultValue !== 'NOT_VALID') {
+                return defaultValue;
+            }
+            const lastPart = key.split('.').pop() || key;
+            return lastPart.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+        },
         resources: {
             en: { translation: en },
             vi: { translation: vi },
