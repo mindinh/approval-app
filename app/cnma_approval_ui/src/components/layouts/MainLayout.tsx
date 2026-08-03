@@ -148,12 +148,16 @@ function AppSidebar() {
         i18n.changeLanguage(lang);
     };
 
-    const fullName = userInfo?.firstName && userInfo?.lastName
+    const rawFullName = userInfo?.firstName && userInfo?.lastName
         ? `${userInfo.firstName} ${userInfo.lastName}`
         : (userInfo?.displayName || 'User');
+    const fullName = import.meta.env.DEV ? 'Local Development' : rawFullName;
     const roleName = userInfo?.role || 'Approver';
 
     const initials = React.useMemo(() => {
+        if (import.meta.env.DEV) {
+            return 'LD';
+        }
         if (userInfo?.firstName && userInfo?.lastName) {
             const firstInitial = userInfo.firstName.trim().charAt(0).toUpperCase();
             const lastInitial = userInfo.lastName.trim().charAt(0).toUpperCase();
@@ -216,15 +220,17 @@ function AppSidebar() {
 
     return (
         <Sidebar className="transition-all duration-300">
-            {/* Header */}
-            <SidebarHeader className="p-4 flex-shrink-0 flex items-center justify-between border-b border-sidebar-border h-14">
-                <div className="flex items-center gap-2.5 overflow-hidden">
-                    <img src="./RESOURCE_FAVICON.png" alt="Logo" className="w-6 h-6 shrink-0 rounded-sm" />
-                    {(state === "expanded" || isMobile) && (
-                        <span className="text-sm font-bold tracking-wide text-sidebar-foreground truncate">prorequest</span>
-                    )}
-                </div>
-            </SidebarHeader>
+            {/* Header — hidden in WorkZone */}
+            {!isInWorkZone && (
+                <SidebarHeader className="p-4 flex-shrink-0 flex items-center justify-between border-b border-sidebar-border h-14">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                        <img src="./RESOURCE_FAVICON.png" alt="Logo" className="w-6 h-6 shrink-0 rounded-sm" />
+                        {(state === "expanded" || isMobile) && (
+                            <span className="text-sm font-bold tracking-wide text-sidebar-foreground truncate">prorequest</span>
+                        )}
+                    </div>
+                </SidebarHeader>
+            )}
 
             {/* Content */}
             <SidebarContent className={cn("flex-1 overflow-y-auto", (state === "collapsed" && !isMobile) ? "p-2" : "p-3")}>

@@ -45,7 +45,7 @@
     "test": "vitest run",
     "test:perf": "vitest run tests/performance",
     "test:coverage": "vitest run --coverage",
-    "login": "cf login -a https://api.cf.eu10.hana.ondemand.com"
+    "login-qas": "cf login -a https://api.cf.ap11.hana.ondemand.com/"
   },
   "cds": {
     "odata": {
@@ -93,10 +93,6 @@
         "auth": {
           "kind": "xsuaa"
         }
-      },
-      "C_PURREQ": {
-        "kind": "odata-v2",
-        "model": "srv/external/pr"
       }
     },
     "server": {
