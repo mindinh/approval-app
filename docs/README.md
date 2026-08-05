@@ -2,7 +2,7 @@
 
 Welcome to the documentation hub for **CNMA Approval**, a Multi-Target Application (MTA) orchestrating workflow task management and approvals (Purchase Requisitions and Purchase Orders) by serving as a secure BFF (Backend for Frontend) between a Vite-based React frontend and SAP S/4HANA & SAP Task Gateway backend systems.
 
-> **Last Updated:** 2026-07-17 | **Owner:** Project Team
+> **Last Updated:** 2026-08-05 | **Owner:** Project Team
 
 ---
 

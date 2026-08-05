@@ -65,6 +65,10 @@ A **Purchase Order** is a legally binding contract sent to a supplier, committin
 *   **Storage Location**: Internal warehouse area designated for receipt.
 *   **G/L Account**: General Ledger chart of accounts code for financial reporting.
 *   **Cost Center**: The department budget to which the expense is charged.
+*   **Reference Purchase Requisition**: Originating Purchase Requisition document number and item number that requested the procurement. Approvers can inspect the referenced PR details directly from the purchase order item.
+
+### Header & Timeline Notes
+*   **Document Notes & Comments**: Historical collaboration notes written by approvers during the workflow lifecycle, synchronized directly with ERP header text notes.
 
 ---
 

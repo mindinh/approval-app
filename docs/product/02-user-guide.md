@@ -24,6 +24,7 @@ The **Inbox** holds your structured task list:
     *   Total net amount (with display currency e.g., VND) and VND equivalency.
     *   Priority badges (Low, Medium, High, Very High) to help prioritize.
 *   **Mass Action Mode**: Check the checkboxes on multiple task cards to activate the mass action bar at the bottom, allowing you to approve several documents at once.
+*   **Mobile Pull to Refresh**: On touch mobile devices, swipe down from top of the task list to instantly refresh your pending approval queue.
 
 ---
 
@@ -35,6 +36,7 @@ Displays header data (Company Code, Purchasing Organization, Supplier, total net
 *   Item Number and description.
 *   Quantity, Unit of Measure, Net Price, and Net Value.
 *   Material Group.
+*   **Reference Purchase Requisition Drawer**: If a Purchase Order line item references an original Purchase Requisition, click the **Reference PR** badge (e.g. `PR 10000042 / 00010`) to launch a slide-over drawer displaying original PR header notes, items, quantities, and account assignments without navigating away.
 *   **Account Assignments** (available on expansion): Cost Center, Profit Center, Asset Number, and G/L Account.
 
 ### 2. Workflow Approval Tree
@@ -51,7 +53,7 @@ Located in the **Attachments** tab, this manages related files:
 
 ### 4. Comments Panel
 Located in the **Comments** tab, this acts as the collaboration log:
-*   **Timeline View**: Displays notes written by previous approvers and comments pulled from the ERP.
+*   **Timeline View**: Displays notes written by previous approvers and comments pulled from the ERP (`_Comment` navigation).
 *   **Post Comment**: Type a new comment and click **Send** to post it.
 
 ---
@@ -61,3 +63,5 @@ When you are ready to make a decision, use the floating **Decision Panel**:
 1.  **Select Action**: Click **Approve** or **Reject** (or specific custom actions loaded from SAP).
 2.  **Add Comments**: If the action requires a comment (usually *Reject* requires a justification), input the comment text in the textbox.
 3.  **Confirm**: Submit the decision. The portal executes the action against the SAP Gateway, removes the task from your active queue, and pushes any justification comment back into the ERP.
+4.  **Error Handling**: If a network failure or SAP Gateway exception occurs, a clear **Error Modal** appears explaining the exact root cause, HTTP status code, and actionable advice to resolve the issue.
+

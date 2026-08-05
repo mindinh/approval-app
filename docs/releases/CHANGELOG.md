@@ -2,6 +2,28 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [1.0.8] - 2026-08-05
+
+### Added
+*   **Reference Purchase Requisition Drawer Lookup (`/reference-pr/:prNumber`)**:
+    *   Added backend service module [`reference-pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/reference-pr.ts) and controller route `GET /reference-pr/:prNumber` to query SAP `API_PURCHASEREQ_PROCESS_SRV` or local mock provider for referenced PR header and line item details.
+    *   Created frontend hook [`useReferencePr.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useReferencePr.ts) and slide-over component [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx) to inspect referenced PR details directly from PO line item tables.
+*   **Purchase Order Comment Navigation Sync (`_Comment`)**:
+    *   Updated `srv/lib/integrations/po.ts` and `inbox-processor.ts` to fetch `_Comment` navigation items from S/4HANA OData service and map them into top-level task comments.
+*   **Touch Swipe Mobile Pull-to-Refresh (`usePullToRefresh.ts`)**:
+    *   Created [`usePullToRefresh.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/hooks/usePullToRefresh.ts) hook and attached touch gesture handling to `TaskList.tsx` for mobile inbox refresh.
+
+### Changed
+*   **PO Subtype Layout Builders & Config Standardization**:
+    *   Refactored all 10 Purchase Order subtype layout builders in `app/cnma_approval_ui/src/renderers/modules/po/`: `ZASS`, `ZCON`, `ZCOR`, `ZEXP`, `ZMAK`, `ZNB1`, `ZNB2`, `ZNBR`, `ZTOL`, and `ZUB`.
+    *   Standardized header fields, card chips, table columns, and data display structures in [`srv/configuration/object-types/po/config.json`](file:///d:/learning/test/cnma_approval/srv/configuration/object-types/po/config.json).
+*   **Structured OData V4 Error Parsing (`ErrorModal.tsx`)**:
+    *   Enhanced [`parseError.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/parseError.ts) to parse inner error objects, SAP message containers, status codes, and HTTP network error details for display in [`ErrorModal.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/common/ErrorModal.tsx).
+*   **Contextual Data Formatters (`formatters.ts`)**:
+    *   Added rich formatting functions: `formatQuantityWithUnit`, `formatBadge`, `formatCurrency`, `formatDate`, and standardized null/undefined fallback handling (`-`).
+
+---
+
 ## [1.0.7] - 2026-08-05
 
 ### Added

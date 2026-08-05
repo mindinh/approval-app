@@ -49,6 +49,7 @@ When adding a new field (e.g., `ReleaseText`, `PurposeText`, `VendorBankName`, `
    * PR: [`srv/lib/integrations/pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts)
    * PO: [`srv/lib/integrations/po.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts)
 2. If the field lives in a sub-entity (`_Item`, `_ApprovalStep`, `_HeaderText`, `_Attachment`, `_Comment`, `_PurposeText`, `_PaidByText`, `_BankDetails`), ensure `fetchSubEntities()` includes it in the `Promise.all()` concurrent batch.
+   * *Note for PO:* `po.ts` fetches `_Comment` navigation items to extract document timeline notes, and maps `PurchaseRequisition` and `PurchaseRequisitionItem` properties on line items for Reference PR lookups via [`reference-pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/reference-pr.ts).
 3. Extract and normalize the raw OData property into the intermediate JS object:
    ```typescript
    // Example in PrDetail / PoDetail

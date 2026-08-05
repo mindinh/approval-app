@@ -104,11 +104,44 @@ These endpoints are designed for troubleshooting configurations, token bindings,
     }
     ```
 
+### 7. GET `/reference-pr/:prNumber`
+*   **Purpose**: Fetches detailed header and line item context for a Reference Purchase Requisition from SAP API `API_PURCHASEREQ_PROCESS_SRV` or local mock provider when referenced by a PO line item.
+*   **Authentication**: Supported via JWT Bearer or session.
+*   **Path Parameters**:
+    *   `:prNumber` (Required): 10-digit Purchase Requisition number (e.g., `10000042`).
+*   **Response Payload Schema**:
+    ```json
+    {
+      "purchaseRequisition": "10000042",
+      "purReqType": "ZNB1",
+      "purReqTypeDisplay": "ZNB1 - Standard PR",
+      "createdByUser": "MINHDT",
+      "userFullName": "Do Tu Minh",
+      "headerText": "Quarterly IT Hardware Replenishment",
+      "totalNetAmount": 45000000,
+      "currency": "VND",
+      "items": [
+        {
+          "purchaseRequisitionItem": "00010",
+          "material": "MAT-IT-001",
+          "materialDescription": "ThinkPad Laptop Core i7",
+          "requestedQuantity": 5,
+          "baseUnit": "EA",
+          "purchaseRequisitionPrice": 9000000,
+          "purReqNetAmount": 45000000,
+          "plant": "1000",
+          "costCenter": "CC-IT-01"
+        }
+      ]
+    }
+    ```
+
 ---
 
-## 📥 Worklist & Detail Endpoints
+## 📋 Task Details & Worklist Endpoints
 
-### 7. GET `/tasks/tasks`
+
+### 8. GET `/tasks/tasks`
 *   **Purpose**: Retrieve the current user's active approval queue (`IN PROCESSING` state).
 *   **Query Parameters**:
     *   `top` (Optional): Maximum number of entries to return (for pagination).

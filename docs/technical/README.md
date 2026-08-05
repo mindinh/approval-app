@@ -20,6 +20,7 @@ Developer setup, project guides, and layouts:
 *   [**03-Backend BFF Endpoints**](./02-implementation/03-backend-bff-endpoints.md): Full listing of Express REST APIs provided by the CAP BFF.
 *   [**04-Frontend Components**](./02-implementation/04-frontend-components.md): Component structure, layouts, dynamic section registries, and routing.
 *   [**05-Field Mapping Guide**](./02-implementation/05-field-mapping-guide.md): 6-layer pipeline guide for developers & AI agents adding, modifying, or fixing fields.
+*   [**06-Data Retrieval & Display Report**](./02-implementation/06-data-retrieval-and-display-report.md): Architectural report & reference matrix for data retrieval, mapping, and display across all object types (`PO`, `PR`, `CLAIM`, `RE`).
 
 ### 📚 4. Reference (`docs/technical/04-reference/`)
 Reference guides and specifications:
