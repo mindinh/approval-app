@@ -170,7 +170,7 @@ describe('InboxProcessor', () => {
       
       expect(result.attachments.length).toBe(1);
       expect(result.attachments[0].fileName).toBe('Quote.pdf');
-      expect(result.attachments[0].link).toBe('/api/cnma/APPROVAL_SRV/tasks/task-pr-01/attachments/att-1/content?documentId=10001234');
+      expect(result.attachments[0].link).toBe('/api/cnma/APPROVAL_SRV/tasks/task-pr-01/attachments/att-1/content/Quote.pdf?documentId=10001234');
 
       // Verify legacy 'object' and redundant fields are absent
       expect((result as any).object).toBeUndefined();
@@ -234,7 +234,7 @@ describe('InboxProcessor', () => {
         { documentId: '10001234', businessObjectType: 'PR' }
       );
 
-      expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith('10001234', 'Looks good', 'MOCK_USER', 'jwt', 'APPR');
+      expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith('10001234', 'Looks good', 'MOCK_USER', 'jwt', 'APPR', 'A');
       expect(mockTaskAdapter.executeDecision).toHaveBeenCalledWith('task-pr-01', '0001', 'Looks good', 'MOCK_USER', 'jwt');
     });
   });

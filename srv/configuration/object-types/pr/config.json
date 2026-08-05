@@ -17,7 +17,7 @@
   },
   "source": {
     "service": "APPROVAL_SRV",
-    "rootEntity": "ZC_PRHEADER",
+    "rootEntity": "CNMA_PRHEADER",
     "key": [
       {
         "name": "DocCategory",
@@ -33,7 +33,10 @@
       "workflowSteps": "_ApprovalStep",
       "headerTexts": "_HeaderText",
       "comments": "_Comment",
-      "attachments": "_Attachment"
+      "attachments": "_Attachment",
+      "purposeText": "_PurposeText",
+      "paidByText": "_PaidByText",
+      "bankDetails": "_BankDetails"
     }
   },
   "mappings": {
@@ -80,8 +83,30 @@
         "dataType": "LONG_TEXT"
       },
       {
+        "sourcePath": "createdByUser",
+        "altSourcePaths": [
+          "CreatedByUser",
+          "createdByUser"
+        ],
+        "targetPath": "header.createdByUser",
+        "label": "Created By User",
+        "type": "string"
+      },
+      {
+        "sourcePath": "userName",
+        "altSourcePaths": [
+          "UserName",
+          "userName"
+        ],
+        "targetPath": "header.userName",
+        "label": "User Name",
+        "type": "string"
+      },
+      {
         "sourcePath": "userFullName",
         "altSourcePaths": [
+          "UserName",
+          "userName",
           "CreatedByUser",
           "createdByUser"
         ],
@@ -112,6 +137,28 @@
         ],
         "transform": "combineCodeAndText",
         "label": "Document Type",
+        "type": "string"
+      },
+      {
+        "sourcePath": "fundsCenter",
+        "altSourcePaths": [
+          "FundsCenter",
+          "fundsCenter"
+        ],
+        "targetPath": "header.fundsCenter",
+        "label": "Funds Center Code",
+        "type": "string"
+      },
+      {
+        "sourcePath": "fundsCenterName",
+        "altSourcePaths": [
+          "FundsCenterName",
+          "fundsCenterName",
+          "FundsCenterText",
+          "fundsCenterText"
+        ],
+        "targetPath": "header.fundsCenterName",
+        "label": "Funds Center Name",
         "type": "string"
       },
       {
@@ -223,6 +270,26 @@
         ],
         "targetPath": "header.createdOn",
         "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "creationDate",
+        "altSourcePaths": [
+          "CreationDate",
+          "creationDate",
+          "CreatedOnDate"
+        ],
+        "targetPath": "header.creationDate",
+        "type": "string"
+      },
+      {
+        "sourcePath": "creationTime",
+        "altSourcePaths": [
+          "CreationTime",
+          "creationTime",
+          "CreatedOnTime"
+        ],
+        "targetPath": "header.creationTime",
+        "type": "string"
       },
       {
         "sourcePath": "assetClass",
@@ -543,6 +610,40 @@
             "label": "Commitment Item"
           },
           {
+            "sourcePath": "orderInternalId",
+            "altSourcePaths": [
+              "OrderInternalID",
+              "orderInternalId",
+              "internalOrder",
+              "InternalOrder"
+            ],
+            "targetPath": "orderInternalId",
+            "dependencies": [
+              "OrderInternalName",
+              "orderInternalName",
+              "OrderInternalIDText",
+              "orderInternalIdText",
+              "InternalOrderText",
+              "internalOrderText",
+              "InternalOrderName",
+              "internalOrderName"
+            ],
+            "transform": "combineCodeAndText",
+            "label": "Internal Order",
+            "type": "string"
+          },
+          {
+            "sourcePath": "internalOrder",
+            "altSourcePaths": [
+              "OrderInternalID",
+              "orderInternalId",
+              "internalOrder",
+              "InternalOrder"
+            ],
+            "targetPath": "internalOrder",
+            "type": "string"
+          },
+          {
             "sourcePath": "documentCurrency",
             "altSourcePaths": [
               "DocumentCurrency",
@@ -607,6 +708,10 @@
           {
             "sourcePath": "releaseCode",
             "targetPath": "releaseCode"
+          },
+          {
+            "sourcePath": "releaseText",
+            "targetPath": "releaseText"
           },
           {
             "sourcePath": "approver",

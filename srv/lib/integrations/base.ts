@@ -6,7 +6,7 @@ import { ConfigRegistry } from '../mapping/config-registry';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { RawODataEntity, ODataSingleResult } from '../types/sap-odata.types';
 import { getMockDetail } from './mock-data-provider';
-
+import { AppError } from '../utils/error-handler';
 export function toCamelCaseKeys(obj: any): any {
     if (obj === null || typeof obj !== 'object') {
         return obj;
@@ -62,44 +62,52 @@ export abstract class BaseDetail implements Detail {
         }
 
         const objConfig = ConfigRegistry.getInstance().get(this.objectType);
-        const headerEntity = objConfig?.source?.rootEntity || (this.objectType === 'PR' ? 'ZC_PRHEADER' : 'ZC_POHEADER');
+        const headerEntity = objConfig?.source?.rootEntity || 'CNMA_PRHEADER';
         const docCategoryKey = objConfig?.source?.key?.find((k: any) => k.name === 'DocCategory');
-        const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : 'BUS2012');
+        const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : this.objectType === 'PO' ? 'BUS2012' : this.objectType === 'RE' ? 'BUS2093' : 'ZCLAIM');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Attachment,_Comment';
+        const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Attachment,_Comment,_PurposeText,_PaidByText,_BankDetails';
 
         const paddedId = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
 
-        let headerUrl = '';
         const params: Record<string, string> = { $format: 'json' };
-
-        if (headerEntity.startsWith('ZC_')) {
-            // New V4 composite key
-            headerUrl = `/${headerEntity}(DocCategory='${docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
-            // Request expanded sub-entities only if we are loading full details
-            if (!headerOnly) {
-                params.$expand = expandNavs;
-            }
-        } else {
-            // Old V2 format
-            headerUrl = `/${headerEntity}('${encodeURIComponent(paddedId)}')`;
+        const headerUrl = `/${headerEntity}(DocCategory='${docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
+        if (!headerOnly) {
+            params.$expand = expandNavs;
         }
 
-        const headerRes = await this.sapClient.get<any>(
-            servicePath,
-            headerUrl,
-            params,
-            sapUser,
-            userJwt
-        ).catch((err) => {
-            console.error(`[BaseDetail:${this.objectType}] Failed to fetch header for ${paddedId}:`, err.message);
-            throw new Error(`Failed to fetch header for ${this.objectType} ${paddedId}: ${err.message}`);
-        });
+        let headerRes: any = null;
+        try {
+            headerRes = await this.sapClient.get<any>(
+                servicePath,
+                headerUrl,
+                params,
+                sapUser,
+                userJwt
+            );
+        } catch (err: any) {
+            if (params.$expand) {
+                console.warn(`[BaseDetail:${this.objectType}] $expand failed for ${paddedId} (${err.message}). Retrying header-only query...`);
+                headerRes = await this.sapClient.get<any>(
+                    servicePath,
+                    headerUrl,
+                    { $format: 'json' },
+                    sapUser,
+                    userJwt
+                ).catch((fallbackErr: any) => {
+                    console.error(`[BaseDetail:${this.objectType}] Failed to fetch header for ${paddedId}:`, fallbackErr.message);
+                    throw new AppError(`Failed to fetch header for ${this.objectType} ${paddedId}: ${fallbackErr.message}`, 404);
+                });
+            } else {
+                console.error(`[BaseDetail:${this.objectType}] Failed to fetch header for ${paddedId}:`, err.message);
+                throw new AppError(`Failed to fetch header for ${this.objectType} ${paddedId}: ${err.message}`, 404);
+            }
+        }
 
         // OData V4 returns the object directly at the root, V2 wraps it in a `.d` property
         const rawHeader = headerRes?.d || headerRes;
         if (!rawHeader || Object.keys(rawHeader).length === 0) {
-            throw new Error(`Failed to fetch header for ${this.objectType} ${paddedId}: Empty response received`);
+            throw new AppError(`Failed to fetch header for ${this.objectType} ${paddedId}: Empty response received`, 404);
         }
 
         const normalizedHeader = await this.metadataService.normalizeDetail(rawHeader, servicePath, sapUser, userJwt);

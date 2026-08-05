@@ -49,7 +49,7 @@ export const ODATA_SERVICES = {
     entitySet: 'TaskCollection'
   },
   INSTANCE_LIST: {
-    servicePath: process.env.ODATA_PATH_INSTANCE_LIST || '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
-    entitySet: 'ZC_WORKFLOWTASK'
+    servicePath: process.env.ODATA_PATH_INSTANCE_LIST || '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+    entitySet: 'CNMA_WFTASK'
   }
 };

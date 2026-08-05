@@ -18,11 +18,44 @@ export class PrDetail extends BaseDetail {
         userJwt?: string
     ): Promise<Record<string, any>> {
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const docCategory = rawHeader.DocCategory || 'BUS2105';
+        const headerKey = `/CNMA_PRHEADER(DocCategory='${docCategory}',DocumentNumber='${paddedId}')`;
 
-        // Retrieve expanded collections from rawHeader (provided by $expand on the main request)
-        const rawItems = rawHeader._Item || [];
-        const rawSteps = rawHeader._ApprovalStep || [];
-        const rawTexts = rawHeader._HeaderText || [];
+        // Helper for concurrent sub-entity fetches when not expanded in rawHeader
+        const fetchSubEntity = async (propName: string, subPath: string, warnMsg?: string): Promise<any> => {
+            if (rawHeader[propName] !== undefined && rawHeader[propName] !== null) {
+                return rawHeader[propName];
+            }
+            try {
+                const res: any = await this.sapClient.get(servicePath, `${headerKey}/${subPath}`, { $format: 'json' }, sapUser, userJwt);
+                return res?.value || res?.d?.results || res?.d || [];
+            } catch (e: any) {
+                if (warnMsg) {
+                    console.warn(`[PrDetail] ${warnMsg} for ${paddedId}: ${e.message}`);
+                }
+                return [];
+            }
+        };
+
+        const [
+            rawItems,
+            rawSteps,
+            rawTexts,
+            rawAttachments,
+            rawComments,
+            rawPurpose,
+            rawPaidBy,
+            rawBankDetails
+        ] = await Promise.all([
+            fetchSubEntity('_Item', '_Item', 'Failed to fetch _Item sub-entity'),
+            fetchSubEntity('_ApprovalStep', '_ApprovalStep', 'Failed to fetch _ApprovalStep sub-entity'),
+            fetchSubEntity('_HeaderText', '_HeaderText'),
+            fetchSubEntity('_Attachment', '_Attachment', 'Failed to fetch _Attachment sub-entity'),
+            fetchSubEntity('_Comment', '_Comment'),
+            fetchSubEntity('_PurposeText', '_PurposeText'),
+            fetchSubEntity('_PaidByText', '_PaidByText'),
+            fetchSubEntity('_BankDetails', '_BankDetails')
+        ]);
 
         // Normalize raw items using metadata service
         const normalizedRawItems = await Promise.all(rawItems.map((item: any) => 
@@ -36,6 +69,7 @@ export class PrDetail extends BaseDetail {
             documentId: s.ObjectKey || objectId,
             level: Number(s.ApprovalLevel ?? 0),
             releaseCode: s.ReleaseCode || '',
+            releaseText: s.ReleaseText || s.ReleaseCode || '',
             approver: s.ApproverName || '',
             approverUserId: s.ApproverUserId || '',
             status: s.ApprovalStatus || '',
@@ -45,7 +79,6 @@ export class PrDetail extends BaseDetail {
         }));
 
         // Normalize attachments from _Attachment navigation property
-        const rawAttachments = rawHeader._Attachment || [];
         const normalizedAttachments = rawAttachments.map((att: any) => {
             const ext = att.FileExtension || '';
             let fileName = att.FileName || '';
@@ -67,8 +100,21 @@ export class PrDetail extends BaseDetail {
         // Derive PR description from first text element or join them
         const prDescription = rawTexts.map((t: any) => t.LongText || '').join('\n').replace(/\n{3,}/g, '\n\n').trim();
 
+        const extractTextFromNav = (raw: unknown): string => {
+            if (!raw) return '';
+            if (typeof raw === 'string') return raw;
+            if (Array.isArray(raw)) {
+                return raw.map((item: any) => item?.LongText || item?.Text || item?.Value || '').filter(Boolean).join('\n').trim();
+            }
+            const item = raw as any;
+            return item.LongText || item.Text || item.Value || '';
+        };
+
+        const purposeText = extractTextFromNav(rawPurpose) || normalizedHeader.Purpose || normalizedHeader.purpose || '';
+        const paidByText = extractTextFromNav(rawPaidBy) || normalizedHeader.PaidBy || normalizedHeader.paidBy || '';
+        const bankDetailsText = extractTextFromNav(rawBankDetails) || normalizedHeader.BankDetails || normalizedHeader.bankDetails || '';
+
         // Normalize comments from _Comment navigation property
-        const rawComments = rawHeader._Comment || [];
         const normalizedRawComments = await Promise.all(rawComments.map((c: any) =>
             this.metadataService.normalizeDetail(c, servicePath, sapUser, userJwt)
         ));
@@ -83,7 +129,10 @@ export class PrDetail extends BaseDetail {
         const finalHeader = {
             ...toCamelCaseKeys(normalizedHeader),
             purchaseRequisition: objectId,
-            purchaseRequisitionText: prDescription
+            purchaseRequisitionText: prDescription || normalizedHeader.PurchaseRequisitionText || normalizedHeader.purchaseRequisitionText || '',
+            purpose: purposeText,
+            paidBy: paidByText,
+            bankDetails: bankDetailsText
         };
 
         return {
@@ -97,7 +146,7 @@ export class PrDetail extends BaseDetail {
         };
     }
 
-    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM'): Promise<void> {
+    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = ''): Promise<void> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
             addMockComment(objectId, text, sapUser);
@@ -106,12 +155,14 @@ export class PrDetail extends BaseDetail {
 
         const paddedId = objectId.padStart(10, '0');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const relativePath = `/ZC_PRHEADER(DocCategory='BUS2105',DocumentNumber='${paddedId}')/SAP__self.comment`;
+        const relativePath = `/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='${paddedId}')/SAP__self.comment`;
         
         const cleanText = text ? text.trim().substring(0, 255) : '';
+        const isGeneral = type !== 'APPR';
         const payload = {
             NoteText: cleanText,
-            isApproval: type === 'APPR'
+            isGeneral,
+            Decision: isGeneral ? '' : (decision || 'A')
         };
 
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, userJwt);
@@ -136,7 +187,7 @@ export class PrDetail extends BaseDetail {
         }
 
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const relativePath = `/ZI_DOC_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
+        const relativePath = `/CNMA_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
         const res = await this.sapClient.getBinary(servicePath, relativePath, sapUser, userJwt);
         
         let data = res.data;

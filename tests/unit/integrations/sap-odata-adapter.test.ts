@@ -74,8 +74,8 @@ describe('SapOdataAdapter', () => {
       expect(result[0].creationDate).toBe('2026-04-05');
       expect(result[0].creationTime).toBe('15:13:17');
       expect(mockSapClient.get).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
-        '/ZC_WORKFLOWTASK',
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        '/CNMA_WFTASK',
         { $format: 'json', $orderby: 'WorkflowTaskInternalID desc', $count: 'true', $top: '1000', $filter: "(WorkflowTaskStatus eq 'IN PROCESSING')" },
         'SAP_USER',
         undefined
@@ -128,10 +128,10 @@ describe('SapOdataAdapter', () => {
 
     it('should fetch PR and PO in batch and normalize headers', async () => {
       mockSapClient.get.mockImplementation(async (path: string, relativePath: string) => {
-        if (relativePath.includes('ZC_PRHEADER')) {
+        if (relativePath.includes("DocCategory='BUS2105'")) {
           return { DocumentType: 'ZASS', DocumentNumber: '10000001' };
         }
-        if (relativePath.includes('ZC_POHEADER')) {
+        if (relativePath.includes("DocCategory='BUS2012'")) {
           return { DocumentType: 'DEFAULT', DocumentNumber: '45000002' };
         }
         return {};
@@ -153,7 +153,7 @@ describe('SapOdataAdapter', () => {
     it('should query single PR detail with complete sections (headerOnly = false)', async () => {
       // Mock OData V4 response with expands
       mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
-        if (relativePath.includes('ZC_PRHEADER')) {
+        if (relativePath.includes('CNMA_PRHEADER')) {
           return {
             DocumentNumber: '10000001',
             DocumentType: 'ZASS',
@@ -196,7 +196,7 @@ describe('SapOdataAdapter', () => {
 
     it('should query single PO detail with complete sections (headerOnly = false)', async () => {
       mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
-        if (relativePath.includes('ZC_POHEADER')) {
+        if (relativePath.includes('CNMA_POHEADER') || relativePath.includes("DocCategory='BUS2012'")) {
           return {
             DocumentNumber: '45000002',
             DocumentType: 'DEFAULT',
@@ -234,8 +234,8 @@ describe('SapOdataAdapter', () => {
         fileName: 'Invoice.pdf'
       });
       expect(mockSapClient.getBinary).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
-        "/ZI_DOC_ATTACH_CONTENT('FOL42000000000004EXT51000000000208')/Content",
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        "/CNMA_ATTACH_CONTENT('FOL42000000000004EXT51000000000208')/Content",
         'SAP_USER',
         'jwt'
       );
@@ -252,9 +252,19 @@ describe('SapOdataAdapter', () => {
       mockSapClient.post.mockResolvedValue({});
       await adapter.addComment('10000001', 'Nice PR', 'SAP_USER', 'jwt', 'NORM');
       expect(mockSapClient.post).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001',
-        "/ZC_PRHEADER(DocCategory='BUS2105',DocumentNumber='0010000001')/SAP__self.comment",
-        { NoteText: 'Nice PR', isApproval: false },
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        "/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='0010000001')/SAP__self.comment",
+        { NoteText: 'Nice PR', isGeneral: true, Decision: '' },
+        {},
+        'SAP_USER',
+        'jwt'
+      );
+
+      await adapter.addComment('10000001', 'Approved PR', 'SAP_USER', 'jwt', 'APPR', 'A');
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        "/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='0010000001')/SAP__self.comment",
+        { NoteText: 'Approved PR', isGeneral: false, Decision: 'A' },
         {},
         'SAP_USER',
         'jwt'

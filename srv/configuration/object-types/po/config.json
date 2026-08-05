@@ -17,7 +17,7 @@
   },
   "source": {
     "service": "APPROVAL_SRV",
-    "rootEntity": "ZC_POHEADER",
+    "rootEntity": "CNMA_POHEADER",
     "key": [
       {
         "name": "DocCategory",
@@ -32,7 +32,6 @@
       "items": "_Item",
       "workflowSteps": "_ApprovalStep",
       "headerTexts": "_HeaderText",
-      "comments": "_Comment",
       "attachments": "_Attachment"
     }
   },
@@ -202,21 +201,55 @@
       {
         "sourcePath": "createdByUser",
         "altSourcePaths": [
-          "CreatedByUser"
+          "CreatedByUser",
+          "createdByUser"
         ],
         "targetPath": "header.createdByUser",
         "label": "Created By User",
         "type": "string"
       },
       {
+        "sourcePath": "userName",
+        "altSourcePaths": [
+          "UserName",
+          "userName"
+        ],
+        "targetPath": "header.userName",
+        "label": "User Name",
+        "type": "string"
+      },
+      {
         "sourcePath": "userFullName",
         "altSourcePaths": [
           "UserName",
+          "userName",
           "CreatedByUser",
           "createdByUser"
         ],
         "targetPath": "header.userFullName",
         "label": "Requester",
+        "type": "string"
+      },
+      {
+        "sourcePath": "fundsCenter",
+        "altSourcePaths": [
+          "FundsCenter",
+          "fundsCenter"
+        ],
+        "targetPath": "header.fundsCenter",
+        "label": "Funds Center Code",
+        "type": "string"
+      },
+      {
+        "sourcePath": "fundsCenterName",
+        "altSourcePaths": [
+          "FundsCenterName",
+          "fundsCenterName",
+          "FundsCenterText",
+          "fundsCenterText"
+        ],
+        "targetPath": "header.fundsCenterName",
+        "label": "Funds Center Name",
         "type": "string"
       },
       {
@@ -355,6 +388,26 @@
         "label": "Created On",
         "transform": "sapDateToIso",
         "dataType": "DATE"
+      },
+      {
+        "sourcePath": "creationDate",
+        "altSourcePaths": [
+          "CreationDate",
+          "creationDate",
+          "CreatedOnDate"
+        ],
+        "targetPath": "header.creationDate",
+        "type": "string"
+      },
+      {
+        "sourcePath": "creationTime",
+        "altSourcePaths": [
+          "CreationTime",
+          "creationTime",
+          "CreatedOnTime"
+        ],
+        "targetPath": "header.creationTime",
+        "type": "string"
       },
       {
         "sourcePath": "releaseStrategyName",
@@ -829,6 +882,17 @@
               "internalOrder"
             ],
             "targetPath": "internalOrder",
+            "dependencies": [
+              "OrderInternalName",
+              "orderInternalName",
+              "OrderInternalIDText",
+              "orderInternalIdText",
+              "InternalOrderText",
+              "internalOrderText",
+              "InternalOrderName",
+              "internalOrderName"
+            ],
+            "transform": "combineCodeAndText",
             "label": "Internal Order"
           },
           {
@@ -867,6 +931,10 @@
           {
             "sourcePath": "releaseCode",
             "targetPath": "releaseCode"
+          },
+          {
+            "sourcePath": "releaseText",
+            "targetPath": "releaseText"
           },
           {
             "sourcePath": "approver",

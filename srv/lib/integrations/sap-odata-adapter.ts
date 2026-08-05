@@ -48,7 +48,8 @@ export class SapOdataAdapter {
         status?: string | string[],
         userJwt?: string,
         targetInstanceId?: string,
-        pagination?: { top?: number; skip?: number }
+        pagination?: { top?: number; skip?: number },
+        selectFields?: string
     ): Promise<any[]> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
@@ -81,6 +82,10 @@ export class SapOdataAdapter {
 
         if (pagination?.skip !== undefined) {
             params.$skip = String(pagination.skip);
+        }
+
+        if (selectFields) {
+            params.$select = selectFields;
         }
 
         const filterConditions: string[] = [];
@@ -226,13 +231,13 @@ export class SapOdataAdapter {
         return results;
     }
 
-    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM'): Promise<void> {
+    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = ''): Promise<void> {
         clearDetailCache('PR', objectId);
         clearDetailCache('PO', objectId);
 
         const strategy = this.getStrategy('PR');
         if (strategy.addComment) {
-            await strategy.addComment(objectId, text, sapUser, userJwt, type);
+            await strategy.addComment(objectId, text, sapUser, userJwt, type, decision);
         } else {
             throw new Error(`addComment not supported for strategy: ${strategy.objectType}`);
         }
@@ -265,12 +270,16 @@ export class SapOdataAdapter {
             return getMockDocTypeCounts();
         }
 
-        const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         try {
-            const response = await this.sapClient.get<any>(path, '/ZC_WFTASK_DOCTYPECNT', { $format: 'json' }, sapUser, userJwt);
-            return response?.value ?? [];
+            const instances = await this.getInstances(sapUser, undefined, userJwt, undefined, undefined, 'doctyp');
+            const counts: Record<string, number> = {};
+            for (const item of instances) {
+                const docType = item.doctyp || 'UNKNOWN';
+                counts[docType] = (counts[docType] || 0) + 1;
+            }
+            return Object.entries(counts).map(([docType, count]) => ({ DocumentType: docType, Count: count }));
         } catch (err: any) {
-            console.error(`[SapOdataAdapter] Failed to fetch ZC_WFTASK_DOCTYPECNT:`, err.message);
+            console.error(`[SapOdataAdapter] Failed to compute docType counts:`, err.message);
             return getMockDocTypeCounts();
         }
     }
@@ -281,12 +290,16 @@ export class SapOdataAdapter {
             return getMockStatusCounts();
         }
 
-        const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         try {
-            const response = await this.sapClient.get<any>(path, '/ZC_WFTASK_STATUSCNT', { $format: 'json' }, sapUser, userJwt);
-            return response?.value ?? [];
+            const instances = await this.getInstances(sapUser, undefined, userJwt, undefined, undefined, 'status');
+            const counts: Record<string, number> = {};
+            for (const item of instances) {
+                const status = item.status || 'UNKNOWN';
+                counts[status] = (counts[status] || 0) + 1;
+            }
+            return Object.entries(counts).map(([status, count]) => ({ Status: status, Count: count }));
         } catch (err: any) {
-            console.error(`[SapOdataAdapter] Failed to fetch ZC_WFTASK_STATUSCNT:`, err.message);
+            console.error(`[SapOdataAdapter] Failed to compute status counts:`, err.message);
             return getMockStatusCounts();
         }
     }

@@ -17,7 +17,7 @@
   },
   "source": {
     "service": "APPROVAL_SRV",
-    "rootEntity": "ZC_CLAIMHEADER",
+    "rootEntity": "CNMA_PRHEADER",
     "key": [
       {
         "name": "DocCategory",
@@ -43,7 +43,41 @@
       },
       {
         "sourcePath": "claimant",
+        "altSourcePaths": [
+          "Claimant",
+          "UserName",
+          "userName"
+        ],
         "targetPath": "header.claimant",
+        "type": "string"
+      },
+      {
+        "sourcePath": "createdByUser",
+        "altSourcePaths": [
+          "CreatedByUser",
+          "createdByUser"
+        ],
+        "targetPath": "header.createdByUser",
+        "type": "string"
+      },
+      {
+        "sourcePath": "userName",
+        "altSourcePaths": [
+          "UserName",
+          "userName"
+        ],
+        "targetPath": "header.userName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "userFullName",
+        "altSourcePaths": [
+          "UserName",
+          "userName",
+          "CreatedByUser",
+          "createdByUser"
+        ],
+        "targetPath": "header.userFullName",
         "type": "string"
       },
       {
@@ -55,6 +89,27 @@
         "sourcePath": "claimDate",
         "targetPath": "header.claimDate",
         "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "creationDate",
+        "altSourcePaths": [
+          "CreationDate",
+          "creationDate",
+          "CreatedOnDate",
+          "claimDate"
+        ],
+        "targetPath": "header.creationDate",
+        "type": "string"
+      },
+      {
+        "sourcePath": "creationTime",
+        "altSourcePaths": [
+          "CreationTime",
+          "creationTime",
+          "CreatedOnTime"
+        ],
+        "targetPath": "header.creationTime",
+        "type": "string"
       },
       {
         "sourcePath": "totalAmount",

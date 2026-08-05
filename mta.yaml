@@ -30,8 +30,8 @@ modules:
       disk-quota: 512M
     properties:
       SAP_USE_DESTINATION: "true"
-      SAP_TASK_DESTINATION: "SAP_ABAP_BACKEND"
-      SAP_TASK_CLIENT: "100"
+      SAP_TASK_DESTINATION: "VJ_DS4"
+      SAP_TASK_CLIENT: "300"
       USE_MOCK_SAP: "false"
     build-parameters:
       builder: npm

@@ -158,7 +158,7 @@ export class InboxProcessor {
                 priority: normalizePriority(taskRuntime?.Priority),
                 createdOn: normalizeDate(taskRuntime?.CreatedOn || inst?.taskCreationDateTime),
                 createdByName: taskRuntime?.CreatedByName || undefined,
-                requestorName: header.userFullName || header.createdByUser || inst?.createdByUser || undefined,
+                requestorName: header.userName || header.userFullName || header.createdByUser || inst?.createdByUser || undefined,
                 objectType,
                 documentId: instid,
                 documentType: header.purchaseRequisitionType || header.purchaseOrderType || safeBusinessObj.documentType || 'DEFAULT',
@@ -205,8 +205,12 @@ export class InboxProcessor {
         try {
             if (comment && comment.trim() && context?.documentId && context?.businessObjectType === 'PR') {
                 try {
-                    await this.addComment(context.documentId, comment, sapUser, userJwt, 'APPR');
-                    this.logger.info(`Successfully pushed decision comment to PR ${context.documentId}`);
+                    const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
+                        String(sapDecisionKey).toLowerCase().includes('reject') ||
+                        String(decisionKey).toLowerCase().includes('reject');
+                    const decisionCode = isReject ? 'R' : 'A';
+                    await this.addComment(context.documentId, comment, sapUser, userJwt, 'APPR', decisionCode);
+                    this.logger.info(`Successfully pushed decision comment (${decisionCode}) to PR ${context.documentId}`);
                 } catch (e: any) {
                     this.logger.warn(`Failed to push decision comment to PR ${context.documentId}: ${e.message}`);
                 }
@@ -266,10 +270,10 @@ export class InboxProcessor {
         }
     }
 
-    async addComment(documentId: string, text: string, sapUser: string, userJwt?: string, type: string = 'NORM') {
-        this.logger.info(`Adding comment to document ${documentId} of type ${type}`);
+    async addComment(documentId: string, text: string, sapUser: string, userJwt?: string, type: string = 'NORM', decision: string = '') {
+        this.logger.info(`Adding comment to document ${documentId} of type ${type} (decision: ${decision || 'none'})`);
         try {
-            await this.sapOdataAdapter.addComment(documentId, text, sapUser, userJwt, type);
+            await this.sapOdataAdapter.addComment(documentId, text, sapUser, userJwt, type, decision);
         } catch (error: any) {
             this.logger.error(`Error in addComment: ${error.message}`);
             throw new AppError(`Failed to add comment: ${error.message}`, 500);
@@ -368,7 +372,7 @@ export class InboxProcessor {
         const rawMappedObject = (mergedPayload && objConfig) ? mappingEngine.map(mergedPayload, objConfig, { documentId: inst?.instid }) : rawBusinessObject;
         const businessObject = cleanBusinessObjectForList(rawMappedObject);
 
-        const requesterName = businessObject?.header?.userFullName || businessObject?.header?.createdByUser || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
+        const requesterName = businessObject?.header?.userName || businessObject?.header?.userFullName || businessObject?.header?.createdByUser || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
         const documentType = businessObject?.documentType || 'DEFAULT';
         const config = getObjectConfig(objectType, documentType);
         const calcTotal = inst.total !== undefined && inst.total !== null ? Number(inst.total) : (rawMappedObject?.header?.totalNetAmount || rawMappedObject?.header?.purchaseOrderNetAmount || undefined);

@@ -19,7 +19,8 @@ export class SapClient {
         this.logger.info(`Initializing direct Axios instance. Base URL: ${baseURL}`);
 
         const isHttps = baseURL.startsWith('https:');
-        const agentOptions = { keepAlive: true, maxSockets: 50 };
+        const rejectUnauthorized = process.env.SAP_REJECT_UNAUTHORIZED === 'true';
+        const agentOptions = { keepAlive: true, maxSockets: 50, rejectUnauthorized };
 
         this.http = axios.create({
             baseURL,
@@ -29,7 +30,8 @@ export class SapClient {
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'sap-client': process.env.SAP_TASK_CLIENT || '100'
+                'sap-client': process.env.SAP_TASK_CLIENT || '100',
+                'sap-language': process.env.SAP_LANGUAGE || 'en'
             }
         });
 
@@ -112,6 +114,7 @@ export class SapClient {
     private getRequestHeaders(sapUser?: string, customHeaders: any = {}): Record<string, string> {
         const headers: Record<string, string> = {
             'sap-client': process.env.SAP_TASK_CLIENT || '100',
+            'sap-language': process.env.SAP_LANGUAGE || 'en',
             ...customHeaders
         };
 

@@ -35,6 +35,7 @@ export class PoDetail extends BaseDetail {
             documentId: s.ObjectKey || objectId,
             level: Number(s.ApprovalLevel ?? 0),
             releaseCode: s.ReleaseCode || '',
+            releaseText: s.ReleaseText || s.ReleaseCode || '',
             approver: s.ApproverName || '',
             approverUserId: s.ApproverUserId || '',
             status: s.ApprovalStatus || '',

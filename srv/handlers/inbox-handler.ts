@@ -22,8 +22,8 @@ export function createInboxRouter(): Router {
     // 5. Worklists
     router.get('/approved', controller.getApprovedTasks);
     router.get('/pr/:docNum/attachments', controller.getPrAttachments);
-    router.get('/pr/:docNum/attachments/:attachId/content', controller.streamPrAttachment);
-    router.get('/attachments/:attachId/content', controller.streamAttachment);
+    router.get('/pr/:docNum/attachments/:attachId/content/:fileName?', controller.streamPrAttachment);
+    router.get('/attachments/:attachId/content/:fileName?', controller.streamAttachment);
 
     // 6. Root tasks list (must be before /:id)
     router.get('/', controller.getTasks);
@@ -36,7 +36,7 @@ export function createInboxRouter(): Router {
 
     // 8. Actions on specific task
     router.post('/:id/comments', controller.postComment);
-    router.get('/:id/attachments/:attId/content', controller.streamAttachment);
+    router.get('/:id/attachments/:attId/content/:fileName?', controller.streamAttachment);
     router.post('/:id/decision', controller.postDecision);
 
     return router;

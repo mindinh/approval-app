@@ -1,1 +1,1641 @@
-<?xml version="1.0" encoding="utf-8"?><edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" xmlns="http://docs.oasis-open.org/odata/ns/edm"><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMUNICATION',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.Communication.v1" Alias="Communication"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PERSONALDATA',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.PersonalData.v1" Alias="PersonalData"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_ANALYTICS',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.Analytics.v1" Alias="Analytics"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMON',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="SAP__common"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_MEASURES',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="Org.OData.Measures.V1" Alias="SAP__measures"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CORE',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="Org.OData.Core.V1" Alias="SAP__core"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CAPABILITIES',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="SAP__capabilities"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_AGGREGATION',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="Org.OData.Aggregation.V1" Alias="SAP__aggregation"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_VALIDATION',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="Org.OData.Validation.V1" Alias="SAP__validation"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CODELIST',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.CodeList.v1" Alias="SAP__CodeList"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_UI',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="SAP__UI"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_HTML5',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.HTML5.v1" Alias="SAP__HTML5"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PDF',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.PDF.v1" Alias="SAP__PDF"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_SESSION',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.Session.v1" Alias="SAP__session"/></edmx:Reference><edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_HIERARCHY',Version='0001',SAP__Origin='LOCAL')/$value"><edmx:Include Namespace="com.sap.vocabularies.Hierarchy.v1" Alias="SAP__hierarchy"/></edmx:Reference><edmx:DataServices><Schema Namespace="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001" Alias="SAP__self"><Annotation Term="SAP__core.SchemaVersion" String="1.0.0"/><EntityType Name="ZC_POHEADERType"><Key><PropertyRef Name="DocCategory"/><PropertyRef Name="DocumentNumber"/></Key><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/><Property Name="UserName" Type="Edm.String" Nullable="false" MaxLength="80"/><Property Name="CreationDate" Type="Edm.Date"/><Property Name="CreationTime" Type="Edm.TimeOfDay" Nullable="false"/><Property Name="ReleaseStrategyText" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="CompanyCode" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="CompanyCodeName" Type="Edm.String" Nullable="false" MaxLength="25"/><Property Name="Supplier" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="SupplierName2" Type="Edm.String" Nullable="false" MaxLength="40"/><Property Name="SupplierName3" Type="Edm.String" Nullable="false" MaxLength="40"/><Property Name="SupplierName4" Type="Edm.String" Nullable="false" MaxLength="40"/><Property Name="PaymentTerms" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="PaymentTermsDescription" Type="Edm.String" Nullable="false" MaxLength="30"/><Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/><NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_APPROVAL_STEPType)"/><NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_DOC_ATTACHMENTType)"/><NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.zi_commentType)"/><NavigationProperty Name="_HeaderText" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_HEADERTEXTType)"/><NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_POITEMType)"/></EntityType><EntityType Name="ZC_WORKFLOWTASKType"><Key><PropertyRef Name="WorkflowTaskInternalID"/></Key><Property Name="WorkflowTaskInternalID" Type="Edm.String" Nullable="false" MaxLength="12"/><Property Name="WorkflowTaskType" Type="Edm.String" Nullable="false" MaxLength="1"/><Property Name="WorkflowTaskStatus" Type="Edm.String" Nullable="false" MaxLength="13"/><Property Name="TechnicalWrkflwObjectType" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="TechnicalWrkflwObject" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="TaskCreationDateTime" Type="Edm.DateTimeOffset" Precision="7"/><Property Name="NormalTask" Type="Edm.Boolean" Nullable="false"/><Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/><Property Name="CreationDate" Type="Edm.Date"/><Property Name="CreationTime" Type="Edm.TimeOfDay" Nullable="false"/><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/></EntityType><EntityType Name="ZC_WFTASK_STATUSCNTType"><Key><PropertyRef Name="WorkflowTaskStatus"/></Key><Property Name="WorkflowTaskStatus" Type="Edm.String" Nullable="false" MaxLength="13"/><Property Name="RequestCount" Type="Edm.Int32" Nullable="false"/></EntityType><EntityType Name="zi_commentType"><Key><PropertyRef Name="DocCategory"/><PropertyRef Name="DocumentNumber"/><PropertyRef Name="Sequence"/></Key><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="Sequence" Type="Edm.Int32" Nullable="false"/><Property Name="PostedOn" Type="Edm.Date"/><Property Name="PostedTime" Type="Edm.TimeOfDay" Nullable="false"/><Property Name="NoteText" Type="Edm.String" Nullable="false" MaxLength="255"/><Property Name="UserComment" Type="Edm.String" Nullable="false" MaxLength="12"/></EntityType><EntityType Name="ZC_PRHEADERType"><Key><PropertyRef Name="DocCategory"/><PropertyRef Name="DocumentNumber"/></Key><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="CompanyCode" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="CompanyCodeName" Type="Edm.String" Nullable="false" MaxLength="25"/><Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/><Property Name="UserName" Type="Edm.String" Nullable="false" MaxLength="80"/><Property Name="CreationDate" Type="Edm.Date"/><Property Name="CreationTime" Type="Edm.TimeOfDay" Nullable="false"/><Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="ReleaseStrategyText" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/><Property Name="FundsCenter" Type="Edm.String" Nullable="false" MaxLength="16"/><Property Name="SAP__Messages" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.SAP__Message)" Nullable="false"/><NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_APPROVAL_STEPType)"/><NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_DOC_ATTACHMENTType)"/><NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.zi_commentType)"/><NavigationProperty Name="_HeaderText" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_HEADERTEXTType)"/><NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_PRITEMType)"/></EntityType><EntityType Name="ZI_POITEMType"><Key><PropertyRef Name="DocCategory"/><PropertyRef Name="DocumentNumber"/><PropertyRef Name="ItemNumber"/></Key><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="ItemNumber" Type="Edm.String" Nullable="false" MaxLength="5"/><Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/><Property Name="StorageLocation" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="StorageLocationName" Type="Edm.String" Nullable="false" MaxLength="16"/><Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="18"/><Property Name="MaterialText" Type="Edm.String" Nullable="false" MaxLength="40"/><Property Name="MaterialGroup" Type="Edm.String" Nullable="false" MaxLength="9"/><Property Name="MaterialGroupName" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/><Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/><Property Name="DeliveryDate" Type="Edm.Date"/><Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="11" Scale="variable"/><Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="GLAccountText" Type="Edm.String" Nullable="false" MaxLength="50"/><Property Name="FundsCenter" Type="Edm.String" Nullable="false" MaxLength="16"/><Property Name="CommitmentItemShortID" Type="Edm.String" Nullable="false" MaxLength="14"/><Property Name="OrderInternalID" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="variable"/><Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/><Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/></EntityType><EntityType Name="ZI_HEADERTEXTType"><Key><PropertyRef Name="DocCategory"/><PropertyRef Name="DocNumber"/><PropertyRef Name="LineId"/></Key><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="LineId" Type="Edm.Int16" Nullable="false"/><Property Name="LongText" Type="Edm.String" Nullable="false"/></EntityType><EntityType Name="ZI_PRITEMType"><Key><PropertyRef Name="DocCategory"/><PropertyRef Name="DocumentNumber"/><PropertyRef Name="ItemNumber"/></Key><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="ItemNumber" Type="Edm.String" Nullable="false" MaxLength="5"/><Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/><Property Name="StorageLocation" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="StorageLocationName" Type="Edm.String" Nullable="false" MaxLength="16"/><Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="18"/><Property Name="MaterialText" Type="Edm.String" Nullable="false" MaxLength="40"/><Property Name="MaterialGroup" Type="Edm.String" Nullable="false" MaxLength="9"/><Property Name="MaterialGroupName" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/><Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/><Property Name="DeliveryDate" Type="Edm.Date"/><Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="11" Scale="variable"/><Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="GLAccountText" Type="Edm.String" Nullable="false" MaxLength="50"/><Property Name="CommitmentItemShortID" Type="Edm.String" Nullable="false" MaxLength="14"/><Property Name="CommitmentItemDescription" Type="Edm.String" Nullable="false" MaxLength="50"/><Property Name="OrderInternalID" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/><Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/></EntityType><EntityType Name="ZI_DOC_ATTACHMENTType"><Key><PropertyRef Name="DocumentCategory"/><PropertyRef Name="DocumentNumber"/><PropertyRef Name="DocId"/></Key><Property Name="DocumentCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="DocId" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="FileName" Type="Edm.String" Nullable="false" MaxLength="50"/><Property Name="FileExtension" Type="Edm.String" Nullable="false" MaxLength="3"/><Property Name="Length" Type="Edm.Int32" Nullable="false"/><Property Name="CreatedBy" Type="Edm.String" Nullable="false" MaxLength="12"/><Property Name="CreatedOnDate" Type="Edm.Date"/><Property Name="CreatedOnTime" Type="Edm.TimeOfDay" Nullable="false"/><NavigationProperty Name="_Content" Type="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_DOC_ATTACH_CONTENTType"/></EntityType><EntityType Name="ZC_WFTASK_DOCTYPECNTType"><Key><PropertyRef Name="DocumentType"/><PropertyRef Name="DocCategory"/></Key><Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/><Property Name="RequestCount" Type="Edm.Int32" Nullable="false"/><Property Name="SumNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/><Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="3"/></EntityType><EntityType Name="ZI_DOC_ATTACH_CONTENTType"><Key><PropertyRef Name="Id"/></Key><Property Name="Id" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="FileName" Type="Edm.String" Nullable="false" MaxLength="50"/><Property Name="MimeType" Type="Edm.String" Nullable="false" MaxLength="128"/><Property Name="Content" Type="Edm.Stream"/></EntityType><EntityType Name="ZI_APPROVAL_STEPType"><Key><PropertyRef Name="ObjectType"/><PropertyRef Name="ObjectKey"/><PropertyRef Name="ApprovalLevel"/></Key><Property Name="ObjectType" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="ObjectKey" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="ApprovalLevel" Type="Edm.Byte" Nullable="false"/><Property Name="ReleaseCode" Type="Edm.String" Nullable="false" MaxLength="2"/><Property Name="ApproverName" Type="Edm.String" Nullable="false" MaxLength="30"/><Property Name="ApproverUserId" Type="Edm.String" Nullable="false" MaxLength="30"/><Property Name="ApprovalStatus" Type="Edm.String" Nullable="false" MaxLength="10"/><Property Name="CommentText" Type="Edm.String" Nullable="false" MaxLength="255"/><Property Name="CommentDate" Type="Edm.Date"/><Property Name="CommentTime" Type="Edm.TimeOfDay" Nullable="false"/></EntityType><ComplexType Name="ZI_COMMENT_RESULT"><Property Name="CreatedBy" Type="Edm.String" Nullable="false" MaxLength="12"/><Property Name="CreatedOn" Type="Edm.Date"/><Property Name="CreatedTime" Type="Edm.TimeOfDay" Nullable="false"/><Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/><Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/><Property Name="NoteText" Type="Edm.String" Nullable="false" MaxLength="255"/></ComplexType><ComplexType Name="SAP__Message"><Property Name="code" Type="Edm.String" Nullable="false"/><Property Name="message" Type="Edm.String" Nullable="false"/><Property Name="target" Type="Edm.String"/><Property Name="additionalTargets" Type="Collection(Edm.String)" Nullable="false"/><Property Name="transition" Type="Edm.Boolean" Nullable="false"/><Property Name="numericSeverity" Type="Edm.Byte" Nullable="false"/><Property Name="longtextUrl" Type="Edm.String"/></ComplexType><Action Name="comment" IsBound="true"><Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZC_PRHEADERType" Nullable="false"/><Parameter Name="NoteText" Type="Edm.String" Nullable="false" MaxLength="255"/><Parameter Name="isApproval" Type="Edm.Boolean" Nullable="false"/><ReturnType Type="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_COMMENT_RESULT" Nullable="false"/></Action><EntityContainer Name="Container"><EntitySet Name="ZC_POHEADER" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZC_POHEADERType"><NavigationPropertyBinding Path="_ApprovalStep" Target="ZI_APPROVAL_STEP"/><NavigationPropertyBinding Path="_Attachment" Target="ZI_DOC_ATTACHMENT"/><NavigationPropertyBinding Path="_Comment" Target="zi_comment"/><NavigationPropertyBinding Path="_HeaderText" Target="ZI_HEADERTEXT"/><NavigationPropertyBinding Path="_Item" Target="ZI_POITEM"/></EntitySet><EntitySet Name="ZC_PRHEADER" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZC_PRHEADERType"><NavigationPropertyBinding Path="_ApprovalStep" Target="ZI_APPROVAL_STEP"/><NavigationPropertyBinding Path="_Attachment" Target="ZI_DOC_ATTACHMENT"/><NavigationPropertyBinding Path="_Comment" Target="zi_comment"/><NavigationPropertyBinding Path="_HeaderText" Target="ZI_HEADERTEXT"/><NavigationPropertyBinding Path="_Item" Target="ZI_PRITEM"/></EntitySet><EntitySet Name="ZC_WFTASK_DOCTYPECNT" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZC_WFTASK_DOCTYPECNTType"/><EntitySet Name="ZC_WFTASK_STATUSCNT" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZC_WFTASK_STATUSCNTType"/><EntitySet Name="ZC_WORKFLOWTASK" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZC_WORKFLOWTASKType"/><EntitySet Name="ZI_APPROVAL_STEP" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_APPROVAL_STEPType"/><EntitySet Name="zi_comment" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.zi_commentType"/><EntitySet Name="ZI_DOC_ATTACHMENT" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_DOC_ATTACHMENTType"><NavigationPropertyBinding Path="_Content" Target="ZI_DOC_ATTACH_CONTENT"/></EntitySet><EntitySet Name="ZI_DOC_ATTACH_CONTENT" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_DOC_ATTACH_CONTENTType"/><EntitySet Name="ZI_HEADERTEXT" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_HEADERTEXTType"/><EntitySet Name="ZI_POITEM" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_POITEMType"/><EntitySet Name="ZI_PRITEM" EntityType="com.sap.gateway.srvd_a2x.zsd_prorequest.v0001.ZI_PRITEMType"/></EntityContainer><Annotations Target="SAP__self.ZC_POHEADERType/DocCategory"><Annotation Term="SAP__core.Computed"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/DocumentNumber"><Annotation Term="SAP__core.Computed"/><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/DocumentType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Purchase Order Type"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/CreatedByUser"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Created By"/><Annotation Term="SAP__common.QuickInfo" String="User of person who created a purchasing document"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/CompanyCode"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Company Code"/><Annotation Term="SAP__common.Heading" String="CoCd"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/Supplier"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Supplier"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/PaymentTerms"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Payment Terms"/><Annotation Term="SAP__common.Heading" String="PayT"/><Annotation Term="SAP__common.QuickInfo" String="Terms of Payment Key"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/TotalNetAmountLocalCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/LocalCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType"><Annotation Term="SAP__common.Label" String="Projection view PO Header"/></Annotations><Annotations Target="SAP__self.Container/ZC_POHEADER"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record></Collection></PropertyValue></Record></Annotation></Annotations><Annotations Target="SAP__self.Container"><Annotation Term="SAP__CodeList.CurrencyCodes"><Record><PropertyValue Property="Url" String="../../../../default/iwbep/common/0001/$metadata"/><PropertyValue Property="CollectionPath" String="Currencies"/></Record></Annotation><Annotation Term="SAP__CodeList.UnitsOfMeasure"><Record><PropertyValue Property="Url" String="../../../../default/iwbep/common/0001/$metadata"/><PropertyValue Property="CollectionPath" String="UnitsOfMeasure"/></Record></Annotation><Annotation Term="SAP__aggregation.ApplySupported"><Record><PropertyValue Property="Transformations"><Collection><String>aggregate</String><String>groupby</String><String>filter</String></Collection></PropertyValue><PropertyValue Property="Rollup" EnumMember="SAP__aggregation.RollupType/None"/></Record></Annotation><Annotation Term="SAP__common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/><Annotation Term="SAP__capabilities.FilterFunctions"><Collection><String>eq</String><String>ne</String><String>gt</String><String>ge</String><String>lt</String><String>le</String><String>and</String><String>or</String><String>contains</String><String>startswith</String><String>endswith</String><String>any</String><String>all</String></Collection></Annotation><Annotation Term="SAP__capabilities.SupportedFormats"><Collection><String>application/json</String><String>application/pdf</String></Collection></Annotation><Annotation Term="SAP__PDF.Features"><Record><PropertyValue Property="DocumentDescriptionReference" String="../../../../default/iwbep/common/0001/$metadata"/><PropertyValue Property="DocumentDescriptionCollection" String="MyDocumentDescriptions"/><PropertyValue Property="ArchiveFormat" Bool="true"/><PropertyValue Property="Border" Bool="true"/><PropertyValue Property="CoverPage" Bool="true"/><PropertyValue Property="FitToPage" Bool="true"/><PropertyValue Property="FontName" Bool="true"/><PropertyValue Property="FontSize" Bool="true"/><PropertyValue Property="Margin" Bool="true"/><PropertyValue Property="Padding" Bool="true"/><PropertyValue Property="Signature" Bool="true"/><PropertyValue Property="HeaderFooter" Bool="true"/><PropertyValue Property="ResultSizeDefault" Int="20000"/><PropertyValue Property="ResultSizeMaximum" Int="20000"/></Record></Annotation><Annotation Term="SAP__capabilities.KeyAsSegmentSupported"/><Annotation Term="SAP__capabilities.AsynchronousRequestsSupported"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/WorkflowTaskInternalID"><Annotation Term="SAP__common.IsDigitSequence"/><Annotation Term="SAP__common.Label" String="Work Item ID"/><Annotation Term="SAP__common.QuickInfo" String="Work item ID"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/WorkflowTaskType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Type"/><Annotation Term="SAP__common.QuickInfo" String="Work item type"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/TechnicalWrkflwObjectType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/CreatedByUser"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Created By"/><Annotation Term="SAP__common.QuickInfo" String="Name of Person Responsible for Creating the Object"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/DocCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/DocumentType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Document Type"/><Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Document Type"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/TotalNetAmountLocalCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/LocalCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType"><Annotation Term="SAP__common.Label" String="Workflow Task Projection view"/></Annotations><Annotations Target="SAP__self.Container/ZC_WORKFLOWTASK"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record></Collection></PropertyValue></Record></Annotation></Annotations><Annotations Target="SAP__self.ZC_WFTASK_STATUSCNTType"><Annotation Term="SAP__common.Label" String="Projection view Dashboard lv1"/></Annotations><Annotations Target="SAP__self.Container/ZC_WFTASK_STATUSCNT"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation></Annotations><Annotations Target="SAP__self.zi_commentType/DocCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.zi_commentType/NoteText"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Char255"/></Annotations><Annotations Target="SAP__self.zi_commentType/UserComment"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="User Name"/></Annotations><Annotations Target="SAP__self.zi_commentType"><Annotation Term="SAP__common.Label" String="comment"/></Annotations><Annotations Target="SAP__self.Container/zi_comment"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/DocCategory"><Annotation Term="SAP__core.Computed"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/DocumentNumber"><Annotation Term="SAP__core.Computed"/><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/CompanyCode"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Company Code"/><Annotation Term="SAP__common.Heading" String="CoCd"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/CreatedByUser"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Created By"/><Annotation Term="SAP__common.QuickInfo" String="Name of Person Responsible for Creating the Object"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/DocumentType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Document Type"/><Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Document Type"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/TotalNetAmountLocalCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/LocalCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/FundsCenter"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Funds Center"/><Annotation Term="SAP__common.Heading" String="Funds Ctr"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType"><Annotation Term="SAP__common.Label" String="Projection view PR Header"/><Annotation Term="Communication.Contact"><Record/></Annotation><Annotation Term="SAP__common.Messages" Path="SAP__Messages"/></Annotations><Annotations Target="SAP__self.Container/ZC_PRHEADER"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record></Collection></PropertyValue></Record></Annotation></Annotations><Annotations Target="SAP__self.ZI_POITEMType/DocCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/DocumentNumber"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Purchasing Document"/><Annotation Term="SAP__common.Heading" String="Pur. Doc."/><Annotation Term="SAP__common.QuickInfo" String="Purchasing Document Number"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/ItemNumber"><Annotation Term="SAP__common.IsDigitSequence"/><Annotation Term="SAP__common.Label" String="Purchase Order Item"/><Annotation Term="SAP__common.Heading" String="Item Number of Purchase Order"/><Annotation Term="SAP__common.QuickInfo" String="Item Number of Purchase Order"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/Plant"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Plant"/><Annotation Term="SAP__common.Heading" String="Plnt"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/StorageLocation"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Storage Location"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/Material"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Material"/><Annotation Term="SAP__common.QuickInfo" String="Material Number"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/MaterialGroup"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Material Group"/><Annotation Term="SAP__common.Heading" String="Matl Group"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/Unit"><Annotation Term="SAP__common.IsUnit"/><Annotation Term="SAP__common.Label" String="Order Unit"/><Annotation Term="SAP__common.Heading" String="OUn"/><Annotation Term="SAP__common.QuickInfo" String="Purchase Order Unit of Measure"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/ValuationPrice"><Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/><Annotation Term="SAP__common.Label" String="Net Order Price"/><Annotation Term="SAP__common.Heading" String="Net Price"/><Annotation Term="SAP__common.QuickInfo" String="Net Price in Purchasing Document (in Document Currency)"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/GLAccount"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="G/L Account"/><Annotation Term="SAP__common.Heading" String="G/L Acct"/><Annotation Term="SAP__common.QuickInfo" String="G/L Account Number"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/FundsCenter"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Funds Center"/><Annotation Term="SAP__common.Heading" String="Funds Ctr"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/CommitmentItemShortID"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Commitment Item Short ID"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/OrderInternalID"><Annotation Term="SAP__common.IsDigitSequence"/><Annotation Term="SAP__common.Label" String="Opertn task list no."/><Annotation Term="SAP__common.Heading" String="Routing number for operations"/><Annotation Term="SAP__common.QuickInfo" String="Routing number of operations in the order"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/TotalNetAmountDocCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/><Annotation Term="SAP__common.Label" String="Net Order Value"/><Annotation Term="SAP__common.Heading" String="Net Value"/><Annotation Term="SAP__common.QuickInfo" String="Net Order Value in PO Currency"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/DocumentCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/TotalNetAmountLocalCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/LocalCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType"><Annotation Term="SAP__common.Label" String="PO Item - Basic Interface View"/></Annotations><Annotations Target="SAP__self.Container/ZI_POITEM"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="ValuationPrice"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountDocCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record></Collection></PropertyValue></Record></Annotation></Annotations><Annotations Target="SAP__self.ZI_HEADERTEXTType/DocCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_HEADERTEXTType"><Annotation Term="SAP__common.Label" String="HeaderText"/></Annotations><Annotations Target="SAP__self.Container/ZI_HEADERTEXT"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="Filterable" Bool="true"/><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="LongText"/><PropertyValue Property="AllowedExpressions" String="SearchExpression"/></Record></Collection></PropertyValue></Record></Annotation><Annotation Term="SAP__capabilities.SortRestrictions"><Record><PropertyValue Property="NonSortableProperties"><Collection><PropertyPath>LongText</PropertyPath></Collection></PropertyValue></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/DocCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/DocumentNumber"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Purchase Requisition"/><Annotation Term="SAP__common.Heading" String="Purch.Reqn"/><Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Number"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/ItemNumber"><Annotation Term="SAP__common.IsDigitSequence"/><Annotation Term="SAP__common.Label" String="Requisn. item"/><Annotation Term="SAP__common.Heading" String="Item"/><Annotation Term="SAP__common.QuickInfo" String="Item number of purchase requisition"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/Plant"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Plant"/><Annotation Term="SAP__common.Heading" String="Plnt"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/StorageLocation"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Storage Location"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/Material"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Material"/><Annotation Term="SAP__common.QuickInfo" String="Material Number"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/MaterialGroup"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Material Group"/><Annotation Term="SAP__common.Heading" String="Matl Group"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/Unit"><Annotation Term="SAP__common.IsUnit"/><Annotation Term="SAP__common.Label" String="Unit of Measure"/><Annotation Term="SAP__common.Heading" String="Un"/><Annotation Term="SAP__common.QuickInfo" String="Purchase requisition unit of measure"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/ValuationPrice"><Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/><Annotation Term="SAP__common.Label" String="Valuation Price"/><Annotation Term="SAP__common.Heading" String="Valn Price"/><Annotation Term="SAP__common.QuickInfo" String="Price in Purchase Requisition"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/GLAccount"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="G/L Account"/><Annotation Term="SAP__common.Heading" String="G/L Acct"/><Annotation Term="SAP__common.QuickInfo" String="G/L Account Number"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/CommitmentItemShortID"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Commitment Item Short ID"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/OrderInternalID"><Annotation Term="SAP__common.IsDigitSequence"/><Annotation Term="SAP__common.Label" String="Opertn task list no."/><Annotation Term="SAP__common.Heading" String="Routing number for operations"/><Annotation Term="SAP__common.QuickInfo" String="Routing number of operations in the order"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/TotalNetAmountDocCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/DocumentCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/TotalNetAmountLocalCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/LocalCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType"><Annotation Term="SAP__common.Label" String="PR Item - Basic Interface View"/></Annotations><Annotations Target="SAP__self.Container/ZI_PRITEM"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="ValuationPrice"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountDocCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record><Record><PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record></Collection></PropertyValue></Record></Annotation></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/DocumentCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/FileExtension"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="File extension"/><Annotation Term="SAP__common.QuickInfo" String="File extension for PC application"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/CreatedBy"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="User Name"/><Annotation Term="SAP__common.Heading" String="User"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType"><Annotation Term="SAP__common.Label" String="Document Attachments"/></Annotations><Annotations Target="SAP__self.Container/ZI_DOC_ATTACHMENT"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation></Annotations><Annotations Target="SAP__self.ZC_WFTASK_DOCTYPECNTType/DocumentType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Document Type"/><Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Document Type"/></Annotations><Annotations Target="SAP__self.ZC_WFTASK_DOCTYPECNTType/DocCategory"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_WFTASK_DOCTYPECNTType/SumNetAmountLocalCrcy"><Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/></Annotations><Annotations Target="SAP__self.ZC_WFTASK_DOCTYPECNTType/LocalCurrency"><Annotation Term="SAP__common.IsCurrency"/><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Currency"/><Annotation Term="SAP__common.Heading" String="Crcy"/><Annotation Term="SAP__common.QuickInfo" String="Currency Key"/></Annotations><Annotations Target="SAP__self.ZC_WFTASK_DOCTYPECNTType"><Annotation Term="SAP__common.Label" String="Workflow Task Document Type Count"/></Annotations><Annotations Target="SAP__self.Container/ZC_WFTASK_DOCTYPECNT"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation><Annotation Term="SAP__capabilities.FilterRestrictions"><Record><PropertyValue Property="FilterExpressionRestrictions"><Collection><Record><PropertyValue Property="Property" PropertyPath="SumNetAmountLocalCrcy"/><PropertyValue Property="AllowedExpressions" String="MultiValue"/></Record></Collection></PropertyValue></Record></Annotation></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACH_CONTENTType/Content"><Annotation Term="SAP__core.ContentDisposition"><Record><PropertyValue Property="Filename" Path="FileName"/></Record></Annotation><Annotation Term="SAP__core.MediaType" Path="MimeType"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACH_CONTENTType"><Annotation Term="SAP__common.Label" String="Document Attachments"/></Annotations><Annotations Target="SAP__self.Container/ZI_DOC_ATTACH_CONTENT"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation></Annotations><Annotations Target="SAP__self.ZI_APPROVAL_STEPType/ObjectType"><Annotation Term="SAP__common.IsUpperCase"/><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_APPROVAL_STEPType"><Annotation Term="SAP__common.Label" String="Approval step"/></Annotations><Annotations Target="SAP__self.Container/ZI_APPROVAL_STEP"><Annotation Term="SAP__capabilities.SearchRestrictions"><Record><PropertyValue Property="Searchable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.InsertRestrictions"><Record><PropertyValue Property="Insertable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.DeleteRestrictions"><Record><PropertyValue Property="Deletable" Bool="false"/></Record></Annotation><Annotation Term="SAP__capabilities.UpdateRestrictions"><Record><PropertyValue Property="Updatable" Bool="false"/><PropertyValue Property="QueryOptions"><Record><PropertyValue Property="SelectSupported" Bool="true"/></Record></PropertyValue></Record></Annotation><Annotation Term="SAP__core.OptimisticConcurrency"><Collection/></Annotation></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/DocumentTypeText"><Annotation Term="SAP__common.Label" String="Doc. Type Descript."/><Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/UserName"><Annotation Term="SAP__common.Label" String="Description"/><Annotation Term="SAP__common.QuickInfo" String="User Description"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/CreationDate"><Annotation Term="SAP__common.Label" String="Date"/><Annotation Term="SAP__common.QuickInfo" String="Creation Date of Change Document"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/CreationTime"><Annotation Term="SAP__common.Label" String="Time"/><Annotation Term="SAP__common.QuickInfo" String="Time of Change"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/ReleaseStrategyText"><Annotation Term="SAP__common.Label" String="Description"/><Annotation Term="SAP__common.QuickInfo" String="Description of release strategy"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/CompanyCodeName"><Annotation Term="SAP__common.Label" String="Company Name"/><Annotation Term="SAP__common.QuickInfo" String="Name of Company Code or Company"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/SupplierName2"><Annotation Term="SAP__common.Label" String="Name 2"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/SupplierName3"><Annotation Term="SAP__common.Label" String="Name 3"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/SupplierName4"><Annotation Term="SAP__common.Label" String="Name 4"/></Annotations><Annotations Target="SAP__self.ZC_POHEADERType/PaymentTermsDescription"><Annotation Term="SAP__common.Label" String="Description"/><Annotation Term="SAP__common.QuickInfo" String="Description of terms of payment"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/TechnicalWrkflwObject"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/TaskCreationDateTime"><Annotation Term="SAP__common.Label" String="Created"/><Annotation Term="SAP__common.QuickInfo" String="Workflow: Creation Time Stamp"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/NormalTask"><Annotation Term="SAP__common.Label" String="Truth Value"/><Annotation Term="SAP__common.QuickInfo" String="Truth Value: True/False"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/CreationDate"><Annotation Term="SAP__common.Label" String="Date"/><Annotation Term="SAP__common.QuickInfo" String="Creation Date of Change Document"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/CreationTime"><Annotation Term="SAP__common.Label" String="Time"/><Annotation Term="SAP__common.QuickInfo" String="Time of Change"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/DocumentTypeText"><Annotation Term="SAP__common.Label" String="Doc. Type Descript."/><Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/></Annotations><Annotations Target="SAP__self.ZC_WORKFLOWTASKType/DocumentNumber"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.zi_commentType/DocumentNumber"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.zi_commentType/PostedOn"><Annotation Term="SAP__common.Label" String="Date"/></Annotations><Annotations Target="SAP__self.zi_commentType/PostedTime"><Annotation Term="SAP__common.Label" String="Field of type TIMS"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/CompanyCodeName"><Annotation Term="SAP__common.Label" String="Company Name"/><Annotation Term="SAP__common.QuickInfo" String="Name of Company Code or Company"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/UserName"><Annotation Term="SAP__common.Label" String="Description"/><Annotation Term="SAP__common.QuickInfo" String="User Description"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/CreationDate"><Annotation Term="SAP__common.Label" String="Date"/><Annotation Term="SAP__common.QuickInfo" String="Creation Date of Change Document"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/CreationTime"><Annotation Term="SAP__common.Label" String="Time"/><Annotation Term="SAP__common.QuickInfo" String="Time of Change"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/DocumentTypeText"><Annotation Term="SAP__common.Label" String="Doc. Type Descript."/><Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/></Annotations><Annotations Target="SAP__self.ZC_PRHEADERType/ReleaseStrategyText"><Annotation Term="SAP__common.Label" String="Description"/><Annotation Term="SAP__common.QuickInfo" String="Description of release strategy"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/PlantName"><Annotation Term="SAP__common.Label" String="Plant Name"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/StorageLocationName"><Annotation Term="SAP__common.Label" String="Storage Loc. Name"/><Annotation Term="SAP__common.Heading" String="Storage Location Name"/><Annotation Term="SAP__common.QuickInfo" String="Storage Location Name"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/MaterialGroupName"><Annotation Term="SAP__common.Label" String="Product Group Desc."/><Annotation Term="SAP__common.QuickInfo" String="Product Group Description"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/Quantity"><Annotation Term="SAP__common.Label" String="Order Quantity"/><Annotation Term="SAP__common.Heading" String="PO Quantity"/><Annotation Term="SAP__common.QuickInfo" String="Purchase Order Quantity"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/DeliveryDate"><Annotation Term="SAP__common.Label" String="Delivery Date"/><Annotation Term="SAP__common.Heading" String="Deliv. Date"/><Annotation Term="SAP__common.QuickInfo" String="Item Delivery Date"/></Annotations><Annotations Target="SAP__self.ZI_POITEMType/GLAccountText"><Annotation Term="SAP__common.Label" String="G/L Account Long Name"/></Annotations><Annotations Target="SAP__self.ZI_HEADERTEXTType/DocNumber"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/PlantName"><Annotation Term="SAP__common.Label" String="Plant Name"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/StorageLocationName"><Annotation Term="SAP__common.Label" String="Storage Loc. Name"/><Annotation Term="SAP__common.Heading" String="Storage Location Name"/><Annotation Term="SAP__common.QuickInfo" String="Storage Location Name"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/MaterialGroupName"><Annotation Term="SAP__common.Label" String="Product Group Desc."/><Annotation Term="SAP__common.QuickInfo" String="Product Group Description"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/Quantity"><Annotation Term="SAP__common.Label" String="Quantity requested"/><Annotation Term="SAP__common.Heading" String="Qty requested"/><Annotation Term="SAP__common.QuickInfo" String="Purchase requisition quantity"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/DeliveryDate"><Annotation Term="SAP__common.Label" String="Delivery Date"/><Annotation Term="SAP__common.Heading" String="Deliv. Date"/><Annotation Term="SAP__common.QuickInfo" String="Item Delivery Date"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/GLAccountText"><Annotation Term="SAP__common.Label" String="G/L Account Long Name"/></Annotations><Annotations Target="SAP__self.ZI_PRITEMType/CommitmentItemDescription"><Annotation Term="SAP__common.Label" String="Commitment Item Description"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/DocumentNumber"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/DocId"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/FileName"><Annotation Term="SAP__common.Label" String="Document title"/><Annotation Term="SAP__common.QuickInfo" String="Short description of contents"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/CreatedOnDate"><Annotation Term="SAP__common.Label" String="Date"/><Annotation Term="SAP__common.Heading" String="Date in Format YYYYMMDD"/><Annotation Term="SAP__common.QuickInfo" String="Field of type DATS"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACHMENTType/CreatedOnTime"><Annotation Term="SAP__common.Label" String="Field of type TIMS"/></Annotations><Annotations Target="SAP__self.ZC_WFTASK_DOCTYPECNTType/DocumentTypeText"><Annotation Term="SAP__common.Label" String="Doc. Type Descript."/><Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACH_CONTENTType/Id"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_DOC_ATTACH_CONTENTType/FileName"><Annotation Term="SAP__common.Label" String="Document title"/><Annotation Term="SAP__common.QuickInfo" String="Short description of contents"/></Annotations><Annotations Target="SAP__self.ZI_APPROVAL_STEPType/ObjectKey"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_COMMENT_RESULT/CreatedBy"><Annotation Term="SAP__common.Label" String="User Name"/></Annotations><Annotations Target="SAP__self.ZI_COMMENT_RESULT/CreatedOn"><Annotation Term="SAP__common.Label" String="Date"/></Annotations><Annotations Target="SAP__self.ZI_COMMENT_RESULT/CreatedTime"><Annotation Term="SAP__common.Label" String="Field of type TIMS"/></Annotations><Annotations Target="SAP__self.ZI_COMMENT_RESULT/DocCategory"><Annotation Term="SAP__common.Label" String="Object Type"/><Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_COMMENT_RESULT/DocumentNumber"><Annotation Term="SAP__common.Label" String="Instance ID"/><Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/></Annotations><Annotations Target="SAP__self.ZI_COMMENT_RESULT/NoteText"><Annotation Term="SAP__common.Label" String="Char255"/></Annotations><Annotations Target="SAP__self.comment(SAP__self.ZC_PRHEADERType)/isApproval"><Annotation Term="SAP__common.Label" String="Truth Value"/><Annotation Term="SAP__common.QuickInfo" String="Truth Value: True/False"/></Annotations></Schema></edmx:DataServices></edmx:Edmx>
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMUNICATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Communication.v1" Alias="Communication"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PERSONALDATA',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.PersonalData.v1" Alias="PersonalData"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_ANALYTICS',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Analytics.v1" Alias="Analytics"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMON',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="SAP__common"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_MEASURES',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Measures.V1" Alias="SAP__measures"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CORE',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Core.V1" Alias="SAP__core"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CAPABILITIES',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="SAP__capabilities"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_AGGREGATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Aggregation.V1" Alias="SAP__aggregation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_VALIDATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Validation.V1" Alias="SAP__validation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CODELIST',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.CodeList.v1" Alias="SAP__CodeList"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_UI',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="SAP__UI"/>
+    </edmx:Reference>
+    <edmx:DataServices>
+        <Schema Namespace="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001" Alias="SAP__self">
+            <EntityType Name="ZI_CNMA_PAIDBY_TXTType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocNumber"/>
+                    <PropertyRef Name="LineId"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="LineId" Type="Edm.Int16" Nullable="false"/>
+                <Property Name="LongText" Type="Edm.String" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_BANK_TXTType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocNumber"/>
+                    <PropertyRef Name="LineId"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="LineId" Type="Edm.Int16" Nullable="false"/>
+                <Property Name="LongText" Type="Edm.String" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="CNMA_PRHEADERType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocumentNumber"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="CompanyCode" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="CompanyCodeName" Type="Edm.String" Nullable="false" MaxLength="25"/>
+                <Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="UserName" Type="Edm.String" Nullable="false" MaxLength="80"/>
+                <Property Name="CreationDate" Type="Edm.Date"/>
+                <Property Name="CreationTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="ReleaseStrategyText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="FundsCenter" Type="Edm.String" Nullable="false" MaxLength="16"/>
+                <Property Name="FundsCenterName" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+                <NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType)"/>
+                <NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_ATTACHType)"/>
+                <NavigationProperty Name="_BankDetails" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_BANK_TXTType)"/>
+                <NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_COMMENTType)"/>
+                <NavigationProperty Name="_HeaderText" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_HEADER_TXTType)"/>
+                <NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_PRITEMType)"/>
+                <NavigationProperty Name="_PaidByText" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_PAIDBY_TXTType)"/>
+                <NavigationProperty Name="_PurposeText" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_PURPOSE_TXTType)"/>
+            </EntityType>
+            <EntityType Name="CNMA_WFTASKType">
+                <Key>
+                    <PropertyRef Name="WorkflowTaskInternalID"/>
+                </Key>
+                <Property Name="WorkflowTaskInternalID" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="WorkflowTaskType" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Property Name="WorkflowTaskStatus" Type="Edm.String" Nullable="false" MaxLength="13"/>
+                <Property Name="TechnicalWrkflwObjectType" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="TechnicalWrkflwObject" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="TaskCreationDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+                <Property Name="NormalTask" Type="Edm.Boolean" Nullable="false"/>
+                <Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="CreationDate" Type="Edm.Date"/>
+                <Property Name="CreationTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_POITEMType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocumentNumber"/>
+                    <PropertyRef Name="ItemNumber"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="ItemNumber" Type="Edm.String" Nullable="false" MaxLength="5"/>
+                <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="StorageLocation" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="StorageLocationName" Type="Edm.String" Nullable="false" MaxLength="16"/>
+                <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="8"/>
+                <Property Name="MaterialText" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="MaterialGroup" Type="Edm.String" Nullable="false" MaxLength="9"/>
+                <Property Name="MaterialGroupName" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="DeliveryDate" Type="Edm.Date"/>
+                <Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="11" Scale="variable"/>
+                <Property Name="ReferenceDocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="GLAccountText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="FundsCenter" Type="Edm.String" Nullable="false" MaxLength="16"/>
+                <Property Name="CommitmentItem" Type="Edm.String" Nullable="false" MaxLength="24"/>
+                <Property Name="OrderInternalID" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="variable"/>
+                <Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_PRITEMType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocumentNumber"/>
+                    <PropertyRef Name="ItemNumber"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="ItemNumber" Type="Edm.String" Nullable="false" MaxLength="5"/>
+                <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="StorageLocation" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="StorageLocationName" Type="Edm.String" Nullable="false" MaxLength="16"/>
+                <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="8"/>
+                <Property Name="MaterialText" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="MaterialGroup" Type="Edm.String" Nullable="false" MaxLength="9"/>
+                <Property Name="MaterialGroupName" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="DeliveryDate" Type="Edm.Date"/>
+                <Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="11" Scale="variable"/>
+                <Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="GLAccountText" Type="Edm.String" Nullable="false" MaxLength="50"/>
+                <Property Name="CommitmentItem" Type="Edm.String" Nullable="false" MaxLength="24"/>
+                <Property Name="CommitmentItemDescription" Type="Edm.String" Nullable="false" MaxLength="50"/>
+                <Property Name="OrderInternalID" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="OrderInternalName" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_ATTACHType">
+                <Key>
+                    <PropertyRef Name="DocumentCategory"/>
+                    <PropertyRef Name="DocumentNumber"/>
+                    <PropertyRef Name="DocId"/>
+                </Key>
+                <Property Name="DocumentCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="DocId" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="FileName" Type="Edm.String" Nullable="false" MaxLength="50"/>
+                <Property Name="FileExtension" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="Length" Type="Edm.Int32" Nullable="false"/>
+                <Property Name="CreatedBy" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="CreatedOnDate" Type="Edm.Date"/>
+                <Property Name="CreatedOnTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <NavigationProperty Name="_Content" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_ATTACH_CONTENTType"/>
+            </EntityType>
+            <EntityType Name="CNMA_ATTACH_CONTENTType" HasStream="true">
+                <Key>
+                    <PropertyRef Name="Id"/>
+                </Key>
+                <Property Name="Id" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="FileName" Type="Edm.String" Nullable="false" MaxLength="50"/>
+                <Property Name="MimeType" Type="Edm.String" Nullable="false" MaxLength="128"/>
+                <Property Name="Content" Type="Edm.Stream" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_PURPOSE_TXTType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocNumber"/>
+                    <PropertyRef Name="LineId"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="LineId" Type="Edm.Int16" Nullable="false"/>
+                <Property Name="LongText" Type="Edm.String" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="CNMA_POHEADERType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocumentNumber"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="UserName" Type="Edm.String" Nullable="false" MaxLength="80"/>
+                <Property Name="CreationDate" Type="Edm.Date"/>
+                <Property Name="CreationTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <Property Name="ReleaseStrategyText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="CompanyCode" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="CompanyCodeName" Type="Edm.String" Nullable="false" MaxLength="25"/>
+                <Property Name="Vendor" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="VendorName1" Type="Edm.String" Nullable="false" MaxLength="35"/>
+                <Property Name="VendorName2" Type="Edm.String" Nullable="false" MaxLength="35"/>
+                <Property Name="VendorName3" Type="Edm.String" Nullable="false" MaxLength="35"/>
+                <Property Name="VendorName4" Type="Edm.String" Nullable="false" MaxLength="35"/>
+                <Property Name="PaymentTerms" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="PaymentTermsDescription" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
+                <NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType)"/>
+                <NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_ATTACHType)"/>
+                <NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_COMMENTType)"/>
+                <NavigationProperty Name="_HeaderText" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_HEADER_TXTType)"/>
+                <NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_POITEMType)"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_COMMENTType">
+                <Key>
+                    <PropertyRef Name="Doccategory"/>
+                    <PropertyRef Name="Documentnumber"/>
+                    <PropertyRef Name="Sequence"/>
+                </Key>
+                <Property Name="Doccategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="Documentnumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="Sequence" Type="Edm.Int32" Nullable="false"/>
+                <Property Name="PostedOn" Type="Edm.Date"/>
+                <Property Name="PostedTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <Property Name="NoteText" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Property Name="UserComment" Type="Edm.String" Nullable="false" MaxLength="12"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_HEADER_TXTType">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocNumber"/>
+                    <PropertyRef Name="LineId"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="LineId" Type="Edm.Int16" Nullable="false"/>
+                <Property Name="LongText" Type="Edm.String" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_APPROVAL_STEPType">
+                <Key>
+                    <PropertyRef Name="ObjectType"/>
+                    <PropertyRef Name="ObjectKey"/>
+                    <PropertyRef Name="ApprovalLevel"/>
+                </Key>
+                <Property Name="ObjectType" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="ObjectKey" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="ApprovalLevel" Type="Edm.Byte" Nullable="false"/>
+                <Property Name="ReleaseCode" Type="Edm.String" Nullable="false" MaxLength="2"/>
+                <Property Name="ReleaseText" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="ApproverName" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="ApproverUserId" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="ApprovalStatus" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="CommentText" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Property Name="CommentDate" Type="Edm.Date"/>
+                <Property Name="CommentTime" Type="Edm.TimeOfDay" Nullable="false"/>
+            </EntityType>
+            <EntityContainer Name="Container">
+                <EntitySet Name="CNMA_ATTACH_CONTENT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_ATTACH_CONTENTType"/>
+                <EntitySet Name="CNMA_POHEADER" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_POHEADERType">
+                    <NavigationPropertyBinding Path="_ApprovalStep" Target="ZI_CNMA_APPROVAL_STEP"/>
+                    <NavigationPropertyBinding Path="_Attachment" Target="ZI_CNMA_ATTACH"/>
+                    <NavigationPropertyBinding Path="_Comment" Target="ZI_CNMA_COMMENT"/>
+                    <NavigationPropertyBinding Path="_HeaderText" Target="ZI_CNMA_HEADER_TXT"/>
+                    <NavigationPropertyBinding Path="_Item" Target="ZI_CNMA_POITEM"/>
+                </EntitySet>
+                <EntitySet Name="CNMA_PRHEADER" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_PRHEADERType">
+                    <NavigationPropertyBinding Path="_ApprovalStep" Target="ZI_CNMA_APPROVAL_STEP"/>
+                    <NavigationPropertyBinding Path="_Attachment" Target="ZI_CNMA_ATTACH"/>
+                    <NavigationPropertyBinding Path="_BankDetails" Target="ZI_CNMA_BANK_TXT"/>
+                    <NavigationPropertyBinding Path="_Comment" Target="ZI_CNMA_COMMENT"/>
+                    <NavigationPropertyBinding Path="_HeaderText" Target="ZI_CNMA_HEADER_TXT"/>
+                    <NavigationPropertyBinding Path="_Item" Target="ZI_CNMA_PRITEM"/>
+                    <NavigationPropertyBinding Path="_PaidByText" Target="ZI_CNMA_PAIDBY_TXT"/>
+                    <NavigationPropertyBinding Path="_PurposeText" Target="ZI_CNMA_PURPOSE_TXT"/>
+                </EntitySet>
+                <EntitySet Name="CNMA_WFTASK" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_WFTASKType"/>
+                <EntitySet Name="ZI_CNMA_APPROVAL_STEP" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType"/>
+                <EntitySet Name="ZI_CNMA_ATTACH" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_ATTACHType">
+                    <NavigationPropertyBinding Path="_Content" Target="CNMA_ATTACH_CONTENT"/>
+                </EntitySet>
+                <EntitySet Name="ZI_CNMA_BANK_TXT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_BANK_TXTType"/>
+                <EntitySet Name="ZI_CNMA_COMMENT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_COMMENTType"/>
+                <EntitySet Name="ZI_CNMA_HEADER_TXT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_HEADER_TXTType"/>
+                <EntitySet Name="ZI_CNMA_PAIDBY_TXT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_PAIDBY_TXTType"/>
+                <EntitySet Name="ZI_CNMA_POITEM" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_POITEMType"/>
+                <EntitySet Name="ZI_CNMA_PRITEM" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_PRITEMType"/>
+                <EntitySet Name="ZI_CNMA_PURPOSE_TXT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_PURPOSE_TXTType"/>
+            </EntityContainer>
+            <Annotations Target="SAP__self.ZI_CNMA_PAIDBY_TXTType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PAIDBY_TXTType">
+                <Annotation Term="SAP__common.Label" String="PaidBy Text"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_PAIDBY_TXT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="Filterable" Bool="true"/>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LongText"/>
+                                    <PropertyValue Property="AllowedExpressions" String="SearchExpression"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>LongText</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_BANK_TXTType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_BANK_TXTType">
+                <Annotation Term="SAP__common.Label" String="Bank Detail Text"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_BANK_TXT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="Filterable" Bool="true"/>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LongText"/>
+                                    <PropertyValue Property="AllowedExpressions" String="SearchExpression"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>LongText</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/CompanyCode">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Buchungskreis"/>
+                <Annotation Term="SAP__common.Heading" String="BuKr"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/CreatedByUser">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
+                <Annotation Term="SAP__common.Heading" String="Angel.von"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name des Sachbearbeiters, der das Objekt hinzugefügt hat"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/DocumentType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Belegart"/>
+                <Annotation Term="SAP__common.Heading" String="BArt"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Belegart Bestellanforderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/FundsCenter">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Finanzstelle"/>
+                <Annotation Term="SAP__common.Heading" String="Finanzst."/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/TotalNetAmountLocalCrcy">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType">
+                <Annotation Term="SAP__common.Label" String="Projection view for PR Header"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/CNMA_PRHEADER">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="CompanyCode"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="CreatedByUser"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocumentType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="FundsCenter"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LocalCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/WorkflowTaskInternalID">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Workitem-ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Workitem-Kennung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/WorkflowTaskType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Typ"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Workitem-Typ"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/TechnicalWrkflwObjectType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/NormalTask">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Wahrheitswert"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Wahrheitswert: wahr/falsch"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/CreatedByUser">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
+                <Annotation Term="SAP__common.Heading" String="Angel.von"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name des Sachbearbeiters, der das Objekt hinzugefügt hat"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/DocumentType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Belegart"/>
+                <Annotation Term="SAP__common.Heading" String="BArt"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Belegart Bestellanforderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/TotalNetAmountLocalCrcy">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType">
+                <Annotation Term="SAP__common.Label" String="Projection view for Workflow tasks"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/CNMA_WFTASK">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="WorkflowTaskType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TechnicalWrkflwObjectType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="NormalTask"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="CreatedByUser"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocumentType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LocalCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DocumentNumber">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Einkaufsbeleg"/>
+                <Annotation Term="SAP__common.Heading" String="EinkBeleg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Belegnummer des Einkaufsbelegs"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ItemNumber">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Bestellposition"/>
+                <Annotation Term="SAP__common.Heading" String="Positionsnummer der Bestellung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Positionsnummer der Bestellung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Plant">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Werk"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/StorageLocation">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Lagerort"/>
+                <Annotation Term="SAP__common.Heading" String="LOrt"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Material">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Material"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Materialnummer"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/MaterialGroup">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Warengruppe"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ValuationPrice">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
+                <Annotation Term="SAP__common.Label" String="Bestellnettopreis"/>
+                <Annotation Term="SAP__common.Heading" String="Nettopreis"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Nettopreis im Einkaufsbeleg in Belegwährung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ReferenceDocumentNumber">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Referenzbeleg"/>
+                <Annotation Term="SAP__common.Heading" String="Referenzbeleg für Rückverfolgbarkeit von Bestellungen"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Referenzbelegnummer für Rückverfolgbarkeit von Bestellungen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/GLAccount">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Sachkonto"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Nummer des Sachkontos"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/FundsCenter">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Finanzstelle"/>
+                <Annotation Term="SAP__common.Heading" String="Finanzst."/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/OrderInternalID">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Plannummer Vorgänge"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Plannummer zu Vorgängen im Auftrag"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountDocCrcy">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
+                <Annotation Term="SAP__common.Label" String="Bestellnettowert"/>
+                <Annotation Term="SAP__common.Heading" String="Nettowert"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Nettobestellwert in Bestellwährung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountLocalCrcy">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType">
+                <Annotation Term="SAP__common.Label" String="Purchase Order Item"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_POITEM">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Plant"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="StorageLocation"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Material"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="MaterialGroup"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Quantity"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Unit"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ValuationPrice"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="FundsCenter"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountDocCrcy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocumentCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LocalCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DocumentNumber">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Bestellanforderung"/>
+                <Annotation Term="SAP__common.Heading" String="Banf"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bestellanforderungsnummer"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/ItemNumber">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Banf-Position"/>
+                <Annotation Term="SAP__common.Heading" String="Pos."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Positionsnummer der Bestellanforderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Plant">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Werk"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/StorageLocation">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Lagerort"/>
+                <Annotation Term="SAP__common.Heading" String="LOrt"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Material">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Material"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Materialnummer"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/MaterialGroup">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Warengruppe"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/ValuationPrice">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
+                <Annotation Term="SAP__common.Label" String="Bewertungspreis"/>
+                <Annotation Term="SAP__common.Heading" String="Bewertpreis"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Preis in der Bestellanforderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/GLAccount">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Sachkonto"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Nummer des Sachkontos"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/OrderInternalID">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Auftrag"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Auftragsnummer"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/TotalNetAmountDocCrcy">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/TotalNetAmountLocalCrcy">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType">
+                <Annotation Term="SAP__common.Label" String="PR Item"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_PRITEM">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Plant"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="StorageLocation"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Material"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="MaterialGroup"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Quantity"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Unit"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ValuationPrice"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountDocCrcy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocumentCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LocalCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/DocumentCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/FileExtension">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Datei Endung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Dateierweiterung einer PC-Anwendung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/CreatedBy">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+                <Annotation Term="SAP__common.Heading" String="Benutzer"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType">
+                <Annotation Term="SAP__common.Label" String="Attachment File"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_ATTACH">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocumentCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="FileExtension"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="CreatedBy"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_ATTACH_CONTENTType">
+                <Annotation Term="SAP__common.Label" String="Attachment Content"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/CNMA_ATTACH_CONTENT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PURPOSE_TXTType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PURPOSE_TXTType">
+                <Annotation Term="SAP__common.Label" String="Purpose Text"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_PURPOSE_TXT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="Filterable" Bool="true"/>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LongText"/>
+                                    <PropertyValue Property="AllowedExpressions" String="SearchExpression"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>LongText</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/DocumentType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Bestellart"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/CreatedByUser">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
+                <Annotation Term="SAP__common.Heading" String="Angel.von"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name des Sachbearbeiters, der das Objekt hinzugefügt hat"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/CompanyCode">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Buchungskreis"/>
+                <Annotation Term="SAP__common.Heading" String="BuKr"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/Vendor">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Lieferant"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/PaymentTerms">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Zahlungsbedingungen"/>
+                <Annotation Term="SAP__common.Heading" String="ZBed"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Schlüssel für Zahlungsbedingungen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType">
+                <Annotation Term="SAP__common.Label" String="Projection view for PO Header"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/CNMA_POHEADER">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocumentType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="CreatedByUser"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="CompanyCode"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="PaymentTerms"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LocalCurrency"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/Doccategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/NoteText">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="char255"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/UserComment">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType">
+                <Annotation Term="SAP__common.Label" String="Comment"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_COMMENT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Doccategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="NoteText"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="UserComment"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_HEADER_TXTType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_HEADER_TXTType">
+                <Annotation Term="SAP__common.Label" String="Header Text"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_HEADER_TXT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="Filterable" Bool="true"/>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="LongText"/>
+                                    <PropertyValue Property="AllowedExpressions" String="SearchExpression"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>LongText</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ObjectType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType">
+                <Annotation Term="SAP__common.Label" String="Approval Step"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_APPROVAL_STEP">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ObjectType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.Container">
+                <Annotation Term="SAP__aggregation.ApplySupported">
+                    <Record>
+                        <PropertyValue Property="Transformations">
+                            <Collection>
+                                <String>aggregate</String>
+                                <String>groupby</String>
+                                <String>filter</String>
+                            </Collection>
+                        </PropertyValue>
+                        <PropertyValue Property="Rollup" EnumMember="None"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/>
+                <Annotation Term="SAP__capabilities.FilterFunctions">
+                    <Collection>
+                        <String>eq</String>
+                        <String>ne</String>
+                        <String>gt</String>
+                        <String>ge</String>
+                        <String>lt</String>
+                        <String>le</String>
+                        <String>and</String>
+                        <String>or</String>
+                        <String>contains</String>
+                        <String>startswith</String>
+                        <String>endswith</String>
+                        <String>any</String>
+                        <String>all</String>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PAIDBY_TXTType/DocNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_BANK_TXTType/DocNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/DocumentNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/CompanyCodeName">
+                <Annotation Term="SAP__common.Label" String="Name der Firma"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Buchungskreis- oder Firmen-Bezeichnung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/UserName">
+                <Annotation Term="SAP__common.Label" String="Vollständiger Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Vollständiger Name der Person"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/CreationDate">
+                <Annotation Term="SAP__common.Label" String="Datum"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum des Änderungsbelegs"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/CreationTime">
+                <Annotation Term="SAP__common.Label" String="Uhrzeit"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Uhrzeit der Änderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/DocumentTypeText">
+                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/ReleaseStrategyText">
+                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Freigabestrategie"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/FundsCenterName">
+                <Annotation Term="SAP__common.Label" String="Name der Finanzstelle"/>
+                <Annotation Term="SAP__common.Heading" String="Finanzstellenname"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_PRHEADERType/LocalCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/TechnicalWrkflwObject">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/TaskCreationDateTime">
+                <Annotation Term="SAP__common.Label" String="Angelegt"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Workflow: Erzeugungs-Timestamp"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/CreationDate">
+                <Annotation Term="SAP__common.Label" String="Datum"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum des Änderungsbelegs"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/CreationTime">
+                <Annotation Term="SAP__common.Label" String="Uhrzeit"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Uhrzeit der Änderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/DocumentTypeText">
+                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/LocalCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/PlantName">
+                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/StorageLocationName">
+                <Annotation Term="SAP__common.Label" String="Name des Lagerorts"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/MaterialGroupName">
+                <Annotation Term="SAP__common.Label" String="Produktgruppenbschr."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Produktgruppenbeschreibung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Quantity">
+                <Annotation Term="SAP__common.Label" String="Bestellmenge"/>
+                <Annotation Term="SAP__measures.Unit" Path="Unit"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Unit">
+                <Annotation Term="SAP__common.Label" String="Bestellmengeneinheit"/>
+                <Annotation Term="SAP__common.Heading" String="BME"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DeliveryDate">
+                <Annotation Term="SAP__common.Label" String="Lieferdatum"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Lieferdatum der Position"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/GLAccountText">
+                <Annotation Term="SAP__common.Label" String="Kurztext"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Sachkontenkurztext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DocumentCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_POITEMType/LocalCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/PlantName">
+                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/StorageLocationName">
+                <Annotation Term="SAP__common.Label" String="Name des Lagerorts"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/MaterialGroupName">
+                <Annotation Term="SAP__common.Label" String="Produktgruppenbschr."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Produktgruppenbeschreibung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Quantity">
+                <Annotation Term="SAP__common.Label" String="Anforderungsmenge"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bestellanforderungsmenge"/>
+                <Annotation Term="SAP__measures.Unit" Path="Unit"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Unit">
+                <Annotation Term="SAP__common.Label" String="Mengeneinheit"/>
+                <Annotation Term="SAP__common.Heading" String="ME"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Mengeneinheit der Bestellanforderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DeliveryDate">
+                <Annotation Term="SAP__common.Label" String="Lieferdatum"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Lieferdatum der Position"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/GLAccountText">
+                <Annotation Term="SAP__common.Label" String="Sachkontenlangtext"/>
+                <Annotation Term="SAP__common.Heading" String="Langtext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/CommitmentItemDescription">
+                <Annotation Term="SAP__common.Label" String="Beschreibung der Finanzposition"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/OrderInternalName">
+                <Annotation Term="SAP__common.Label" String="Name der Auftragsart"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name einer Auftragsart"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DocumentCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/LocalCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/DocumentNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/DocId">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/FileName">
+                <Annotation Term="SAP__common.Label" String="Dokumenttitel"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Kurze Beschreibung des Inhaltes"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/CreatedOnDate">
+                <Annotation Term="SAP__common.Label" String="Datum"/>
+                <Annotation Term="SAP__common.Heading" String="Datum im Format JJJJMMDD"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Feld vom Typ DATS"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/CreatedOnTime">
+                <Annotation Term="SAP__common.Label" String="Feld vom Typ TIMS"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_ATTACH_CONTENTType/Id">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_ATTACH_CONTENTType/FileName">
+                <Annotation Term="SAP__common.Label" String="Dokumenttitel"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Kurze Beschreibung des Inhaltes"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_PURPOSE_TXTType/DocNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/DocumentNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/DocumentTypeText">
+                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/UserName">
+                <Annotation Term="SAP__common.Label" String="Beschreibung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Benutzerbeschreibung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/CreationDate">
+                <Annotation Term="SAP__common.Label" String="Datum"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum des Änderungsbelegs"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/CreationTime">
+                <Annotation Term="SAP__common.Label" String="Uhrzeit"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Uhrzeit der Änderung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/ReleaseStrategyText">
+                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Freigabestrategie"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/CompanyCodeName">
+                <Annotation Term="SAP__common.Label" String="Name der Firma"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Buchungskreis- oder Firmen-Bezeichnung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/VendorName1">
+                <Annotation Term="SAP__common.Label" String="Name"/>
+                <Annotation Term="SAP__common.Heading" String="Name 1"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name 1"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/VendorName2">
+                <Annotation Term="SAP__common.Label" String="Name 2"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/VendorName3">
+                <Annotation Term="SAP__common.Label" String="Name 3"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/VendorName4">
+                <Annotation Term="SAP__common.Label" String="Name 4"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/PaymentTermsDescription">
+                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Zahlungsbedingung"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/LocalCurrency">
+                <Annotation Term="SAP__common.Label" String="Währung"/>
+                <Annotation Term="SAP__common.Heading" String="Währg"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/Documentnumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/PostedOn">
+                <Annotation Term="SAP__common.Label" String="Datum"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/PostedTime">
+                <Annotation Term="SAP__common.Label" String="Feld vom Typ TIMS"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_HEADER_TXTType/DocNumber">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ObjectKey">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ReleaseText">
+                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung des Freigabecodes"/>
+            </Annotations>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>

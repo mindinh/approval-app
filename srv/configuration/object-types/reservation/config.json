@@ -17,7 +17,7 @@
   },
   "source": {
     "service": "APPROVAL_SRV",
-    "rootEntity": "ZC_REHEADER",
+    "rootEntity": "CNMA_PRHEADER",
     "key": [
       {
         "name": "DocCategory",
@@ -47,6 +47,35 @@
         "type": "string"
       },
       {
+        "sourcePath": "createdByUser",
+        "altSourcePaths": [
+          "CreatedByUser",
+          "createdByUser"
+        ],
+        "targetPath": "header.createdByUser",
+        "type": "string"
+      },
+      {
+        "sourcePath": "userName",
+        "altSourcePaths": [
+          "UserName",
+          "userName"
+        ],
+        "targetPath": "header.userName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "userFullName",
+        "altSourcePaths": [
+          "UserName",
+          "userName",
+          "CreatedByUser",
+          "createdByUser"
+        ],
+        "targetPath": "header.userFullName",
+        "type": "string"
+      },
+      {
         "sourcePath": "movementType",
         "targetPath": "header.movementType",
         "type": "string"
@@ -60,6 +89,26 @@
         "sourcePath": "requirementDate",
         "targetPath": "header.requirementDate",
         "transform": "sapDateToIso"
+      },
+      {
+        "sourcePath": "creationDate",
+        "altSourcePaths": [
+          "CreationDate",
+          "creationDate",
+          "CreatedOnDate"
+        ],
+        "targetPath": "header.creationDate",
+        "type": "string"
+      },
+      {
+        "sourcePath": "creationTime",
+        "altSourcePaths": [
+          "CreationTime",
+          "creationTime",
+          "CreatedOnTime"
+        ],
+        "targetPath": "header.creationTime",
+        "type": "string"
       },
       {
         "sourcePath": "assetNumber",

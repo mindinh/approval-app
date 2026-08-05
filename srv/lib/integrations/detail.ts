@@ -21,7 +21,8 @@ export interface Detail {
         text: string,
         sapUser: string,
         userJwt?: string,
-        type?: string
+        type?: string,
+        decision?: string
     ): Promise<void>;
 
     uploadAttachment?(

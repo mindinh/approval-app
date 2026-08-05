@@ -183,7 +183,7 @@ describe('inbox-utils', () => {
 
             const result = decorateAttachments(attachments, 'task-100', '10000001');
             expect(result.length).toBe(1);
-            expect(result[0].link).toBe('/api/cnma/APPROVAL_SRV/tasks/task-100/attachments/att-1/content?documentId=10000001');
+            expect(result[0].link).toBe('/api/cnma/APPROVAL_SRV/tasks/task-100/attachments/att-1/content/doc.pdf?documentId=10000001');
         });
     });
 

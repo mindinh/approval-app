@@ -575,7 +575,11 @@ export function getMockDetail(objectType: string, objectId: string) {
                     purReqnReleaseStatusText: 'In release',
                     deliveryDate: '2026-08-01T00:00:00Z',
                     Plant: '1000',
-                    marketingCampaign: 'CAMP-2026-Q3 - Summer Launch'
+                    marketingCampaign: 'CAMP-2026-Q3 - Summer Launch',
+                    OrderInternalID: '200000106',
+                    OrderInternalName: 'A',
+                    orderInternalId: '200000106',
+                    orderInternalName: 'A'
                 },
                 {
                     purchaseRequisition: objectId,
@@ -593,7 +597,11 @@ export function getMockDetail(objectType: string, objectId: string) {
                     purReqnReleaseStatusText: 'In release',
                     deliveryDate: '2026-08-01T00:00:00Z',
                     Plant: '1000',
-                    marketingCampaign: 'CAMP-2026-Q3 - Summer Launch'
+                    marketingCampaign: 'CAMP-2026-Q3 - Summer Launch',
+                    OrderInternalID: '200000106',
+                    OrderInternalName: 'A',
+                    orderInternalId: '200000106',
+                    orderInternalName: 'A'
                 }
             ];
         } else if (documentType === 'ZNB1') {
@@ -735,6 +743,14 @@ export function getMockDetail(objectType: string, objectId: string) {
                 workflowScenarioDefinition: 'WS00800173',
                 isPurReqnOvrlRel: 'X',
                 createdByUser: 'MINHDT',
+                CreationDate: '2026-08-04',
+                CreationTime: '10:24:18',
+                creationDate: '2026-08-04',
+                creationTime: '10:24:18',
+                FundsCenter: '1001201000',
+                FundsCenterName: 'Phòng CNTT',
+                fundsCenter: '1001201000',
+                fundsCenterName: 'Phòng CNTT',
                 releaseStrategyName: 'IT Release'
             },
             items: items,
@@ -1186,6 +1202,14 @@ export function getMockDetail(objectType: string, objectId: string) {
             supplierName: supplierName,
             userFullName: 'Tran Thi B',
             createdByUser: 'TRANTHIB',
+            CreationDate: '2026-08-04',
+            CreationTime: '10:24:18',
+            creationDate: '2026-08-04',
+            creationTime: '10:24:18',
+            FundsCenter: '1001201000',
+            FundsCenterName: 'Phòng CNTT',
+            fundsCenter: '1001201000',
+            fundsCenterName: 'Phòng CNTT',
             createdOn: '2026-06-20T09:30:00Z',
             purchaseOrderDate: '2026-06-20T00:00:00Z',
             companyCode: '1000',

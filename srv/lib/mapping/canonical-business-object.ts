@@ -2,6 +2,7 @@ export interface ApprovalStep {
   documentId: string;
   level: number;
   releaseCode: string;
+  releaseText?: string;
   approver: string;
   approverUserId: string;
   status: string;

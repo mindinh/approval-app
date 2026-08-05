@@ -645,8 +645,9 @@ export class InboxController {
             }
 
             const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
+            const encodedFileName = encodeURIComponent(file.fileName);
             res.setHeader('Content-Type', file.contentType);
-            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"`);
+            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"; filename*=UTF-8''${encodedFileName}`);
             res.send(file.data);
         } catch (error) {
             next(error);
@@ -720,8 +721,9 @@ export class InboxController {
             }
 
             const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
+            const encodedFileName = encodeURIComponent(file.fileName);
             res.setHeader('Content-Type', file.contentType);
-            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"`);
+            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"; filename*=UTF-8''${encodedFileName}`);
             res.send(file.data);
         } catch (error) {
             next(error);

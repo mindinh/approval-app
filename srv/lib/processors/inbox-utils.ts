@@ -243,7 +243,7 @@ export function decorateAttachments(attachments: any[], instanceId: string, inst
             createdBy: a.createdBy || 'SAP User',
             createdByName: a.createdBy || 'SAP User',
             createdAt: normalizeDate(a.createdAt),
-            link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content?documentId=${instid}`
+            link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content/${encodeURIComponent(a.fileName || a.name || 'file.pdf')}?documentId=${instid}`
         };
     });
 }
@@ -279,7 +279,7 @@ export function composeTaskMeta(args: {
         priority: normalizePriority(taskRuntime?.Priority || 'MEDIUM'),
         createdOn: normalizeDate(taskRuntime?.CreatedOn || inst?.taskCreationDateTime),
         createdByName: taskRuntime?.CreatedByName || undefined,
-        requestorName: projectedObject?.header?.userFullName || projectedObject?.header?.createdByUser || taskRuntime?.CreatedByName || undefined,
+        requestorName: projectedObject?.header?.userName || projectedObject?.header?.userFullName || projectedObject?.header?.createdByUser || taskRuntime?.CreatedByName || undefined,
         taskDefinitionId: hints?.typeid || taskRuntime?.TaskDefinitionID || '',
         supports: {
             forward: taskRuntime?.SupportsForward ?? true,
