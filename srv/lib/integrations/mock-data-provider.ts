@@ -1222,7 +1222,15 @@ export function getMockDetail(objectType: string, objectId: string) {
             paymentTermsText: 'Net 30 days',
             incotermsClassification: 'EXW',
             documentCurrency: 'VND',
-            purchaseOrderNetAmount: inst ? String(inst.total) : '120000000',
+            purchaseOrderNetAmount: inst ? String(inst.total) : '5512500',
+            TotalNetValueBeforeTax: 5000000,
+            totalNetValueBeforeTax: 5000000,
+            TotalFreightAmount: 250000,
+            totalFreightAmount: 250000,
+            TotalVatAmount: 262500,
+            totalVatAmount: 262500,
+            TotalOrderValue: 5512500,
+            totalOrderValue: 5512500,
             purchasingDocumentStatusName: 'In Approval'
         },
         items: items,
@@ -1332,7 +1340,10 @@ export function getMockDetail(objectType: string, objectId: string) {
         detail.header.custodianDept = 'MNT-OPS - Maintenance Operations';
         detail.header.calibrationDue = '2026-12-31T00:00:00Z';
     } else if (documentType === 'ZUB') {
-        detail.header.supplyingPlant = 'PL-02 - Danang Factory';
+        detail.header.supplyingPlant = '1000';
+        detail.header.supplyingPlantName = 'Kho tổng VJC Hà Nội';
+        detail.header.receivingPlant = '1001';
+        detail.header.receivingPlantName = 'Kho văn phòng VJC Hồ Chí Minh';
         detail.header.shippingMethod = 'Express Overland Freight';
         detail.header.transitDays = '3 days';
         detail.transitMilestones = [

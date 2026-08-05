@@ -162,7 +162,7 @@ export class InboxProcessor {
                 objectType,
                 documentId: instid,
                 documentType: header.purchaseRequisitionType || header.purchaseOrderType || safeBusinessObj.documentType || 'DEFAULT',
-                documentTypeDisplay: header.purchaseRequisitionTypeDisplay || header.purchaseOrderTypeText || undefined,
+                documentTypeDisplay: header.purchaseRequisitionTypeDisplay || header.purchaseOrderTypeDisplay || header.purchaseOrderTypeText || undefined,
                 companyCode: header.companyCode || inst?.companyCode || undefined,
                 companyCodeDisplay: header.companyCodeDisplay || undefined,
                 total: header.totalNetAmount !== undefined ? Number(header.totalNetAmount) : (inst?.total !== undefined ? Number(inst.total) : undefined),
@@ -199,20 +199,22 @@ export class InboxProcessor {
         comment: string,
         sapUser: string,
         userJwt?: string,
-        context?: { documentId?: string; businessObjectType?: string }
+        context?: { documentId?: string; businessObjectType?: string; objectType?: string; type?: string }
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
-            if (comment && comment.trim() && context?.documentId && context?.businessObjectType === 'PR') {
+            const ctxType = context?.businessObjectType || context?.objectType || context?.type;
+            const isPrOrPo = ctxType === 'PR' || ctxType === 'PO';
+            if (comment && comment.trim() && context?.documentId && (isPrOrPo || !ctxType)) {
                 try {
                     const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
                         String(sapDecisionKey).toLowerCase().includes('reject') ||
                         String(decisionKey).toLowerCase().includes('reject');
                     const decisionCode = isReject ? 'R' : 'A';
-                    await this.addComment(context.documentId, comment, sapUser, userJwt, 'APPR', decisionCode);
-                    this.logger.info(`Successfully pushed decision comment (${decisionCode}) to PR ${context.documentId}`);
+                    await this.addComment(context.documentId, comment, sapUser, userJwt, 'APPR', decisionCode, ctxType);
+                    this.logger.info(`Successfully pushed decision comment (${decisionCode}) to ${ctxType || 'document'} ${context.documentId}`);
                 } catch (e: any) {
-                    this.logger.warn(`Failed to push decision comment to PR ${context.documentId}: ${e.message}`);
+                    this.logger.warn(`Failed to push decision comment to document ${context.documentId}: ${e.message}`);
                 }
             }
 
@@ -270,30 +272,30 @@ export class InboxProcessor {
         }
     }
 
-    async addComment(documentId: string, text: string, sapUser: string, userJwt?: string, type: string = 'NORM', decision: string = '') {
-        this.logger.info(`Adding comment to document ${documentId} of type ${type} (decision: ${decision || 'none'})`);
+    async addComment(documentId: string, text: string, sapUser: string, userJwt?: string, type: string = 'NORM', decision: string = '', objectType?: string) {
+        this.logger.info(`Adding comment to document ${documentId} (objectType: ${objectType || 'auto'}) of type ${type} (decision: ${decision || 'none'})`);
         try {
-            await this.sapOdataAdapter.addComment(documentId, text, sapUser, userJwt, type, decision);
+            await this.sapOdataAdapter.addComment(documentId, text, sapUser, userJwt, type, decision, objectType);
         } catch (error: any) {
             this.logger.error(`Error in addComment: ${error.message}`);
             throw new AppError(`Failed to add comment: ${error.message}`, 500);
         }
     }
 
-    async uploadAttachment(documentId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string) {
+    async uploadAttachment(documentId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string, objectType?: string) {
         this.logger.info(`Uploading attachment ${fileName} to document ${documentId}`);
         try {
-            await this.sapOdataAdapter.uploadAttachment(documentId, fileName, mimeType, buffer, sapUser, userJwt);
+            await this.sapOdataAdapter.uploadAttachment(documentId, fileName, mimeType, buffer, sapUser, userJwt, objectType);
         } catch (error: any) {
             this.logger.error(`Error in uploadAttachment: ${error.message}`);
             throw new AppError(`Failed to upload attachment: ${error.message}`, 500);
         }
     }
 
-    async getAttachmentContent(documentId: string, attachId: string, sapUser: string, userJwt?: string) {
+    async getAttachmentContent(documentId: string, attachId: string, sapUser: string, userJwt?: string, objectType?: string) {
         this.logger.info(`Fetching attachment content for ${attachId} in document ${documentId}`);
         try {
-            return await this.sapOdataAdapter.fetchAttachmentContent(documentId, attachId, sapUser, userJwt);
+            return await this.sapOdataAdapter.fetchAttachmentContent(documentId, attachId, sapUser, userJwt, objectType);
         } catch (error: any) {
             this.logger.error(`Error in getAttachmentContent: ${error.message}`);
             throw new AppError(`Failed to load attachment content: ${error.message}`, 500);
@@ -377,6 +379,7 @@ export class InboxProcessor {
         const config = getObjectConfig(objectType, documentType);
         const calcTotal = inst.total !== undefined && inst.total !== null ? Number(inst.total) : (rawMappedObject?.header?.totalNetAmount || rawMappedObject?.header?.purchaseOrderNetAmount || undefined);
         const docTypeDisplay = rawMappedObject?.header?.purchaseRequisitionTypeDisplay 
+            || rawMappedObject?.header?.purchaseOrderTypeDisplay
             || rawMappedObject?.header?.purchaseOrderTypeText 
             || rawMappedObject?.header?.purchaseRequisitionType 
             || businessObject?.documentType;

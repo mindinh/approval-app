@@ -3,6 +3,7 @@ import { InboxProcessor } from '../lib/processors/inbox-processor';
 import { ConfigRegistry } from '../lib/mapping/config-registry';
 import { AppError } from '../lib/utils/error-handler';
 import { buildFieldSchema } from '../lib/processors/inbox-utils';
+import { fetchReferencePrDetail } from '../lib/integrations/reference-pr';
 import {
     resolveIdentity,
     getSapUser,
@@ -196,7 +197,7 @@ export class InboxController {
             firstName,
             lastName,
             role,
-            email: sapUser.includes('@') ? sapUser.toLowerCase() : `${sapUser.toLowerCase()}@conarum.com`
+            email: sapUser.includes('@') ? sapUser.toLowerCase() : `${sapUser.toLowerCase()}@${process.env.DEFAULT_EMAIL_DOMAIN || 'conarum.com'}`
         });
     };
 
@@ -332,6 +333,37 @@ export class InboxController {
                 items: result.items,
                 total: result.total
             });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * @openapi
+     * /tasks/reference-pr/{prNumber}:
+     *   get:
+     *     summary: Retrieve details for a Reference PR from SAP API_PURCHASEREQ_PROCESS_SRV
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: prNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Reference PR Header & Item details
+     */
+    getReferencePrDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const prNumber = String(req.params.prNumber || '');
+            if (!prNumber) {
+                throw new AppError('PR Number parameter is required', 400);
+            }
+            const { sapUser, userJwt } = resolveIdentity(req);
+            const detail = await fetchReferencePrDetail(prNumber, sapUser, userJwt);
+            res.json(detail);
         } catch (error) {
             next(error);
         }
@@ -533,13 +565,14 @@ export class InboxController {
      */
     postComment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { text, _context } = req.body;
+            const { text, _context, objectType } = req.body;
             const docNum = String(_context?.documentId || req.query.documentId || '');
+            const targetType = String(objectType || _context?.objectType || _context?.businessObjectType || _context?.type || req.query.objectType || '').toUpperCase().trim();
             if (!docNum || !text) {
                 throw new AppError('Missing documentId or text', 400);
             }
             const { sapUser, userJwt } = resolveIdentity(req);
-            await this.processor.addComment(docNum, String(text), sapUser, userJwt);
+            await this.processor.addComment(docNum, String(text), sapUser, userJwt, 'NORM', '', targetType);
             res.json({ success: true, message: 'Comment added successfully.' });
         } catch (error) {
             next(error);

@@ -2,6 +2,7 @@ import { BaseDetail, toCamelCaseKeys } from './base';
 import { ObjectTypeCode } from '../processors/object-config';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { RawODataEntity } from '../types/sap-odata.types';
+import { addMockComment, addMockAttachment, getMockAttachmentContent, getMockAttachmentContentById } from './mock-data-provider';
 import { AppError } from '../utils/error-handler';
 import { getMimeTypeFromExtension } from '../utils/mime';
 
@@ -17,18 +18,50 @@ export class PoDetail extends BaseDetail {
         userJwt?: string
     ): Promise<Record<string, any>> {
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const docCategory = rawHeader.DocCategory || 'BUS2012';
+        const headerKey = `/CNMA_POHEADER(DocCategory='${docCategory}',DocumentNumber='${paddedId}')`;
 
-        // Retrieve expanded collections from rawHeader (provided by $expand on the main request)
-        const rawItems = rawHeader._Item || [];
-        const rawSteps = rawHeader._ApprovalStep || [];
-        const rawTexts = rawHeader._HeaderText || [];
+        // Helper for concurrent sub-entity fetches when not expanded in rawHeader
+        const fetchSubEntity = async (propName: string, subPath: string, warnMsg?: string): Promise<any> => {
+            if (rawHeader[propName] !== undefined && rawHeader[propName] !== null) {
+                return rawHeader[propName];
+            }
+            try {
+                const res: any = await this.sapClient.get(servicePath, `${headerKey}/${subPath}`, { $format: 'json' }, sapUser, userJwt);
+                return res?.value || res?.d?.results || res?.d || [];
+            } catch (e: any) {
+                if (warnMsg) {
+                    console.warn(`[PoDetail] ${warnMsg} for ${paddedId}: ${e.message}`);
+                }
+                return [];
+            }
+        };
+
+        const [
+            rawItems,
+            rawSteps,
+            rawTexts,
+            rawAttachments,
+            rawComments
+        ] = await Promise.all([
+            fetchSubEntity('_Item', '_Item', 'Failed to fetch _Item sub-entity'),
+            fetchSubEntity('_ApprovalStep', '_ApprovalStep', 'Failed to fetch _ApprovalStep sub-entity'),
+            fetchSubEntity('_HeaderText', '_HeaderText'),
+            fetchSubEntity('_Attachment', '_Attachment', 'Failed to fetch _Attachment sub-entity'),
+            fetchSubEntity('_Comment', '_Comment')
+        ]);
 
         // Normalize raw items using metadata service
         const normalizedRawItems = await Promise.all(rawItems.map((item: any) => 
             this.metadataService.normalizeDetail(item, servicePath, sapUser, userJwt)
         ));
 
-        const normalizedItems = normalizedRawItems;
+        const normalizedItems = normalizedRawItems.map((item: any) => ({
+            ...item,
+            referenceDocumentNumber: item.ReferenceDocumentNumber || item.referenceDocumentNumber || item.ReferenceDocument || item.referenceDocument || item.PurchaseRequisition || item.purchaseRequisition || item.RefrncDocNo || item.refrncDocNo || item.Banfn || item.banfn || '',
+            referencePr: item.ReferenceDocumentNumber || item.referenceDocumentNumber || item.ReferenceDocument || item.referenceDocument || item.PurchaseRequisition || item.purchaseRequisition || item.RefrncDocNo || item.refrncDocNo || item.Banfn || item.banfn || '',
+            purchaseRequisition: item.ReferenceDocumentNumber || item.referenceDocumentNumber || item.ReferenceDocument || item.referenceDocument || item.PurchaseRequisition || item.purchaseRequisition || item.RefrncDocNo || item.refrncDocNo || item.Banfn || item.banfn || ''
+        }));
 
         // Normalize workflow approval steps
         const normalizedSteps = rawSteps.map((s: any) => ({
@@ -65,7 +98,6 @@ export class PoDetail extends BaseDetail {
             }));
 
         // Normalize comments from _Comment navigation property
-        const rawComments = rawHeader._Comment || [];
         const normalizedRawComments = await Promise.all(rawComments.map((c: any) =>
             this.metadataService.normalizeDetail(c, servicePath, sapUser, userJwt)
         ));
@@ -78,7 +110,6 @@ export class PoDetail extends BaseDetail {
         }));
 
         // Normalize attachments from _Attachment navigation property
-        const rawAttachments = rawHeader._Attachment || [];
         const normalizedAttachments = rawAttachments.map((att: any) => {
             const ext = att.FileExtension || '';
             let fileName = att.FileName || '';
@@ -114,11 +145,63 @@ export class PoDetail extends BaseDetail {
         };
     }
 
-    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM'): Promise<void> {
+    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = ''): Promise<void> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
-            return; // Mock commented operations done at PR level or mock provider
+            addMockComment(objectId, text, sapUser);
+            return;
         }
-        throw new AppError('Comments posting is disabled for this service.', 405);
+
+        const paddedId = objectId.padStart(10, '0');
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const relativePath = `/CNMA_POHEADER(DocCategory='BUS2012',DocumentNumber='${paddedId}')/SAP__self.comment`;
+        
+        const cleanText = text ? text.trim().substring(0, 255) : '';
+        const isGeneral = type !== 'APPR';
+        const payload = {
+            NoteText: cleanText,
+            isGeneral,
+            Decision: isGeneral ? '' : (decision || 'A')
+        };
+
+        await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, userJwt);
+    }
+
+    async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string): Promise<void> {
+        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+        if (isMockMode) {
+            addMockAttachment(objectId, fileName, mimeType, buffer, sapUser);
+            return;
+        }
+        throw new AppError('Attachment upload is disabled for this service.', 405);
+    }
+
+    async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
+        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+        if (isMockMode) {
+            if (objectId) {
+                return getMockAttachmentContent(objectId, attachId);
+            }
+            return getMockAttachmentContentById(attachId);
+        }
+
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const relativePath = `/CNMA_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
+        const res = await this.sapClient.getBinary(servicePath, relativePath, sapUser, userJwt);
+        
+        let data = res.data;
+        if (data && data.length > 0) {
+            let lastNonNull = data.length - 1;
+            while (lastNonNull >= 0 && data[lastNonNull] === 0) {
+                lastNonNull--;
+            }
+            data = data.subarray(0, lastNonNull + 1);
+        }
+
+        return {
+            data,
+            contentType: res.contentType,
+            fileName: res.fileName || `attachment_${attachId}`
+        };
     }
 }

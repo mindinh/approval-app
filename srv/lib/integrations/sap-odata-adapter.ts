@@ -231,11 +231,35 @@ export class SapOdataAdapter {
         return results;
     }
 
-    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = ''): Promise<void> {
+    private resolveObjectType(objectId: string, explicitType?: string): string {
+        let type = (explicitType || '').toUpperCase().trim();
+        if (type && this.strategies.has(type)) {
+            return type;
+        }
+        const cleanId = objectId.replace(/^0+/, '');
+        if (cleanId.startsWith('4')) return 'PO';
+        if (cleanId.startsWith('1')) return 'PR';
+        if (cleanId.startsWith('5')) return 'RE';
+        if (cleanId.startsWith('9')) return 'CLAIM';
+
+        const instances = getMockInstances();
+        const inst = instances.find(i => i.instid === objectId || i.instid === cleanId || i.instanceID === objectId);
+        if (inst) {
+            if (inst.typeid === 'BUS2012') return 'PO';
+            if (inst.typeid === 'BUS2105') return 'PR';
+            if (inst.typeid === 'BUS2093') return 'RE';
+            if (inst.typeid === 'ZCLAIM') return 'CLAIM';
+        }
+
+        return 'PR';
+    }
+
+    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = '', objectType?: string): Promise<void> {
         clearDetailCache('PR', objectId);
         clearDetailCache('PO', objectId);
 
-        const strategy = this.getStrategy('PR');
+        const targetType = this.resolveObjectType(objectId, objectType);
+        const strategy = this.getStrategy(targetType);
         if (strategy.addComment) {
             await strategy.addComment(objectId, text, sapUser, userJwt, type, decision);
         } else {
@@ -243,11 +267,12 @@ export class SapOdataAdapter {
         }
     }
 
-    async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string): Promise<void> {
+    async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string, objectType?: string): Promise<void> {
         clearDetailCache('PR', objectId);
         clearDetailCache('PO', objectId);
 
-        const strategy = this.getStrategy('PR');
+        const targetType = this.resolveObjectType(objectId, objectType);
+        const strategy = this.getStrategy(targetType);
         if (strategy.uploadAttachment) {
             await strategy.uploadAttachment(objectId, fileName, mimeType, buffer, sapUser, userJwt);
         } else {
@@ -255,8 +280,9 @@ export class SapOdataAdapter {
         }
     }
 
-    async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
-        const strategy = this.getStrategy('PR');
+    async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string, objectType?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
+        const targetType = this.resolveObjectType(objectId, objectType);
+        const strategy = this.getStrategy(targetType);
         if (strategy.fetchAttachmentContent) {
             return await strategy.fetchAttachmentContent(objectId, attachId, sapUser, userJwt);
         } else {

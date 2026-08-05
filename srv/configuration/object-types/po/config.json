@@ -32,6 +32,7 @@
       "items": "_Item",
       "workflowSteps": "_ApprovalStep",
       "headerTexts": "_HeaderText",
+      "comments": "_Comment",
       "attachments": "_Attachment"
     }
   },
@@ -67,6 +68,20 @@
         ],
         "targetPath": "header.purchaseOrderType",
         "label": "Purchase Order Type",
+        "type": "string"
+      },
+      {
+        "sourcePath": "purchaseOrderTypeText",
+        "altSourcePaths": [
+          "DocumentTypeText",
+          "documentTypeText",
+          "doctyp_desc",
+          "doctypDesc",
+          "PurchaseOrderTypeText",
+          "purchaseOrderTypeDescription"
+        ],
+        "targetPath": "header.purchaseOrderTypeText",
+        "label": "Purchase Order Type Text",
         "type": "string"
       },
       {
@@ -315,6 +330,50 @@
         ],
         "targetPath": "header.totalNetAmount",
         "label": "Total Net Amount",
+        "transform": "number",
+        "dataType": "AMOUNT"
+      },
+      {
+        "sourcePath": "TotalNetValueBeforeTax",
+        "altSourcePaths": [
+          "totalNetValueBeforeTax",
+          "SubtotalExclVat"
+        ],
+        "targetPath": "header.TotalNetValueBeforeTax",
+        "label": "Subtotal (Excl. VAT)",
+        "transform": "number",
+        "dataType": "AMOUNT"
+      },
+      {
+        "sourcePath": "TotalFreightAmount",
+        "altSourcePaths": [
+          "totalFreightAmount",
+          "ShippingFee"
+        ],
+        "targetPath": "header.TotalFreightAmount",
+        "label": "Shipping Fee",
+        "transform": "number",
+        "dataType": "AMOUNT"
+      },
+      {
+        "sourcePath": "TotalVatAmount",
+        "altSourcePaths": [
+          "totalVatAmount",
+          "VatAmount"
+        ],
+        "targetPath": "header.TotalVatAmount",
+        "label": "VAT",
+        "transform": "number",
+        "dataType": "AMOUNT"
+      },
+      {
+        "sourcePath": "TotalOrderValue",
+        "altSourcePaths": [
+          "totalOrderValue",
+          "TotalValue"
+        ],
+        "targetPath": "header.TotalOrderValue",
+        "label": "Total",
         "transform": "number",
         "dataType": "AMOUNT"
       },
@@ -865,13 +924,61 @@
           {
             "sourcePath": "purchaseRequisition",
             "altSourcePaths": [
+              "ReferenceDocumentNumber",
+              "referenceDocumentNumber",
+              "ReferenceDocument",
+              "referenceDocument",
               "PurchaseRequisition",
               "purchaseRequisition",
               "purReqNumber",
-              "refDoc"
+              "refDoc",
+              "RefrncDocNo",
+              "refrncDocNo",
+              "Banfn",
+              "banfn"
             ],
             "targetPath": "purchaseRequisition",
             "label": "Reference Document",
+            "type": "string"
+          },
+          {
+            "sourcePath": "referenceDocumentNumber",
+            "altSourcePaths": [
+              "ReferenceDocumentNumber",
+              "referenceDocumentNumber",
+              "ReferenceDocument",
+              "referenceDocument",
+              "PurchaseRequisition",
+              "purchaseRequisition",
+              "purReqNumber",
+              "refDoc",
+              "RefrncDocNo",
+              "refrncDocNo",
+              "Banfn",
+              "banfn"
+            ],
+            "targetPath": "referenceDocumentNumber",
+            "label": "Reference Document Number",
+            "type": "string"
+          },
+          {
+            "sourcePath": "referencePr",
+            "altSourcePaths": [
+              "ReferenceDocumentNumber",
+              "referenceDocumentNumber",
+              "ReferenceDocument",
+              "referenceDocument",
+              "PurchaseRequisition",
+              "purchaseRequisition",
+              "purReqNumber",
+              "refDoc",
+              "RefrncDocNo",
+              "refrncDocNo",
+              "Banfn",
+              "banfn"
+            ],
+            "targetPath": "referencePr",
+            "label": "Reference PR",
             "type": "string"
           },
           {
