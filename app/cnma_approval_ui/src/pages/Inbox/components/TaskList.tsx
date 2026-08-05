@@ -24,11 +24,13 @@ import {
     Search,
     Loader2,
     AlertTriangle,
+    ArrowDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
 import { useTaskSelection } from '@/pages/Inbox/hooks/useTaskSelection';
 import { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTranslation } from 'react-i18next';
 import { parseError } from '@/utils/parseError';
 
@@ -102,6 +104,12 @@ export function TaskList({
     });
 
     const filters = useTaskFilters(tasks);
+
+    const ptr = usePullToRefresh({
+        onRefresh,
+        isRefreshing,
+        disabled: !isMobile,
+    });
 
     const handleCardClick = useCallback((task: InboxTask) => {
         if (showTaskActions && selection.selectionMode) {
@@ -232,7 +240,46 @@ export function TaskList({
             )}
 
             {/* ── Task Results — native scroll so the scrollbar gutter sits OUTSIDE cards ── */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div
+                ref={ptr.containerRef}
+                {...(isMobile ? ptr.touchHandlers : {})}
+                className={cn(
+                    'flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y',
+                    isMobile && 'will-change-scroll [webkit-overflow-scrolling:touch]'
+                )}
+            >
+                {/* ── Mobile Pull-to-Refresh Indicator ── */}
+                {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (
+                    <div
+                        className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
+                        style={{
+                            height: ptr.isRefreshing ? 48 : Math.min(ptr.pullDistance, 60),
+                            opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 40, 1),
+                        }}
+                    >
+                        <div className="flex items-center gap-2 rounded-full bg-card px-3.5 py-1 text-xs font-semibold text-primary shadow-sm border border-border">
+                            {ptr.isRefreshing ? (
+                                <>
+                                    <Loader2 className="size-3.5 animate-spin text-primary" />
+                                    <span>{t('common.refreshing', 'Refreshing...')}</span>
+                                </>
+                            ) : ptr.isThresholdReached ? (
+                                <>
+                                    <RefreshCw className="size-3.5 text-primary animate-bounce" />
+                                    <span>{t('common.releaseToRefresh', 'Release to refresh')}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ArrowDown
+                                        className="size-3.5 text-primary transition-transform duration-200"
+                                        style={{ transform: `rotate(${Math.min(ptr.pullDistance * 3, 180)}deg)` }}
+                                    />
+                                    <span>{t('common.pullToRefresh', 'Pull down to refresh')}</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
                 {isError && tasks.length === 0 ? (
                     <ListErrorState error={error} onRefresh={onRefresh} isRefreshing={isRefreshing} />
                 ) : filters.filteredTasks.length === 0 ? (

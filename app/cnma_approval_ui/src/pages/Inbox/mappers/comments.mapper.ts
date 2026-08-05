@@ -30,7 +30,7 @@ export interface UnifiedComment {
  * Pure function — no hooks, no side effects.
  */
 export function mergeAndDeduplicateComments(
-    taskComments: TaskComment[],
+    taskComments?: TaskComment[],
     workflowComments?: WorkflowApprovalComment[]
 ): UnifiedComment[] {
     const unified: UnifiedComment[] = [];
@@ -59,7 +59,7 @@ export function mergeAndDeduplicateComments(
     }
 
     // 2. Process task comments, deduplicating against workflow comments
-    for (const c of taskComments) {
+    for (const c of taskComments || []) {
         const dateObj = parseDate(c.createdAt || '');
         const textNorm = (c.text || '').trim();
 

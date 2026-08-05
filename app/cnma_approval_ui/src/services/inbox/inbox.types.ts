@@ -50,6 +50,14 @@ export interface PurchaseOrderHeader {
     documentCurrency?: string;
     purchaseOrderNetAmount?: string;
     purchasingDocumentStatusName?: string;
+    TotalNetValueBeforeTax?: number | string;
+    totalNetValueBeforeTax?: number | string;
+    TotalFreightAmount?: number | string;
+    totalFreightAmount?: number | string;
+    TotalVatAmount?: number | string;
+    totalVatAmount?: number | string;
+    TotalOrderValue?: number | string;
+    totalOrderValue?: number | string;
     userFullName?: string;
     userName?: string;
     createdByUser?: string;
@@ -471,4 +479,56 @@ export interface DecisionRequest {
 export interface ForwardRequest {
     forwardTo: string;
     comment?: string;
+}
+
+// ─── Reference PR Types ───────────────────────────────────
+
+export interface ReferencePrHeader {
+    purchaseRequisition: string;
+    purchaseRequisitionType?: string;
+    purchaseRequisitionTypeDisplay?: string;
+    createdByUser?: string;
+    createdByFullName?: string;
+    creationDate?: string;
+    purchaseRequisitionStatus?: string;
+    purchaseRequisitionStatusText?: string;
+    purReqnDescription?: string;
+    totalAmount?: number | string;
+    currency?: string;
+    companyCode?: string;
+    companyCodeName?: string;
+    plant?: string;
+    plantName?: string;
+    purchasingGroup?: string;
+    headerNote?: string;
+}
+
+export interface ReferencePrItem {
+    purchaseRequisition: string;
+    purchaseRequisitionItem: string;
+    material?: string;
+    purchaseRequisitionItemText?: string;
+    plant?: string;
+    plantName?: string;
+    storageLocation?: string;
+    storageLocationName?: string;
+    materialGroup?: string;
+    materialGroupName?: string;
+    requestedQuantity?: number | string;
+    baseUnit?: string;
+    purchaseRequisitionPrice?: number | string;
+    totalAmount?: number | string;
+    purReqnItemCurrency?: string;
+    deliveryDate?: string;
+    glAccount?: string;
+    glAccountName?: string;
+    costCenter?: string;
+    costCenterName?: string;
+    wbsElement?: string;
+    commitmentItem?: string;
+}
+
+export interface ReferencePrDetailResponse {
+    header: ReferencePrHeader;
+    items: ReferencePrItem[];
 }

@@ -51,8 +51,26 @@ export function isSapUserMappingMissing(error: any): boolean {
 }
 
 /**
- * Extract a usable error message from an Axios-style error object.
+ * Extract a usable string error message from an Axios-style error object.
  */
 export function extractErrorMessage(error: any, fallback: string): string {
-    return error?.response?.data?.error || error?.message || fallback;
+    if (!error) return fallback;
+    const responseErr = error?.response?.data?.error;
+    if (typeof responseErr === 'string' && responseErr.trim()) {
+        return responseErr.trim();
+    }
+    if (responseErr && typeof responseErr === 'object' && typeof responseErr.message === 'string' && responseErr.message.trim()) {
+        return responseErr.message.trim();
+    }
+    const responseData = error?.response?.data;
+    if (typeof responseData === 'string' && responseData.trim()) {
+        return responseData.trim();
+    }
+    if (responseData && typeof responseData === 'object' && typeof responseData.message === 'string' && responseData.message.trim()) {
+        return responseData.message.trim();
+    }
+    if (typeof error?.message === 'string' && error.message.trim()) {
+        return error.message.trim();
+    }
+    return fallback;
 }

@@ -95,7 +95,7 @@ export default function HomePage() {
     if (!isMobile) return null;
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="h-full overflow-y-auto bg-background">
                 {/* ── Gradient Header ────────────────────────── */}
                 <div
                     className="relative px-5 pt-5 pb-16 bg-gradient-to-br from-primary to-primary-hover"

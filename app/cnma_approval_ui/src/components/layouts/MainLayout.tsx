@@ -392,14 +392,14 @@ function AppSidebar() {
 export function MainLayout() {
     return (
         <SidebarProvider defaultOpen={false}>
-            <div className="h-screen w-screen overflow-hidden flex bg-background">
+            <div className="h-[100dvh] w-screen overflow-hidden flex bg-background">
                 {/* Global Unified App Sidebar */}
                 <AppSidebar />
 
                 {/* Main Routing Container */}
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background flex flex-col w-full scroll-smooth">
-                        <div className="flex-1 w-full">
+                    <main className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col w-full">
+                        <div className="flex-1 min-h-0 w-full">
                             <Outlet />
                         </div>
                     </main>

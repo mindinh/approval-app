@@ -3,9 +3,10 @@ import { ScrollArea, Skeleton, Button, Tabs, TabsContent, TabsList, TabsTrigger 
 
 import { DecisionPanel } from './DecisionPanel';
 import type { TaskDetail as TaskDetailType } from '@/services/inbox/inbox.types';
-import { ArrowLeft, FileText, Undo2, AlertTriangle, RotateCcw, Info } from 'lucide-react';
+import { ArrowLeft, FileText, Undo2, AlertTriangle, RotateCcw, Info, Loader2, RefreshCw, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 import { invalidateAfterComment } from '@/pages/Inbox/hooks/inboxInvalidation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ import {
 } from './panels';
 import { resolveBusinessSectionModel } from '@/renderers';
 import { useTranslation } from 'react-i18next';
+import { ReferencePrDetailView } from './ReferencePrDetailView';
 
 interface TaskDetailViewProps {
     detail: TaskDetailType | undefined;
@@ -61,9 +63,17 @@ export function TaskDetailView({
         taskId: '',
         tab: 'overview',
     });
+    const [activeSubView, setActiveSubView] = useState<{ type: 'reference-pr'; prNumber: string } | null>(null);
+
     // Track direction for mobile tab animation
     const prevTabIndexRef = useRef(0);
     const { t } = useTranslation();
+
+    const ptr = usePullToRefresh({
+        onRefresh: onRetry ? () => void onRetry() : () => {},
+        isRefreshing: isSecondaryLoading || isLoading,
+        disabled: !isMobile || !onRetry,
+    });
 
     const queryClient = useQueryClient();
     const handleCommentAdded = useCallback(() => {
@@ -75,6 +85,14 @@ export function TaskDetailView({
     const activeTaskId = detail?.instanceId || detail?.taskId || detail?.task?.instanceId || '';
     const activeTab =
         detail && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
+
+    useEffect(() => {
+        setActiveSubView(null);
+    }, [activeTaskId]);
+
+    const handleSelectReferencePr = useCallback((prNumber: string) => {
+        setActiveSubView({ type: 'reference-pr', prNumber });
+    }, []);
 
     const docType = detail?.objectType || detail?.task?.businessContext?.type;
     const supportsApproval = docType === 'PR' || docType === 'PO';
@@ -88,21 +106,21 @@ export function TaskDetailView({
         return {
             documentId: documentId || '',
             releaseStrategyName: detail.releaseStrategyName || wf?.strategyName || (hd?.releaseStrategyName as string),
-            steps: detail.approvalSteps || wf?.steps || [],
-            comments: wf?.comments || []
+            steps: Array.isArray(detail.approvalSteps) ? detail.approvalSteps : (Array.isArray(wf?.steps) ? wf.steps : []),
+            comments: Array.isArray(wf?.comments) ? wf.comments : []
         };
     }, [detail, documentId]);
 
-    const prAttachmentCount = detail?.attachments?.length || detail?.object?.attachments?.length;
+    const prAttachmentCount = detail?.attachments?.length || detail?.object?.attachments?.length || 0;
     const isPrAttachmentsLoading = false;
     const workflowError = undefined;
 
     const detailsCount = useMemo(() => {
-        if (!businessModel) return undefined;
+        if (!businessModel || !Array.isArray(businessModel.tables)) return 0;
         const filteredTables = businessModel.tables.filter(
-            (table) => !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title)
+            (table) => table && !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title)
         );
-        return filteredTables.reduce((acc, t) => acc + t.rows.length, 0);
+        return filteredTables.reduce((acc, t) => acc + (Array.isArray(t?.rows) ? t.rows.length : 0), 0);
     }, [businessModel]);
 
     const tabs = useMemo(
@@ -115,7 +133,7 @@ export function TaskDetailView({
                     detailsCount,
                     attachmentCount: prAttachmentCount,
                     t,
-                })
+                }) || []
                 : [],
         [detail, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
     );
@@ -178,19 +196,42 @@ export function TaskDetailView({
         );
     }
 
+    if (activeSubView?.type === 'reference-pr') {
+        return (
+            <ReferencePrDetailView
+                prNumber={activeSubView.prNumber}
+                parentDocumentId={documentId}
+                onBack={() => setActiveSubView(null)}
+                isMobile={isMobile}
+            />
+        );
+    }
+
     // Render tab content (shared between mobile & desktop)
     const renderTabContent = (tabValue: string, mobile: boolean) => {
         switch (tabValue) {
             case 'overview':
                 return businessModel ? (
-                    <OverviewPanel model={businessModel} detail={detail} isMobile={mobile} isSecondaryLoading={isSecondaryLoading} />
+                    <OverviewPanel
+                        model={businessModel}
+                        detail={detail}
+                        isMobile={mobile}
+                        isSecondaryLoading={isSecondaryLoading}
+                        onSelectReferencePr={handleSelectReferencePr}
+                    />
                 ) : null;
             case 'details':
                 if (isSecondaryLoading && businessModel && businessModel.tables.length === 0) {
                     return <SecondaryTabSkeleton message={t('task.loadingDetails', 'Loading details...')} />;
                 }
                 return businessModel ? (
-                    <DetailsPanel model={businessModel} detail={detail} isMobile={mobile} isSecondaryLoading={isSecondaryLoading} />
+                    <DetailsPanel
+                        model={businessModel}
+                        detail={detail}
+                        isMobile={mobile}
+                        isSecondaryLoading={isSecondaryLoading}
+                        onSelectReferencePr={handleSelectReferencePr}
+                    />
                 ) : null;
             case 'workflow':
                 return (
@@ -335,14 +376,28 @@ export function TaskDetailView({
                         <div className="w-full px-5 py-4 space-y-4 pb-6">
                             <TabsContent value="overview" className="mt-0 w-full">
                                 {businessModel && (
-                                    <OverviewPanel model={businessModel} detail={detail} isMobile={false} isSecondaryLoading={isSecondaryLoading} />
+                                    <OverviewPanel
+                                        model={businessModel}
+                                        detail={detail}
+                                        isMobile={false}
+                                        isSecondaryLoading={isSecondaryLoading}
+                                        onSelectReferencePr={handleSelectReferencePr}
+                                    />
                                 )}
                             </TabsContent>
                             <TabsContent value="details" className="mt-0 w-full">
                                 {isSecondaryLoading && businessModel && businessModel.tables.length === 0 ? (
                                     <SecondaryTabSkeleton message={t('task.loadingDetails', 'Loading details...')} />
                                 ) : (
-                                    businessModel && <DetailsPanel model={businessModel} detail={detail} isMobile={false} isSecondaryLoading={isSecondaryLoading} />
+                                    businessModel && (
+                                        <DetailsPanel
+                                            model={businessModel}
+                                            detail={detail}
+                                            isMobile={false}
+                                            isSecondaryLoading={isSecondaryLoading}
+                                            onSelectReferencePr={handleSelectReferencePr}
+                                        />
+                                    )
                                 )}
                             </TabsContent>
                             <TabsContent value="workflow" className="mt-0 w-full">
@@ -456,7 +511,46 @@ export function TaskDetailView({
                                 transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
                                 className="absolute inset-0 w-full"
                             >
-                                <div className="h-full w-full overflow-y-auto overflow-x-hidden scroll-smooth">
+                                <div
+                                    ref={ptr.containerRef}
+                                    {...(isMobile ? ptr.touchHandlers : {})}
+                                    className={cn(
+                                        'h-full w-full overflow-y-auto overflow-x-hidden scroll-smooth overscroll-y-contain touch-pan-y',
+                                        isMobile && 'will-change-scroll [webkit-overflow-scrolling:touch]'
+                                    )}
+                                >
+                                    {/* ── Mobile Pull-to-Refresh Indicator ── */}
+                                    {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (
+                                        <div
+                                            className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
+                                            style={{
+                                                height: ptr.isRefreshing ? 48 : Math.min(ptr.pullDistance, 60),
+                                                opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 40, 1),
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-2 rounded-full bg-card px-3.5 py-1 text-xs font-semibold text-primary shadow-sm border border-border">
+                                                {ptr.isRefreshing ? (
+                                                    <>
+                                                        <Loader2 className="size-3.5 animate-spin text-primary" />
+                                                        <span>{t('common.refreshing', 'Refreshing...')}</span>
+                                                    </>
+                                                ) : ptr.isThresholdReached ? (
+                                                    <>
+                                                        <RefreshCw className="size-3.5 text-primary animate-bounce" />
+                                                        <span>{t('common.releaseToRefresh', 'Release to refresh')}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ArrowDown
+                                                            className="size-3.5 text-primary transition-transform duration-200"
+                                                            style={{ transform: `rotate(${Math.min(ptr.pullDistance * 3, 180)}deg)` }}
+                                                        />
+                                                        <span>{t('common.pullToRefresh', 'Pull down to refresh')}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="px-4 py-4 pb-24 space-y-4 w-full min-w-0">
                                         {renderTabContent(activeTab, true)}
                                     </div>

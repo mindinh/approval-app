@@ -11,6 +11,10 @@ const ATTRIBUTE_NAME_ALIASES: Record<string, string[]> = {
     incoterms: ['incoterms', 'inco1', 'inco2'],
     netValue: ['netvalue', 'totalvalue', 'amount'],
     currency: ['currency', 'waers'],
+    totalnetvaluebeforetax: ['totalnetvaluebeforetax', 'subtotal', 'netvaluebeforetax'],
+    totalfreightamount: ['totalfreightamount', 'freightamount', 'shippingfee'],
+    totalvatamount: ['totalvatamount', 'vatamount', 'taxamount', 'vat'],
+    totalordervalue: ['totalordervalue', 'ordervalue', 'totalamount', 'netvalue'],
 };
 
 export function field(label: string, value: unknown, key?: string): DetailField {
@@ -24,8 +28,11 @@ export function field(label: string, value: unknown, key?: string): DetailField 
 export function createAttributeIndex(attributes?: CustomAttribute[]): Map<string, CustomAttribute> {
     const index = new Map<string, CustomAttribute>();
     for (const attr of (attributes || [])) {
+        if (!attr || !attr.name) continue;
         index.set(attr.name.toLowerCase(), attr);
-        index.set(attr.label.toLowerCase(), attr);
+        if (attr.label) {
+            index.set(attr.label.toLowerCase(), attr);
+        }
     }
     return index;
 }
@@ -34,12 +41,14 @@ export function pickAttribute(
     index: Map<string, CustomAttribute>,
     candidates: string[]
 ): CustomAttribute | undefined {
+    if (!index || !candidates || !Array.isArray(candidates)) return undefined;
     for (const key of candidates) {
+        if (!key) continue;
         const direct = index.get(key.toLowerCase());
         if (direct) return direct;
     }
     for (const [key, value] of index) {
-        if (candidates.some((candidate) => key.includes(candidate.toLowerCase()))) {
+        if (candidates.some((candidate) => candidate && key.includes(candidate.toLowerCase()))) {
             return value;
         }
     }
@@ -48,9 +57,10 @@ export function pickAttribute(
 
 export function pickByAlias(
     index: Map<string, CustomAttribute>,
-    aliasKey: keyof typeof ATTRIBUTE_NAME_ALIASES
+    aliasKey: string
 ): string | undefined {
-    return pickAttribute(index, ATTRIBUTE_NAME_ALIASES[aliasKey])?.value;
+    const candidates = ATTRIBUTE_NAME_ALIASES[aliasKey] || [aliasKey];
+    return pickAttribute(index, candidates)?.value;
 }
 
 export function buildTaskObjectsTable(taskObjects?: TaskObject[]): DetailTableModel {

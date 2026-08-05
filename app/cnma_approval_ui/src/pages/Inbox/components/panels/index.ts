@@ -25,10 +25,10 @@ export function makeTabDefinitions({
     attachmentCount?: number;
     t: any;
 }) {
-    const mergedCommentsCount = mergeAndDeduplicateComments(detail.comments, workflowComments).length;
-    const finalAttachmentCount = attachmentCount ?? detail.attachments.length;
+    const mergedCommentsCount = mergeAndDeduplicateComments(detail?.comments || [], workflowComments).length;
+    const finalAttachmentCount = attachmentCount ?? (detail?.attachments?.length || 0);
 
-    const showWorkflow = detail.task.businessContext?.type === 'PR' || detail.task.businessContext?.type === 'PO';
+    const showWorkflow = detail?.task?.businessContext?.type === 'PR' || detail?.task?.businessContext?.type === 'PO';
 
     const tabs = [
         {

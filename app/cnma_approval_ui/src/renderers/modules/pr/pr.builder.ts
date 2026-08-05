@@ -6,7 +6,8 @@ import {
     formatCodeWithText,
     formatDate,
     formatMaterialShortText,
-    normalizeDisplayValue
+    normalizeDisplayValue,
+    normalizeAndOrderTableColumns
 } from '../../shared/formatters';
 import {
     buildCustomAttributesTable,
@@ -42,7 +43,7 @@ export function buildDefaultPrItemsTable(rawItems?: any[], parentCurrency?: stri
         };
     });
 
-    return {
+    return normalizeAndOrderTableColumns({
         id: 'items',
         title: 'Line Items',
         columns: [
@@ -62,12 +63,13 @@ export function buildDefaultPrItemsTable(rawItems?: any[], parentCurrency?: stri
         ],
         rows,
         emptyMessage: 'No items available'
-    };
+    });
 }
 
 export function buildPrModel(detail: TaskDetail): BusinessSectionModel {
     const attrIndex = createAttributeIndex(detail.customAttributes);
-    const docType = (detail.documentType || detail.header?.purchaseRequisitionType || '').toUpperCase();
+    const rawDocType = detail.documentType || detail.header?.purchaseRequisitionType || detail.header?.documentType || '';
+    const docType = rawDocType.split(/[\s-]/)[0].toUpperCase().trim();
 
     const documentId =
         detail.documentId ||
@@ -87,10 +89,11 @@ export function buildPrModel(detail: TaskDetail): BusinessSectionModel {
         detail.task?.curr_vnd ||
         detail.task?.doc_curr;
 
+    const docTypeText = detail.header?.purchaseRequisitionTypeText || detail.header?.purchaseRequisitionTypeDescription || detail.header?.documentTypeText || detail.header?.doctyp_desc || '';
     const rawDocTypeDisplay = detail.documentTypeDisplay || detail.header?.purchaseRequisitionTypeDisplay;
-    const docTypeDisplay = rawDocTypeDisplay
+    const docTypeDisplay = (rawDocTypeDisplay && rawDocTypeDisplay.includes('-'))
         ? rawDocTypeDisplay
-        : (docType ? formatCodeWithText(docType, undefined) : EMPTY_VALUE);
+        : (docType ? formatCodeWithText(docType, docTypeText || (rawDocTypeDisplay !== docType ? rawDocTypeDisplay : undefined)) : EMPTY_VALUE);
 
     const compCodeDisplay = formatCodeWithText(
         detail.companyCode || detail.header?.companyCode,

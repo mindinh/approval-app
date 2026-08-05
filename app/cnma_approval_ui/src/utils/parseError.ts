@@ -18,6 +18,32 @@ export interface AppError {
 }
 
 /**
+ * Safely extracts a plain string representation from any value (string, object, error, etc.)
+ * Prevents React rendering crashes when errors contain nested objects.
+ */
+export function safeString(val: unknown): string {
+    if (val === undefined || val === null) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    if (typeof val === 'object') {
+        const obj = val as Record<string, any>;
+        if (typeof obj.message === 'string') return obj.message;
+        if (typeof obj.error === 'string') return obj.error;
+        if (obj.error && typeof obj.error === 'object' && typeof obj.error.message === 'string') {
+            return obj.error.message;
+        }
+        if (typeof obj.value === 'string') return obj.value;
+        if (typeof obj.text === 'string') return obj.text;
+        try {
+            return JSON.stringify(val);
+        } catch {
+            return String(val);
+        }
+    }
+    return String(val);
+}
+
+/**
  * Parses raw API, Axios, or JavaScript errors into a clean, structured AppError.
  * Sanitizes technical details (stack traces, server paths) from the main user message
  * while preserving diagnostics for technical support.
@@ -39,35 +65,37 @@ export function parseError(error: unknown): AppError {
     const response = errObj.response;
     const responseData = response?.data;
 
-    // Helper to safely extract string message from unknown/nested values
-    const extractString = (val: unknown): string | undefined => {
-        if (val === undefined || val === null) return undefined;
-        if (typeof val === 'string') return val;
-        if (typeof val === 'object') {
-            const obj = val as Record<string, any>;
-            if (typeof obj.value === 'string') return obj.value;
-            if (typeof obj.message === 'string') return obj.message;
-            if (typeof obj.text === 'string') return obj.text;
-            if (obj.message && typeof obj.message === 'object') {
-                return extractString(obj.message);
-            }
-            try {
-                return JSON.stringify(val);
-            } catch {
-                return String(val);
-            }
-        }
-        return String(val);
-    };
-
     const responseErr = responseData?.error;
-    const responseErrMsg = extractString(responseErr?.message) || extractString(responseErr);
+    const responseErrMsg = (responseErr && typeof responseErr === 'object' && typeof responseErr.message === 'string')
+        ? responseErr.message
+        : safeString(responseErr);
 
     // Extract status code & error code
-    const statusCode: number | undefined = responseData?.statusCode || response?.status || errObj.statusCode || errObj.status;
-    const code: string | undefined = (typeof responseErr === 'object' ? responseErr?.code : undefined) || responseData?.code || errObj.code;
-    const rawMessage: string = responseErrMsg || extractString(responseData?.message) || extractString(errObj.message) || extractString(error) || 'Unexpected Error';
+    const statusCode: number | undefined =
+        typeof responseData?.statusCode === 'number'
+            ? responseData.statusCode
+            : typeof response?.status === 'number'
+            ? response.status
+            : typeof errObj.statusCode === 'number'
+            ? errObj.statusCode
+            : typeof errObj.status === 'number'
+            ? errObj.status
+            : undefined;
+
+    const extractedCode = (typeof responseErr === 'object' ? responseErr?.code : undefined) || responseData?.code || errObj.code;
+    const code: string | undefined = extractedCode ? safeString(extractedCode) : undefined;
+
+    const rawMsgCandidate =
+        responseErrMsg ||
+        (responseData?.message ? safeString(responseData.message) : undefined) ||
+        (errObj.message ? safeString(errObj.message) : undefined) ||
+        safeString(error);
+
+    const rawMessage: string = rawMsgCandidate || 'Unexpected Error';
     const stack: string | undefined = typeof responseData?.stack === 'string' ? responseData.stack : (typeof errObj.stack === 'string' ? errObj.stack : undefined);
+
+    const pathCandidate = response?.config?.url || errObj.config?.url;
+    const path: string | undefined = pathCandidate ? safeString(pathCandidate) : undefined;
 
     const details: AppErrorDetails = {
         statusCode,
@@ -75,16 +103,16 @@ export function parseError(error: unknown): AppError {
         rawMessage,
         stack,
         timestamp,
-        path: response?.config?.url || errObj.config?.url,
+        path,
     };
 
     // 1. Network / Connection Errors
     const isHtmlResponse = typeof responseData === 'string' && (responseData.includes('<html') || responseData.includes('<!DOCTYPE html>'));
 
-    if (isHtmlResponse || errObj.code === 'ECONNREFUSED' || errObj.message?.includes('Network Error') || errObj.message?.includes('ECONNREFUSED') || (!statusCode && errObj.request)) {
+    if (isHtmlResponse || errObj.code === 'ECONNREFUSED' || (typeof errObj.message === 'string' && errObj.message.includes('Network Error')) || (typeof errObj.message === 'string' && errObj.message.includes('ECONNREFUSED')) || (!statusCode && errObj.request)) {
         return {
             title: 'Connection / Gateway Error',
-            message: 'Unable to connect to the backend server. Please verify the CAP service is running on port 4005.',
+            message: 'Unable to connect to the backend server. Please verify the CAP service is running.',
             category: 'network',
             details,
             canRetry: true,
@@ -137,7 +165,7 @@ export function parseError(error: unknown): AppError {
 
     // 5. Backend System / SAP Gateway Errors (500, 502, 503, 504, INTERNAL_ERROR, INTERNAL_SERVER_ERROR)
     const isSapGatewayError = rawMessage.includes('SAP business/gateway error') || rawMessage.includes('Unspecified provider error');
-    
+
     if ((statusCode && statusCode >= 500) || code === 'INTERNAL_ERROR' || code === 'INTERNAL_SERVER_ERROR' || isSapGatewayError) {
         return {
             title: isSapGatewayError ? 'SAP Backend Error' : 'System Error',

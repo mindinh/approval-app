@@ -8,6 +8,7 @@ import type {
     ForwardRequest,
     WorkflowApprovalTreeResponse,
     DashboardResponse,
+    ReferencePrDetailResponse,
 } from './inbox.types';
 
 // Keep API paths relative so Work Zone managed approuter can resolve app-local routes.
@@ -310,6 +311,16 @@ export const inboxApi = {
             `${BASE_URL}/pr/${encodeURIComponent(documentNumber)}/attachments`,
             buffer,
             { headers }
+        );
+        return data;
+    },
+
+    /**
+     * Get details for a Reference PR from SAP API_PURCHASEREQ_PROCESS_SRV.
+     */
+    getReferencePrDetail: async (prNumber: string): Promise<ReferencePrDetailResponse> => {
+        const { data } = await axiosInstance.get<ReferencePrDetailResponse>(
+            `${BASE_URL}/reference-pr/${encodeURIComponent(prNumber)}`
         );
         return data;
     },

@@ -8,6 +8,7 @@
         "build": "vite build && npm run zip",
         "build:mta": "vite build",
         "build-dev": "vite build",
+        "typecheck": "tsc --noEmit",
         "lint": "eslint .",
         "preview": "vite preview",
         "zip": "cd dist && npx bestzip ../cnma_approval_ui.zip * && npx -y shx mv ../cnma_approval_ui.zip .",

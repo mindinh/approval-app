@@ -583,14 +583,14 @@ export default function DashboardPage() {
     // Layout Sync wrapper
     if (isMobile) {
         return (
-            <div className="relative h-screen overflow-auto bg-background">
+            <div className="relative h-full overflow-y-auto bg-background">
                 {dashboardContent}
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-muted/10">
+        <div className="flex h-full w-full overflow-hidden bg-muted/10">
             <main className="relative min-w-0 flex-1 overflow-auto bg-muted/30">
                 {dashboardContent}
             </main>

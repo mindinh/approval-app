@@ -20,7 +20,7 @@ import {
     RotateCcw,
     X,
 } from 'lucide-react';
-import type { AppError } from '@/utils/parseError';
+import { safeString, type AppError } from '@/utils/parseError';
 import { useTranslation } from 'react-i18next';
 
 interface ErrorModalProps {
@@ -38,11 +38,11 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
     const handleCopyMessage = useCallback(() => {
         if (!error) return;
         const text = [
-            `Title: ${error.title}`,
-            `Message: ${error.message}`,
-            error.details?.rawMessage ? `Error Detail: ${error.details.rawMessage}` : null,
-            error.details?.statusCode ? `Status Code: ${error.details.statusCode}` : null,
-            error.details?.path ? `Endpoint: ${error.details.path}` : null,
+            `Title: ${safeString(error.title)}`,
+            `Message: ${safeString(error.message)}`,
+            error.details?.rawMessage ? `Error Detail: ${safeString(error.details.rawMessage)}` : null,
+            error.details?.statusCode ? `Status Code: ${safeString(error.details.statusCode)}` : null,
+            error.details?.path ? `Endpoint: ${safeString(error.details.path)}` : null,
         ]
             .filter(Boolean)
             .join('\n');
@@ -77,17 +77,20 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
             error.details?.rawMessage
     );
 
+    const displayTitle = safeString(t(`error.titles.${error.category}`, { defaultValue: error.title }));
+    const displayMessage = safeString(t(`error.messages.${error.category}`, { defaultValue: error.message }));
+
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
             <DialogContent className="sm:max-w-md w-[92vw] max-h-[85vh] rounded-xl p-0 overflow-hidden flex flex-col border border-border shadow-2xl">
-                {/* Header with visual icon & title (No internal error codes) */}
+                {/* Header with visual icon & title */}
                 <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/40 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="flex size-9 items-center justify-center rounded-full bg-muted shrink-0">
                             {renderIcon()}
                         </div>
                         <DialogTitle className="text-base font-bold text-foreground">
-                            {t(`error.titles.${error.category}`, error.title)}
+                            {displayTitle || 'Error'}
                         </DialogTitle>
                     </div>
                 </DialogHeader>
@@ -95,10 +98,10 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
                 {/* Main Body with scroll container */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0 max-h-[55vh]">
                     <DialogDescription className="text-sm text-foreground/90 leading-relaxed font-normal">
-                        {t(`error.messages.${error.category}`, error.message)}
+                        {displayMessage || 'An error occurred while processing your request.'}
                     </DialogDescription>
 
-                    {/* Collapsible Technical Diagnostics (Clean message without stack traces) */}
+                    {/* Collapsible Technical Diagnostics */}
                     {hasTechnicalDetails && (
                         <div className="rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
                             <Button
@@ -107,7 +110,7 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
                                 onClick={() => setShowDetails((prev) => !prev)}
                                 className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
                             >
-                                <span>{t('error.technicalDetails', 'Technical Diagnostics (for Support)')}</span>
+                                <span>{safeString(t('error.technicalDetails', { defaultValue: 'Technical Diagnostics (for Support)' }))}</span>
                                 {showDetails ? (
                                     <ChevronUp className="size-4" />
                                 ) : (
@@ -120,20 +123,20 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
                                     {error.details?.statusCode && (
                                         <div>
                                             <span className="text-slate-400">Status Code:</span>{' '}
-                                            <span className="text-amber-400">{error.details.statusCode}</span>
+                                            <span className="text-amber-400">{safeString(error.details.statusCode)}</span>
                                         </div>
                                     )}
                                     {error.details?.path && (
                                         <div className="break-all">
                                             <span className="text-slate-400">Endpoint:</span>{' '}
-                                            <span className="text-slate-300">{error.details.path}</span>
+                                            <span className="text-slate-300">{safeString(error.details.path)}</span>
                                         </div>
                                     )}
                                     {error.details?.rawMessage && (
                                         <div className="pt-1">
                                             <span className="text-slate-400">Raw Message:</span>
                                             <p className="mt-0.5 whitespace-pre-wrap text-slate-200 break-words leading-snug">
-                                                {error.details.rawMessage}
+                                                {safeString(error.details.rawMessage)}
                                             </p>
                                         </div>
                                     )}
@@ -154,12 +157,12 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
                         {copied ? (
                             <>
                                 <Check className="size-3.5 text-emerald-600" />
-                                <span>{t('error.copied', 'Copied')}</span>
+                                <span>{safeString(t('error.copied', { defaultValue: 'Copied' }))}</span>
                             </>
                         ) : (
                             <>
                                 <Copy className="size-3.5" />
-                                <span>{t('error.copyMessage', 'Copy Message')}</span>
+                                <span>{safeString(t('error.copyMessage', { defaultValue: 'Copy Message' }))}</span>
                             </>
                         )}
                     </Button>
@@ -172,7 +175,7 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
                             className="w-full sm:w-auto text-xs h-8"
                         >
                             <X className="size-3.5 mr-1" />
-                            {t('common.close', 'Close')}
+                            {safeString(t('common.close', { defaultValue: 'Close' }))}
                         </Button>
 
                         {error.canRetry && onRetry && (
@@ -186,7 +189,7 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
                                 className="w-full sm:w-auto text-xs gap-1.5 h-8"
                             >
                                 <RotateCcw className="size-3.5" />
-                                <span>{t('common.retry', 'Retry')}</span>
+                                <span>{safeString(t('common.retry', { defaultValue: 'Retry' }))}</span>
                             </Button>
                         )}
                     </div>

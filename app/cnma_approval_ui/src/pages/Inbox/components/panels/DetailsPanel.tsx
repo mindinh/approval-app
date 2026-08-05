@@ -16,12 +16,15 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    Skeleton
+    Skeleton,
+    Button,
 } from '@cnma/react-ui';
+import { ExternalLink } from 'lucide-react';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 import type { BusinessSectionModel } from '@/renderers/TaskDetailSections.types';
 import { cn } from '@/lib/utils';
 import { safe, prettifyFieldLabel } from '@/pages/Inbox/utils/formatters';
+import { normalizeAndOrderTableColumns } from '@/renderers/shared/formatters';
 import { useTranslation } from 'react-i18next';
 
 export function DetailsPanel({
@@ -29,11 +32,13 @@ export function DetailsPanel({
     detail,
     isMobile = false,
     isSecondaryLoading = false,
+    onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
     detail: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
+    onSelectReferencePr?: (prNumber: string) => void;
 }) {
     const { t } = useTranslation();
     const [selectedRow, setSelectedRow] = useState<{
@@ -43,7 +48,8 @@ export function DetailsPanel({
     } | null>(null);
 
     const filteredTables = model.tables
-        .filter((table) => !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title));
+        .filter((table) => !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title))
+        .map(normalizeAndOrderTableColumns);
 
     if (filteredTables.length === 0) {
         if (isSecondaryLoading) {
@@ -68,6 +74,33 @@ export function DetailsPanel({
             </div>
         );
     }
+
+    const isReferencePrField = (key: string, label: string) => {
+        const k = key.toLowerCase();
+        const l = label.toLowerCase();
+        return k === 'referencepr' || k === 'refpr' || l.includes('reference pr') || l.includes('ref pr');
+    };
+
+    const renderCellValue = (key: string, label: string, rawVal: any) => {
+        const displayVal = safe(rawVal);
+        if (isReferencePrField(key, label) && displayVal !== '-' && displayVal.trim() !== '' && onSelectReferencePr) {
+            return (
+                <Button
+                    variant="link"
+                    size="sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectReferencePr(displayVal);
+                    }}
+                    className="h-auto p-0 font-bold text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                >
+                    <span>{displayVal}</span>
+                    <ExternalLink className="size-3.5" />
+                </Button>
+            );
+        }
+        return displayVal;
+    };
 
     return (
         <div className="space-y-6 w-full max-w-full overflow-hidden">
@@ -98,7 +131,7 @@ export function DetailsPanel({
                                                         {column.label}
                                                     </span>
                                                     <span className="text-sm font-semibold text-foreground text-right break-words">
-                                                        {safe(row.values[column.key])}
+                                                        {renderCellValue(column.key, column.label, row.values[column.key])}
                                                     </span>
                                                 </div>
                                             ))}
@@ -166,7 +199,7 @@ export function DetailsPanel({
                                                                 column.align === 'right' && 'text-right'
                                                             )}
                                                         >
-                                                            {safe(row.values[column.key])}
+                                                            {renderCellValue(column.key, column.label, row.values[column.key])}
                                                         </TableCell>
                                                     ))}
                                                 </TableRow>

@@ -33,7 +33,7 @@ export function WorkflowApprovalPanel({
         );
     };
 
-    const steps = [...(data?.steps || [])].sort((a, b) => a.level - b.level);
+    const steps = Array.isArray(data?.steps) ? [...data.steps].sort((a, b) => a.level - b.level) : [];
     const currentIndex = steps.findIndex((step) => isPendingApprovalStatus(step.status));
     const nextIndex = currentIndex >= 0 && currentIndex < steps.length - 1 ? currentIndex + 1 : -1;
 
@@ -49,7 +49,7 @@ export function WorkflowApprovalPanel({
 
             {!isLoading && error && (
                 <div className="rounded-lg border border-dashed border-border/70 px-4 py-5 text-sm text-muted-foreground">
-                    {error}
+                    {typeof error === 'string' ? error : (error as any)?.message || JSON.stringify(error)}
                 </div>
             )}
 
@@ -68,7 +68,7 @@ export function WorkflowApprovalPanel({
                         const isPending = !isCompleted && !isCurrent;
                         const statusRaw = normalizeApprovalStatus(step.status);
                         const isExpanded = expandedStepLevels.includes(step.level);
-                        
+
                         const title = step.approver || `Level ${step.level}`;
                         const initial = typeof title === 'string' && title.length > 0 ? title.charAt(0).toUpperCase() : 'C';
 
@@ -107,7 +107,7 @@ export function WorkflowApprovalPanel({
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     {/* The connecting line */}
                                     <div className={cn("absolute top-8 bottom-[-4px] left-1/2 -translate-x-1/2", lineClasses)} />
                                 </div>
@@ -133,21 +133,11 @@ export function WorkflowApprovalPanel({
                                             {isCurrent && <Badge variant="warning" className="h-5 px-1.5 text-xs">Current</Badge>}
                                             {isNext && <Badge variant="info" className="h-5 px-1.5 text-xs">Next</Badge>}
                                         </h4>
-                                        {step.noteText && (
-                                            <Button 
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => toggleExpand(step.level)}
-                                                className="text-xs text-muted-foreground hover:text-foreground font-medium shrink-0 mt-1.5 h-auto p-0 hover:bg-transparent transition-colors"
-                                            >
-                                                {isExpanded ? "Hide comment" : "Show comment"}
-                                            </Button>
-                                        )}
                                     </div>
-                                    
+
                                     <div className="space-y-1.5 text-sm">
-                                        <div className="flex items-start gap-1.5 truncate">
-                                            <span className="text-muted-foreground w-16 shrink-0">Status:</span>
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            <span className="text-muted-foreground w-32 shrink-0">Status:</span>
                                             <span className={cn(
                                                 "font-medium",
                                                 isCompleted ? "text-success" : (isCurrent ? "text-warning" : "text-muted-foreground")
@@ -155,30 +145,33 @@ export function WorkflowApprovalPanel({
                                                 {formatApprovalStatus(statusRaw)}
                                             </span>
                                         </div>
-                                        
-                                        {step.approverUserId && (
-                                            <div className="flex items-start gap-1.5 truncate">
-                                                <span className="text-muted-foreground w-16 shrink-0">Approver:</span>
-                                                <span className={cn("inline-flex items-center gap-1", isPending ? "text-muted-foreground" : "text-foreground/80")}>
-                                                    <User className="size-3 text-muted-foreground/60" />
-                                                    {step.approverUserId}
-                                                </span>
-                                            </div>
-                                        )}
 
                                         {step.postedOn && (
-                                            <div className="flex items-start gap-1.5 truncate">
-                                                <span className="text-muted-foreground w-16 shrink-0">Date:</span>
+                                            <div className="flex items-center gap-1.5 truncate">
+                                                <span className="text-muted-foreground w-32 shrink-0">Approved Date:</span>
                                                 <span className={isPending ? "text-muted-foreground" : "text-foreground/80"}>
                                                     {step.postedOn} {step.postedTime?.split('.')[0] || ''}
                                                 </span>
                                             </div>
                                         )}
-                                        
+
+                                        {step.noteText && (
+                                            <div className="flex justify-start pt-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => toggleExpand(step.level)}
+                                                    className="text-xs text-muted-foreground hover:text-foreground font-medium shrink-0 h-auto p-0 hover:bg-transparent transition-colors"
+                                                >
+                                                    {isExpanded ? "Hide comment" : "Show more"}
+                                                </Button>
+                                            </div>
+                                        )}
+
                                         {step.noteText && (
                                             <AnimatePresence>
                                                 {isExpanded && (
-                                                    <motion.div 
+                                                    <motion.div
                                                         initial={{ opacity: 0, height: 0, marginTop: 0 }}
                                                         animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
                                                         exit={{ opacity: 0, height: 0, marginTop: 0 }}

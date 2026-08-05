@@ -5,6 +5,7 @@ import type {
 } from '@/services/inbox/inbox.types';
 import type { DetailField, DetailTableModel, DetailTableRow } from './TaskDetailSections.types';
 import { formatAmountWithCurrency } from '@/pages/Inbox/utils/formatters';
+import { formatCodeWithText, formatDate, formatMaterialShortText, normalizeAndOrderTableColumns } from './shared/formatters';
 
 const EMPTY_VALUE = '-';
 
@@ -17,6 +18,10 @@ const ATTRIBUTE_NAME_ALIASES: Record<string, string[]> = {
     incoterms: ['incoterms', 'inco1', 'inco2'],
     netValue: ['netvalue', 'totalvalue', 'amount'],
     currency: ['currency', 'waers'],
+    totalnetvaluebeforetax: ['totalnetvaluebeforetax', 'subtotal', 'netvaluebeforetax'],
+    totalfreightamount: ['totalfreightamount', 'freightamount', 'shippingfee'],
+    totalvatamount: ['totalvatamount', 'vatamount', 'taxamount', 'vat'],
+    totalordervalue: ['totalordervalue', 'ordervalue', 'totalamount', 'netvalue'],
 };
 
 export function normalizeDisplayValue(value: unknown): string {
@@ -36,8 +41,11 @@ export function field(label: string, value: unknown, key?: string): DetailField 
 export function createAttributeIndex(attributes?: CustomAttribute[]): Map<string, CustomAttribute> {
     const index = new Map<string, CustomAttribute>();
     for (const attr of (attributes || [])) {
+        if (!attr || !attr.name) continue;
         index.set(attr.name.toLowerCase(), attr);
-        index.set(attr.label.toLowerCase(), attr);
+        if (attr.label) {
+            index.set(attr.label.toLowerCase(), attr);
+        }
     }
     return index;
 }
@@ -46,14 +54,16 @@ export function pickAttribute(
     index: Map<string, CustomAttribute>,
     candidates: string[]
 ): CustomAttribute | undefined {
+    if (!index || !candidates || !Array.isArray(candidates)) return undefined;
     for (const key of candidates) {
+        if (!key) continue;
         const direct = index.get(key.toLowerCase());
         if (direct) return direct;
     }
 
     // fallback: fuzzy contains
     for (const [key, value] of index) {
-        if (candidates.some((candidate) => key.includes(candidate.toLowerCase()))) {
+        if (candidates.some((candidate) => candidate && key.includes(candidate.toLowerCase()))) {
             return value;
         }
     }
@@ -63,9 +73,10 @@ export function pickAttribute(
 
 export function pickByAlias(
     index: Map<string, CustomAttribute>,
-    aliasKey: keyof typeof ATTRIBUTE_NAME_ALIASES
+    aliasKey: string
 ): string | undefined {
-    return pickAttribute(index, ATTRIBUTE_NAME_ALIASES[aliasKey])?.value;
+    const candidates = ATTRIBUTE_NAME_ALIASES[aliasKey] || [aliasKey];
+    return pickAttribute(index, candidates)?.value;
 }
 
 export function buildTaskObjectsTable(taskObjects?: TaskObject[]): DetailTableModel {
@@ -128,28 +139,60 @@ export function formatFileSize(size?: number): string {
 export function buildItemsTable(rawItems?: any[], parentCurrency?: string): DetailTableModel | null {
     if (!rawItems || rawItems.length === 0) return null;
     const rows: DetailTableRow[] = rawItems.map((item, idx) => {
-        const itemCurrency = item.documentCurrency || item.purReqnItemCurrency || item.currency || item.docCurrency || parentCurrency || '';
+        const itemCurrency =
+            item.documentCurrency ||
+            item.DocumentCurrency ||
+            item.purReqnItemCurrency ||
+            item.currency ||
+            item.Currency ||
+            item.docCurrency ||
+            item.DocCurrency ||
+            parentCurrency ||
+            'VND';
+
+        const itemPrice =
+            item.price ??
+            item.Price ??
+            item.valuationPrice ??
+            item.ValuationPrice ??
+            item.netPriceAmount ??
+            item.NetPriceAmount ??
+            item.netPrice ??
+            item.NetPrice ??
+            item.purchaseRequisitionPrice ??
+            item.PurchaseRequisitionPrice;
+
+        const itemTotal =
+            item.totalAmount ??
+            item.TotalAmount ??
+            item.netAmount ??
+            item.NetAmount ??
+            item.totalValue ??
+            item.TotalValue ??
+            item.purReqnItemTotalAmount;
+
         return {
             id: String(item.item || item.itemNumber || item.purchaseOrderItem || idx),
             values: {
                 item: normalizeDisplayValue(item.item || item.itemNumber || item.purchaseOrderItem),
-                plant: normalizeDisplayValue(item.plant),
-                storageLocation: normalizeDisplayValue(item.storageLocation),
-                material: normalizeDisplayValue(item.material),
-                shortText: normalizeDisplayValue(item.shortText || item.materialText || item.purchaseOrderItemText),
-                materialGroup: normalizeDisplayValue(item.materialGroup),
-                quantity: item.quantity != null ? String(item.quantity) : EMPTY_VALUE,
-                unit: normalizeDisplayValue(item.unit || item.baseUnit || item.purchaseOrderQuantityUnit || item.uom),
-                deliveryDate: normalizeDisplayValue(item.deliveryDate),
-                price: item.price != null ? formatAmountWithCurrency(item.price, itemCurrency) : (item.valuationPrice != null ? formatAmountWithCurrency(item.valuationPrice, itemCurrency) : EMPTY_VALUE),
-                totalAmount: item.totalAmount != null ? formatAmountWithCurrency(item.totalAmount, itemCurrency) : (item.netAmount != null ? formatAmountWithCurrency(item.netAmount, itemCurrency) : EMPTY_VALUE),
-                glAccount: normalizeDisplayValue(item.glAccount),
-                commitmentItemShortId: normalizeDisplayValue(item.commitmentItemShortId || item.commitmentItem)
+                plant: formatCodeWithText(item.plant || item.Plant || item.plantCode || item.PlantCode, item.plantName || item.plantText || item.PlantName || item.PlantText),
+                storageLocation: formatCodeWithText(item.storageLocation || item.StorageLocation, item.storageLocationName || item.storageLocationText || item.StorageLocationName || item.StorageLocationText),
+                material: normalizeDisplayValue(item.material || item.materialNumber || item.Material),
+                shortText: formatMaterialShortText(item),
+                materialGroup: formatCodeWithText(item.materialGroup || item.MaterialGroup || item.materialGroupCode || item.MaterialGroupCode, item.materialGroupText || item.materialGroupName || item.MaterialGroupText || item.MaterialGroupName),
+                quantity: item.quantity != null ? String(item.quantity) : (item.Quantity != null ? String(item.Quantity) : EMPTY_VALUE),
+                unit: normalizeDisplayValue(item.unit || item.baseUnit || item.purchaseOrderQuantityUnit || item.uom || item.UoM),
+                deliveryDate: normalizeDisplayValue(item.deliveryDate || item.DeliveryDate),
+                price: itemPrice != null ? formatAmountWithCurrency(itemPrice, itemCurrency) : EMPTY_VALUE,
+                totalAmount: itemTotal != null ? formatAmountWithCurrency(itemTotal, itemCurrency) : EMPTY_VALUE,
+                glAccount: formatCodeWithText(item.glAccount || item.GLAccount || item.GlAccount, item.glAccountName || item.glAccountText || item.GlAccountName || item.GLAccountName),
+                fundsCenter: formatCodeWithText(item.fundsCenter || item.department || item.FundsCenter, item.fundsCenterName || item.fundsCenterText || item.FundsCenterName),
+                commitmentItemShortId: formatCodeWithText(item.commitmentItemShortId || item.commitmentItem || item.CommitmentItem, item.commitmentItemName || item.commitmentItemText || item.CommitmentItemName)
             }
         };
     });
 
-    return {
+    return normalizeAndOrderTableColumns({
         id: 'items',
         title: 'Line Items',
         columns: [
@@ -165,11 +208,12 @@ export function buildItemsTable(rawItems?: any[], parentCurrency?: string): Deta
             { key: 'price', label: 'Valuation Price', align: 'right' },
             { key: 'totalAmount', label: 'Total Value', align: 'right' },
             { key: 'glAccount', label: 'G/L Account' },
+            { key: 'fundsCenter', label: 'Funds Center' },
             { key: 'commitmentItemShortId', label: 'Commitment Item' }
         ],
         rows,
         emptyMessage: 'No items available'
-    };
+    });
 }
 
 export function buildDefaultBusinessModel(detail: TaskDetail) {
@@ -195,6 +239,31 @@ export function buildDefaultBusinessModel(detail: TaskDetail) {
         detail.task?.curr_vnd ||
         detail.task?.doc_curr;
 
+    const subtotalExclVat =
+        detail.header?.TotalNetValueBeforeTax ??
+        detail.header?.totalNetValueBeforeTax ??
+        pickByAlias(attrIndex, 'totalnetvaluebeforetax') ??
+        detail.totalNetValueBeforeTax;
+
+    const shippingFee =
+        detail.header?.TotalFreightAmount ??
+        detail.header?.totalFreightAmount ??
+        pickByAlias(attrIndex, 'totalfreightamount') ??
+        detail.totalFreightAmount;
+
+    const vatAmount =
+        detail.header?.TotalVatAmount ??
+        detail.header?.totalVatAmount ??
+        pickByAlias(attrIndex, 'totalvatamount') ??
+        detail.totalVatAmount;
+
+    const totalOrderValue =
+        detail.header?.TotalOrderValue ??
+        detail.header?.totalOrderValue ??
+        pickByAlias(attrIndex, 'totalordervalue') ??
+        detail.totalOrderValue ??
+        netValue;
+
     const docTypeDisplay = detail.documentTypeDisplay || detail.header?.purchaseRequisitionTypeDisplay || detail.header?.purchaseOrderTypeText || businessType;
     const compCodeDisplay = detail.companyCodeDisplay || detail.companyCode || detail.header?.companyCodeDisplay || detail.header?.companyCode;
 
@@ -214,11 +283,14 @@ export function buildDefaultBusinessModel(detail: TaskDetail) {
             field('Requester', detail.header?.userName || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
             field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
             field('Release Strategy', detail.releaseStrategyName || detail.header?.releaseStrategyName),
-            field('Total Amount', formattedTotal),
-            field('Company Code', compCodeDisplay),
-            field('Vendor', detail.header?.vendorDisplay || detail.header?.supplierDisplay || pickByAlias(attrIndex, 'supplier')),
-            field('Payment Terms', detail.header?.paymentTermsDisplay || detail.header?.paymentTermsDescription || detail.header?.paymentTerms),
             field('Header Note', detail.headerNote || detail.header?.purchaseOrderText),
+            field('Vendor', detail.header?.vendorDisplay || detail.header?.supplierDisplay || pickByAlias(attrIndex, 'supplier')),
+            field('Company Code', compCodeDisplay),
+            field('Subtotal (Excl. VAT)', subtotalExclVat ? formatAmountWithCurrency(subtotalExclVat, currency) : EMPTY_VALUE),
+            field('Shipping Fee', shippingFee ? formatAmountWithCurrency(shippingFee, currency) : EMPTY_VALUE),
+            field('VAT', vatAmount ? formatAmountWithCurrency(vatAmount, currency) : EMPTY_VALUE),
+            field('Total', totalOrderValue ? formatAmountWithCurrency(totalOrderValue, currency) : formattedTotal),
+            field('Payment Terms', detail.header?.paymentTermsDisplay || detail.header?.paymentTermsDescription || detail.header?.paymentTerms),
         ]
         : [
             field('Document Number', documentId),

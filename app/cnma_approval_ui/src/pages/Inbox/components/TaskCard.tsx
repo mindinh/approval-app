@@ -73,9 +73,9 @@ export const TaskCard = memo(function TaskCard({
 
     const typeUpper = task.businessContext?.type?.toUpperCase();
     const colorKey = typeUpper === 'PO' ? 'info'
-                   : typeUpper === 'RE' ? 'warning'
-                   : typeUpper === 'CLAIM' ? 'success'
-                   : 'primary';
+        : typeUpper === 'RE' ? 'warning'
+            : typeUpper === 'CLAIM' ? 'success'
+                : 'primary';
 
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
@@ -108,7 +108,7 @@ export const TaskCard = memo(function TaskCard({
                     },
                     // Priority accent stripe (left edge)
                     !isSelected && stripeClass !== 'before:bg-transparent' &&
-                        cn('before:absolute before:inset-y-0 before:left-0 before:w-1', stripeClass),
+                    cn('before:absolute before:inset-y-0 before:left-0 before:w-1', stripeClass),
                 )}
             >
                 {/* ── Icon + header row ── */}
@@ -118,11 +118,11 @@ export const TaskCard = memo(function TaskCard({
                             'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl',
                             isSelected
                                 ? {
-                                      'bg-info/10 text-info': colorKey === 'info',
-                                      'bg-warning/10 text-warning': colorKey === 'warning',
-                                      'bg-success/10 text-success': colorKey === 'success',
-                                      'bg-primary/10 text-primary': colorKey === 'primary',
-                                  }
+                                    'bg-info/10 text-info': colorKey === 'info',
+                                    'bg-warning/10 text-warning': colorKey === 'warning',
+                                    'bg-success/10 text-success': colorKey === 'success',
+                                    'bg-primary/10 text-primary': colorKey === 'primary',
+                                }
                                 : 'bg-muted text-muted-foreground',
                         )}
                     >
@@ -180,7 +180,7 @@ export const TaskCard = memo(function TaskCard({
                 <div className="mt-3 flex w-full items-center justify-between gap-3 border-t border-border/60 pt-2.5 text-xs text-muted-foreground">
                     <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                         <User className="size-3.5 shrink-0 text-muted-foreground/70" />
-                        <span className="truncate">{task.requestorName || task.createdByName || '-'}</span>
+                        <span className="truncate">Requestor: {task.requestorName || task.createdByName || '-'}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
                         <Clock className="size-3.5 text-muted-foreground/70" />
@@ -277,7 +277,7 @@ export const TaskCard = memo(function TaskCard({
             <div className="mt-3 flex w-full items-center justify-between gap-3 border-t border-border/60 pt-2.5 text-xs text-muted-foreground">
                 <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                     <User className="size-3.5 shrink-0 text-muted-foreground/70" />
-                    <span className="truncate">{task.requestorName || task.createdByName || '-'}</span>
+                    <span className="truncate">Requestor: {task.requestorName || task.createdByName || '-'}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5">
                     <Clock className="size-3.5 text-muted-foreground/70" />

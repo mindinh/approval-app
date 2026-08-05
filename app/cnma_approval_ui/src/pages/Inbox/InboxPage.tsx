@@ -211,7 +211,7 @@ export default function InboxPage() {
 
     if (isMobile) {
         return (
-            <div className="relative h-screen flex flex-col overflow-hidden bg-background">
+            <div className="relative h-full flex flex-col min-h-0 overflow-hidden bg-background">
                 {/* Mobile App Header — always visible gradient bar */}
                 <div
                     className="px-4 py-3 flex items-center shadow-sm relative z-20 shrink-0"
@@ -294,7 +294,7 @@ export default function InboxPage() {
     }
 
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-background">
+        <div className="flex h-full w-full overflow-hidden bg-background">
             <aside className="relative w-80 shrink-0 overflow-hidden border-r border-border/60 bg-background">
                 <TaskList
                     tasks={tasks}

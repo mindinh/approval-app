@@ -1,4 +1,5 @@
-import { Textarea, Skeleton } from '@cnma/react-ui';
+import { Textarea, Skeleton, Button } from '@cnma/react-ui';
+import { ExternalLink } from 'lucide-react';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 import type { BusinessSectionModel, DetailField } from '@/renderers/TaskDetailSections.types';
 import { useTranslation } from 'react-i18next';
@@ -9,11 +10,13 @@ export function OverviewPanel({
     model,
     isMobile = false,
     isSecondaryLoading = false,
+    onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
     detail?: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
+    onSelectReferencePr?: (prNumber: string) => void;
 }) {
     const { t } = useTranslation();
 
@@ -30,6 +33,32 @@ export function OverviewPanel({
         f.dataType === 'LONG_TEXT' ||
         f.dataType === 'TEXTAREA' ||
         ['description', 'header note', 'header text', 'purpose', 'paid by', 'bank details', 'notes', 'remarks'].includes(f.label.toLowerCase());
+
+    const isReferencePrField = (key: string, label: string) => {
+        const k = key.toLowerCase();
+        const l = label.toLowerCase();
+        return k === 'referencepr' || k === 'refpr' || l.includes('reference pr') || l.includes('ref pr');
+    };
+
+    const renderFieldValue = (key: string, label: string, val: string) => {
+        if (isReferencePrField(key, label) && val !== '-' && val.trim() !== '' && onSelectReferencePr) {
+            return (
+                <Button
+                    variant="link"
+                    size="sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectReferencePr(val);
+                    }}
+                    className="h-auto p-0 font-bold text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                >
+                    <span>{val}</span>
+                    <ExternalLink className="size-3.5" />
+                </Button>
+            );
+        }
+        return val;
+    };
 
     return (
         <div className="space-y-6">
@@ -72,7 +101,7 @@ export function OverviewPanel({
                                                             transition={{ duration: 0.18 }}
                                                             className="font-semibold text-foreground text-sm text-right break-words whitespace-pre-line"
                                                         >
-                                                            {val}
+                                                            {renderFieldValue(item.key, item.label, val)}
                                                         </motion.span>
                                                     </AnimatePresence>
                                                 )}
@@ -96,7 +125,7 @@ export function OverviewPanel({
                                                             transition={{ duration: 0.18 }}
                                                             className="font-semibold text-sm text-foreground break-words whitespace-pre-line"
                                                         >
-                                                            {val}
+                                                            {renderFieldValue(item.key, item.label, val)}
                                                         </motion.span>
                                                     </AnimatePresence>
                                                 )}
