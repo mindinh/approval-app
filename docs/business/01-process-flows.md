@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-07-22 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-05 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -46,9 +46,9 @@ sequenceDiagram
     end
 
     Approver->>Portal: Select Approve or Reject
-    Portal->>BFF: Submit decision (with justification if Reject)
-    BFF->>ERP: Send decision instruction & comments
-    ERP-->>BFF: Confirm workflow level execution
+    Portal->>BFF: Submit decision (with justification comment)
+    BFF->>ERP: Push decision code (A for Approve, R for Reject) & comment note
+    ERP-->>BFF: Confirm workflow level execution & note persistence
     BFF-->>Portal: Deliver success confirmation
     Portal-->>Approver: Remove task from active queue & update counters
 ```

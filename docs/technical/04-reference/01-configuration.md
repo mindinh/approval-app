@@ -1,8 +1,20 @@
 # System Configuration & Object Mapping Reference
 
-> **Owner:** Lead CAP Architect | **Last Updated:** 2026-07-31 | **Status:** Active
+> **Owner:** Lead CAP Architect | **Last Updated:** 2026-08-05 | **Status:** Active
 
-This document provides a reference guide for runtime environment variables, BTP destination settings, and declarative object type mapping configurations (`config.json`).
+This document provides a reference guide for runtime environment variables, BTP destination settings, OData backend paths, and declarative object type mapping configurations (`config.json`).
+
+---
+
+## 🛰️ OData Backend Services Configuration (`odata-config.ts`)
+
+The backend BFF communicates with SAP S/4HANA via configured OData V4 services defined in [`srv/lib/processors/odata-config.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/odata-config.ts):
+
+| Service Key | Default Service Path | Primary Entity Set | Purpose |
+| :--- | :--- | :--- | :--- |
+| `INSTANCE_LIST` | `/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001` | `CNMA_WFTASK` | Queries workflow active worklist, status counts, and document type counts. |
+| `APPROVAL_SRV` | `/sap/opu/odata4/sap/zsb_prorequest/srvd_a2x/sap/zsd_prorequest/0001` | `ZC_PRHEADER` / `ZC_POHEADER` | Fetches document header, line items, workflow release strategy steps, attachments, and comments. |
+| `TASK_PROCESSING` | `/sap/opu/odata/IWPGW/TASKPROCESSING/0002` | `TaskCollection` | Legacy workflow task processing fallback service path. |
 
 ---
 
@@ -95,6 +107,15 @@ Each business object type configuration is stored under `srv/configuration/objec
   }
 }
 ```
+
+### Document Subtype Configuration (`documentTypes`)
+
+Configurations under `srv/configuration/object-types/{objectType}/config.json` support subtype-specific UI overrides using the `documentTypes` map:
+
+*   **PR Subtypes**: `ZASS` (Asset Requisition), `ZMAK` (Asset Subcontracting), `ZNB1` (Standard PR), `ZNB2` (Service PR), `ZTOL` (Toll Manufacturing), `ZEXP` (Expense PR).
+*   **PO Subtypes**: `ZASS` (Asset PO), `ZCON` (Consignment PO), `ZCOR` (Subcontracting PO), `ZMAK` (Asset Subcontracting PO), `ZNB1` (Standard PO), `ZNB2` (Service PO), `ZNBR` (Return PO), `ZTOL` (Toll PO), `ZUB` (Stock Transfer Order).
+
+Each subtype entry defines customized card chips, active UI sections, and dedicated layout configurations.
 
 ### Available Data Transformation Functions
 

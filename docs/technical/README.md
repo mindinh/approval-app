@@ -2,7 +2,7 @@
 
 This directory contains technical documentation for developers, system architects, and DevOps engineers maintaining or extending the **CNMA Approval** application.
 
-> **Last Updated:** 2026-07-22
+> **Last Updated:** 2026-08-05
 
 ## 📂 Subdirectories
 
@@ -19,6 +19,7 @@ Developer setup, project guides, and layouts:
 *   [**02-Project Structure**](./02-implementation/02-project-structure.md): Codebase organization and mapping of directories.
 *   [**03-Backend BFF Endpoints**](./02-implementation/03-backend-bff-endpoints.md): Full listing of Express REST APIs provided by the CAP BFF.
 *   [**04-Frontend Components**](./02-implementation/04-frontend-components.md): Component structure, layouts, dynamic section registries, and routing.
+*   [**05-Field Mapping Guide**](./02-implementation/05-field-mapping-guide.md): 6-layer pipeline guide for developers & AI agents adding, modifying, or fixing fields.
 
 ### 📚 4. Reference (`docs/technical/04-reference/`)
 Reference guides and specifications:

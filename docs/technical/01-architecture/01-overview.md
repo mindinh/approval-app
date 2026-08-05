@@ -37,7 +37,7 @@ graph TD
 
     subgraph SAPCore [Enterprise On-Premises Core]
         TaskGW["SAP Task Gateway<br/>(/iwfnd/sgw_taskprocessing)"]
-        S4Core["S/4HANA OData Core<br/>(APPROVAL_SRV / zsb_prorequest)"]
+        S4Core["S/4HANA OData Core<br/>(za_cnma_prorequest)"]
     end
 
     ClientSide -->|HTTPS / REST API| AppRouter

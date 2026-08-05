@@ -2,6 +2,37 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [1.0.7] - 2026-08-05
+
+### Added
+*   **Modular PR & PO Subtype Layout Builders**:
+    *   Created modular layout builders under `app/cnma_approval_ui/src/renderers/modules/`:
+        *   PR subtypes (`pr/subtypes/`): `ZASS` (Asset), `ZMAK` (Asset Subcontracting), `ZNB1` (Standard), `ZNB2` (Service), `ZTOL` (Toll Manufacturing).
+        *   PO subtypes (`po/subtypes/`): `ZASS`, `ZCON`, `ZCOR`, `ZMAK`, `ZNB1`, `ZNB2`, `ZNBR`, `ZTOL`, `ZUB`.
+*   **Workflow Approval Release Step Description (`releaseText`)**:
+    *   Exposed `releaseText` in canonical approval step mapping interface `ApprovalStep` and updated `WorkflowApprovalPanel.tsx` to display human-readable stage descriptions alongside release codes.
+*   **Field Mapping Guide (`05-field-mapping-guide.md`)**:
+    *   Added comprehensive technical field mapping guide documenting S/4HANA to Canonical Business Object properties across all document types and subtypes.
+
+### Changed
+*   **OData V4 Service Endpoint Upgrade**:
+    *   Upgraded `INSTANCE_LIST` service path to `/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001` consuming entity set `CNMA_WFTASK`.
+    *   Updated `METADATA.xml` OData EDMX definitions to incorporate latest S/4HANA CDS entity annotations.
+*   **Filename-Preserving Attachment Streaming**:
+    *   Extended backend BFF attachment content endpoint URL routing pattern to `/api/cnma/APPROVAL_SRV/tasks/:id/attachments/:attId/content/:filename`, preserving file extension and titles during downloads.
+*   **PR Approval Decision Comment Syncing**:
+    *   Updated `InboxProcessor.addComment` decision push to send decision codes (`A` for Approve, `R` for Reject) along with comment text to SAP Gateway.
+*   **Requester Name Resolution Hierarchy**:
+    *   Updated requester name resolution in `InboxProcessor` and `inbox-utils.ts` to check `header.userName` before falling back to `header.userFullName` or `header.createdByUser`.
+
+### Fixed
+*   **DocType & Status Counts Fallback Calculation**:
+    *   Replaced failing OData aggregate count fetches in `SapOdataAdapter` with in-memory instance aggregation fallback.
+*   **UI Test Suite Alignment**:
+    *   Updated `formatters.shared.test.ts` and `pr.subtypes.test.ts` unit tests to cover new subtype builders and shared formatters.
+
+---
+
 ## [1.0.6] - 2026-07-31
 
 ### Added

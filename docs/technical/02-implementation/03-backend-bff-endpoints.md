@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-07-31 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-05 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -219,6 +219,7 @@ These endpoints are designed for troubleshooting configurations, token bindings,
 
 ### 11. POST `/tasks/tasks/:id/decision`
 *   **Purpose**: Executes an approval or rejection decision.
+*   **ERP Sync**: When comments are provided on PR decisions, the decision code (`A` for Approve, `R` for Reject) and text are pushed to SAP document notes.
 *   **Request Payload Schema**:
     ```json
     {
@@ -267,9 +268,11 @@ These endpoints are designed for troubleshooting configurations, token bindings,
 *   **Status**: **Disabled.**
 *   **Response**: Returns `403 Forbidden` (`"Attachment upload is disabled."`). Upload functionality is hidden in the user interface.
 
-### 14. GET `/tasks/tasks/:id/attachments/:attId/content` & GET `/tasks/pr/:docNum/attachments/:attachId/content`
-*   **Purpose**: Stream and download the binary contents of an attachment.
+### 14. GET `/tasks/tasks/:id/attachments/:attId/content/:filename` & GET `/tasks/pr/:docNum/attachments/:attachId/content/:filename`
+*   **Purpose**: Stream and download the binary contents of an attachment while explicitly preserving the file name.
 *   **Availability**: **Supported in both Mock and Real S/4HANA modes.** In real mode, it fetches the binary stream directly from S/4HANA's `ZI_DOC_ATTACH_CONTENT` OData service.
+*   **URL Route Parameter**:
+    *   `:filename` (Required in path): URL-encoded attachment filename (e.g. `Quote_Sheet.pdf`) passed to preserve file extension and title during download.
 *   **Query Parameters**:
     *   `documentId` (Optional): Associated document number. If omitted in request query, the backend resolves `documentId` dynamically from the task context.
     *   `disposition` (Optional): `'inline'` (default, for browser preview) or `'attachment'` (to force download).

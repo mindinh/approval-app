@@ -1,8 +1,8 @@
 # Frontend Component Architecture & Dynamic Registry
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-07-31 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-05 | **Status:** Active
 
-This document details the React component hierarchy, state synchronization patterns, canonical data consumption, and dynamic UI section rendering registry of the **CNMA Approval** frontend.
+This document details the React component hierarchy, state synchronization patterns, canonical data consumption, modular subtype rendering builders, and dynamic UI section rendering registry of the **CNMA Approval** frontend.
 
 ---
 
@@ -23,7 +23,7 @@ The frontend application uses a clean, mobile-first master-detail layout for the
         │     ├── OverviewPanel.tsx (Header fields and schema-driven sections)
         │     ├── CommentsPanel.tsx (Timeline notes & submission)
         │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx with TextViewer)
-        │     └── WorkflowApprovalPanel.tsx (Approval tree timeline)
+        │     └── WorkflowApprovalPanel.tsx (Approval tree timeline with releaseText steps)
         └── Action Panel: DecisionPanel.tsx (Floating Approve/Reject decisions with comment modal)
 ```
 
@@ -42,17 +42,21 @@ The frontend relies on **React Query (TanStack Query v5)** for managing asynchro
 
 ---
 
-## 🏛️ Dynamic Detail View Registry (`TaskDetailSections.registry.ts`)
+## 🏛️ Dynamic Detail View Registry & Subtype Builders (`src/renderers/`)
 
-To handle different procurement and financial object types (Purchase Requisitions, Purchase Orders, Expense Claims, Material Reservations) without hardcoding UI controls, the application uses a dynamic section registry engine located at [`src/renderers/TaskDetailSections.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/TaskDetailSections.registry.ts):
+To handle different procurement and financial object types and specialized subtypes without hardcoding UI controls, the application uses a modular renderer architecture located at [`src/renderers/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/):
 
-### 1. Dynamic Layout Schema Engine
-When the backend task detail response includes a `uiSchema`:
-*   `uiSchema`: Defines the section cards, titles, types (`CARD`, `TABLE`), and field lists.
-*   `header` / `items` canonical properties: Provide typed data fields for rendering.
-*   The registry dynamically parses the `uiSchema`, maps canonical field paths, formats raw values, and renders UI section components cleanly.
+### 1. Subtype Layout Builders (`src/renderers/modules/`)
+*   **Purchase Requisition Subtype Builders** (`pr/subtypes/`):
+    *   `pr.zass.ts`: Asset Requisition layout builder with investment profile and asset account assignment details.
+    *   `pr.zmak.ts`: Asset Subcontracting layout builder.
+    *   `pr.znb1.ts`: Standard Purchase Requisition layout builder.
+    *   `pr.znb2.ts`: Service Purchase Requisition layout builder with service item specifications.
+    *   `pr.ztol.ts`: Toll Manufacturing Requisition layout builder.
+*   **Purchase Order Subtype Builders** (`po/subtypes/`):
+    *   `po.zass.ts`, `po.zcon.ts`, `po.zcor.ts`, `po.zmak.ts`, `po.znb1.ts`, `po.znb2.ts`, `po.znbr.ts`, `po.ztol.ts`, `po.zub.ts`: Specialized layout builders for asset, consignment, subcontracting, standard, service, return, toll, and stock transfer orders.
 
-### 2. Contextual Data Formatters
+### 2. Contextual Data Formatters (`src/renderers/shared/formatters.ts`)
 *   **DATE**: Formats ISO timestamps or SAP date strings into readable localized dates.
 *   **AMOUNT**: Formats values dynamically using original document currencies or VND (e.g. `12,500,000 VND`).
 *   **QUANTITY**: Parses counts and appends unit descriptors (e.g., `100 EA`).
@@ -60,8 +64,9 @@ When the backend task detail response includes a `uiSchema`:
 
 ### 3. Sub-Panels & Modals
 *   **[`OverviewPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/OverviewPanel.tsx)**: Displays high-level header information, document status badges, and dynamic UI schema card sections.
-*   **[`AttachmentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/AttachmentsPanel.tsx)**: Displays attached documents with file icons, sizes, and direct download/preview links.
-*   **[`AttachmentPreviewModal.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/AttachmentPreviewModal.tsx)**: Renders inline image and PDF previews.
+*   **[`WorkflowApprovalPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/WorkflowApprovalPanel.tsx)**: Displays chronological workflow release steps, rendering `releaseText` stage titles alongside release codes.
+*   **[`AttachmentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/AttachmentsPanel.tsx)**: Displays attached documents with file icons, sizes, and direct filename-preserved download links `/content/:filename`.
+*   **[`AttachmentPreviewModal.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/AttachmentPreviewModal.tsx)**: Renders inline image, PDF, and plain text (`TextViewer.tsx`) previews.
 
 ---
 

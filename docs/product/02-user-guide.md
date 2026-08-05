@@ -31,22 +31,23 @@ The **Inbox** holds your structured task list:
 Clicking a Task Card loads its comprehensive details in a split-screen view:
 
 ### 1. General Information & Items
-Displays header data (Company Code, Purchasing Organization, Supplier, total net value) followed by a line items grid. For each line item:
+Displays header data (Company Code, Purchasing Organization, Supplier, total net value) followed by customized subtype layouts (Asset PR/PO, Subcontracting, Toll Manufacturing, Service PR/PO, Stock Transfer). For each line item:
 *   Item Number and description.
 *   Quantity, Unit of Measure, Net Price, and Net Value.
 *   Material Group.
-*   **Account Assignments** (available on expansion): Cost Center, Profit Center, and G/L Account.
+*   **Account Assignments** (available on expansion): Cost Center, Profit Center, Asset Number, and G/L Account.
 
 ### 2. Workflow Approval Tree
 Located in the **Workflow** tab, this panel displays the hierarchy of the approval strategy:
 *   Chronological steps in the release strategy.
+*   Release Stage titles (e.g. *Department Manager Approval*, *Finance Sign-off*) rendered alongside release codes.
 *   Who has already approved, who is the current agent, and who is up next.
 *   Timestamps and decision status (Approve, Reject, Pending) for each agent.
 
 ### 3. Attachments Panel
 Located in the **Attachments** tab, this manages related files:
-*   **View & Download**: Lists existing attachments fetched from S/4HANA. Clicking on a document streams and previews it directly in the embedded PDF/image viewer modal.
-*   **Upload**: Drag-and-drop or click to select support sheets (PDF, Excel, Word, images) to attach to this request.
+*   **View & Download**: Lists existing attachments fetched from S/4HANA. Clicking on a document streams and previews it directly in the embedded modal (supporting PDF, images, and plain text files such as `.txt`, `.json`, `.csv`, `.xml`). Clicking download saves the file while preserving its original filename and extension.
+*   **Upload**: Disabled in standard view to maintain S/4HANA audit trail immutability.
 
 ### 4. Comments Panel
 Located in the **Comments** tab, this acts as the collaboration log:
