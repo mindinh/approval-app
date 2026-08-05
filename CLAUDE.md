@@ -137,6 +137,7 @@ Follow this step-by-step guide to onboard a new object type across the system:
 
 ### 6. Fixing Field Mapping or Transforming Data Format
 * **Raw OData Field Name Changed**: Update `sourcePath` / `altSourcePaths` in `config.json`.
+* **Prefer Human-Readable Text over Raw Codes**: When adding or displaying fields (e.g., approval steps, document types, status descriptions), always map and render the descriptive text property (e.g., `releaseText` / `ReleaseText`) over raw code numbers (`releaseCode` / `ReleaseCode`). Extract it in `srv/lib/integrations/[type].ts` with fallback to code: `s.ReleaseText || s.ReleaseCode`.
 * **Value Formatting Needed**: Use available transforms in [`srv/lib/mapping/transforms.ts`](file:///d:/learning/test/cnma_approval/srv/lib/mapping/transforms.ts):
   - `sapDateToIso`: Formats `/Date(1620000000000)/` or SAP date string to ISO date `YYYY-MM-DD`.
   - `combineCodeAndText`: Combines code and description text (e.g., `1000 - Plant Munich`).
@@ -163,6 +164,8 @@ cd app/cnma_approval_ui; npx tsc --noEmit
 ---
 
 ## 📚 Key Reference Links
+* Field Mapping & Pipeline Guide: [05-field-mapping-guide.md](file:///d:/learning/test/cnma_approval/docs/technical/02-implementation/05-field-mapping-guide.md)
 * Architecture & Mapping Engine: [04-config-driven-mapping.md](file:///d:/learning/test/cnma_approval/docs/technical/01-architecture/04-config-driven-mapping.md)
 * Backend BFF Endpoints: [03-backend-bff-endpoints.md](file:///d:/learning/test/cnma_approval/docs/technical/02-implementation/03-backend-bff-endpoints.md)
 * Declarative Schema Reference: [01-configuration.md](file:///d:/learning/test/cnma_approval/docs/technical/04-reference/01-configuration.md)
+
