@@ -103,7 +103,7 @@ export function CommentsPanel({
                             onChange={(e) => setCommentText(e.target.value)}
                             maxLength={255}
                             rows={3}
-                            className="resize-none bg-card border-border focus-visible:ring-ring"
+                            className="resize-none bg-card border-border focus-visible:ring-ring font-sans"
                             onKeyDown={(e) => {
                                 if (e.ctrlKey && e.key === 'Enter') {
                                     handleSubmit();

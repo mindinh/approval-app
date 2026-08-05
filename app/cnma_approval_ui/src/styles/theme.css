@@ -330,6 +330,14 @@
       font-family: var(--font-mono);
    }
 
+   /* Explicit font-family enforcement for form elements & textareas */
+   textarea,
+   input,
+   select,
+   button {
+      font-family: var(--font-sans);
+   }
+
    /* Custom Scrollbar Styles */
    ::-webkit-scrollbar {
       width: 8px;

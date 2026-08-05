@@ -33,8 +33,8 @@ export function buildClaimModel(detail: TaskDetail): BusinessSectionModel {
     const overviewFields = [
         field('Claim Form Number', documentId),
         field('Document Type', detail.documentTypeDisplay || (detail.documentType ? detail.documentType : EMPTY_VALUE)),
-        field('Claimant Name', detail.requestorName || detail.header?.userFullName),
-        field('Created On', formatDate(detail.createdOn || detail.header?.createdOn)),
+        field('Claimant Name', detail.header?.userName || detail.header?.claimant || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
+        field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
         field('Total Amount', formattedTotal),
         field('Company Code', formatCodeWithText(detail.companyCode || detail.header?.companyCode, detail.companyCodeDisplay || detail.header?.companyCodeDisplay)),
         field('Purpose / Reason', detail.headerNote || detail.header?.purpose),

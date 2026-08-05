@@ -10,7 +10,6 @@ import {
     Menu,
     ChevronRight,
     RefreshCw,
-    Download,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -276,48 +275,6 @@ export default function DashboardPage() {
         handleFilterClear();
     }, [handleFilterClear]);
 
-    // CSV Export Handler with UTF-8 BOM
-    const exportToCsv = useCallback(() => {
-        const headers = [
-            t('dashboard.table.rowNumber'),
-            t('dashboard.table.docNumber'),
-            t('dashboard.table.type'),
-            t('dashboard.table.status'),
-            t('dashboard.table.amount'),
-            'CURRENCY',
-            'CREATED ON'
-        ];
-
-        const rows = tableRows.map((row, idx) => [
-            idx + 1,
-            row.docNumber,
-            row.documentTypeDesc || row.taskType,
-            row.status,
-            row.totalNetAmount != null ? row.totalNetAmount : '',
-            row.displayCurrency || row.currency || '',
-            row.createdAt ? new Date(row.createdAt).toLocaleDateString() : ''
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(val => {
-                const strVal = String(val);
-                if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
-                    return `"${strVal.replace(/"/g, '""')}"`;
-                }
-                return strVal;
-            }).join(','))
-        ].join('\n');
-
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `dashboard_tasks_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }, [tableRows, t]);
 
     const hasFilters = useMemo(() => {
         return (
@@ -525,17 +482,6 @@ export default function DashboardPage() {
                                     {tableRows.length > 0 && ` — ${t('dashboard.itemsCount', { count: tableRows.length })}`}
                                 </p>
                             </div>
-
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={exportToCsv}
-                                disabled={tableRows.length === 0}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-background border border-border text-primary hover:text-primary-hover cursor-pointer"
-                            >
-                                <Download size={12} />
-                                {t('dashboard.exportCsv', 'Export CSV')}
-                            </Button>
                         </div>
 
                         <div className="overflow-auto rounded-b-2xl max-h-96">

@@ -25,11 +25,16 @@ describe('formatCodeWithText', () => {
 });
 
 describe('formatMaterialShortText', () => {
-    it('combines material number and short text', () => {
-        expect(formatMaterialShortText({ material: 'MAT01', shortText: 'Laptop' })).toBe('MAT01 - Laptop');
+    it('returns only the short text description without material number prefix', () => {
+        expect(formatMaterialShortText({ material: 'MAT01', shortText: 'Laptop' })).toBe('Laptop');
     });
 
-    it('prevents duplicating material number when short text already starts with material number', () => {
-        expect(formatMaterialShortText({ material: 'MAT01', shortText: 'MAT01 - Laptop' })).toBe('MAT01 - Laptop');
+    it('strips material number prefix when short text starts with material number', () => {
+        expect(formatMaterialShortText({ material: 'MAT01', shortText: 'MAT01 - Laptop' })).toBe('Laptop');
+        expect(formatMaterialShortText({ material: '40000143', shortText: '40000143 - sữa chua uống vinamilk' })).toBe('sữa chua uống vinamilk');
+    });
+
+    it('returns material number when short text is empty', () => {
+        expect(formatMaterialShortText({ material: 'MAT01', shortText: '' })).toBe('MAT01');
     });
 });

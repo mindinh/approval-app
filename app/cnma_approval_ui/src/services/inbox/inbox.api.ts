@@ -205,13 +205,20 @@ export const inboxApi = {
         attachmentId: string,
         documentId?: string,
         sapOrigin?: string,
-        disposition: 'inline' | 'attachment' = 'inline'
+        disposition: 'inline' | 'attachment' = 'inline',
+        fileName?: string
     ): string => {
         const query = new URLSearchParams();
         query.set('disposition', disposition);
         if (documentId) query.set('documentId', documentId);
         if (sapOrigin) query.set('sapOrigin', sapOrigin);
-        return `${BASE_URL}/attachments/${encodeURIComponent(attachmentId)}/content?${query.toString()}`;
+
+        const cleanFileName = fileName ? encodeURIComponent(fileName) : '';
+        const basePath = cleanFileName
+            ? `${BASE_URL}/attachments/${encodeURIComponent(attachmentId)}/content/${cleanFileName}`
+            : `${BASE_URL}/attachments/${encodeURIComponent(attachmentId)}/content`;
+
+        return `${basePath}?${query.toString()}`;
     },
 
     /**

@@ -15,7 +15,7 @@ import {
     field,
     pickByAlias
 } from '../../shared/base.builder';
-import { buildPoZexpItemsTable } from './subtypes/po.zexp';
+import { PO_SUBTYPE_CONFIGS } from './subtypes';
 
 export function buildDefaultPoItemsTable(rawItems?: any[], parentCurrency?: string): DetailTableModel | null {
     if (!rawItems || rawItems.length === 0) return null;
@@ -102,8 +102,9 @@ export function buildPoModel(detail: TaskDetail): BusinessSectionModel {
     const overviewFields = [
         field('PO Number', documentId),
         field('Document Type', docTypeDisplay),
-        field('Requester', detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
-        field('Created On', formatDate(detail.createdOn || detail.header?.createdOn)),
+        field('Requester', detail.header?.userName || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
+        field('Funds Center', formatCodeWithText(detail.header?.fundsCenter || detail.header?.department, detail.header?.fundsCenterName || detail.header?.departmentDisplay)),
+        field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
         field('Release Strategy', detail.releaseStrategyName || detail.header?.releaseStrategyName),
         field('Total Amount', formattedTotal),
         field('Company Code', compCodeDisplay),
@@ -112,8 +113,9 @@ export function buildPoModel(detail: TaskDetail): BusinessSectionModel {
         field('Header Note', detail.headerNote || detail.header?.purchaseOrderText),
     ];
 
-    const itemsTable = docType === 'ZEXP'
-        ? buildPoZexpItemsTable(detail.items, currency)
+    const subtypeConfig = PO_SUBTYPE_CONFIGS[docType];
+    const itemsTable = subtypeConfig
+        ? subtypeConfig.buildItemsTable(detail.items, currency)
         : buildDefaultPoItemsTable(detail.items, currency);
 
     const tables: DetailTableModel[] = [];

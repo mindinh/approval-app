@@ -103,12 +103,12 @@ export function AttachmentsPanel({
         }
     };
 
-    const getPreviewUrl = (attachmentId: string) => {
-        return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'inline');
+    const getPreviewUrl = (attachmentId: string, fileName?: string) => {
+        return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'inline', fileName);
     };
 
-    const getDownloadUrl = (attachmentId: string) => {
-        return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'attachment');
+    const getDownloadUrl = (attachmentId: string, fileName?: string) => {
+        return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'attachment', fileName);
     };
 
     const handleDownload = async (attachmentId: string, defaultFileName: string) => {

@@ -211,8 +211,8 @@ export function buildDefaultBusinessModel(detail: TaskDetail) {
         ? [
             field('PO Number', documentId),
             field('Document Type', docTypeDisplay),
-            field('Requester', detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
-            field('Created On', detail.createdOn || detail.header?.createdOn),
+            field('Requester', detail.header?.userName || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
+            field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
             field('Release Strategy', detail.releaseStrategyName || detail.header?.releaseStrategyName),
             field('Total Amount', formattedTotal),
             field('Company Code', compCodeDisplay),
@@ -223,9 +223,9 @@ export function buildDefaultBusinessModel(detail: TaskDetail) {
         : [
             field('Document Number', documentId),
             field('Document Type', docTypeDisplay),
-            field('Requester', detail.requestorName || detail.header?.userFullName),
-            field('Funds Center', detail.header?.departmentDisplay || detail.header?.fundsCenter),
-            field('Created On', detail.createdOn || detail.header?.createdOn),
+            field('Requester', detail.header?.userName || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
+            field('Funds Center', formatCodeWithText(detail.header?.fundsCenter || detail.header?.department, detail.header?.fundsCenterName || detail.header?.departmentDisplay)),
+            field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
             field('Release Strategy Name', detail.releaseStrategyName || detail.header?.releaseStrategyName),
             field('Total Amount', formattedTotal),
             field('Company Code', compCodeDisplay),

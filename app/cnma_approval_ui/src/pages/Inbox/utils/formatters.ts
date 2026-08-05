@@ -24,8 +24,17 @@ export function parseDate(value: string): Date {
  * Format a date string to `dd MMM yyyy, HH:mm`.
  * Returns `'-'` for falsy or unparseable values.
  */
-export function formatDate(value?: string): string {
+export function formatDate(value?: string, timeValue?: string): string {
     if (!value) return '-';
+    if (timeValue && typeof timeValue === 'string') {
+        const cleanDate = value.split('T')[0];
+        const combined = `${cleanDate}T${timeValue}`;
+        const date = parseDate(combined);
+        if (!Number.isNaN(date.getTime())) {
+            return format(date, 'dd MMM yyyy, HH:mm:ss');
+        }
+        return `${value} ${timeValue}`;
+    }
     const date = parseDate(value);
     if (Number.isNaN(date.getTime())) return value;
     return format(date, 'dd MMM yyyy, HH:mm');
@@ -95,6 +104,40 @@ export function formatDateShortLocale(value?: string): string {
     const date = parseDate(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString('en-GB');
+}
+
+/**
+ * Format a time string or object (e.g. `PT10H24M18S`, `102418`, `{ ms: 37458000 }`)
+ * into `HH:mm:ss` format.
+ */
+export function formatTime(timeValue: unknown): string {
+    if (timeValue == null || timeValue === '') return '';
+    if (typeof timeValue === 'object' && (timeValue as any).ms !== undefined) {
+        const ms = Number((timeValue as any).ms);
+        if (!ms || ms === 0) return '';
+        const totalSecs = Math.floor(ms / 1000);
+        const hours = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+        const secs = String(totalSecs % 60).padStart(2, '0');
+        const formatted = `${hours}:${mins}:${secs}`;
+        return formatted === '00:00:00' ? '' : formatted;
+    }
+    const str = String(timeValue).trim();
+    if (str === '00:00:00' || str === '00:00' || str === 'PT0S' || str === '000000') {
+        return '';
+    }
+    if (str.startsWith('PT')) {
+        const hours = str.match(/(\d+)H/)?.[1].padStart(2, '0') || '00';
+        const mins = str.match(/(\d+)M/)?.[1].padStart(2, '0') || '00';
+        const secs = str.match(/(\d+)S/)?.[1].padStart(2, '0') || '00';
+        const formatted = `${hours}:${mins}:${secs}`;
+        return formatted === '00:00:00' ? '' : formatted;
+    }
+    if (/^\d{6}$/.test(str)) {
+        const formatted = `${str.slice(0, 2)}:${str.slice(2, 4)}:${str.slice(4, 6)}`;
+        return formatted === '00:00:00' ? '' : formatted;
+    }
+    return str;
 }
 
 /**

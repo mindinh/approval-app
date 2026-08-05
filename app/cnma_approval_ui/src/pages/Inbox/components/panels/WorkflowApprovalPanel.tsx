@@ -116,8 +116,12 @@ export function WorkflowApprovalPanel({
                                 <div className="flex-1 pb-8 min-w-0">
                                     <div className="text-xs text-muted-foreground font-medium mb-1 mt-0.5">
                                         Level {step.level}
-                                        {step.releaseCode && <span className="mx-1.5">•</span>}
-                                        {step.releaseCode && <span>Code {step.releaseCode}</span>}
+                                        {(step.releaseText || step.releaseCode) && <span className="mx-1.5">•</span>}
+                                        {step.releaseText ? (
+                                            <span>{step.releaseText}</span>
+                                        ) : step.releaseCode ? (
+                                            <span>Code {step.releaseCode}</span>
+                                        ) : null}
                                     </div>
                                     <div className="flex items-start justify-between">
                                         <h4 className={cn(

@@ -21,8 +21,8 @@ export function buildReservationModel(detail: TaskDetail): BusinessSectionModel 
     const overviewFields = [
         field('Reservation Number', documentId),
         field('Document Type', detail.documentTypeDisplay || (detail.documentType ? detail.documentType : EMPTY_VALUE)),
-        field('Requester', detail.requestorName || detail.header?.userFullName),
-        field('Created On', formatDate(detail.createdOn || detail.header?.createdOn)),
+        field('Requester', detail.header?.userName || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
+        field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
         field('Cost Center', formatCodeWithText(detail.header?.costCenter, detail.header?.costCenterName)),
         field('Goods Recipient', detail.header?.goodsRecipient),
         field('Header Note', detail.headerNote || detail.header?.purchaseOrderText || detail.header?.purchaseRequisitionText),

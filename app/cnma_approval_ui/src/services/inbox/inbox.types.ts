@@ -51,6 +51,11 @@ export interface PurchaseOrderHeader {
     purchaseOrderNetAmount?: string;
     purchasingDocumentStatusName?: string;
     userFullName?: string;
+    userName?: string;
+    createdByUser?: string;
+    fundsCenter?: string;
+    fundsCenterName?: string;
+    departmentDisplay?: string;
     raw?: Record<string, string>;
 }
 
@@ -133,6 +138,7 @@ export interface PurchaseRequisitionHeader {
     purchaseRequisitionText?: string;
     purReqnRequestor?: string;
     userFullName?: string;
+    userName?: string;
     purReqCreationDate?: string;
     numberOfItems?: number;
     purchaseRequisitionType?: string;
@@ -144,6 +150,9 @@ export interface PurchaseRequisitionHeader {
     isOnBehalfCart?: boolean;
     createdByUser?: string;
     department?: string;
+    fundsCenter?: string;
+    fundsCenterName?: string;
+    departmentDisplay?: string;
     expenseType?: string;
     commitmentItem?: string;
     releaseStrategyName?: string;
@@ -308,6 +317,7 @@ export interface WorkflowApprovalStep {
     documentId: string;
     level: number;
     releaseCode?: string;
+    releaseText?: string;
     approver?: string;
     approverUserId?: string;
     status?: string;

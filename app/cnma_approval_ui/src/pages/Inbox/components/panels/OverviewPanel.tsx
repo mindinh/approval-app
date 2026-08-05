@@ -126,7 +126,7 @@ export function OverviewPanel({
                                                     readOnly
                                                     value={val}
                                                     rows={Math.max(2, Math.min(6, val.split('\n').length))}
-                                                    className="bg-muted/20 border-border/60 text-foreground text-sm resize-none focus-visible:ring-0 cursor-default font-normal leading-relaxed transition-opacity duration-200"
+                                                    className="bg-muted/20 border-border/60 text-foreground text-sm resize-none focus-visible:ring-0 cursor-default font-sans font-normal leading-relaxed transition-opacity duration-200"
                                                 />
                                             )}
                                         </div>

@@ -44,8 +44,8 @@ export function AttachmentPreviewCard({
     previewUrl: customPreviewUrl,
     downloadUrl: customDownloadUrl,
 }: AttachmentPreviewCardProps) {
-    const previewUrl = customPreviewUrl || inboxApi.getAttachmentContentUrl(attachmentId, undefined, undefined, 'inline');
-    const downloadUrl = customDownloadUrl || inboxApi.getAttachmentContentUrl(attachmentId, undefined, undefined, 'attachment');
+    const previewUrl = customPreviewUrl || inboxApi.getAttachmentContentUrl(attachmentId, undefined, undefined, 'inline', fileName);
+    const downloadUrl = customDownloadUrl || inboxApi.getAttachmentContentUrl(attachmentId, undefined, undefined, 'attachment', fileName);
     const displayName = fileName || attachmentId;
     const previewKind = getPreviewKind(mimeType, fileName);
 
@@ -72,7 +72,7 @@ export function AttachmentPreviewCard({
 
                 {(previewKind === 'pdf' || previewKind === 'iframe') && (
                     <iframe
-                        src={previewUrl}
+                        src={`${previewUrl}#filename=${encodeURIComponent(displayName)}&title=${encodeURIComponent(displayName)}`}
                         title={displayName}
                         className="w-full h-full border-0 bg-white"
                     />
