@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { SlidersHorizontal, Loader2, X, ListFilter } from 'lucide-react';
+import { SlidersHorizontal, Loader2, X, ListFilter, Trash2, DogIcon } from 'lucide-react';
 import { Button } from '@cnma/react-ui';
 import { FilterBarField } from './FilterBarField';
 import { FilterSettingsDialog } from './FilterSettingsDialog';

@@ -203,9 +203,14 @@ export default function InboxPage() {
         });
     }, []);
 
+    const isRefreshing = activeTasksQuery.isRefetching || (isFetchingDetail && !isLoadingDetail);
+
     const handleRefreshTasks = useCallback(() => {
         void activeTasksQuery.refetch();
-    }, [activeTasksQuery]);
+        if (selectedTaskId) {
+            void refetchDetail();
+        }
+    }, [activeTasksQuery, selectedTaskId, refetchDetail]);
 
     const showMassSelection = showTaskActions && isMyScope && selectionMode && selectedIds.size > 0;
 
@@ -270,7 +275,7 @@ export default function InboxPage() {
                                     isError={activeTasksQuery.isError}
                                     error={activeTasksQuery.error}
                                     onRefresh={handleRefreshTasks}
-                                    isRefreshing={isRefetchingList}
+                                    isRefreshing={isRefreshing}
                                     totalItems={totalTasks}
                                     hasNextPage={activeTasksQuery.hasNextPage}
                                     isFetchingNextPage={activeTasksQuery.isFetchingNextPage}
@@ -304,7 +309,7 @@ export default function InboxPage() {
                     isError={activeTasksQuery.isError}
                     error={activeTasksQuery.error}
                     onRefresh={handleRefreshTasks}
-                    isRefreshing={isRefetchingList}
+                    isRefreshing={isRefreshing}
                     totalItems={totalTasks}
                     hasNextPage={activeTasksQuery.hasNextPage}
                     isFetchingNextPage={activeTasksQuery.isFetchingNextPage}

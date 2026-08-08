@@ -42,7 +42,8 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
         task.businessChips.forEach((chip) => {
             let formattedValue = '';
             if (chip.dataType === 'AMOUNT') {
-                formattedValue = formatAmountWithCurrency(chip.value, chip.currency);
+                const currency = chip.currency || task.curr_vnd || task.doc_curr;
+                formattedValue = formatAmountWithCurrency(chip.value, currency);
             } else if (chip.dataType === 'DATE') {
                 formattedValue = formatDateShortLocale(String(chip.value));
             } else if (chip.dataType === 'QUANTITY') {
@@ -118,9 +119,11 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
     }
 
     // 3. Root-level total amount fallback (ensure no duplicate Total chip is added)
-    const hasTotalChip = chips.some((c) => c.label === 'Total');
+    const typeUpper = (task.objectType || task.businessContext?.type || '').toUpperCase();
+    const isReservation = typeUpper === 'RE' || typeUpper === 'ZBUS2093' || typeUpper === 'BUS2093';
+    const hasTotalChip = chips.some((c) => c.label === 'Total' || c.label === 'Total Amount');
     if (!hasTotalChip && task.total !== undefined && task.total !== null) {
-        const totalCurrency = task.curr_vnd || task.doc_curr || '';
+        const totalCurrency = task.curr_vnd || task.doc_curr || 'VND';
         chips.push({
             label: 'Total',
             value: formatAmountWithCurrency(task.total, totalCurrency),
@@ -137,13 +140,16 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
         });
     }
 
-    // 5. Root-level Document Type fallback (e.g. Type: ZFO8 - Expense PO)
+    // 5. Root-level Document Type fallback (e.g. Type: ZFO8 - Expense PO or RESV - Reservation)
     const hasTypeChip = chips.some((c) => c.label === 'Type');
-    if (!hasTypeChip && task.documentTypeDisplay) {
-        chips.push({
-            label: 'Type',
-            value: task.documentTypeDisplay,
-        });
+    if (!hasTypeChip) {
+        const typeVal = task.documentTypeDisplay || (isReservation ? 'RESV - Reservation' : undefined);
+        if (typeVal) {
+            chips.push({
+                label: 'Type',
+                value: typeVal,
+            });
+        }
     }
 
     return chips;

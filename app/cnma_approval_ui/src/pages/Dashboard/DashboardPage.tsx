@@ -10,11 +10,13 @@ import {
     Menu,
     ChevronRight,
     RefreshCw,
+    BarChart3,
+    List,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
-import { useDashboardQuery, useDashboardData, STATUS_COLORS, STATUS_LABELS, getDocTypeDescription } from './use-dashboard-data';
-import type { DonutSegment, BarDataItem } from './use-dashboard-data';
+import { useDashboardQuery, useDashboardData, STATUS_COLORS, STATUS_LABELS, CATEGORY_COLORS, getDocTypeDescription } from './use-dashboard-data';
+import type { DonutSegment, BarDataItem, CategoryType } from './use-dashboard-data';
 import { StatusBadge } from '@/pages/Inbox/components/TaskBadges';
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import type { FilterValues } from '@/components/filterbar/types';
@@ -107,41 +109,56 @@ function DonutChart({
 }
 
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // Custom Clickable Y-Axis Tick Component
 // ═══════════════════════════════════════════════════════════
-function ClickableYAxisTick({ x, y, payload, onBarClick }: any) {
+function ClickableYAxisTick({ x, y, payload, onBarClick, selectedCategory, selectedType, data }: any) {
+    const label = String(payload?.value || '');
+    const item = data?.find((d: any) => d.label === label);
+
+    const isActive = !selectedCategory && !selectedType
+        ? true
+        : selectedType
+        ? selectedType === label || selectedType === item?.rawDocType
+        : selectedCategory
+        ? item?.category === selectedCategory
+        : true;
+
     return (
         <g
             transform={`translate(${x},${y})`}
             className="cursor-pointer group"
-            onClick={() => onBarClick(payload.value)}
+            onClick={() => onBarClick(label)}
         >
             <text
                 x={-10}
                 y={4}
                 textAnchor="end"
-                fill="var(--foreground)"
+                fill={isActive ? 'var(--foreground)' : 'var(--muted-foreground)'}
+                opacity={isActive ? 1 : 0.4}
                 fontSize={11}
-                fontWeight={600}
+                fontWeight={isActive ? 600 : 400}
                 className="group-hover:fill-primary group-hover:font-bold transition-all duration-200"
             >
-                {payload.value.length > 20 ? payload.value.substring(0, 18) + '...' : payload.value}
+                {label.length > 22 ? label.substring(0, 20) + '...' : label}
             </text>
         </g>
     );
 }
 
 // ═══════════════════════════════════════════════════════════
-// Recharts Stacked Horizontal Bar Chart Component
+// Category-Colored Horizontal Bar Chart (Y = Document Types, X = Count)
 // ═══════════════════════════════════════════════════════════
 function StackedBarChart({
     data,
-    selectedStatus,
+    selectedType,
+    selectedCategory,
     onBarClick,
     noDataText = 'No data available'
 }: {
     data: BarDataItem[];
-    selectedStatus: string | null;
+    selectedType: string | null;
+    selectedCategory: CategoryType | null;
     onBarClick: (label: string) => void;
     onStatusClick?: (label: string) => void;
     noDataText?: string;
@@ -154,15 +171,16 @@ function StackedBarChart({
         );
     }
 
-    const chartHeight = Math.max(data.length * 44, 180);
+    const itemHeight = 36;
+    const chartHeight = Math.max(data.length * itemHeight + 20, 240);
 
     return (
-        <div className="min-w-80" style={{ height: `${chartHeight}px` }}>
+        <div className="w-full" style={{ height: `${chartHeight}px` }}>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}
                     layout="vertical"
-                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                    margin={{ top: 5, right: 25, left: 10, bottom: 5 }}
                     barSize={14}
                 >
                     <XAxis
@@ -172,18 +190,25 @@ function StackedBarChart({
                         fontWeight={500}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={(value) => value}
+                        allowDecimals={false}
                     />
                     <YAxis
                         type="category"
                         dataKey="label"
+                        interval={0}
                         stroke="var(--foreground)"
-                        fontSize={11}
-                        fontWeight={600}
                         tickLine={false}
                         axisLine={false}
-                        width={130}
-                        tick={(props) => <ClickableYAxisTick {...props} onBarClick={onBarClick} />}
+                        width={160}
+                        tick={(props) => (
+                            <ClickableYAxisTick
+                                {...props}
+                                onBarClick={onBarClick}
+                                selectedType={selectedType}
+                                selectedCategory={selectedCategory}
+                                data={data}
+                            />
+                        )}
                     />
                     <Tooltip
                         cursor={{ fill: 'var(--muted)', opacity: 0.15 }}
@@ -200,7 +225,7 @@ function StackedBarChart({
                         key="In Approving"
                         dataKey="In Approving"
                         name="In Approving"
-                        fill={STATUS_COLORS['In Approving']}
+                        radius={[0, 4, 4, 0]}
                         onClick={(entry) => {
                             if (entry && entry.payload && entry.payload.label) {
                                 onBarClick(entry.payload.label);
@@ -208,9 +233,83 @@ function StackedBarChart({
                         }}
                         cursor="pointer"
                         style={{ transition: 'all 0.3s ease' }}
-                    />
+                    >
+                        {data.map((entry, index) => {
+                            const catConf = CATEGORY_COLORS[entry.category] || CATEGORY_COLORS.OTHER;
+                            const isMatch = !selectedCategory && !selectedType
+                                ? true
+                                : selectedType
+                                ? selectedType === entry.label || selectedType === entry.rawDocType
+                                : selectedCategory
+                                ? entry.category === selectedCategory
+                                : true;
+
+                            return (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={isMatch ? catConf.fill : '#d1d5db'}
+                                    fillOpacity={isMatch ? 1 : 0.25}
+                                    stroke={isMatch ? catConf.border : '#9ca3af'}
+                                    strokeWidth={isMatch ? 1 : 0.5}
+                                />
+                            );
+                        })}
+                    </Bar>
                 </BarChart>
             </ResponsiveContainer>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════
+// Category Legend Component with Interactive Filter Toggle
+// ═══════════════════════════════════════════════════════════
+function CategoryLegend({
+    selectedCategory,
+    onCategoryClick,
+    categoryCounts
+}: {
+    selectedCategory: CategoryType | null;
+    onCategoryClick: (category: CategoryType) => void;
+    categoryCounts: Record<CategoryType, number>;
+}) {
+    const categories: CategoryType[] = ['PO', 'PR', 'RESV', 'OTHER'];
+
+    return (
+        <div className="flex items-center justify-center gap-2 md:gap-3 shrink-0 border-t border-border pt-3 mt-3 flex-wrap">
+            {categories.map((cat) => {
+                const conf = CATEGORY_COLORS[cat];
+                const count = categoryCounts[cat] || 0;
+                if (count === 0) return null;
+                const isSelected = selectedCategory === cat;
+                const isDimmed = selectedCategory !== null && !isSelected;
+
+                return (
+                    <button
+                        key={cat}
+                        type="button"
+                        onClick={() => onCategoryClick(cat)}
+                        className={cn(
+                            "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer",
+                            isSelected
+                                ? "ring-2 ring-offset-1 shadow-xs scale-105"
+                                : isDimmed
+                                ? "opacity-35 grayscale"
+                                : "opacity-90 hover:opacity-100 hover:scale-102"
+                        )}
+                        style={{
+                            backgroundColor: conf.bg,
+                            borderColor: conf.border,
+                            color: conf.text,
+                            boxShadow: isSelected ? `0 0 0 2px ${conf.fill}` : undefined
+                        }}
+                    >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: conf.fill }} />
+                        <span>{cat}</span>
+                        <span className="font-bold tabular-nums">({count})</span>
+                    </button>
+                );
+            })}
         </div>
     );
 }
@@ -223,11 +322,13 @@ export default function DashboardPage() {
     const isMobile = useIsMobile();
     const { setOpenMobile } = useSidebar();
 
-    // ── Filter States (Applied states for visual drilling) ──
+    // ── Filter & View States ──
     const [appliedFilters, setAppliedFilters] = useState<FilterValues>(() => ({
         status: [],
         documentType: '',
     }));
+    const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
+    const [typeViewMode, setTypeViewMode] = useState<'chart' | 'list'>('chart');
 
     // Fetch master tasks data
     const { data: dashboardData, isLoading, isError, refetch, isRefetching } = useDashboardQuery();
@@ -242,12 +343,23 @@ export default function DashboardPage() {
         kpiMetrics,
     } = useDashboardData(tasks, appliedFilters, dashboardData?.statusCounts, dashboardData?.docTypeCounts);
 
+    // Compute category counts for the legend
+    const categoryCounts = useMemo(() => {
+        const counts: Record<CategoryType, number> = { PO: 0, PR: 0, RESV: 0, OTHER: 0 };
+        for (const item of barData) {
+            const cat = item.category || 'OTHER';
+            counts[cat] = (counts[cat] || 0) + Number(item['In Approving'] || 0);
+        }
+        return counts;
+    }, [barData]);
+
     // ── Handlers ─────────────────────────────────────────
     const handleFilterClear = useCallback(() => {
         setAppliedFilters({
             status: [],
             documentType: '',
         });
+        setSelectedCategory(null);
     }, []);
 
     const handleStatusClick = useCallback((status: string) => {
@@ -435,28 +547,42 @@ export default function DashboardPage() {
                             </div>
                         </motion.div>
 
-                        {/* Chart 2: Stacked Bar Chart */}
+                        {/* Chart 2: Category-Colored Tasks by Type Chart */}
                         <motion.div
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.35, delay: 0.1 }}
-                            className="p-5 md:p-6 relative rounded-2xl border border-border bg-card shadow-sm flex flex-col h-96"
+                            className="p-5 md:p-6 relative rounded-2xl border border-border bg-card shadow-sm flex flex-col min-h-96 h-auto"
                         >
                             {isRefetching && <RefetchOverlay />}
-                            <div className="shrink-0 mb-4">
+                            <div className="shrink-0 mb-4 flex items-center justify-between">
                                 <h3 className="text-xs md:text-sm font-bold tracking-widest text-foreground uppercase">
                                     {t('dashboard.charts.tasksByType')}
                                 </h3>
+                                <div className="flex items-center gap-2">
+                                    {barData.length > 0 && (
+                                        <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                            {t('dashboard.itemsCount', { count: barData.length })}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto pr-1 min-h-0">
+                            <div className="flex-1 min-h-0">
                                 <StackedBarChart
                                     data={barData}
-                                    selectedStatus={appliedFilters.status?.[0] || null}
+                                    selectedType={appliedFilters.documentType || null}
+                                    selectedCategory={selectedCategory}
                                     onBarClick={handleBarClick}
                                     onStatusClick={handleStatusClick}
                                     noDataText={t('common.noData', 'No data available')}
                                 />
                             </div>
+                            {/* Category Legend with Interactive Greying Filter */}
+                            <CategoryLegend
+                                selectedCategory={selectedCategory}
+                                onCategoryClick={(cat) => setSelectedCategory(prev => prev === cat ? null : cat)}
+                                categoryCounts={categoryCounts}
+                            />
                         </motion.div>
                     </div>
 

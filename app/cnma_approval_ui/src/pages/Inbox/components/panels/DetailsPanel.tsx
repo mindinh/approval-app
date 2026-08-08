@@ -171,18 +171,54 @@ export function DetailsPanel({
                                                 <TableRow
                                                     key={row.id}
                                                     onClick={() => {
-                                                        const selectedFields = table.columns.map((column) => ({
-                                                            label: column.label,
-                                                            value: safe(row.values[column.key]),
-                                                        }));
-                                                        const knownKeys = new Set(table.columns.map((column) => column.key));
-                                                        for (const [key, value] of Object.entries(row.values)) {
-                                                            if (knownKeys.has(key)) continue;
+                                                        const selectedFields: Array<{ key?: string; label: string; value: string }> = [];
+                                                        const displayedKeys = new Set<string>();
+
+                                                        const normalizeKey = (k: string) => k.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                                                        const ALIAS_GROUPS: string[][] = [
+                                                            ['material', 'materialnumber', 'matnr'],
+                                                            ['commitmentitem', 'commitmentitemshortid'],
+                                                            ['plant', 'plantcode', 'werke'],
+                                                            ['storagelocation', 'storloc', 'lgort'],
+                                                            ['referencepr', 'referencedocumentnumber', 'purchaserequisition', 'refdocnumber', 'refdocumentnumber', 'banfn'],
+                                                            ['quantity', 'unit', 'uom', 'baseunit', 'meins', 'purchaseorderquantityunit', 'purreqnquantityunit'],
+                                                        ];
+
+                                                        const markKeyAndAliasesProcessed = (rawKey: string) => {
+                                                            const norm = normalizeKey(rawKey);
+                                                            displayedKeys.add(rawKey);
+                                                            displayedKeys.add(norm);
+                                                            for (const group of ALIAS_GROUPS) {
+                                                                if (group.includes(norm)) {
+                                                                    for (const alias of group) {
+                                                                        displayedKeys.add(alias);
+                                                                    }
+                                                                }
+                                                            }
+                                                        };
+
+                                                        for (const column of table.columns) {
                                                             selectedFields.push({
+                                                                key: column.key,
+                                                                label: column.label,
+                                                                value: safe(row.values[column.key]),
+                                                            });
+                                                            markKeyAndAliasesProcessed(column.key);
+                                                        }
+
+                                                        for (const [key, value] of Object.entries(row.values)) {
+                                                            const norm = normalizeKey(key);
+                                                            if (displayedKeys.has(key) || displayedKeys.has(norm)) continue;
+
+                                                            selectedFields.push({
+                                                                key,
                                                                 label: table.detailFieldLabels?.[key] || prettifyFieldLabel(key),
                                                                 value: safe(value),
                                                             });
+                                                            markKeyAndAliasesProcessed(key);
                                                         }
+
                                                         setSelectedRow({
                                                             tableTitle: table.title,
                                                             rowId: row.id,
@@ -230,13 +266,13 @@ export function DetailsPanel({
                             <div className="overflow-hidden rounded-xl border border-border/60 bg-white">
                                 <Table>
                                     <TableBody>
-                                        {(selectedRow?.fields || []).map((item) => (
-                                            <TableRow key={`${item.label}-${item.value}`}>
+                                        {(selectedRow?.fields || []).map((item, idx) => (
+                                            <TableRow key={`${item.key || item.label}-${idx}`}>
                                                 <TableCell className="w-[42%] bg-muted/30 px-4 py-3 text-muted-foreground whitespace-normal">
                                                     {item.label}
                                                 </TableCell>
                                                 <TableCell className="px-4 py-3 font-medium break-all whitespace-normal">
-                                                    {item.value}
+                                                    {renderCellValue(item.key || '', item.label, item.value)}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

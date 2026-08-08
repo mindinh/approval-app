@@ -126,8 +126,6 @@ describe('extractErrorMessage', () => {
 
     it('extracts nested error messages from response if data.error is missing but data.message is present', () => {
         const error = { response: { data: { message: 'nested message' } } };
-        // Currently extractErrorMessage only pulls data.error or error.message.
-        // Let's verify standard extractErrorMessage behavior:
-        expect(extractErrorMessage(error, 'fallback')).toBe('fallback');
+        expect(extractErrorMessage(error, 'fallback')).toBe('nested message');
     });
 });

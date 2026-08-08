@@ -95,7 +95,7 @@ export function TaskDetailView({
     }, []);
 
     const docType = detail?.objectType || detail?.task?.businessContext?.type;
-    const supportsApproval = docType === 'PR' || docType === 'PO';
+    const supportsApproval = docType === 'PR' || docType === 'PO' || docType === 'RE';
     const supportsStandaloneAttach = docType === 'PR';
     const documentId = detail?.documentId || detail?.task?.businessContext?.documentId;
 
@@ -106,7 +106,7 @@ export function TaskDetailView({
         return {
             documentId: documentId || '',
             releaseStrategyName: detail.releaseStrategyName || wf?.strategyName || (hd?.releaseStrategyName as string),
-            steps: Array.isArray(detail.approvalSteps) ? detail.approvalSteps : (Array.isArray(wf?.steps) ? wf.steps : []),
+            steps: Array.isArray(detail.approvalSteps) ? detail.approvalSteps : (Array.isArray(detail.approvalTree) ? detail.approvalTree : (Array.isArray(wf?.steps) ? wf.steps : [])),
             comments: Array.isArray(wf?.comments) ? wf.comments : []
         };
     }, [detail, documentId]);

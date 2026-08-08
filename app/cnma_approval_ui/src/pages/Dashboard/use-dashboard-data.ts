@@ -76,9 +76,33 @@ export interface DonutSegment {
     color: string;
 }
 
+// ─── Category Constants & Color Definitions ──────────────────
+export type CategoryType = 'PO' | 'PR' | 'RESV' | 'OTHER';
+
+export const CATEGORY_COLORS: Record<CategoryType, { name: string; fill: string; border: string; bg: string; text: string }> = {
+    PO: { name: 'PO (Purchase Order)', fill: 'var(--info, #0070f2)', border: '#80b8f9', bg: '#e1f4ff', text: '#0070f2' },         // Info Blue (matches PO task card)
+    PR: { name: 'PR (Purchase Requisition)', fill: 'var(--color-brand, #cc0000)', border: '#990000', bg: '#ffebeb', text: '#cc0000' }, // Brand Red (matches PR task card)
+    RESV: { name: 'Reservation (RESV)', fill: 'var(--warning, #e76500)', border: '#f3b280', bg: '#fff8d6', text: '#e76500' },      // Warning Orange (matches RE task card)
+    OTHER: { name: 'Other / Claims', fill: 'var(--success, #30914c)', border: '#98c8a6', bg: '#f5fae5', text: '#30914c' },          // Success Green (matches CLAIM task card)
+};
+
+export function resolveCategory(docCategory?: string, rawDocType?: string, label?: string): CategoryType {
+    const cat = (docCategory || '').toUpperCase();
+    const type = (rawDocType || '').toUpperCase();
+    const lbl = (label || '').toUpperCase();
+
+    if (cat === 'BUS2012' || type.includes('PO') || lbl.includes('PO')) return 'PO';
+    if (cat === 'BUS2105' || type.includes('PR') || lbl.includes('PR')) return 'PR';
+    if (cat.includes('2093') || type === 'RESV' || lbl.includes('RESERVATION') || lbl.includes('RESV')) return 'RESV';
+    return 'OTHER';
+}
+
 // ─── Bar Data ─────────────────────────────────────────────
 export interface BarDataItem {
     label: string;
+    rawDocType: string;
+    docCategory: string;
+    category: CategoryType;
     total: number;
     'In Approving': number;
     'Completed'?: number;
@@ -194,13 +218,13 @@ export function useDashboardData(
     // 5. Compute Chart 2: Stacked Bar Chart (Count only)
     const barData = useMemo(() => {
         if (docTypeCounts && docTypeCounts.length > 0) {
-            const groups = new Map<string, { total: number; 'In Approving': number }>();
+            const groups = new Map<string, { total: number; 'In Approving': number; rawDocType: string; docCategory: string }>();
             for (const item of docTypeCounts) {
                 const rawKey = item.DocumentType || 'Standard';
                 const key = getDocTypeDescription(rawKey, item.DocumentTypeText);
                 let g = groups.get(key);
                 if (!g) {
-                    g = { total: 0, 'In Approving': 0 };
+                    g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory: item.DocCategory || '' };
                     groups.set(key, g);
                 }
                 const count = Number(item.RequestCount || 0);
@@ -208,24 +232,32 @@ export function useDashboardData(
                 g['In Approving'] += count;
             }
             return Array.from(groups.entries())
-                .map(([label, data]) => ({ label, ...data }))
+                .map(([label, data]) => ({
+                    label,
+                    ...data,
+                    category: resolveCategory(data.docCategory, data.rawDocType, label)
+                }))
                 .sort((a, b) => b.total - a.total);
         }
 
-        const groups = new Map<string, { total: number; 'In Approving': number }>();
+        const groups = new Map<string, { total: number; 'In Approving': number; rawDocType: string; docCategory: string }>();
         for (const t of tasksFilteredExcludingStatus) {
             const rawKey = t.documentType || t.taskType || 'Standard';
             const key = getDocTypeDescription(rawKey, t.documentTypeDesc);
             let g = groups.get(key);
             if (!g) {
-                g = { total: 0, 'In Approving': 0 };
+                g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory: '' };
                 groups.set(key, g);
             }
             g.total++;
             g['In Approving']++;
         }
         return Array.from(groups.entries())
-            .map(([label, data]) => ({ label, ...data }))
+            .map(([label, data]) => ({
+                label,
+                ...data,
+                category: resolveCategory(data.docCategory, data.rawDocType, label)
+            }))
             .sort((a, b) => b.total - a.total);
     }, [docTypeCounts, tasksFilteredExcludingStatus]);
 

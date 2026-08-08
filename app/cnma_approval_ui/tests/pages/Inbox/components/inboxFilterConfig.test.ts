@@ -5,7 +5,7 @@ describe('INBOX_FILTER_CONFIG', () => {
     it('defines standard search filters', () => {
         const keys = INBOX_FILTER_CONFIG.map(f => f.key);
         expect(keys).toContain('search');
-        expect(keys).toContain('status');
+        expect(keys).not.toContain('status');
         expect(keys).toContain('priority');
         expect(keys).toContain('documentType');
         expect(keys).toContain('createdBy');
@@ -24,14 +24,9 @@ describe('INBOX_FILTER_CONFIG', () => {
         expect(createdDate?.visible).toBe(false);
     });
 
-    it('defines correct status and priority options', () => {
+    it('defines correct priority options', () => {
         const statusField = INBOX_FILTER_CONFIG.find(f => f.key === 'status');
-        expect(statusField?.type).toBe('multiselect');
-        expect(statusField?.options).toEqual([
-            { value: 'READY', label: 'In Approving' },
-            { value: 'RESERVED', label: 'Reserved' },
-            { value: 'REJECTED', label: 'Rejected' },
-        ]);
+        expect(statusField).toBeUndefined();
 
         const priorityField = INBOX_FILTER_CONFIG.find(f => f.key === 'priority');
         expect(priorityField?.type).toBe('multiselect');
@@ -44,6 +39,7 @@ describe('INBOX_FILTER_CONFIG', () => {
         expect(docTypeField?.options).toEqual([
             { value: 'PR', label: 'Purchase Requisition' },
             { value: 'PO', label: 'Purchase Order' },
+            { value: 'ZBUS2093', label: 'Reservation' },
         ]);
     });
 

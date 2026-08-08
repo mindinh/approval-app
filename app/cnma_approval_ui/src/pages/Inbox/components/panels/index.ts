@@ -28,7 +28,8 @@ export function makeTabDefinitions({
     const mergedCommentsCount = mergeAndDeduplicateComments(detail?.comments || [], workflowComments).length;
     const finalAttachmentCount = attachmentCount ?? (detail?.attachments?.length || 0);
 
-    const showWorkflow = detail?.task?.businessContext?.type === 'PR' || detail?.task?.businessContext?.type === 'PO';
+    const docType = (detail?.task?.businessContext?.type || detail?.objectType || detail?._meta?.objectType || '').toUpperCase();
+    const showWorkflow = docType === 'PR' || docType === 'PO' || docType === 'RE';
 
     const tabs = [
         {

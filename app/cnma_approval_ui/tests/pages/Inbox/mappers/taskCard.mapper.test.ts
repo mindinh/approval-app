@@ -133,4 +133,25 @@ describe('mapBusinessChips', () => {
         };
         expect(mapBusinessChips(task as any)).toEqual([]);
     });
+
+    it('formats AMOUNT businessChips correctly using chip.currency or task.curr_vnd fallback', () => {
+        const taskWithChipCurrency = {
+            ...baseTask,
+            businessChips: [
+                { label: 'Total Amount', value: 2270982, dataType: 'AMOUNT', currency: 'VND', isPrimary: true },
+            ],
+        };
+        const chips1 = mapBusinessChips(taskWithChipCurrency as any);
+        expect(chips1.find((c) => c.label === 'Total Amount')?.value).toBe('2,270,982 VND');
+
+        const taskWithFallbackCurrency = {
+            ...baseTask,
+            curr_vnd: 'VND',
+            businessChips: [
+                { label: 'Total Amount', value: 2270982, dataType: 'AMOUNT', isPrimary: true },
+            ],
+        };
+        const chips2 = mapBusinessChips(taskWithFallbackCurrency as any);
+        expect(chips2.find((c) => c.label === 'Total Amount')?.value).toBe('2,270,982 VND');
+    });
 });

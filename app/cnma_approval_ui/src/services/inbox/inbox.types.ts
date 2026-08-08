@@ -26,7 +26,7 @@ export interface Decision {
     commentSupported?: boolean;
 }
 
-export type BusinessContextType = 'PR' | 'PO' | 'UNKNOWN';
+export type BusinessContextType = 'PR' | 'PO' | 'CLAIM' | 'RESERVATION' | 'RE' | 'ZBUS2093' | 'BUS2093' | 'UNKNOWN';
 
 export interface PurchaseOrderHeader {
     purchaseOrder: string;

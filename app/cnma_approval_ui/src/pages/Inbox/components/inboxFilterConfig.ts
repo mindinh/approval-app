@@ -16,19 +16,6 @@ export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
         visible: true,
     },
     {
-        key: 'status',
-        label: 'Status',
-        type: 'multiselect',
-        placeholder: 'All Status',
-        visible: true,
-        options: [
-            { value: 'READY', label: 'In Approving' },
-            { value: 'RESERVED', label: 'Reserved' },
-            { value: 'REJECTED', label: 'Rejected' },
-        ],
-        showSelectAll: true,
-    },
-    {
         key: 'priority',
         label: 'Priority',
         type: 'multiselect',
@@ -51,6 +38,7 @@ export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
         options: [
             { value: 'PR', label: 'Purchase Requisition' },
             { value: 'PO', label: 'Purchase Order' },
+            { value: 'ZBUS2093', label: 'Reservation' },
         ],
     },
     {
