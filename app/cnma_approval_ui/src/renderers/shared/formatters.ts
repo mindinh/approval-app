@@ -245,6 +245,10 @@ export function extractReferencePr(item: any): string {
 export function normalizeAndOrderTableColumns(table: DetailTableModel): DetailTableModel {
     if (!table || !table.columns || table.columns.length === 0) return table;
 
+    if (table.preserveOrder) {
+        return table;
+    }
+
     let hasRefPrValue = false;
 
     const updatedRows: DetailTableRow[] = (table.rows || []).map((row) => {

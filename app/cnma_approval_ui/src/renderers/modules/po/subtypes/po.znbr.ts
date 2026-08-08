@@ -11,7 +11,7 @@ export function buildPoZnbrItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-znbr-items',
-        title: 'Line Items (Return PO)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

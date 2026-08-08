@@ -11,7 +11,7 @@ export function buildPoZtolItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-ztol-items',
-        title: 'Line Items (Toll / Subcontracting)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

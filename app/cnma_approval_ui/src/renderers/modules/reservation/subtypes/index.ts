@@ -14,6 +14,15 @@ export const RESERVATION_SUBTYPE_CONFIGS: Record<string, ReservationSubtypeConfi
         code: 'RESERVATION',
         description: 'Reservation',
     },
+    ZBUS2093: {
+        code: 'ZBUS2093',
+        description: 'Reservation (ZBUS2093)',
+    },
+    BUS2093: {
+        code: 'BUS2093',
+        description: 'Reservation (BUS2093)',
+    },
 };
 
 export { buildReservationModel };
+

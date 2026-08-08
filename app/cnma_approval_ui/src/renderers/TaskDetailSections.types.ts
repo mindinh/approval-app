@@ -32,6 +32,7 @@ export interface DetailTableModel {
     rows: DetailTableRow[];
     detailFieldLabels?: Record<string, string>;
     emptyMessage?: string;
+    preserveOrder?: boolean;
 }
 
 export interface BusinessSectionModel {

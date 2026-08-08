@@ -221,6 +221,8 @@ const STRATEGY_MAP: Record<string, (detail: TaskDetail) => BusinessSectionModel>
     CLAIM: buildClaimModel,
     RE: buildReservationModel,
     RESERVATION: buildReservationModel,
+    ZBUS2093: buildReservationModel,
+    BUS2093: buildReservationModel,
 };
 
 /**
@@ -231,7 +233,7 @@ export function resolveBusinessSectionModel(detail: TaskDetail): BusinessSection
     if (detail.fieldSchema && detail.uiSchema && Object.keys(detail.fieldSchema).length > 0 && detail.uiSchema.sections && detail.uiSchema.sections.length > 0) {
         return buildDynamicBusinessModel(detail);
     }
-    const type = (detail.objectType || detail.businessContext?.type || detail.task?.TaskDefinitionID || '').toUpperCase();
+    const type = (detail.objectType || detail._meta?.objectType || detail.businessContext?.type || detail.task?.TaskDefinitionID || '').toUpperCase();
     const strategy = STRATEGY_MAP[type];
     if (strategy) {
         return strategy(detail);

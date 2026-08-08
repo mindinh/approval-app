@@ -11,7 +11,7 @@ export function buildPoZexpItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-zexp-items',
-        title: 'Line Items (Expense)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

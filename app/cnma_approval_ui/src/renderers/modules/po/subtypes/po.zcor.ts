@@ -11,7 +11,7 @@ export function buildPoZcorItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-zcor-items',
-        title: 'Line Items (Correction PO)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

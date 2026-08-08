@@ -11,7 +11,7 @@ export function buildPoZconItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-zcon-items',
-        title: 'Line Items (Consignment)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

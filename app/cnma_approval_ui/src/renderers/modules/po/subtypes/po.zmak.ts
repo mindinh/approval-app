@@ -11,7 +11,7 @@ export function buildPoZmakItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-zmak-items',
-        title: 'Line Items (Making Charge)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

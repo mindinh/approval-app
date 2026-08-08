@@ -11,7 +11,7 @@ export function buildPoZubItemsTable(rawItems?: RawPoItem[], parentCurrency?: st
 
     return {
         id: 'po-zub-items',
-        title: 'Line Items (Stock Transport Order)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

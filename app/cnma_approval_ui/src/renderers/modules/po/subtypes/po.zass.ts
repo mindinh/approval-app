@@ -11,7 +11,7 @@ export function buildPoZassItemsTable(rawItems?: RawPoItem[], parentCurrency?: s
 
     return {
         id: 'po-zass-items',
-        title: 'Line Items (Asset)',
+        title: 'Line Items',
         columns: [
             { key: 'item', label: 'Item' },
             { key: 'plant', label: 'Plant' },

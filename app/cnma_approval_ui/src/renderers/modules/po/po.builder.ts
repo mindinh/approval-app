@@ -178,15 +178,15 @@ export function mapPoItemRowValues(item: RawPoItem, parentCurrency?: string): Re
         totalAmount: itemTotal != null ? formatAmount(itemTotal, itemCurrency) : EMPTY_VALUE,
         referencePr: normalizeDisplayValue(
             item.ReferenceDocumentNumber ||
-                item.referenceDocumentNumber ||
-                item.referenceDocument ||
-                item.purchaseRequisition ||
-                item.purchaseRequisitionNumber ||
-                item.referencePr ||
-                item.refPrNumber ||
-                item.refDocNumber ||
-                item.refDocumentNumber ||
-                item.banfn
+            item.referenceDocumentNumber ||
+            item.referenceDocument ||
+            item.purchaseRequisition ||
+            item.purchaseRequisitionNumber ||
+            item.referencePr ||
+            item.refPrNumber ||
+            item.refDocNumber ||
+            item.refDocumentNumber ||
+            item.banfn
         ),
         glAccount: formatCodeWithText(
             item.glAccount || item.GLAccount || item.GlAccount,
@@ -335,16 +335,16 @@ export function buildPoModel(detail: TaskDetail): BusinessSectionModel {
             field('PO Number', documentId),
             field('Document Type', docTypeDisplay),
             field('Requester', detail.header?.userName || detail.requestorName || detail.header?.userFullName || detail.header?.createdByUser),
-            field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
-            field('Release Strategy', detail.releaseStrategyName || detail.header?.releaseStrategyName),
-            field('Header Note', detail.headerNote || detail.header?.purchaseOrderText),
             field('Vendor', detail.header?.vendorDisplay || detail.header?.supplierDisplay || pickByAlias(attrIndex, 'supplier')),
+            field('Release Strategy', detail.releaseStrategyName || detail.header?.releaseStrategyName),
             field('Company Code', compCodeDisplay),
+            field('Created On', formatDate(detail.header?.creationDate || detail.createdOn || detail.header?.createdOn, detail.header?.creationTime || detail.header?.CreationTime || detail.header?.creation_time)),
+            field('Payment Terms', detail.header?.paymentTermsDisplay || detail.header?.paymentTermsDescription || detail.header?.paymentTerms),
             field('Subtotal (Excl. VAT)', formatAmount(subtotalExclVat, currency)),
             field('Shipping Fee', formatAmount(shippingFee, currency)),
             field('VAT', formatAmount(vatAmount, currency)),
             field('Total', formatAmount(totalOrderValue, currency)),
-            field('Payment Terms', detail.header?.paymentTermsDisplay || detail.header?.paymentTermsDescription || detail.header?.paymentTerms),
+            field('Header Note', detail.headerNote || detail.header?.purchaseOrderText),
         ];
     }
 
