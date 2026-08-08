@@ -106,5 +106,22 @@ describe('object-config', () => {
       const chips = mapCardChips(prConfig, businessObject);
       expect(chips.every(c => Boolean(c.value))).toBe(true);
     });
+
+    it('should map Reservation chips with header.currency correctly', () => {
+      const reConfig = getObjectConfig('RE');
+      const businessObject = {
+        header: {
+          total: 2270982,
+          currency: 'VND',
+          documentTypeDisplay: 'RESV - Reservation'
+        }
+      };
+
+      const chips = mapCardChips(reConfig, businessObject);
+      const totalChip = chips.find(c => c.label === 'Total Amount');
+      expect(totalChip).toBeDefined();
+      expect(totalChip.value).toBe(2270982);
+      expect(totalChip.currency).toBe('VND');
+    });
   });
 });

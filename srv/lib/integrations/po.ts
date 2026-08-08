@@ -52,7 +52,7 @@ export class PoDetail extends BaseDetail {
         ]);
 
         // Normalize raw items using metadata service
-        const normalizedRawItems = await Promise.all(rawItems.map((item: any) => 
+        const normalizedRawItems = await Promise.all(rawItems.map((item: any) =>
             this.metadataService.normalizeDetail(item, servicePath, sapUser, userJwt)
         ));
 
@@ -155,7 +155,7 @@ export class PoDetail extends BaseDetail {
         const paddedId = objectId.padStart(10, '0');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const relativePath = `/CNMA_POHEADER(DocCategory='BUS2012',DocumentNumber='${paddedId}')/SAP__self.comment`;
-        
+
         const cleanText = text ? text.trim().substring(0, 255) : '';
         const isGeneral = type !== 'APPR';
         const payload = {
@@ -188,7 +188,7 @@ export class PoDetail extends BaseDetail {
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const relativePath = `/CNMA_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
         const res = await this.sapClient.getBinary(servicePath, relativePath, sapUser, userJwt);
-        
+
         let data = res.data;
         if (data && data.length > 0) {
             let lastNonNull = data.length - 1;

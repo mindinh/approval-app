@@ -106,7 +106,18 @@ export function mapCardChips(config: any, businessObject: any): any[] {
     };
 
     if (def.dataType === 'AMOUNT') {
-      chip.currency = businessObject.header?.displayCurrency || businessObject.header?.documentCurrency || '';
+      const currencyFromPath = def.currencyPath ? resolveJsonPath(businessObject, def.currencyPath) : undefined;
+      chip.currency =
+        currencyFromPath ||
+        businessObject.header?.displayCurrency ||
+        businessObject.header?.documentCurrency ||
+        businessObject.header?.currency ||
+        businessObject.header?.localCurrency ||
+        businessObject.currency ||
+        businessObject.localCurrency ||
+        businessObject.curr_vnd ||
+        businessObject.doc_curr ||
+        '';
     }
 
     chips.push(chip);

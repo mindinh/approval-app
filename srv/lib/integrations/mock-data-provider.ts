@@ -294,15 +294,16 @@ export function getMockInstances(status?: string | string[]) {
             instanceID: 'task-re-01',
             status: 'IN PROCESSING',
             typeid: 'BUS2093',
-            instid: '0010023456',
+            instid: '0000000888',
+            documentNumber: '0000000888',
             credate: '2026-06-24',
             cretime: '14:20:00',
-            doctyp: 'RE',
-            doctyp_desc: 'Standard Reservation',
-            total: 0,
-            curr_vnd: '',
-            total_doc_curr: 0,
-            doc_curr: '',
+            doctyp: 'RESV',
+            doctyp_desc: 'Reservation',
+            total: 2270982,
+            curr_vnd: 'VND',
+            total_doc_curr: 2270982,
+            doc_curr: 'VND',
             normalTask: false
         },
         // Claim
@@ -1359,28 +1360,134 @@ export function getMockDetail(objectType: string, objectId: string) {
 export function getMockDocTypeCounts() {
     return [
         {
-            DocumentType: 'ZEXP',
-            DocCategory: 'BUS2105',
-            DocumentTypeText: 'Expense PR',
-            RequestCount: 63,
-            SumNetAmountLocalCrcy: 44715.85,
-            LocalCurrency: 'EUR'
+            DocumentType: 'RESV',
+            DocCategory: 'ZBUS2093',
+            MovementType: '',
+            DocumentTypeText: 'Reservation',
+            MovementTypeName: '',
+            RequestCount: 3,
+            SumNetAmountLocalCrcy: 0,
+            LocalCurrency: ''
         },
         {
-            DocumentType: 'ZEXP',
-            DocCategory: 'BUS2105',
-            DocumentTypeText: 'Expense PR',
-            RequestCount: 1,
-            SumNetAmountLocalCrcy: 4.26,
-            LocalCurrency: 'USD'
-        },
-        {
-            DocumentType: 'ZFO8',
+            DocumentType: 'ZASS',
             DocCategory: 'BUS2012',
+            MovementType: '',
+            DocumentTypeText: 'Asset PO',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 5000,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZASS',
+            DocCategory: 'BUS2105',
+            MovementType: '',
+            DocumentTypeText: 'Asset PR',
+            MovementTypeName: '',
+            RequestCount: 9,
+            SumNetAmountLocalCrcy: 18916350.94,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZEXP',
+            DocCategory: 'BUS2012',
+            MovementType: '',
             DocumentTypeText: 'Expense PO',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 50000,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZEXP',
+            DocCategory: 'BUS2105',
+            MovementType: '',
+            DocumentTypeText: 'Expense PR',
+            MovementTypeName: '',
+            RequestCount: 6,
+            SumNetAmountLocalCrcy: 6873024,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZMAK',
+            DocCategory: 'BUS2012',
+            MovementType: '',
+            DocumentTypeText: 'Marketing PO',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 300,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZMAK',
+            DocCategory: 'BUS2105',
+            MovementType: '',
+            DocumentTypeText: 'Marketing PR',
+            MovementTypeName: '',
+            RequestCount: 6,
+            SumNetAmountLocalCrcy: 312568.91,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZNB1',
+            DocCategory: 'BUS2012',
+            MovementType: '',
+            DocumentTypeText: 'Trading PO',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 100,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZNB1',
+            DocCategory: 'BUS2105',
+            MovementType: '',
+            DocumentTypeText: 'Trading PR',
+            MovementTypeName: '',
+            RequestCount: 3,
+            SumNetAmountLocalCrcy: 18722,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZNB2',
+            DocCategory: 'BUS2012',
+            MovementType: '',
+            DocumentTypeText: 'Non-Trade PO (Stock',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 14,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZNB2',
+            DocCategory: 'BUS2105',
+            MovementType: '',
+            DocumentTypeText: 'Non-Trade PR (Stock)',
+            MovementTypeName: '',
             RequestCount: 2,
-            SumNetAmountLocalCrcy: 3000.00,
-            LocalCurrency: 'USD'
+            SumNetAmountLocalCrcy: 444,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZTOL',
+            DocCategory: 'BUS2012',
+            MovementType: '',
+            DocumentTypeText: 'Tools PO',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 10000,
+            LocalCurrency: 'VND'
+        },
+        {
+            DocumentType: 'ZTOL',
+            DocCategory: 'BUS2105',
+            MovementType: '',
+            DocumentTypeText: 'Tools PR',
+            MovementTypeName: '',
+            RequestCount: 1,
+            SumNetAmountLocalCrcy: 100000,
+            LocalCurrency: 'VND'
         }
     ];
 }
@@ -1389,12 +1496,13 @@ export function getMockStatusCounts() {
     return [
         {
             WorkflowTaskStatus: 'COMPLETED',
-            RequestCount: 48
+            RequestCount: 21
         },
         {
             WorkflowTaskStatus: 'IN PROCESSING',
-            RequestCount: 18
+            RequestCount: 15
         }
     ];
 }
+
 

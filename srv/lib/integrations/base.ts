@@ -62,13 +62,14 @@ export abstract class BaseDetail implements Detail {
         }
 
         const objConfig = ConfigRegistry.getInstance().get(this.objectType);
-        const headerEntity = objConfig?.source?.rootEntity || 'CNMA_PRHEADER';
+        const headerEntity = objConfig?.source?.rootEntity || (this.objectType === 'RE' ? 'CNMA_RESVHEADER' : 'CNMA_PRHEADER');
         const docCategoryKey = objConfig?.source?.key?.find((k: any) => k.name === 'DocCategory');
-        const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : this.objectType === 'PO' ? 'BUS2012' : this.objectType === 'RE' ? 'BUS2093' : 'ZCLAIM');
+        const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : this.objectType === 'PO' ? 'BUS2012' : this.objectType === 'RE' ? 'ZBUS2093' : 'ZCLAIM');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Attachment,_Comment,_PurposeText,_PaidByText,_BankDetails';
 
-        const paddedId = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
+        const rawPadded = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
+        const paddedId = rawPadded.substring(0, 10);
 
         const params: Record<string, string> = { $format: 'json' };
         const headerUrl = `/${headerEntity}(DocCategory='${docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;

@@ -124,13 +124,19 @@ export class InboxProcessor {
             const fieldPlan = resolver.resolve('detail', config, docType);
             const projectedObject = projector.project(canonicalObject, fieldPlan.canonicalPaths);
 
-            const rawComments = projectedObject.workflow?.comments || safeBusinessObj.comments || [];
+            const rawComments = (projectedObject.workflow?.comments && projectedObject.workflow.comments.length > 0)
+                ? projectedObject.workflow.comments
+                : (safeBusinessObj.comments || []);
             const comments = filterComments(rawComments);
 
-            const attachments = decorateAttachments(projectedObject.attachments || safeBusinessObj.attachments || [], instanceId, instid);
+            const attachments = decorateAttachments(
+                (projectedObject.attachments && projectedObject.attachments.length > 0) ? projectedObject.attachments : (safeBusinessObj.attachments || []),
+                instanceId,
+                instid
+            );
             const header = projectedObject.header || safeBusinessObj.header || {};
-            const items = projectedObject.items || safeBusinessObj.items || [];
-            const approvalSteps = safeBusinessObj.approvalTree || projectedObject.workflow?.steps || [];
+            const items = (projectedObject.items && projectedObject.items.length > 0) ? projectedObject.items : (safeBusinessObj.items || []);
+            const approvalSteps = (safeBusinessObj.approvalTree && safeBusinessObj.approvalTree.length > 0) ? safeBusinessObj.approvalTree : (projectedObject.workflow?.steps || []);
 
             const decisions = (taskRuntime?.decisions || []).map((d: any) => ({
                 key: d.DecisionKey,
@@ -165,7 +171,7 @@ export class InboxProcessor {
                 documentTypeDisplay: header.purchaseRequisitionTypeDisplay || header.purchaseOrderTypeDisplay || header.purchaseOrderTypeText || undefined,
                 companyCode: header.companyCode || inst?.companyCode || undefined,
                 companyCodeDisplay: header.companyCodeDisplay || undefined,
-                total: header.totalNetAmount !== undefined ? Number(header.totalNetAmount) : (inst?.total !== undefined ? Number(inst.total) : undefined),
+                total: header.total !== undefined ? Number(header.total) : (header.totalNetAmount !== undefined ? Number(header.totalNetAmount) : (inst?.total !== undefined ? Number(inst.total) : undefined)),
                 currency: header.displayCurrency || header.documentCurrency || inst?.curr_vnd || undefined,
                 releaseStrategyName: header.releaseStrategyName || safeBusinessObj.releaseStrategyName || undefined,
                 headerNote: header.purchaseRequisitionText || header.purchaseOrderText || undefined,
@@ -204,8 +210,8 @@ export class InboxProcessor {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
             const ctxType = context?.businessObjectType || context?.objectType || context?.type;
-            const isPrOrPo = ctxType === 'PR' || ctxType === 'PO';
-            if (comment && comment.trim() && context?.documentId && (isPrOrPo || !ctxType)) {
+            const isSupportedType = ctxType === 'PR' || ctxType === 'PO' || ctxType === 'RE';
+            if (comment && comment.trim() && context?.documentId && (isSupportedType || !ctxType)) {
                 try {
                     const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
                         String(sapDecisionKey).toLowerCase().includes('reject') ||
@@ -377,8 +383,10 @@ export class InboxProcessor {
         const requesterName = businessObject?.header?.userName || businessObject?.header?.userFullName || businessObject?.header?.createdByUser || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
         const documentType = businessObject?.documentType || 'DEFAULT';
         const config = getObjectConfig(objectType, documentType);
-        const calcTotal = inst.total !== undefined && inst.total !== null ? Number(inst.total) : (rawMappedObject?.header?.totalNetAmount || rawMappedObject?.header?.purchaseOrderNetAmount || undefined);
-        const docTypeDisplay = rawMappedObject?.header?.purchaseRequisitionTypeDisplay 
+        const calcTotal = inst?.total !== undefined && inst?.total !== null ? Number(inst.total) : (rawMappedObject?.header?.totalNetAmount || rawMappedObject?.header?.purchaseOrderNetAmount || rawMappedObject?.header?.total || undefined);
+        const docTypeDisplay = rawMappedObject?.header?.documentTypeDisplay 
+            || rawMappedObject?.header?.documentTypeText
+            || rawMappedObject?.header?.purchaseRequisitionTypeDisplay 
             || rawMappedObject?.header?.purchaseOrderTypeDisplay
             || rawMappedObject?.header?.purchaseOrderTypeText 
             || rawMappedObject?.header?.purchaseRequisitionType 
@@ -430,7 +438,7 @@ export class InboxProcessor {
                 comments: process.env.USE_MOCK_SAP !== 'false' ? (matchingTask?.SupportsComments ?? true) : false
             },
             total: calcTotal !== undefined ? Number(calcTotal) : undefined,
-            curr_vnd: inst.curr_vnd || rawMappedObject?.header?.displayCurrency || rawMappedObject?.header?.documentCurrency || undefined,
+            curr_vnd: inst.curr_vnd || rawMappedObject?.header?.displayCurrency || rawMappedObject?.header?.documentCurrency || rawMappedObject?.header?.currency || rawMappedObject?.header?.localCurrency || undefined,
             businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
             normalTask: inst.normalTask
         };

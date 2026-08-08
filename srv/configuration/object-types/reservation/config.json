@@ -5,7 +5,8 @@
     "version": 1,
     "adapter": "RE_DETAIL",
     "aliases": [
-      "BUS2093"
+      "BUS2093",
+      "ZBUS2093"
     ],
     "enabledSections": {
       "header": true,
@@ -17,11 +18,11 @@
   },
   "source": {
     "service": "APPROVAL_SRV",
-    "rootEntity": "CNMA_PRHEADER",
+    "rootEntity": "CNMA_RESVHEADER",
     "key": [
       {
         "name": "DocCategory",
-        "value": "BUS2093"
+        "value": "ZBUS2093"
       },
       {
         "name": "DocumentNumber",
@@ -30,13 +31,19 @@
     ],
     "navigations": {
       "items": "_Item",
-      "comments": "_Comment"
+      "workflowSteps": "_ApprovalStep",
+      "comments": "_Comment",
+      "attachments": "_Attachment"
     }
   },
   "mappings": {
     "root": [
       {
         "sourcePath": "reservationNumber",
+        "altSourcePaths": [
+          "DocumentNumber",
+          "documentNumber"
+        ],
         "targetPath": "header.reservationNumber",
         "type": "string",
         "required": true
@@ -77,12 +84,110 @@
       },
       {
         "sourcePath": "movementType",
+        "altSourcePaths": [
+          "MovementType",
+          "movementType"
+        ],
         "targetPath": "header.movementType",
         "type": "string"
       },
       {
+        "sourcePath": "movementTypeName",
+        "altSourcePaths": [
+          "MovementTypeName",
+          "movementTypeName"
+        ],
+        "targetPath": "header.movementTypeName",
+        "type": "string"
+      },
+      {
         "sourcePath": "costCenter",
+        "altSourcePaths": [
+          "CostCenter",
+          "costCenter"
+        ],
         "targetPath": "header.costCenter",
+        "type": "string"
+      },
+      {
+        "sourcePath": "costCenterName",
+        "altSourcePaths": [
+          "CostCenterName",
+          "costCenterName"
+        ],
+        "targetPath": "header.costCenterName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "plant",
+        "altSourcePaths": [
+          "Plant",
+          "plant"
+        ],
+        "targetPath": "header.plant",
+        "type": "string"
+      },
+      {
+        "sourcePath": "plantName",
+        "altSourcePaths": [
+          "PlantName",
+          "plantName"
+        ],
+        "targetPath": "header.plantName",
+        "type": "string"
+      },
+      {
+        "sourcePath": "total",
+        "altSourcePaths": [
+          "Total",
+          "total",
+          "TotalNetAmountLocalCrcy",
+          "totalNetAmountLocalCrcy"
+        ],
+        "targetPath": "header.total",
+        "type": "number"
+      },
+      {
+        "sourcePath": "currency",
+        "altSourcePaths": [
+          "Currency",
+          "currency",
+          "LocalCurrency",
+          "localCurrency"
+        ],
+        "targetPath": "header.currency",
+        "type": "string"
+      },
+      {
+        "sourcePath": "currency",
+        "altSourcePaths": [
+          "Currency",
+          "currency",
+          "LocalCurrency",
+          "localCurrency"
+        ],
+        "targetPath": "header.localCurrency",
+        "type": "string"
+      },
+      {
+        "sourcePath": "currency",
+        "altSourcePaths": [
+          "Currency",
+          "currency",
+          "LocalCurrency",
+          "localCurrency"
+        ],
+        "targetPath": "header.displayCurrency",
+        "type": "string"
+      },
+      {
+        "sourcePath": "releaseStrategyText",
+        "altSourcePaths": [
+          "ReleaseStrategyText",
+          "releaseStrategyText",
+          "ReleaseStrategyName"
+        ],
+        "targetPath": "header.releaseStrategyText",
         "type": "string"
       },
       {
@@ -119,6 +224,40 @@
         "sourcePath": "internalOrder",
         "targetPath": "header.internalOrder",
         "type": "string"
+      },
+      {
+        "sourcePath": "documentType",
+        "altSourcePaths": [
+          "DocumentType",
+          "documentType"
+        ],
+        "targetPath": "header.documentType",
+        "type": "string"
+      },
+      {
+        "sourcePath": "documentTypeText",
+        "altSourcePaths": [
+          "DocumentTypeText",
+          "documentTypeText"
+        ],
+        "targetPath": "header.documentTypeText",
+        "type": "string"
+      },
+      {
+        "sourcePath": "documentTypeDisplay",
+        "altSourcePaths": [
+          "DocumentTypeDisplay",
+          "documentTypeDisplay",
+          "DocumentType",
+          "documentType"
+        ],
+        "dependencies": [
+          "DocumentTypeText",
+          "documentTypeText"
+        ],
+        "transform": "combineCodeAndText",
+        "targetPath": "header.documentTypeDisplay",
+        "type": "string"
       }
     ],
     "collections": {
@@ -128,55 +267,141 @@
         "fields": [
           {
             "sourcePath": "reservationItem",
+            "altSourcePaths": [
+              "ItemNumber",
+              "itemNumber",
+              "Item",
+              "item"
+            ],
             "targetPath": "item",
             "required": true
           },
           {
+            "sourcePath": "plant",
+            "altSourcePaths": [
+              "Plant",
+              "plant"
+            ],
+            "targetPath": "plant",
+            "type": "string"
+          },
+          {
+            "sourcePath": "plantName",
+            "altSourcePaths": [
+              "PlantName",
+              "plantName"
+            ],
+            "targetPath": "plantName",
+            "type": "string"
+          },
+          {
+            "sourcePath": "storageLocation",
+            "altSourcePaths": [
+              "StorageLocation",
+              "storageLocation"
+            ],
+            "targetPath": "storageLocation",
+            "type": "string"
+          },
+          {
+            "sourcePath": "storageLocationName",
+            "altSourcePaths": [
+              "StorageLocationName",
+              "storageLocationName"
+            ],
+            "targetPath": "storageLocationName",
+            "type": "string"
+          },
+          {
             "sourcePath": "material",
+            "altSourcePaths": [
+              "Material",
+              "material"
+            ],
             "targetPath": "material",
             "type": "string"
           },
           {
+            "sourcePath": "materialText",
+            "altSourcePaths": [
+              "MaterialText",
+              "materialText"
+            ],
+            "targetPath": "materialText",
+            "type": "string"
+          },
+          {
             "sourcePath": "quantity",
+            "altSourcePaths": [
+              "Quantity",
+              "quantity"
+            ],
             "targetPath": "quantity",
             "transform": "number"
           },
           {
             "sourcePath": "unit",
+            "altSourcePaths": [
+              "BaseUnit",
+              "baseUnit",
+              "unit"
+            ],
             "targetPath": "unit",
             "type": "string"
           },
           {
-            "sourcePath": "storageLocation",
-            "targetPath": "storageLocation",
-            "type": "string"
-          }
-        ]
-      },
-      "accountAssignments": {
-        "navigationKey": "accountAssignments",
-        "targetPath": "accountAssignments",
-        "fields": [
-          {
-            "sourcePath": "item",
-            "targetPath": "item"
+            "sourcePath": "movingAveragePrice",
+            "altSourcePaths": [
+              "MovingAveragePrice",
+              "movingAveragePrice"
+            ],
+            "targetPath": "movingAveragePrice",
+            "type": "number"
           },
           {
-            "sourcePath": "costCenter",
-            "targetPath": "itemCostCenter"
+            "sourcePath": "price",
+            "altSourcePaths": [
+              "Price",
+              "price"
+            ],
+            "targetPath": "price",
+            "type": "number"
+          },
+          {
+            "sourcePath": "requirementDate",
+            "altSourcePaths": [
+              "RequirementDate",
+              "requirementDate"
+            ],
+            "targetPath": "requirementDate",
+            "type": "string"
           },
           {
             "sourcePath": "glAccount",
-            "targetPath": "itemGlAccount"
+            "altSourcePaths": [
+              "GLAccount",
+              "glAccount"
+            ],
+            "targetPath": "glAccount",
+            "type": "string"
           },
           {
-            "sourcePath": "percentage",
-            "targetPath": "itemPercentage"
+            "sourcePath": "glAccountText",
+            "altSourcePaths": [
+              "GLAccountText",
+              "glAccountText"
+            ],
+            "targetPath": "glAccountText",
+            "type": "string"
           },
           {
-            "sourcePath": "value",
-            "targetPath": "itemValue",
-            "transform": "number"
+            "sourcePath": "itemText",
+            "altSourcePaths": [
+              "ItemText",
+              "itemText"
+            ],
+            "targetPath": "itemText",
+            "type": "string"
           }
         ]
       }
@@ -199,6 +424,18 @@
     }
   ],
   "cardChips": [
+    {
+      "label": "Total Amount",
+      "dataPath": "header.total",
+      "dataType": "AMOUNT",
+      "currencyPath": "header.currency",
+      "isPrimary": true
+    },
+    {
+      "label": "Type",
+      "dataPath": "header.documentTypeDisplay",
+      "dataType": "TEXT"
+    },
     {
       "label": "Recipient",
       "dataPath": "header.goodsRecipient",

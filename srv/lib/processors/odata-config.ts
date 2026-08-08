@@ -12,6 +12,7 @@ export const SAP_TYPEID_OBJECT_MAP: Record<string, ObjectTypeCode> = {
 
   // Reservation
   "BUS2093": "RE",
+  "ZBUS2093": "RE",
 
   // Claim
   "ZCLAIM": "CLAIM"
@@ -35,7 +36,7 @@ export function resolveObjectTypeFromTypeId(typeid: string): ObjectTypeCode {
   if (typeStr.includes("BUS2012") || typeStr.toLowerCase().includes("po")) {
     return "PO";
   }
-  if (typeStr.includes("BUS2093") || typeStr.toLowerCase().includes("res")) {
+  if (typeStr.includes("BUS2093") || typeStr.includes("ZBUS2093") || typeStr.toLowerCase().includes("res")) {
     return "RE";
   }
 

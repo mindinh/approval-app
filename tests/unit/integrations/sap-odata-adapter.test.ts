@@ -220,6 +220,39 @@ describe('SapOdataAdapter', () => {
       expect(result.comments[0].text).toBe('Test PO comment');
     });
 
+    it('should query single RE detail with complete sections including _ApprovalStep (headerOnly = false)', async () => {
+      mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
+        if (relativePath.includes('CNMA_RESVHEADER') || relativePath.includes("DocCategory='ZBUS2093'")) {
+          return {
+            DocCategory: 'ZBUS2093',
+            DocumentNumber: '0000000888',
+            _Item: [{ ItemNumber: '00010', Material: 'MAT01', Quantity: 10, BaseUnit: 'PC' }],
+            _ApprovalStep: [
+              { ObjectType: 'ZBUS2093', ObjectKey: '0000000888', ApprovalLevel: 1, ReleaseCode: 'Z1', ReleaseText: 'CONARUM1 Approver', ApproverName: 'CONARUM1', ApproverUserId: 'CONARUM1', ApprovalStatus: 'PENDING', CommentText: '', CommentDate: null, CommentTime: '00:00:00' },
+              { ObjectType: 'ZBUS2093', ObjectKey: '0000000888', ApprovalLevel: 2, ReleaseCode: 'Z2', ReleaseText: 'CONARUM2 Approver', ApproverName: 'CONARUM2', ApproverUserId: 'CONARUM2', ApprovalStatus: 'PENDING', CommentText: '', CommentDate: null, CommentTime: '00:00:00' }
+            ],
+            _Comment: [{ DocumentNumber: '0000000888', Sequence: 1, PostedOn: '2026-08-06', PostedTime: '10:00:00', NoteText: 'Test Reservation comment', UserComment: 'CONARUM1' }],
+            _Attachment: []
+          };
+        }
+        return {};
+      });
+
+      const result = await adapter.getDetail('RE', '0000000888', 'SAP_USER', 'jwt', false);
+
+      expect(result.objectType).toBe('RE');
+      expect(result.items.length).toBe(1);
+      expect(result.approvalTree.length).toBe(2);
+      expect(result.approvalTree[0].level).toBe(1);
+      expect(result.approvalTree[0].releaseCode).toBe('Z1');
+      expect(result.approvalTree[0].approver).toBe('CONARUM1');
+      expect(result.approvalTree[0].status).toBe('PENDING');
+      expect(result.approvalTree[1].level).toBe(2);
+      expect(result.approvalTree[1].releaseCode).toBe('Z2');
+      expect(result.comments.length).toBe(1);
+      expect(result.comments[0].author).toBe('CONARUM1');
+    });
+
     it('should stream attachment binary content in direct SAP mode', async () => {
       mockSapClient.getBinary.mockResolvedValue({
         data: Buffer.from('my-sap-file'),

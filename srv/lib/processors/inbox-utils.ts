@@ -123,9 +123,11 @@ export function filterComments(raw: any[]): Comment[] {
     if (!Array.isArray(raw)) return [];
     return raw
         .map((c, i) => {
-            const text = (c.text ?? c.noteText ?? '').trim();
-            const author = c.author || c.userComment || c.createdBy || 'Unknown';
-            const postedOn = c.postedOn && c.postedTime ? `${c.postedOn}T${c.postedTime}` : undefined;
+            const text = String(c.text ?? c.noteText ?? c.NoteText ?? c.Notetext ?? '').trim();
+            const author = c.author || c.userComment || c.UserComment || c.Usercomment || c.createdBy || c.CreatedBy || 'Unknown';
+            const rawPostedOn = c.postedOn || c.PostedOn || c.Postedon || c.CommentDate;
+            const rawPostedTime = c.postedTime || c.PostedTime || c.Postedtime || c.CommentTime;
+            const postedOn = rawPostedOn && rawPostedTime ? `${rawPostedOn}T${rawPostedTime}` : (rawPostedOn || undefined);
             const createdAt = c.createdAt ?? normalizeDate(postedOn) ?? new Date().toISOString();
             
             return {

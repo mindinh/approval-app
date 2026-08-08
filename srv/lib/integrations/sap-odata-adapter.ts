@@ -6,16 +6,11 @@ import { ReDetail } from './re';
 import { ClaimDetail } from './claim';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { getMockInstances, getMockDocTypeCounts, getMockStatusCounts } from './mock-data-provider';
-import { TtlLruCache } from '../utils/cache';
 import { MetadataService } from '../metadata-service';
+import { CnmaTaskByStatusEntity, CnmaTaskByDocTypeEntity } from '../types/sap-odata.types';
 
-const detailCache = new TtlLruCache<string, any>(500, 5 * 60 * 1000); // 5 minutes TTL, 500 capacity
-const instanceCache = new TtlLruCache<string, any[]>(200, 60 * 1000); // 1 minute TTL for instance lookups
-
-export function clearDetailCache(objectType: string, objectId: string) {
-    const keyPrefix = `${objectType}:${objectId}:`;
-    detailCache.delete(keyPrefix + 'true');
-    detailCache.delete(keyPrefix + 'false');
+export function clearDetailCache(_objectType: string, _objectId: string) {
+    // No-op function preserved for test suite compatibility
 }
 
 export class SapOdataAdapter {
@@ -63,11 +58,6 @@ export class SapOdataAdapter {
             }
             (result as any).totalCount = total;
             return result;
-        }
-
-        const cacheKey = `${sapUser}:${targetInstanceId || ''}:${Array.isArray(status) ? status.join(',') : (status || '')}`;
-        if (targetInstanceId && instanceCache.has(cacheKey)) {
-            return instanceCache.get(cacheKey)!;
         }
 
         const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
@@ -123,7 +113,8 @@ export class SapOdataAdapter {
             instanceID: item.WorkflowTaskInternalID,
             status: item.WorkflowTaskStatus,
             typeid: item.TechnicalWrkflwObjectType,
-            instid: item.TechnicalWrkflwObject,
+            instid: item.DocumentNumber || item.TechnicalWrkflwObject,
+            documentNumber: item.DocumentNumber || item.TechnicalWrkflwObject,
             doctyp: item.DocumentType,
             doctyp_desc: item.DocumentTypeText,
             normalTask: item.NormalTask !== false,
@@ -148,24 +139,12 @@ export class SapOdataAdapter {
 
         (items as any).totalCount = totalCount;
 
-        if (targetInstanceId && items.length > 0) {
-            instanceCache.set(cacheKey, items);
-        }
-
         return items;
     }
 
-    // ─── DETAIL RETRIEVAL (Delegated to Strategies with Cache) ───
     async getDetail(objectType: string, objectId: string, sapUser: string, userJwt?: string, headerOnly = false): Promise<any> {
-        const cacheKey = `${objectType}:${objectId}:${headerOnly}`;
-        if (detailCache.has(cacheKey)) {
-            return detailCache.get(cacheKey);
-        }
-
         const strategy = this.getStrategy(objectType);
-        const result = await strategy.getDetail(objectId, sapUser, userJwt, headerOnly);
-        detailCache.set(cacheKey, result);
-        return result;
+        return await strategy.getDetail(objectId, sapUser, userJwt, headerOnly);
     }
 
     async getDetailBatch(
@@ -174,31 +153,16 @@ export class SapOdataAdapter {
         userJwt?: string
     ): Promise<Record<string, any>> {
         const results: Record<string, any> = {};
-        const missingItems: Array<{ objectType: string; objectId: string; cacheKey: string }> = [];
 
-        // 1. Resolve from cache first
+        // Group items by strategy
+        const groupedItems = new Map<string, Array<{ objectType: string; objectId: string }>>();
         for (const item of itemsToFetch) {
-            const cacheKey = `${item.objectType}:${item.objectId}:true`;
-            if (detailCache.has(cacheKey)) {
-                results[`${item.objectType}:${item.objectId}`] = detailCache.get(cacheKey);
-            } else {
-                missingItems.push({ ...item, cacheKey });
-            }
-        }
-
-        if (missingItems.length === 0) {
-            return results;
-        }
-
-        // 2. Group missing items by strategy
-        const groupedItems = new Map<string, Array<{ objectType: string; objectId: string; cacheKey: string }>>();
-        for (const item of missingItems) {
             const list = groupedItems.get(item.objectType) || [];
             list.push(item);
             groupedItems.set(item.objectType, list);
         }
 
-        // 3. Invoke each strategy in parallel
+        // Invoke each strategy in parallel directly without caching
         await Promise.all(
             Array.from(groupedItems.entries()).map(async ([objectType, group]) => {
                 try {
@@ -206,8 +170,6 @@ export class SapOdataAdapter {
                     if (strategy.getDetailBatch) {
                         const batchResults = await strategy.getDetailBatch(group, sapUser, userJwt);
                         for (const key of Object.keys(batchResults)) {
-                            const cacheKey = `${key}:true`;
-                            detailCache.set(cacheKey, batchResults[key]);
                             results[key] = batchResults[key];
                         }
                     } else {
@@ -215,15 +177,14 @@ export class SapOdataAdapter {
                         for (const item of group) {
                             try {
                                 const single = await strategy.getDetail(item.objectId, sapUser, userJwt, true);
-                                detailCache.set(item.cacheKey, single);
                                 results[`${objectType}:${item.objectId}`] = single;
                             } catch (singleErr) {
                                 // ignore single error
                             }
                         }
                     }
-                } catch (err: any) {
-                    console.error(`[SapOdataAdapter] Batch details failed for strategy ${objectType}:`, err.message);
+                } catch (groupErr) {
+                    // ignore strategy failure
                 }
             })
         );
@@ -247,7 +208,7 @@ export class SapOdataAdapter {
         if (inst) {
             if (inst.typeid === 'BUS2012') return 'PO';
             if (inst.typeid === 'BUS2105') return 'PR';
-            if (inst.typeid === 'BUS2093') return 'RE';
+            if (inst.typeid === 'BUS2093' || inst.typeid === 'ZBUS2093') return 'RE';
             if (inst.typeid === 'ZCLAIM') return 'CLAIM';
         }
 
@@ -255,9 +216,6 @@ export class SapOdataAdapter {
     }
 
     async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = '', objectType?: string): Promise<void> {
-        clearDetailCache('PR', objectId);
-        clearDetailCache('PO', objectId);
-
         const targetType = this.resolveObjectType(objectId, objectType);
         const strategy = this.getStrategy(targetType);
         if (strategy.addComment) {
@@ -268,9 +226,6 @@ export class SapOdataAdapter {
     }
 
     async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string, objectType?: string): Promise<void> {
-        clearDetailCache('PR', objectId);
-        clearDetailCache('PO', objectId);
-
         const targetType = this.resolveObjectType(objectId, objectType);
         const strategy = this.getStrategy(targetType);
         if (strategy.uploadAttachment) {
@@ -290,42 +245,48 @@ export class SapOdataAdapter {
         }
     }
 
-    async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<any[]> {
+    async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByDocTypeEntity[]> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
             return getMockDocTypeCounts();
         }
 
         try {
-            const instances = await this.getInstances(sapUser, undefined, userJwt, undefined, undefined, 'doctyp');
-            const counts: Record<string, number> = {};
-            for (const item of instances) {
-                const docType = item.doctyp || 'UNKNOWN';
-                counts[docType] = (counts[docType] || 0) + 1;
-            }
-            return Object.entries(counts).map(([docType, count]) => ({ DocumentType: docType, Count: count }));
+            const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+            const response: any = await this.sapClient.get(
+                path,
+                '/CNMA_TASKBYDOCTYPE',
+                { $format: 'json' },
+                sapUser,
+                userJwt
+            );
+            const value = response?.value || response?.d?.results || response?.d || response;
+            return Array.isArray(value) ? value : [];
         } catch (err: any) {
-            console.error(`[SapOdataAdapter] Failed to compute docType counts:`, err.message);
+            console.error(`[SapOdataAdapter] Failed to fetch CNMA_TASKBYDOCTYPE:`, err.message);
             return getMockDocTypeCounts();
         }
     }
 
-    async getStatusCounts(sapUser: string, userJwt?: string): Promise<any[]> {
+    async getStatusCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByStatusEntity[]> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
             return getMockStatusCounts();
         }
 
         try {
-            const instances = await this.getInstances(sapUser, undefined, userJwt, undefined, undefined, 'status');
-            const counts: Record<string, number> = {};
-            for (const item of instances) {
-                const status = item.status || 'UNKNOWN';
-                counts[status] = (counts[status] || 0) + 1;
-            }
-            return Object.entries(counts).map(([status, count]) => ({ Status: status, Count: count }));
+            const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+            const response: any = await this.sapClient.get(
+                path,
+                '/CNMA_TASKBYSTATUS',
+                { $format: 'json' },
+                sapUser,
+                userJwt
+            );
+            const value = response?.value || response?.d?.results || response?.d || response;
+            return Array.isArray(value) ? value : [];
         } catch (err: any) {
-            console.error(`[SapOdataAdapter] Failed to compute status counts:`, err.message);
+            console.error(`[SapOdataAdapter] Failed to fetch CNMA_TASKBYSTATUS:`, err.message);
             return getMockStatusCounts();
         }
     }
