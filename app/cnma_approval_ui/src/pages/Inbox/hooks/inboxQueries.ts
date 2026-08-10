@@ -44,17 +44,6 @@ function useErrorModalOnQueryError(error: unknown, fallback: string) {
     }, [error, showError]);
 }
 
-// ─── useObjectConfigs ──────────────────────────────────────
-export function useObjectConfigs() {
-    return useQuery({
-        queryKey: inboxKeys.objectConfigs(),
-        queryFn: () => inboxApi.getObjectConfigs(),
-        staleTime: Infinity,
-        gcTime: Infinity,
-        retry: 2,
-    });
-}
-
 // ─── useCurrentUser ────────────────────────────────────────
 export function useCurrentUser() {
     return useQuery({
@@ -180,8 +169,16 @@ export function useTaskDetail(
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
         placeholderData: (previousData) => {
-            if (previousData && (previousData.instanceId === instanceId || previousData.taskId === instanceId || previousData.task?.instanceId === instanceId)) {
-                return previousData;
+            if (previousData) {
+                const prevId = (previousData as any)?.taskprocessing?.task?.InstanceID ||
+                               previousData.instanceId ||
+                               previousData.taskId ||
+                               previousData.task?.instanceId;
+                const normPrevId = prevId ? String(prevId).replace(/^0+/, '') : '';
+                const normInstId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
+                if (!prevId || prevId === instanceId || normPrevId === normInstId) {
+                    return previousData;
+                }
             }
             if (placeholderTask && placeholderTask.instanceId === instanceId) {
                 const docType = hints?.businessObjectType || placeholderTask.objectType || 'PR';

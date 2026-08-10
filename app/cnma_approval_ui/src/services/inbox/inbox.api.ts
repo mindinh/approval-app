@@ -29,16 +29,6 @@ export interface UserInfo {
  */
 export const inboxApi = {
     /**
-     * Get dynamic UI schemas and field mappings loaded from srv/configuration/object-types.
-     */
-    getObjectConfigs: async (): Promise<{ configs: Record<string, any> }> => {
-        const { data } = await axiosInstance.get<{ configs: Record<string, any> }>(
-            `${BASE_URL}/object-configs`
-        );
-        return data;
-    },
-
-    /**
      * Get current user display info (name, email) from JWT claims.
      */
     getCurrentUser: async (): Promise<UserInfo> => {

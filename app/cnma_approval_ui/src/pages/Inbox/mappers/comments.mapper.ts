@@ -24,9 +24,6 @@ export interface UnifiedComment {
  * Merge workflow approval comments and task-level comments into a single
  * deduplicated, chronologically sorted list.
  *
- * Deduplication rule: two comments are considered duplicates if they have
- * identical text (trimmed) and were created within 24 hours of each other.
- *
  * Pure function — no hooks, no side effects.
  */
 export function mergeAndDeduplicateComments(
@@ -58,24 +55,27 @@ export function mergeAndDeduplicateComments(
         });
     }
 
-    // 2. Process task comments, deduplicating against workflow comments
+    // 2. Process task comments
     for (const c of taskComments || []) {
-        const dateObj = parseDate(c.createdAt || '');
         const textNorm = (c.text || '').trim();
+        if (!textNorm) continue;
+
+        const dateObj = parseDate(c.createdAt || '');
 
         const isDuplicate = unified.some(
             (u) =>
-                u.text.trim() === textNorm &&
-                Math.abs(u.dateObj.getTime() - dateObj.getTime()) < 1000 * 60 * 60 * 24
+                u.id === c.id ||
+                (u.text.trim().toLowerCase() === textNorm.toLowerCase() &&
+                 Math.abs(u.dateObj.getTime() - dateObj.getTime()) <= 1000 * 60 * 60 * 24)
         );
 
         if (!isDuplicate) {
             unified.push({
-                id: c.id,
+                id: c.id || `tc-${unified.length}`,
                 text: c.text,
                 createdBy: c.createdByName || c.createdBy || 'Unknown',
                 createdAt: c.createdAt || '',
-                dateObj: Number.isNaN(dateObj.getTime()) ? new Date(0) : dateObj,
+                dateObj: Number.isNaN(dateObj.getTime()) ? new Date() : dateObj,
             });
         }
     }

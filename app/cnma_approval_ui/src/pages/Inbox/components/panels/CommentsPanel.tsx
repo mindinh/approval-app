@@ -39,17 +39,18 @@ export function CommentsPanel({
 
     const handleSubmit = () => {
         if (!commentText.trim() || !instanceId) return;
+        const docNum = context?.documentId || detail?.documentId || detail?.businessObject?.DocumentNumber || detail?.businessObject?.PurchaseRequisition || detail?.businessObject?.PurchaseOrder || detail?.businessObject?.ReservationNumber || detail?.businessObject?.ClaimNumber || instanceId;
+        const boType = context?.businessObjectType || detail?.docCategory || detail?.businessObject?.DocCategory || detail?.objectType || '';
+
         addCommentMutation.mutate(
             {
                 instanceId,
                 text: commentText.trim(),
-                context: context
-                    ? {
-                        sapOrigin: context.sapOrigin,
-                        documentId: context.documentId,
-                        businessObjectType: context.businessObjectType,
-                    }
-                    : undefined,
+                context: {
+                    sapOrigin: context?.sapOrigin || detail?.task?.sapOrigin || 'LOCAL',
+                    documentId: docNum,
+                    businessObjectType: boType,
+                },
             },
             {
                 onSuccess: () => {

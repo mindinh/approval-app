@@ -81,7 +81,8 @@ export function OverviewPanel({
                             )}>
                                 {regularFields.map((item) => {
                                     const val = item.value && item.value.trim() !== '' ? item.value : '-';
-                                    const isPendingValue = isSecondaryLoading && (val === '-' || val === '');
+                                    const isDashOnly = !val || val === '-' || val === '' || val.replace(/[\s-]/g, '') === '';
+                                    const isPendingValue = isSecondaryLoading && isDashOnly;
 
                                     return isMobile ? (
                                         <div key={item.key} className="flex items-start justify-between gap-3 py-2 border-b border-border/20 last:border-b-0 min-h-[2.25rem]">
@@ -123,7 +124,7 @@ export function OverviewPanel({
                                                             animate={{ opacity: 1 }}
                                                             exit={{ opacity: 0 }}
                                                             transition={{ duration: 0.18 }}
-                                                            className="font-semibold text-sm text-foreground break-words whitespace-pre-line"
+                                                            className="font-semibold text-sm text-foreground break-words whitespace-pre-wrap block w-full leading-relaxed"
                                                         >
                                                             {renderFieldValue(item.key, item.label, val)}
                                                         </motion.span>
@@ -141,7 +142,8 @@ export function OverviewPanel({
                             <div className="space-y-4 pt-2 border-t border-border/20">
                                 {longTextFields.map((item) => {
                                     const val = item.value && item.value.trim() !== '' ? item.value : '-';
-                                    const isPendingLongText = isSecondaryLoading && (val === '-' || val === '');
+                                    const isDashOnly = !val || val === '-' || val === '' || val.replace(/[\s-]/g, '') === '';
+                                    const isPendingLongText = isSecondaryLoading && isDashOnly;
 
                                     return (
                                         <div key={item.key} className="flex flex-col gap-1.5 min-h-[4.5rem]">

@@ -26,8 +26,97 @@ import { resolveBusinessSectionModel } from '@/renderers';
 import { useTranslation } from 'react-i18next';
 import { ReferencePrDetailView } from './ReferencePrDetailView';
 
+function normalizeDetailForView(detail: any) {
+    if (!detail) return null;
+    const bo = detail.businessObject || (detail.header ? { ...detail.header, _Item: detail.items } : detail);
+    const tp = detail.taskprocessing;
+
+    const docCategory = String(bo?.DocCategory || detail.objectType || detail.task?.businessContext?.type || 'PR').toUpperCase();
+    const documentId = String(bo?.DocumentNumber || bo?.PurchaseRequisition || bo?.PurchaseOrder || bo?.ReservationNumber || bo?.ClaimNumber || bo?.DocumentId || detail.documentId || '');
+
+    const rawSteps = bo?._ApprovalStep || detail.approvalSteps || detail.approvalTree || [];
+    const steps = Array.isArray(rawSteps) ? rawSteps.map((s: any) => ({
+        documentId: s.ObjectKey || s.DocumentNumber || documentId,
+        level: Number(s.ApprovalLevel ?? s.level ?? 0),
+        releaseCode: s.ReleaseCode || s.releaseCode || '',
+        releaseText: s.ReleaseText || s.releaseText || s.ReleaseCode || '',
+        approver: s.ApproverName || s.approver || '',
+        approverUserId: s.ApproverUserId || s.approverUserId || '',
+        status: s.ApprovalStatus || s.status || '',
+        noteText: s.CommentText || s.noteText || '',
+        postedOn: s.CommentDate || s.postedOn || '',
+        postedTime: s.CommentTime || s.postedTime || ''
+    })) : [];
+
+    const rawComments = bo?._Comment || detail.comments || [];
+    const comments = Array.isArray(rawComments) ? rawComments.map((c: any, idx: number) => ({
+        id: c.id || c.DocId || `comment-${idx}`,
+        text: c.NoteText || c.noteText || c.text || '',
+        createdBy: c.UserComment || c.author || c.createdBy || 'User',
+        createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || new Date().toISOString()
+    })) : [];
+
+    const rawAttachments = bo?._Attachment || detail.attachments || [];
+    const attachments = Array.isArray(rawAttachments) ? rawAttachments.map((att: any, idx: number) => ({
+        id: att.DocId || att.id || `attach-${idx}`,
+        fileName: att.FileName || att.fileName || '',
+        mimeType: att.MimeType || att.mimeType || 'application/octet-stream',
+        fileSize: Number(att.Length || att.fileSize || 0),
+        createdBy: att.CreatedBy || att.createdBy || '',
+        createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : att.createdAt || new Date().toISOString()
+    })) : [];
+
+    const rawDecisions = tp?.decisionOptions || detail.decisions || detail.task?.decisions || [];
+    const decisions = Array.isArray(rawDecisions) ? rawDecisions.map((d: any) => ({
+        key: String(d.DecisionKey || d.key || ''),
+        text: String(d.DecisionText || d.text || ''),
+        nature: (d.Nature || (String(d.DecisionKey || d.key) === '0001' ? 'POSITIVE' : String(d.DecisionKey || d.key) === '0002' ? 'NEGATIVE' : 'NEUTRAL')) as any,
+        commentMandatory: d.CommentMandatory === true
+    })) : [];
+
+    const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
+    const title = tp?.task?.TaskTitle || detail.task?.title || `${docCategory} ${documentId}`;
+
+    return {
+        rawDetail: detail,
+        businessObject: bo,
+        docCategory,
+        documentId,
+        instanceId,
+        title,
+        status: tp?.task?.Status || detail.task?.status || 'READY',
+        priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',
+        createdOn: tp?.task?.CreatedOn || detail.task?.createdOn,
+        createdByName: tp?.task?.CreatedByName || detail.task?.createdByName,
+        normalTask: detail.normalTask ?? detail.task?.normalTask ?? true,
+        task: {
+            instanceId,
+            title,
+            status: tp?.task?.Status || detail.task?.status || 'READY',
+            priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',
+            normalTask: detail.normalTask ?? detail.task?.normalTask ?? true,
+            sapOrigin: tp?.task?.SAP__Origin || detail.task?.sapOrigin || 'LOCAL',
+            businessContext: {
+                type: docCategory as any,
+                documentId
+            }
+        },
+        workflowData: {
+            documentId,
+            releaseStrategyName: bo.ReleaseStrategyName || bo.ReleaseStrategyText || detail.releaseStrategyName || '',
+            steps,
+            comments: []
+        },
+        decisions,
+        attachments,
+        comments,
+        processingLogs: detail.processingLogs || [],
+        workflowLogs: detail.workflowLogs || []
+    };
+}
+
 interface TaskDetailViewProps {
-    detail: TaskDetailType | undefined;
+    detail: any;
     isLoading: boolean;
     isError?: boolean;
     error?: unknown;
@@ -55,6 +144,7 @@ export function TaskDetailView({
     isApprovedScope = false,
     showActionPanel = true,
 }: TaskDetailViewProps) {
+    const viewData = useMemo(() => normalizeDetailForView(detail), [detail]);
     const businessModel = useMemo(
         () => (detail ? resolveBusinessSectionModel(detail) : null),
         [detail]
@@ -65,7 +155,6 @@ export function TaskDetailView({
     });
     const [activeSubView, setActiveSubView] = useState<{ type: 'reference-pr'; prNumber: string } | null>(null);
 
-    // Track direction for mobile tab animation
     const prevTabIndexRef = useRef(0);
     const { t } = useTranslation();
 
@@ -77,14 +166,13 @@ export function TaskDetailView({
 
     const queryClient = useQueryClient();
     const handleCommentAdded = useCallback(() => {
-        if (!detail) return;
-        const currentTaskId = detail.instanceId || detail.taskId || detail.task?.instanceId || '';
-        invalidateAfterComment(queryClient, currentTaskId);
-    }, [detail, queryClient]);
+        if (!viewData) return;
+        invalidateAfterComment(queryClient, viewData.instanceId);
+    }, [viewData, queryClient]);
 
-    const activeTaskId = detail?.instanceId || detail?.taskId || detail?.task?.instanceId || '';
+    const activeTaskId = viewData?.instanceId || '';
     const activeTab =
-        detail && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
+        viewData && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
 
     useEffect(() => {
         setActiveSubView(null);
@@ -94,24 +182,9 @@ export function TaskDetailView({
         setActiveSubView({ type: 'reference-pr', prNumber });
     }, []);
 
-    const docType = detail?.objectType || detail?.task?.businessContext?.type;
-    const supportsApproval = docType === 'PR' || docType === 'PO' || docType === 'RE';
-    const supportsStandaloneAttach = docType === 'PR';
-    const documentId = detail?.documentId || detail?.task?.businessContext?.documentId;
-
-    const workflowData = useMemo(() => {
-        if (!detail) return undefined;
-        const wf = detail.workflow || detail.object?.workflow;
-        const hd = detail.header || detail.object?.header;
-        return {
-            documentId: documentId || '',
-            releaseStrategyName: detail.releaseStrategyName || wf?.strategyName || (hd?.releaseStrategyName as string),
-            steps: Array.isArray(detail.approvalSteps) ? detail.approvalSteps : (Array.isArray(detail.approvalTree) ? detail.approvalTree : (Array.isArray(wf?.steps) ? wf.steps : [])),
-            comments: Array.isArray(wf?.comments) ? wf.comments : []
-        };
-    }, [detail, documentId]);
-
-    const prAttachmentCount = detail?.attachments?.length || detail?.object?.attachments?.length || 0;
+    const documentId = viewData?.documentId || '';
+    const workflowData = viewData?.workflowData;
+    const prAttachmentCount = viewData?.attachments?.length || 0;
     const isPrAttachmentsLoading = false;
     const workflowError = undefined;
 
@@ -125,9 +198,9 @@ export function TaskDetailView({
 
     const tabs = useMemo(
         () =>
-            detail
+            viewData
                 ? makeTabDefinitions({
-                    detail,
+                    detail: viewData,
                     workflowCount: workflowData?.steps?.length || 0,
                     workflowComments: workflowData?.comments,
                     detailsCount,
@@ -135,7 +208,7 @@ export function TaskDetailView({
                     t,
                 }) || []
                 : [],
-        [detail, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
+        [viewData, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
     );
 
     const { showError } = useErrorModal();
@@ -214,7 +287,7 @@ export function TaskDetailView({
                 return businessModel ? (
                     <OverviewPanel
                         model={businessModel}
-                        detail={detail}
+                        detail={viewData}
                         isMobile={mobile}
                         isSecondaryLoading={isSecondaryLoading}
                         onSelectReferencePr={handleSelectReferencePr}
@@ -227,7 +300,7 @@ export function TaskDetailView({
                 return businessModel ? (
                     <DetailsPanel
                         model={businessModel}
-                        detail={detail}
+                        detail={viewData}
                         isMobile={mobile}
                         isSecondaryLoading={isSecondaryLoading}
                         onSelectReferencePr={handleSelectReferencePr}
@@ -239,28 +312,28 @@ export function TaskDetailView({
                         data={workflowData}
                         isLoading={false}
                         error={workflowError}
-                        taskDetail={detail.task}
+                        taskDetail={viewData?.task}
                     />
                 );
             case 'attachments':
-                if (isPrAttachmentsLoading || (isSecondaryLoading && detail.attachments.length === 0)) {
+                if (isPrAttachmentsLoading || (isSecondaryLoading && (viewData?.attachments?.length || 0) === 0)) {
                     return <SecondaryTabSkeleton message={t('task.loadingAttachments', 'Loading attachments...')} />;
                 }
-                return <AttachmentsPanel detail={detail} isMobile={mobile} allowUpload={showActionPanel} />;
+                return <AttachmentsPanel detail={viewData} isMobile={mobile} allowUpload={showActionPanel} />;
             case 'comments':
-                if (isSecondaryLoading && detail.comments.length === 0) {
+                if (isSecondaryLoading && (viewData?.comments?.length || 0) === 0) {
                     return <SecondaryTabSkeleton message={t('task.loadingComments', 'Loading comments...')} />;
                 }
                 return (
                     <CommentsPanel
-                        detail={detail}
-                        instanceId={detail.task.instanceId}
+                        detail={viewData}
+                        instanceId={viewData?.instanceId}
                         onCommentAdded={handleCommentAdded}
                         allowAddComment={showActionPanel}
                         context={{
-                            sapOrigin: detail.task.sapOrigin,
-                            documentId: detail.task.businessContext?.documentId,
-                            businessObjectType: detail.task.businessContext?.type,
+                            sapOrigin: viewData?.task?.sapOrigin,
+                            documentId: viewData?.task?.businessContext?.documentId,
+                            businessObjectType: viewData?.task?.businessContext?.type,
                         }}
                         workflowComments={workflowData?.comments}
                         isLoadingWorkflowComments={false}
@@ -269,12 +342,12 @@ export function TaskDetailView({
             case 'activity':
                 if (
                     isSecondaryLoading &&
-                    (detail.processingLogs?.length || 0) === 0 &&
-                    (detail.workflowLogs?.length || 0) === 0
+                    (viewData?.processingLogs?.length || 0) === 0 &&
+                    (viewData?.workflowLogs?.length || 0) === 0
                 ) {
                     return <SecondaryTabSkeleton message={t('task.loadingActivity', 'Loading activity...')} />;
                 }
-                return <ActivityPanel detail={detail} />;
+                return <ActivityPanel detail={viewData} />;
             default:
                 return null;
         }
@@ -286,7 +359,7 @@ export function TaskDetailView({
 
     const handleMobileTabChange = (nextTab: string) => {
         prevTabIndexRef.current = tabs.findIndex((t) => t.value === activeTab);
-        setTabState({ taskId: detail.task.instanceId, tab: nextTab });
+        setTabState({ taskId: viewData?.instanceId || '', tab: nextTab });
     };
 
     return (
@@ -308,12 +381,12 @@ export function TaskDetailView({
                                 <Skeleton className="h-6 w-3/4 my-0.5 rounded-md animate-pulse bg-muted/60" />
                             ) : (
                                 <h2 className="text-lg font-bold text-foreground leading-snug line-clamp-2 flex-1">
-                                    {detail.task.title}
+                                    {viewData?.title || 'Task Details'}
                                 </h2>
                             )}
                         </div>
                         <div className="pl-7">
-                            <StatusHeaderBadges detail={detail} />
+                            <StatusHeaderBadges detail={viewData} />
                         </div>
                     </div>
                 </div>
@@ -325,10 +398,10 @@ export function TaskDetailView({
                                 <Skeleton className="h-7 w-80 my-0.5 rounded-md animate-pulse bg-muted/60" />
                             ) : (
                                 <h2 className="text-xl font-semibold text-foreground truncate">
-                                    {detail.task.title}
+                                    {viewData?.title || 'Task Details'}
                                 </h2>
                             )}
-                            <StatusHeaderBadges detail={detail} />
+                            <StatusHeaderBadges detail={viewData} />
                         </div>
                     </div>
                 </div>
@@ -340,7 +413,7 @@ export function TaskDetailView({
                     value={activeTab}
                     onValueChange={(nextTab) =>
                         setTabState({
-                            taskId: detail.task.instanceId,
+                            taskId: viewData?.instanceId || '',
                             tab: nextTab,
                         })
                     }
@@ -378,7 +451,7 @@ export function TaskDetailView({
                                 {businessModel && (
                                     <OverviewPanel
                                         model={businessModel}
-                                        detail={detail}
+                                        detail={viewData}
                                         isMobile={false}
                                         isSecondaryLoading={isSecondaryLoading}
                                         onSelectReferencePr={handleSelectReferencePr}
@@ -392,7 +465,7 @@ export function TaskDetailView({
                                     businessModel && (
                                         <DetailsPanel
                                             model={businessModel}
-                                            detail={detail}
+                                            detail={viewData}
                                             isMobile={false}
                                             isSecondaryLoading={isSecondaryLoading}
                                             onSelectReferencePr={handleSelectReferencePr}
@@ -405,22 +478,22 @@ export function TaskDetailView({
                                     data={workflowData}
                                     isLoading={false}
                                     error={workflowError}
-                                    taskDetail={detail.task}
+                                    taskDetail={viewData?.task}
                                 />
                             </TabsContent>
                             <TabsContent value="comments" className="mt-0 w-full">
-                                {isSecondaryLoading && detail.comments.length === 0 ? (
+                                {isSecondaryLoading && (viewData?.comments?.length || 0) === 0 ? (
                                     <SecondaryTabSkeleton message={t('task.loadingComments', 'Loading comments...')} />
                                 ) : (
                                     <CommentsPanel
-                                        detail={detail}
-                                        instanceId={detail.task.instanceId}
+                                        detail={viewData}
+                                        instanceId={viewData?.instanceId}
                                         onCommentAdded={handleCommentAdded}
                                         allowAddComment={showActionPanel}
                                         context={{
-                                            sapOrigin: detail.task.sapOrigin,
-                                            documentId: detail.task.businessContext?.documentId,
-                                            businessObjectType: detail.task.businessContext?.type,
+                                            sapOrigin: viewData?.task?.sapOrigin,
+                                            documentId: viewData?.task?.businessContext?.documentId,
+                                            businessObjectType: viewData?.task?.businessContext?.type,
                                         }}
                                         workflowComments={workflowData?.comments}
                                         isLoadingWorkflowComments={false}
@@ -429,11 +502,11 @@ export function TaskDetailView({
                             </TabsContent>
                             <TabsContent value="activity" className="mt-0 w-full">
                                 {isSecondaryLoading &&
-                                    (detail.processingLogs?.length || 0) === 0 &&
-                                    (detail.workflowLogs?.length || 0) === 0 ? (
+                                    (viewData?.processingLogs?.length || 0) === 0 &&
+                                    (viewData?.workflowLogs?.length || 0) === 0 ? (
                                     <SecondaryTabSkeleton message={t('task.loadingActivity', 'Loading activity...')} />
                                 ) : (
-                                    <ActivityPanel detail={detail} />
+                                    <ActivityPanel detail={viewData} />
                                 )}
                             </TabsContent>
                         </div>
@@ -441,7 +514,7 @@ export function TaskDetailView({
 
                     <TabsContent value="attachments" className="mt-0 w-full flex-1 min-h-0 px-5 py-4 data-[state=active]:flex data-[state=active]:flex-col">
                         <AttachmentsPanel
-                            detail={detail}
+                            detail={viewData}
                             allowUpload={showActionPanel}
                             isPrLoading={isPrAttachmentsLoading}
                             isSecLoading={isSecondaryLoading}
@@ -486,7 +559,7 @@ export function TaskDetailView({
                                             )}
                                             {isActive && (
                                                 <motion.div
-                                                    layoutId={`mobile-tab-indicator-${detail.task.instanceId}`}
+                                                    layoutId={`mobile-tab-indicator-${viewData?.instanceId}`}
                                                     className="absolute inset-0 rounded-full bg-primary"
                                                     style={{ zIndex: -1 }}
                                                     transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
@@ -565,7 +638,7 @@ export function TaskDetailView({
             {!isMobile && showActionPanel && (
                 <div className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-sm px-5 py-3 empty:hidden">
                     <TaskActionPanel
-                        detail={detail}
+                        detail={viewData}
                         onDecision={onDecision}
                         isExecuting={isExecuting}
                         isApprovedScope={isApprovedScope}
@@ -579,7 +652,7 @@ export function TaskDetailView({
                 <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
                     <div className="pointer-events-auto rounded-2xl border border-border bg-white/98 p-3 shadow-[0_12px_28px_rgba(15,23,42,0.14)] empty:hidden">
                         <TaskActionPanel
-                            detail={detail}
+                            detail={viewData}
                             onDecision={onDecision}
                             isExecuting={isExecuting}
                             isApprovedScope={isApprovedScope}

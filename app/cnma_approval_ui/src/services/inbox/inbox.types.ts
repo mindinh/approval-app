@@ -350,36 +350,6 @@ export interface WorkflowApprovalTreeResponse {
     comments?: WorkflowApprovalComment[];
 }
 
-export interface DynamicFieldDefinition {
-    key: string;
-    label: string;
-    dataPath: string;
-    dataType: string;
-    formatter?: string;
-    fallbackValue?: string;
-    currencyPath?: string;
-}
-
-export interface DynamicUiSection {
-    id: string;
-    type: string;
-    title: string;
-    fields?: string[];
-    dataPath?: string;
-    columns?: string[];
-    visibleWhen?: {
-        field: string;
-        operator: string;
-        value?: unknown;
-    };
-}
-
-export interface DynamicUiSchema {
-    title?: string;
-    subtitle?: string;
-    sections: DynamicUiSection[];
-}
-
 export interface TaskDetailMeta {
     objectType: string;
     objectId: string;
@@ -402,8 +372,6 @@ export interface TaskDetail {
     workflowLogs?: WorkflowLog[];
     attachments: TaskAttachment[];
     businessContext?: BusinessContext;
-    fieldSchema?: Record<string, DynamicFieldDefinition>;
-    uiSchema?: DynamicUiSchema;
 }
 
 // ─── Dashboard ────────────────────────────────────────────

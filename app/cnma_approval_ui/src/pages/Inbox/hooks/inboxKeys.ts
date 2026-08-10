@@ -6,14 +6,13 @@
  * by TanStack Query docs.
  */
 
+const normId = (id?: string | null): string => (id ? String(id).replace(/^0+/, '') : '');
+
 export const inboxKeys = {
     all: ['inbox'] as const,
 
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: () => [...inboxKeys.all, 'dashboard'] as const,
-
-    // ─── Object Configs ────────────────────────────────────
-    objectConfigs: () => [...inboxKeys.all, 'objectConfigs'] as const,
 
     // ─── Current User ──────────────────────────────────────
     currentUser: () => [...inboxKeys.all, 'currentUser'] as const,
@@ -28,16 +27,16 @@ export const inboxKeys = {
         [...inboxKeys.all, 'approvedTasks', pagination ?? {}] as const,
 
     // ─── Task Detail ───────────────────────────────────────
-    taskDetail: (id: string) => [...inboxKeys.all, 'task', id] as const,
+    taskDetail: (id: string) => [...inboxKeys.all, 'task', normId(id)] as const,
 
     // ─── Workflow ──────────────────────────────────────────
-    taskWorkflowPrefix: (id: string) => [...inboxKeys.all, 'workflow', id] as const,
+    taskWorkflowPrefix: (id: string) => [...inboxKeys.all, 'workflow', normId(id)] as const,
     taskWorkflow: (
         id: string,
         params?: { documentId?: string; sapOrigin?: string }
-    ) => [...inboxKeys.all, 'workflow', id, params ?? {}] as const,
+    ) => [...inboxKeys.all, 'workflow', normId(id), params ?? {}] as const,
 
     // ─── PR Attachments ────────────────────────────────────
-    prAttachments: (documentNumber: string, sapOrigin?: string) =>
-        [...inboxKeys.all, 'pr-attachments', documentNumber, sapOrigin ?? ''] as const,
+    prAttachments: (documentNumber: string) =>
+        [...inboxKeys.all, 'pr-attachments', documentNumber] as const,
 };

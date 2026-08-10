@@ -299,22 +299,25 @@ function getMimeTypeFromExtension(fileName?: string): string | undefined {
  */
 function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
     let mime = (mimeType || '').toLowerCase();
+    const cleanFileName = (fileName || '').toLowerCase().split('?')[0].split('#')[0];
 
     // If mime is generic or empty, resolve it from the file name extension
     if (!mime || mime === 'application/octet-stream' || mime === 'application/x-forcedownload') {
-        const resolvedMime = getMimeTypeFromExtension(fileName);
+        const resolvedMime = getMimeTypeFromExtension(cleanFileName);
         if (resolvedMime) {
             mime = resolvedMime;
         }
     }
 
-    if (!mime) return 'none';
-
     // Images → native <img>
-    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('image/') || cleanFileName.endsWith('.png') || cleanFileName.endsWith('.jpg') || cleanFileName.endsWith('.jpeg') || cleanFileName.endsWith('.gif') || cleanFileName.endsWith('.webp')) {
+        return 'image';
+    }
 
-    // PDF → client-side pdfjs viewer
-    if (mime === 'application/pdf') return 'pdf';
+    // PDF → native <iframe>
+    if (mime === 'application/pdf' || cleanFileName.endsWith('.pdf')) {
+        return 'pdf';
+    }
 
     // Plain text, log, csv, json, xml, markdown → TextViewer
     if (
@@ -325,12 +328,40 @@ function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
         mime === 'text/html' ||
         mime === 'application/json' ||
         mime === 'application/xml' ||
-        mime === 'text/xml'
+        mime === 'text/xml' ||
+        cleanFileName.endsWith('.txt') ||
+        cleanFileName.endsWith('.csv') ||
+        cleanFileName.endsWith('.log')
     ) {
         return 'txt';
     }
 
-    return 'none';
+    // Office DOCX → DocxViewer
+    if (
+        mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        mime === 'application/msword' ||
+        cleanFileName.endsWith('.docx') ||
+        cleanFileName.endsWith('.doc')
+    ) {
+        return 'docx';
+    }
+
+    // Office XLSX → ExcelViewer
+    if (
+        mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        mime === 'application/vnd.ms-excel' ||
+        cleanFileName.endsWith('.xlsx') ||
+        cleanFileName.endsWith('.xls')
+    ) {
+        return 'xlsx';
+    }
+
+    // Other Office formats → DocViewer
+    if (OFFICE_MIME_TYPES.has(mime)) {
+        return 'docviewer';
+    }
+
+    return 'pdf';
 }
 
 const OFFICE_MIME_TYPES = new Set([
@@ -347,12 +378,11 @@ const OFFICE_MIME_TYPES = new Set([
 ]);
 
 /**
- * Returns true if the browser/react-doc-viewer can render this MIME type.
- * Used by the attachment list to show/hide the "View" button.
+ * Returns true if an attachment can be previewed or opened in the card viewer.
+ * All attachments return true so the user can always click View.
  */
-export function isPreviewableType(mimeType?: string, fileName?: string): boolean {
-    const kind = getPreviewKind(mimeType, fileName);
-    return kind !== 'none';
+export function isPreviewableType(_mimeType?: string, _fileName?: string): boolean {
+    return true;
 }
 
 /**

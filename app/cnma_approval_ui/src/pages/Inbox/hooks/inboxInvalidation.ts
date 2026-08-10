@@ -9,16 +9,23 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { inboxKeys } from './inboxKeys';
 
+const normId = (id?: string | null): string => (id ? String(id).replace(/^0+/, '') : '');
+
 // ─── Policy: After a decision (approve / reject) ──────────
 // Broadest scope — both task lists shift, detail & workflow are stale.
 export function invalidateAfterDecision(
     queryClient: QueryClient,
     instanceId: string,
 ) {
+    const cleanId = normId(instanceId);
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(instanceId) });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
+    if (instanceId !== cleanId) {
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'workflow', instanceId] });
+    }
 }
 
 // ─── Policy: After forwarding a task ───────────────────────
@@ -27,9 +34,14 @@ export function invalidateAfterForward(
     queryClient: QueryClient,
     instanceId: string,
 ) {
+    const cleanId = normId(instanceId);
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(instanceId) });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
+    if (instanceId !== cleanId) {
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'workflow', instanceId] });
+    }
 }
 
 // ─── Policy: After adding a comment ───────────────────────
@@ -38,8 +50,19 @@ export function invalidateAfterComment(
     queryClient: QueryClient,
     instanceId: string,
 ) {
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(instanceId) });
+    const cleanId = normId(instanceId);
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
+    if (instanceId !== cleanId) {
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'workflow', instanceId] });
+    }
+
+    // Force immediate refetch so new comment displays instantly in UI!
+    queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+    if (instanceId !== cleanId) {
+        queryClient.refetchQueries({ queryKey: ['inbox', 'task', instanceId] });
+    }
 }
 
 // ─── Policy: After uploading an attachment ─────────────────
@@ -48,7 +71,12 @@ export function invalidateAfterAttachment(
     queryClient: QueryClient,
     instanceId: string,
 ) {
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(instanceId) });
+    const cleanId = normId(instanceId);
+    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+    if (instanceId !== cleanId) {
+        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
+    }
+    queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
 }
 
 // ─── Policy: After uploading a PR attachment ─────────────────
@@ -57,4 +85,5 @@ export function invalidatePrAttachments(
     documentNumber: string,
 ) {
     queryClient.invalidateQueries({ queryKey: ['inbox', 'pr-attachments', documentNumber] });
+    queryClient.refetchQueries({ queryKey: ['inbox', 'pr-attachments', documentNumber] });
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { SlidersHorizontal, Loader2, X, ListFilter, Trash2, DogIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, Loader2, ListFilter } from 'lucide-react';
 import { Button } from '@cnma/react-ui';
 import { FilterBarField } from './FilterBarField';
 import { FilterSettingsDialog } from './FilterSettingsDialog';
@@ -118,6 +118,7 @@ export function FilterBar({
                 </div>
                 <div className="p-4 border-t grid grid-cols-3 gap-3 bg-muted/30">
                     <Button variant="outline" onClick={handleClear} className="col-span-1 h-11 rounded-xl">
+                        <RotateCcw className="w-4 h-4 mr-2" />
                         Clear
                     </Button>
                     <Button variant="default" onClick={handleApply} className="col-span-2 h-11 rounded-xl shadow-sm">
@@ -179,7 +180,11 @@ export function FilterBar({
                             className="text-primary hover:text-primary hover:bg-primary/5 sm:w-auto px-2 sm:px-3"
                             title={isExpanded ? 'Hide Filter' : 'Show Filter'}
                         >
-                            <SlidersHorizontal className="w-4 h-4" />
+                            {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                            ) : (
+                                <ChevronDown className="w-4 h-4" />
+                            )}
                         </Button>
 
                         {/* Clear Filters */}
@@ -190,7 +195,7 @@ export function FilterBar({
                             className="text-primary hover:text-primary hover:bg-primary/5 sm:w-auto px-2 sm:px-3"
                             title="Clear Filters"
                         >
-                            <X className="w-4 h-4" />
+                            <RotateCcw className="w-4 h-4" />
                         </Button>
                     </div>
                 </div>

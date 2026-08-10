@@ -55,13 +55,14 @@ export function AttachmentsPanel({
         mimeType?: string;
     } | null>(null);
     const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
-    const instanceId = detail.task.instanceId;
+    const instanceId = detail?.task?.instanceId || detail?.instanceId || '';
     const isPreviewOpen = !!previewAttachment;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const isPR = detail.task.businessContext?.type === 'PR';
-    const documentNumber = detail.task.businessContext?.documentId;
-    const sapOrigin = detail.task.sapOrigin;
+    const docType = (detail?.task?.businessContext?.type || detail?.docCategory || '').toUpperCase();
+    const isPR = docType === 'PR' || docType === 'BUS2105';
+    const documentNumber = detail?.task?.businessContext?.documentId || detail?.documentId || '';
+    const sapOrigin = detail?.task?.sapOrigin || 'LOCAL';
 
     // Use attachments from consolidated detail directly
     const displayedAttachments = detail.attachments || [];

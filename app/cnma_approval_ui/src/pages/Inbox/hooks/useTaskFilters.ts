@@ -87,7 +87,39 @@ export function useTaskFilters(tasks: InboxTask[]) {
         }
 
         if (v.documentType) {
-            result = result.filter((task) => task.businessContext?.type === v.documentType);
+            const targetType = String(v.documentType).toUpperCase().trim();
+            result = result.filter((task) => {
+                const bType = String(task.businessContext?.type || '').toUpperCase().trim();
+                const objType = String(task.objectType || '').toUpperCase().trim();
+                const docType = String(task.documentType || '').toUpperCase().trim();
+                const taskDefId = String(task.taskDefinitionId || '').toUpperCase().trim();
+
+                if (targetType === 'PR') {
+                    return bType === 'PR' || objType === 'PR' || taskDefId.includes('BUS2105') || docType === 'PR';
+                }
+                if (targetType === 'PO') {
+                    return bType === 'PO' || objType === 'PO' || taskDefId.includes('BUS2012') || docType === 'PO';
+                }
+                if (targetType === 'ZBUS2093' || targetType === 'RE' || targetType === 'BUS2093') {
+                    return (
+                        bType === 'RE' ||
+                        bType === 'ZBUS2093' ||
+                        bType === 'BUS2093' ||
+                        objType === 'RE' ||
+                        objType === 'ZBUS2093' ||
+                        objType === 'BUS2093' ||
+                        taskDefId.includes('BUS2093') ||
+                        docType === 'RESV' ||
+                        docType === 'RE'
+                    );
+                }
+                return (
+                    bType === targetType ||
+                    objType === targetType ||
+                    docType === targetType ||
+                    taskDefId.includes(targetType)
+                );
+            });
         }
 
         if (v.normalTask) {

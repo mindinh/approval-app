@@ -9,7 +9,6 @@ import {
     useInfiniteApprovedTasks,
     useTaskDetail,
     useDecision,
-    useObjectConfigs,
 } from '@/pages/Inbox/hooks/useInbox';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { useIsMobile, useSidebar, Button } from '@cnma/react-ui';
@@ -19,7 +18,6 @@ type TaskScope = 'my' | 'approved';
 
 export default function InboxPage() {
     const { t } = useTranslation();
-    useObjectConfigs(); // Preload backend object type JSON schemas (PR, PO, CLAIM, etc.) for Frame 1 placeholders
     const { showError } = useErrorModal();
     const { taskId } = useParams<{ taskId?: string }>();
     const navigate = useNavigate();
@@ -86,14 +84,26 @@ export default function InboxPage() {
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
 
-    const rawDetail = detailResponse;
-    const isDetailMatchingSelected = (rawDetail?.instanceId || rawDetail?.taskId || rawDetail?.task?.instanceId) === selectedTaskId;
+    const rawDetail = detailResponse as any;
+    const detailTaskId = rawDetail?.taskprocessing?.task?.InstanceID ||
+                         rawDetail?.instanceId ||
+                         rawDetail?.taskId ||
+                         rawDetail?.task?.instanceId;
+    const normDetailId = detailTaskId ? String(detailTaskId).replace(/^0+/, '') : '';
+    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
+
+    const isDetailMatchingSelected = !!rawDetail && (
+        !selectedTaskId ||
+        !detailTaskId ||
+        detailTaskId === selectedTaskId ||
+        normDetailId === normSelectedId
+    );
     const activeDetail = isDetailMatchingSelected ? rawDetail : undefined;
 
     const isDetailLoading =
         (isLoadingDetail && !activeDetail) ||
         (isLoadingList && tasks.length === 0) ||
-        (!!selectedTaskId && !isDetailMatchingSelected);
+        (!!selectedTaskId && !activeDetail);
 
     const isSecondaryLoading = isFetchingDetail && !!activeDetail;
 

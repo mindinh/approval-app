@@ -1,6 +1,6 @@
 import { LayoutDashboard, List, GitBranch, Paperclip, MessageSquare } from 'lucide-react';
 import { mergeAndDeduplicateComments } from '@/pages/Inbox/mappers/comments.mapper';
-import type { TaskDetail, WorkflowApprovalComment } from '@/services/inbox/inbox.types';
+import type { WorkflowApprovalComment } from '@/services/inbox/inbox.types';
 
 export { OverviewPanel } from './OverviewPanel';
 export { DetailsPanel } from './DetailsPanel';
@@ -18,18 +18,31 @@ export function makeTabDefinitions({
     attachmentCount,
     t,
 }: {
-    detail: TaskDetail;
+    detail: any;
     workflowCount?: number;
     workflowComments?: WorkflowApprovalComment[];
     detailsCount?: number;
     attachmentCount?: number;
     t: any;
 }) {
-    const mergedCommentsCount = mergeAndDeduplicateComments(detail?.comments || [], workflowComments).length;
-    const finalAttachmentCount = attachmentCount ?? (detail?.attachments?.length || 0);
+    const bo = detail?.businessObject || detail;
+    const commentsList: any[] = Array.isArray(detail?.comments)
+        ? detail.comments
+        : Array.isArray(bo?._Comment)
+        ? bo._Comment.map((c: any, idx: number) => ({
+            id: c.id || c.DocId || `comment-${idx}`,
+            text: c.NoteText || c.noteText || c.text || '',
+            createdBy: c.UserComment || c.author || c.createdBy || 'User',
+            createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || ''
+        }))
+        : [];
 
-    const docType = (detail?.task?.businessContext?.type || detail?.objectType || detail?._meta?.objectType || '').toUpperCase();
-    const showWorkflow = docType === 'PR' || docType === 'PO' || docType === 'RE';
+    const mergedCommentsCount = mergeAndDeduplicateComments(commentsList, workflowComments).length;
+    const rawAttachments = bo?._Attachment || detail?.attachments || [];
+    const finalAttachmentCount = attachmentCount ?? (Array.isArray(rawAttachments) ? rawAttachments.length : 0);
+
+    const docCategory = String(bo?.DocCategory || detail?.task?.businessContext?.type || detail?.objectType || detail?._meta?.objectType || '').toUpperCase();
+    const showWorkflow = ['PR', 'PO', 'RE', 'BUS2105', 'BUS2012', 'ZBUS2093', 'BUS2093'].includes(docCategory);
 
     const tabs = [
         {
