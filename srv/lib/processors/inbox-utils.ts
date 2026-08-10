@@ -1,6 +1,3 @@
-import { ObjectConfig } from '../mapping/config-registry';
-import { MappingEngine } from '../mapping/mapping-engine';
-
 export interface Comment {
     id: string;
     createdBy: string;
@@ -141,69 +138,6 @@ export function filterComments(raw: any[]): Comment[] {
         .filter((c) => c.text.length > 0);
 }
 
-export function buildFieldSchema(config: any): Record<string, any> {
-    const fieldSchema: Record<string, any> = {};
-    if (!config?.mappings) return fieldSchema;
-
-    if (Array.isArray(config.mappings.root)) {
-        for (const m of config.mappings.root) {
-            const parts = m.targetPath.split('.');
-            const key = parts[parts.length - 1];
-            const label = m.label || key.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase());
-            fieldSchema[key] = {
-                key,
-                label,
-                dataPath: `$.${m.targetPath}`,
-                dataType: m.dataType || (m.type === 'string' ? 'TEXT' : m.transform === 'number' ? 'AMOUNT' : m.transform === 'sapDateToIso' ? 'DATE' : 'TEXT'),
-                currencyPath: m.currencyPath
-            };
-        }
-    }
-
-    if (config.mappings.collections && typeof config.mappings.collections === 'object') {
-        for (const colKey of Object.keys(config.mappings.collections)) {
-            const col = config.mappings.collections[colKey];
-            if (Array.isArray(col.fields)) {
-                for (const f of col.fields) {
-                    const parts = f.targetPath.split('.');
-                    const key = parts[parts.length - 1];
-                    const label = f.label || key.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase());
-                    fieldSchema[key] = {
-                        key,
-                        label,
-                        dataPath: `$.${f.targetPath}`,
-                        dataType: f.dataType || (f.type === 'string' ? 'TEXT' : f.transform === 'number' ? 'QUANTITY' : f.transform === 'sapDateToIso' ? 'DATE' : 'TEXT'),
-                        currencyPath: f.currencyPath
-                    };
-                }
-            }
-        }
-    }
-
-    return fieldSchema;
-}
-
-export function buildBusinessChips(config: any, projectedObject: any): any[] {
-    const businessChips: any[] = [];
-    const mappingEngine = MappingEngine.getInstance();
-    
-    if (config?.cardChips && Array.isArray(config.cardChips)) {
-        for (const chip of config.cardChips) {
-            const rawVal = mappingEngine['getNestedValue'](projectedObject, chip.dataPath);
-            if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
-                businessChips.push({
-                    label: chip.label,
-                    value: rawVal,
-                    dataType: chip.dataType,
-                    isPrimary: chip.isPrimary,
-                    currency: projectedObject.header?.displayCurrency || projectedObject.header?.documentCurrency || ''
-                });
-            }
-        }
-    }
-    return businessChips;
-}
-
 export function decorateActions(sapDecisions: any[], config: any): UiAction[] {
     if (!Array.isArray(sapDecisions)) return [];
     return sapDecisions.map((sapDec: any) => {
@@ -248,56 +182,4 @@ export function decorateAttachments(attachments: any[], instanceId: string, inst
             link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content/${encodeURIComponent(a.fileName || a.name || 'file.pdf')}?documentId=${instid}`
         };
     });
-}
-
-export function composeTaskMeta(args: {
-    instanceId: string;
-    taskRuntime: any;
-    inst?: any;
-    objectType: string;
-    instid: string;
-    hints?: any;
-    projectedObject: any;
-    businessChips: any[];
-    normalTask: boolean;
-}): TaskMetadata {
-    const { instanceId, taskRuntime, inst, objectType, instid, hints, projectedObject, businessChips, normalTask } = args;
-
-    const businessContext: Record<string, any> = {
-        type: objectType,
-        documentId: instid
-    };
-
-    let title = taskRuntime?.TaskTitle;
-    if (!title) {
-        title = formatTaskTitle(inst, taskRuntime, objectType);
-    }
-
-    return {
-        instanceId,
-        sapOrigin: taskRuntime?.SAP__Origin || hints?.typeid || 'LOCAL',
-        title,
-        status: taskRuntime?.Status || inst?.status || 'READY',
-        priority: normalizePriority(taskRuntime?.Priority || 'MEDIUM'),
-        createdOn: normalizeDate(taskRuntime?.CreatedOn || inst?.taskCreationDateTime),
-        createdByName: taskRuntime?.CreatedByName || undefined,
-        requestorName: projectedObject?.header?.userName || projectedObject?.header?.userFullName || projectedObject?.header?.createdByUser || taskRuntime?.CreatedByName || undefined,
-        taskDefinitionId: hints?.typeid || taskRuntime?.TaskDefinitionID || '',
-        supports: {
-            forward: taskRuntime?.SupportsForward ?? true,
-            comments: taskRuntime?.SupportsComments ?? true
-        },
-        businessContext,
-        total: inst?.total !== undefined && inst?.total !== null ? Number(inst.total) : undefined,
-        curr_vnd: inst?.curr_vnd || undefined,
-        total_doc_curr: inst?.total_doc_curr !== undefined && inst?.total_doc_curr !== null ? Number(inst.total_doc_curr) : undefined,
-        doc_curr: inst?.doc_curr || undefined,
-        businessChips: businessChips.length > 0 ? businessChips : undefined,
-        normalTask
-    };
-}
-
-export function resolveUiSchema(config: any, documentType?: string): any {
-    const subtypeConfig = documentType ? config.documentTypes?.[documentType] : undefined;
-    return subtypeConfig?.uiSchema || config.uiSchema;
 }

@@ -2,37 +2,57 @@ import { SapClient } from './sap-client';
 import { MetadataService } from '../metadata-service';
 import { Detail } from './detail';
 import { ObjectTypeCode } from '../processors/object-config';
-import { ConfigRegistry } from '../mapping/config-registry';
 import { ODATA_SERVICES } from '../processors/odata-config';
-import { RawODataEntity, ODataSingleResult } from '../types/sap-odata.types';
-import { getMockDetail } from './mock-data-provider';
+import { getMockRawDetail } from './mock-data-provider';
 import { AppError } from '../utils/error-handler';
-export function toCamelCaseKeys(obj: any): any {
-    if (obj === null || typeof obj !== 'object') {
-        return obj;
-    }
-    if (obj instanceof Date || obj instanceof RegExp || obj instanceof ArrayBuffer || ArrayBuffer.isView(obj)) {
-        return obj;
-    }
-    if (Array.isArray(obj)) {
-        return obj.map(item => toCamelCaseKeys(item));
-    }
-    const result: any = {};
-    for (const key of Object.keys(obj)) {
-        const normalizedKey = key.replace(/_Text$/, 'Text');
-        const camelKey = normalizedKey.charAt(0).toLowerCase() + normalizedKey.slice(1);
-        result[camelKey] = toCamelCaseKeys(obj[key]);
-    }
-    return result;
+
+export interface RawDetailSource {
+    objectType: ObjectTypeCode;
+    aliases: readonly string[];
+    entity: string;
+    docCategory: string;
+    navigations: readonly string[];
 }
 
-export abstract class BaseDetail implements Detail {
-    abstract readonly objectType: ObjectTypeCode;
+export abstract class BaseRawDetail implements Detail {
+    abstract readonly source: RawDetailSource;
+
+    get objectType(): ObjectTypeCode {
+        return this.source.objectType;
+    }
 
     constructor(
         protected readonly sapClient: SapClient,
         protected readonly metadataService: MetadataService
-    ) { }
+    ) {}
+
+    protected cleanRawEntity(entity: any): any {
+        if (entity === null || typeof entity !== 'object') return entity;
+        if (Array.isArray(entity)) {
+            return entity.map(item => this.cleanRawEntity(item));
+        }
+        const cleaned: Record<string, any> = {};
+        for (const key of Object.keys(entity)) {
+            if (key === '__metadata' || key === '__deferred' || key === '@odata.context') {
+                continue;
+            }
+            const val = entity[key];
+            if (val && typeof val === 'object') {
+                if (Array.isArray(val)) {
+                    cleaned[key] = val.map(item => this.cleanRawEntity(item));
+                } else if (val.results && Array.isArray(val.results)) {
+                    cleaned[key] = val.results.map((item: any) => this.cleanRawEntity(item));
+                } else if (val.d && Array.isArray(val.d.results)) {
+                    cleaned[key] = val.d.results.map((item: any) => this.cleanRawEntity(item));
+                } else {
+                    cleaned[key] = this.cleanRawEntity(val);
+                }
+            } else {
+                cleaned[key] = val;
+            }
+        }
+        return cleaned;
+    }
 
     async getDetail(
         objectId: string,
@@ -45,36 +65,17 @@ export abstract class BaseDetail implements Detail {
         }
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         if (isMockMode) {
-            const mock = getMockDetail(this.objectType, objectId);
-            if (headerOnly) {
-                return {
-                    objectType: mock.objectType,
-                    documentType: mock.documentType,
-                    objectId: mock.objectId,
-                    header: toCamelCaseKeys(mock.header)
-                };
-            }
-            return {
-                ...mock,
-                header: toCamelCaseKeys(mock.header),
-                items: toCamelCaseKeys(mock.items)
-            };
+            return getMockRawDetail(this.source.objectType, objectId);
         }
 
-        const objConfig = ConfigRegistry.getInstance().get(this.objectType);
-        const headerEntity = objConfig?.source?.rootEntity || (this.objectType === 'RE' ? 'CNMA_RESVHEADER' : 'CNMA_PRHEADER');
-        const docCategoryKey = objConfig?.source?.key?.find((k: any) => k.name === 'DocCategory');
-        const docCategory = docCategoryKey?.value || (this.objectType === 'PR' ? 'BUS2105' : this.objectType === 'PO' ? 'BUS2012' : this.objectType === 'RE' ? 'ZBUS2093' : 'ZCLAIM');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const expandNavs = objConfig?.source?.navigations ? Object.values(objConfig.source.navigations).join(',') : '_Item,_ApprovalStep,_HeaderText,_Attachment,_Comment,_PurposeText,_PaidByText,_BankDetails';
-
         const rawPadded = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
         const paddedId = rawPadded.substring(0, 10);
+        const headerUrl = `/${this.source.entity}(DocCategory='${this.source.docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
 
         const params: Record<string, string> = { $format: 'json' };
-        const headerUrl = `/${headerEntity}(DocCategory='${docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
-        if (!headerOnly) {
-            params.$expand = expandNavs;
+        if (!headerOnly && this.source.navigations.length > 0) {
+            params.$expand = this.source.navigations.join(',');
         }
 
         let headerRes: any = null;
@@ -88,7 +89,7 @@ export abstract class BaseDetail implements Detail {
             );
         } catch (err: any) {
             if (params.$expand) {
-                console.warn(`[BaseDetail:${this.objectType}] $expand failed for ${paddedId} (${err.message}). Retrying header-only query...`);
+                console.warn(`[BaseRawDetail:${this.source.objectType}] $expand failed for ${paddedId} (${err.message}). Retrying header-only query...`);
                 headerRes = await this.sapClient.get<any>(
                     servicePath,
                     headerUrl,
@@ -96,48 +97,44 @@ export abstract class BaseDetail implements Detail {
                     sapUser,
                     userJwt
                 ).catch((fallbackErr: any) => {
-                    console.error(`[BaseDetail:${this.objectType}] Failed to fetch header for ${paddedId}:`, fallbackErr.message);
-                    throw new AppError(`Failed to fetch header for ${this.objectType} ${paddedId}: ${fallbackErr.message}`, 404);
+                    throw new AppError(`Failed to fetch header for ${this.source.objectType} ${paddedId}: ${fallbackErr.message}`, 404);
                 });
             } else {
-                console.error(`[BaseDetail:${this.objectType}] Failed to fetch header for ${paddedId}:`, err.message);
-                throw new AppError(`Failed to fetch header for ${this.objectType} ${paddedId}: ${err.message}`, 404);
+                throw new AppError(`Failed to fetch header for ${this.source.objectType} ${paddedId}: ${err.message}`, 404);
             }
         }
 
-        // OData V4 returns the object directly at the root, V2 wraps it in a `.d` property
         const rawHeader = headerRes?.d || headerRes;
         if (!rawHeader || Object.keys(rawHeader).length === 0) {
-            throw new AppError(`Failed to fetch header for ${this.objectType} ${paddedId}: Empty response received`, 404);
+            throw new AppError(`Failed to fetch header for ${this.source.objectType} ${paddedId}: Empty response received`, 404);
         }
 
-        const normalizedHeader = await this.metadataService.normalizeDetail(rawHeader, servicePath, sapUser, userJwt);
-        const docType = rawHeader.DocumentType || rawHeader.PurchaseRequisitionType || rawHeader.PurchaseOrderType || 'ZASS';
+        const cleaned = this.cleanRawEntity(rawHeader);
 
-        const header = toCamelCaseKeys(normalizedHeader);
-        if (this.objectType === 'PR') {
-            header.purchaseRequisition = objectId;
-        } else if (this.objectType === 'PO') {
-            header.purchaseOrder = objectId;
+        if (!headerOnly && params.$expand) {
+            const missingNavs = this.source.navigations.filter(nav => cleaned[nav] === undefined || cleaned[nav] === null);
+            if (missingNavs.length > 0) {
+                await Promise.all(
+                    missingNavs.map(async (nav) => {
+                        try {
+                            const res: any = await this.sapClient.get(
+                                servicePath,
+                                `${headerUrl}/${nav}`,
+                                { $format: 'json' },
+                                sapUser,
+                                userJwt
+                            );
+                            const val = res?.value || res?.d?.results || res?.d || [];
+                            cleaned[nav] = Array.isArray(val) ? val.map(item => this.cleanRawEntity(item)) : this.cleanRawEntity(val);
+                        } catch {
+                            cleaned[nav] = [];
+                        }
+                    })
+                );
+            }
         }
 
-        const result: any = {
-            objectType: this.objectType,
-            documentType: docType,
-            objectId,
-            header
-        };
-
-        if (headerOnly) {
-            return result;
-        }
-
-        // Fetch sub-entities via the subclass hook (which reads them from rawHeader or makes parallel calls)
-        const subEntities = await this.fetchSubEntities(objectId, paddedId, rawHeader, normalizedHeader, sapUser, userJwt);
-        return {
-            ...result,
-            ...subEntities
-        };
+        return cleaned;
     }
 
     async getDetailBatch(
@@ -147,54 +144,23 @@ export abstract class BaseDetail implements Detail {
     ): Promise<Record<string, any>> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         const results: Record<string, any> = {};
-
         if (isMockMode) {
             for (const item of itemsToFetch) {
-                const mock = getMockDetail(this.objectType, item.objectId);
-                results[`${this.objectType}:${item.objectId}`] = {
-                    objectType: mock.objectType,
-                    documentType: mock.documentType,
-                    objectId: item.objectId,
-                    header: toCamelCaseKeys(mock.header)
-                };
+                results[item.objectId] = getMockRawDetail(item.objectType, item.objectId);
             }
             return results;
         }
 
-        // Run all individual single GETs in parallel to bypass unsupported $batch operations
-        await Promise.all(itemsToFetch.map(async (item) => {
-            try {
-                const single = await this.getDetail(item.objectId, sapUser, userJwt, true);
-                results[`${this.objectType}:${item.objectId}`] = single;
-            } catch (err: any) {
-                console.error(`[BaseDetail:${this.objectType}] Failed to fetch parallel details for ${item.objectId}:`, err.message);
-            }
-        }));
-
+        await Promise.all(
+            itemsToFetch.map(async (item) => {
+                try {
+                    const detail = await this.getDetail(item.objectId, sapUser, userJwt);
+                    results[item.objectId] = detail;
+                } catch {
+                    results[item.objectId] = null;
+                }
+            })
+        );
         return results;
-    }
-
-    // Subclass hook to fetch subclass-specific items, tree, account assignments, schedule lines, etc.
-    protected abstract fetchSubEntities(
-        objectId: string,
-        paddedId: string,
-        rawHeader: RawODataEntity,
-        normalizedHeader: any,
-        sapUser: string,
-        userJwt?: string
-    ): Promise<Record<string, any>>;
-
-    // Utility to declaratively map item properties using a configuration-driven itemMapper schema
-    protected mapItemProperties(item: any, mapper: Record<string, string | ((item: any) => any)>): any {
-        const result: any = {};
-        for (const key of Object.keys(mapper)) {
-            const rule = mapper[key];
-            if (typeof rule === 'function') {
-                result[key] = rule(item);
-            } else {
-                result[key] = item[rule] ?? '';
-            }
-        }
-        return result;
     }
 }

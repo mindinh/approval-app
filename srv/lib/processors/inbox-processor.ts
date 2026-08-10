@@ -1,13 +1,8 @@
 import { TaskprocessingAdapter } from '../integrations/taskprocessing-adapter';
 import { SapOdataAdapter } from '../integrations/sap-odata-adapter';
-import { getObjectConfig, mapCardChips } from './object-config';
 import { resolveObjectTypeFromTypeId } from './odata-config';
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
-import { ConfigRegistry } from '../mapping/config-registry';
-import { MappingEngine } from '../mapping/mapping-engine';
-import { FieldRequirementResolver } from '../mapping/resolver';
-import { CanonicalProjector } from '../mapping/canonical-projector';
 import { ObjectTypeResolver } from './object-type-resolver';
 import {
     normalizePriority,
@@ -15,10 +10,8 @@ import {
     cleanBusinessObjectForList,
     formatTaskTitle,
     filterComments,
-    buildBusinessChips,
     decorateActions,
-    decorateAttachments,
-    composeTaskMeta
+    decorateAttachments
 } from './inbox-utils';
 
 export class InboxProcessor {
@@ -97,96 +90,29 @@ export class InboxProcessor {
             instid?: string;
             businessObjectType?: string;
             documentId?: string;
+            status?: string;
         },
         userJwt?: string
     ) {
-        this.logger.info(`Fetching task detail for ${instanceId}`);
+        this.logger.info(`Fetching raw task detail for ${instanceId}`);
         try {
             const resolved = await this.objectTypeResolver.resolve(instanceId, sapUser, hints, userJwt);
-            const { objectType, instid, inst, taskRuntime, businessObject, normalTask } = resolved;
+            const { businessObject, taskRuntime } = resolved;
 
-            const configRegistry = ConfigRegistry.getInstance();
-            const mappingEngine = MappingEngine.getInstance();
-            const resolver = FieldRequirementResolver.getInstance();
-            const projector = CanonicalProjector.getInstance();
+            let task: any = null;
+            let decisionOptions: any[] = [];
 
-            const config = configRegistry.get(objectType);
-            if (!config) {
-                throw new Error(`Configuration not found for objectType: ${objectType}`);
+            if (taskRuntime) {
+                const { decisions, ...rawTaskFields } = taskRuntime;
+                task = rawTaskFields && Object.keys(rawTaskFields).length > 0 ? rawTaskFields : null;
+                decisionOptions = Array.isArray(decisions) ? decisions : [];
             }
 
-            const safeBusinessObj = businessObject || {};
-            const mergedPayload = inst ? { ...inst, ...safeBusinessObj, header: { ...inst, ...safeBusinessObj?.header } } : safeBusinessObj;
-
-            const canonicalObject = mappingEngine.map(mergedPayload, config, { documentId: instid });
-
-            const docType = safeBusinessObj.documentType || inst?.doctyp || hints?.businessObjectType || 'DEFAULT';
-            const fieldPlan = resolver.resolve('detail', config, docType);
-            const projectedObject = projector.project(canonicalObject, fieldPlan.canonicalPaths);
-
-            const rawComments = (projectedObject.workflow?.comments && projectedObject.workflow.comments.length > 0)
-                ? projectedObject.workflow.comments
-                : (safeBusinessObj.comments || []);
-            const comments = filterComments(rawComments);
-
-            const attachments = decorateAttachments(
-                (projectedObject.attachments && projectedObject.attachments.length > 0) ? projectedObject.attachments : (safeBusinessObj.attachments || []),
-                instanceId,
-                instid
-            );
-            const header = projectedObject.header || safeBusinessObj.header || {};
-            const items = (projectedObject.items && projectedObject.items.length > 0) ? projectedObject.items : (safeBusinessObj.items || []);
-            const approvalSteps = (safeBusinessObj.approvalTree && safeBusinessObj.approvalTree.length > 0) ? safeBusinessObj.approvalTree : (projectedObject.workflow?.steps || []);
-
-            const decisions = (taskRuntime?.decisions || []).map((d: any) => ({
-                key: d.DecisionKey,
-                text: d.DecisionText,
-                nature: d.Nature || (d.DecisionKey === '0001' ? 'POSITIVE' : d.DecisionKey === '0002' ? 'NEGATIVE' : 'NEUTRAL'),
-                commentMandatory: d.CommentMandatory === true
-            }));
-
-            const taskMeta = composeTaskMeta({
-                instanceId,
-                taskRuntime,
-                inst,
-                objectType,
-                instid,
-                hints,
-                projectedObject,
-                businessChips: [],
-                normalTask
-            });
-
             return {
-                taskId: instanceId,
-                instanceId,
-                status: inst ? (inst.status || 'READY').replace(/\s+/g, '_') : (taskRuntime?.Status || 'READY'),
-                priority: normalizePriority(taskRuntime?.Priority),
-                createdOn: normalizeDate(taskRuntime?.CreatedOn || inst?.taskCreationDateTime),
-                createdByName: taskRuntime?.CreatedByName || undefined,
-                requestorName: header.userName || header.userFullName || header.createdByUser || inst?.createdByUser || undefined,
-                objectType,
-                documentId: instid,
-                documentType: header.purchaseRequisitionType || header.purchaseOrderType || safeBusinessObj.documentType || 'DEFAULT',
-                documentTypeDisplay: header.purchaseRequisitionTypeDisplay || header.purchaseOrderTypeDisplay || header.purchaseOrderTypeText || undefined,
-                companyCode: header.companyCode || inst?.companyCode || undefined,
-                companyCodeDisplay: header.companyCodeDisplay || undefined,
-                total: header.total !== undefined ? Number(header.total) : (header.totalNetAmount !== undefined ? Number(header.totalNetAmount) : (inst?.total !== undefined ? Number(inst.total) : undefined)),
-                currency: header.displayCurrency || header.documentCurrency || inst?.curr_vnd || undefined,
-                releaseStrategyName: header.releaseStrategyName || safeBusinessObj.releaseStrategyName || undefined,
-                headerNote: header.purchaseRequisitionText || header.purchaseOrderText || undefined,
-                normalTask: normalTask !== false,
-                decisions,
-                approvalSteps,
-                items,
-                attachments,
-                comments,
-                task: taskMeta,
-                header,
-                workflow: {
-                    strategyName: header.releaseStrategyName,
-                    steps: approvalSteps,
-                    comments: rawComments
+                businessObject: businessObject || {},
+                taskprocessing: {
+                    task,
+                    decisionOptions
                 }
             };
         } catch (error: any) {
@@ -256,7 +182,8 @@ export class InboxProcessor {
                 }
             }
 
-            const detail = await this.sapOdataAdapter.getDetail(objectType, documentId, sapUser, userJwt);
+            const targetObjectType = objectType || 'PR';
+            const detail = await this.sapOdataAdapter.getDetail(targetObjectType, documentId, sapUser, userJwt);
             const rawComments = detail.comments || [];
             const comments = rawComments.map((c: any) => ({
                 docNum: documentId,
@@ -372,39 +299,20 @@ export class InboxProcessor {
     }
 
     private _buildTaskCard(inst: any, matchingTask: any, rawBusinessObject: any, objectType: string, overrideStatus?: string) {
-        const configRegistry = ConfigRegistry.getInstance();
-        const mappingEngine = MappingEngine.getInstance();
-        const objConfig = configRegistry.get(objectType);
-        
-        const mergedPayload = (rawBusinessObject || inst) ? { ...inst, ...rawBusinessObject, header: { ...inst, ...rawBusinessObject?.header } } : null;
-        const rawMappedObject = (mergedPayload && objConfig) ? mappingEngine.map(mergedPayload, objConfig, { documentId: inst?.instid }) : rawBusinessObject;
-        const businessObject = cleanBusinessObjectForList(rawMappedObject);
+        const rawObj = rawBusinessObject || {};
+        const requesterName = rawObj.CreatedByUser || rawObj.CreatedByName || rawObj.UserName || rawObj.UserFullName || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
+        const calcTotal = inst?.total !== undefined && inst?.total !== null ? Number(inst.total) : (rawObj.TotalNetAmountLocalCrcy || rawObj.TotalOrderValue || rawObj.TotalAmount || rawObj.Total || undefined);
+        const docTypeDisplay = inst?.doctyp_desc
+            || (rawObj.DocumentType && rawObj.DocumentTypeText ? `${rawObj.DocumentType} - ${rawObj.DocumentTypeText}` : (rawObj.DocumentTypeText || rawObj.DocumentTypeDisplay || inst?.doctyp || objectType));
 
-        const requesterName = businessObject?.header?.userName || businessObject?.header?.userFullName || businessObject?.header?.createdByUser || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
-        const documentType = businessObject?.documentType || 'DEFAULT';
-        const config = getObjectConfig(objectType, documentType);
-        const calcTotal = inst?.total !== undefined && inst?.total !== null ? Number(inst.total) : (rawMappedObject?.header?.totalNetAmount || rawMappedObject?.header?.purchaseOrderNetAmount || rawMappedObject?.header?.total || undefined);
-        const docTypeDisplay = rawMappedObject?.header?.documentTypeDisplay 
-            || rawMappedObject?.header?.documentTypeText
-            || rawMappedObject?.header?.purchaseRequisitionTypeDisplay 
-            || rawMappedObject?.header?.purchaseOrderTypeDisplay
-            || rawMappedObject?.header?.purchaseOrderTypeText 
-            || rawMappedObject?.header?.purchaseRequisitionType 
-            || businessObject?.documentType;
-
-        const compCodeVal = rawMappedObject?.header?.companyCode || inst.companyCode || inst.CompanyCode;
-        const compCodeName = rawMappedObject?.header?.companyCodeName || inst.companyCodeName || inst.CompanyCodeName || '';
-        const compCodeDisplay = rawMappedObject?.header?.companyCodeDisplay 
-            || (compCodeVal ? (compCodeName ? `${compCodeVal} - ${compCodeName}` : (String(compCodeVal).endsWith('-') ? compCodeVal : `${compCodeVal} - `)) : undefined);
+        const compCodeVal = rawObj.CompanyCode || inst?.companyCode || inst?.CompanyCode;
+        const compCodeName = rawObj.CompanyCodeName || inst?.companyCodeName || inst?.CompanyCodeName || '';
+        const compCodeDisplay = compCodeVal ? (compCodeName ? `${compCodeVal} - ${compCodeName}` : (String(compCodeVal).endsWith('-') ? compCodeVal : `${compCodeVal} - `)) : undefined;
         const compCode = compCodeVal;
-        const relStrategy = rawMappedObject?.header?.releaseStrategyName;
+        const relStrategy = rawObj.ReleaseStrategyName || rawObj.ReleaseStrategyText || inst?.releaseStrategyName;
 
-        if (businessObject?.header && compCodeDisplay && !businessObject.header.companyCodeDisplay) {
-            businessObject.header.companyCodeDisplay = compCodeDisplay;
-        }
-
-        const businessChips = mapCardChips(config, businessObject) || [];
-        if (compCodeDisplay && !businessChips.some(c => c.label === 'Company Code')) {
+        const businessChips: any[] = [];
+        if (compCodeDisplay) {
             businessChips.push({
                 label: 'Company Code',
                 value: compCodeDisplay,
@@ -438,7 +346,7 @@ export class InboxProcessor {
                 comments: process.env.USE_MOCK_SAP !== 'false' ? (matchingTask?.SupportsComments ?? true) : false
             },
             total: calcTotal !== undefined ? Number(calcTotal) : undefined,
-            curr_vnd: inst.curr_vnd || rawMappedObject?.header?.displayCurrency || rawMappedObject?.header?.documentCurrency || rawMappedObject?.header?.currency || rawMappedObject?.header?.localCurrency || undefined,
+            curr_vnd: inst.curr_vnd || rawObj.LocalCurrency || rawObj.Currency || rawObj.DocumentCurrency || undefined,
             businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
             normalTask: inst.normalTask
         };

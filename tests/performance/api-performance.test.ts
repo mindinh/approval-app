@@ -199,7 +199,7 @@ describe('API Stress & Performance Benchmark Suite', () => {
                         sapOrigin: 'LOCAL',
                         businessObjectType: 'PR',
                     });
-                    expect(detail.task.instanceId).toBe('task-pr-01');
+                    expect(detail.taskprocessing.task?.InstanceID).toBe('task-pr-01');
                 },
                 { concurrency: 50, totalRequests: 200 }
             );
@@ -214,7 +214,7 @@ describe('API Stress & Performance Benchmark Suite', () => {
             const metrics = await runLoadTest(
                 async () => {
                     const detail = await processor.getTaskDetail('task-pr-01', 'TEST_USER');
-                    expect(detail.task.instanceId).toBe('task-pr-01');
+                    expect(detail.taskprocessing.task?.InstanceID).toBe('task-pr-01');
                 },
                 { concurrency: 20, totalRequests: 100 }
             );
@@ -335,7 +335,7 @@ describe('API Stress & Performance Benchmark Suite', () => {
                         sapOrigin: 'LOCAL',
                         businessObjectType: 'PR',
                     });
-                    expect(detail.task.instanceId).toBe('task-pr-01');
+                    expect(detail.taskprocessing.task?.InstanceID).toBe('task-pr-01');
 
                     // Step 3: Stream attachment content
                     const content = await processor.getAttachmentContent(

@@ -16,10 +16,7 @@ export function createInboxRouter(): Router {
     // 3. Dashboard metrics aggregation
     router.get('/dashboard', controller.getDashboard);
 
-    // 4. Object type configurations
-    router.get('/object-configs', controller.getObjectConfigs);
-
-    // 5. Worklists & Reference Details
+    // 4. Worklists & Reference Details
     router.get('/approved', controller.getApprovedTasks);
     router.get('/reference-pr/:prNumber', controller.getReferencePrDetail);
     router.get('/pr/:docNum/attachments', controller.getPrAttachments);

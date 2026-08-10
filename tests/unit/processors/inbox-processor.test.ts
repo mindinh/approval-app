@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InboxProcessor } from '../../../srv/lib/processors/inbox-processor';
 
-// Mock adapters
 vi.mock('../../../srv/lib/integrations/taskprocessing-adapter', () => {
   return {
     TaskprocessingAdapter: class {
@@ -46,7 +45,7 @@ describe('InboxProcessor', () => {
       expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith('MOCK_USER', ['IN PROCESSING', 'IN_PROCESSING'], undefined, undefined, undefined);
     });
 
-    it('should fetch tasks, query details in batch, enrich business objects and apply pagination', async () => {
+    it('should fetch tasks, apply pagination and format cards', async () => {
       const mockInstances = [
         {
           instanceID: '000000000001',
@@ -62,22 +61,6 @@ describe('InboxProcessor', () => {
         { instanceID: '000000000003', typeid: 'BUS2105', instid: '10000003', status: 'IN PROCESSING', total: 3000, curr_vnd: 'VND' }
       ];
       mockSapOdataAdapter.getInstances.mockResolvedValue(mockInstances);
-
-      const mockBatchDetails = {
-        'PR:10000001': {
-          objectType: 'PR',
-          documentType: 'DEFAULT',
-          objectId: '10000001',
-          header: { purchaseRequisition: '10000001', purchaseRequisitionTypeDisplay: 'Standard' }
-        },
-        'PO:45000002': {
-          objectType: 'PO',
-          documentType: 'DEFAULT',
-          objectId: '45000002',
-          header: { purchaseOrder: '45000002', supplierName: 'Supplier ABC', purchaseOrderTypeDisplay: 'Standard PO', purchaseOrderNetAmount: 2000 }
-        }
-      };
-      mockSapOdataAdapter.getDetailBatch.mockResolvedValue(mockBatchDetails);
 
       const result = await processor.getTasks('MOCK_USER', 'my-jwt-token', { top: 2, skip: 0 });
 
@@ -99,13 +82,12 @@ describe('InboxProcessor', () => {
   });
 
   describe('getApprovedTasks', () => {
-    it('should query completed tasks from ZC_WORKFLOWTASK via getInstances and fetch detail batch', async () => {
+    it('should query completed tasks from ZC_WORKFLOWTASK via getInstances', async () => {
       const mockCompletedInstances = [
         { instanceID: '101', typeid: 'BUS2105', instid: '1000101', status: 'COMPLETED' },
         { instanceID: '102', typeid: 'BUS2012', instid: '4500102', status: 'COMPLETED' }
       ];
       mockSapOdataAdapter.getInstances.mockResolvedValue(mockCompletedInstances);
-      mockSapOdataAdapter.getDetailBatch.mockResolvedValue({});
 
       const res = await processor.getApprovedTasks('MOCK_USER', 'jwt', { top: 2 });
 
@@ -117,7 +99,7 @@ describe('InboxProcessor', () => {
   });
 
   describe('getTaskDetail', () => {
-    it('should fetch details, available decisions and map comments & attachments into flat structure', async () => {
+    it('should fetch raw details and raw taskprocessing', async () => {
       const mockTaskRuntime = {
         InstanceID: 'task-pr-01',
         Status: 'READY',
@@ -133,90 +115,27 @@ describe('InboxProcessor', () => {
       };
       mockTaskAdapter.getTaskRuntime.mockResolvedValue(mockTaskRuntime);
 
-      const mockDetail = {
-        objectType: 'PR',
-        documentType: 'ZASS',
-        objectId: '10001234',
-        header: {
-          purchaseRequisition: '10001234',
-          purchaseRequisitionText: 'IT Department Laptop Purchase',
-          userFullName: 'Nguyen Van A',
-          purReqCreationDate: '2026-06-25T08:00:00Z',
-          totalNetAmount: 150000000,
-          displayCurrency: 'VND'
-        },
-        items: [],
-        comments: [
-          { author: 'Nguyen Van A', text: 'Pls approve', postedOn: '2026-07-01', postedTime: '08:30:00' }
-        ],
-        attachments: [
-          { id: 'att-1', fileName: 'Quote.pdf', mimeType: 'application/pdf', fileSize: 500000, createdBy: 'Nguyen Van A', createdAt: '2026-07-01T08:15:00' }
-        ]
+      const mockRawEntity = {
+        DocCategory: 'BUS2105',
+        DocumentNumber: '10001234',
+        DocumentType: 'ZASS',
+        CompanyCode: '1000',
+        CompanyCodeName: 'CNMA',
+        _Item: [],
+        _Comment: [],
+        _Attachment: []
       };
-      mockSapOdataAdapter.getDetail.mockResolvedValue(mockDetail);
+      mockSapOdataAdapter.getDetail.mockResolvedValue(mockRawEntity);
       mockSapOdataAdapter.getInstances.mockResolvedValue([
         { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND' }
       ]);
 
       const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234', businessObjectType: 'PR' }, 'jwt');
 
-      // Flat response assertions
-      expect(result.task.instanceId).toBe('task-pr-01');
-      expect((result as any)._meta).toBeUndefined();
-      expect(result.header.purchaseRequisition).toBe('10001234');
-      expect(result.comments.length).toBe(1);
-      expect(result.comments[0].text).toBe('Pls approve');
-      expect(result.comments[0].createdBy).toBe('Nguyen Van A');
-      
-      expect(result.attachments.length).toBe(1);
-      expect(result.attachments[0].fileName).toBe('Quote.pdf');
-      expect(result.attachments[0].link).toBe('/api/cnma/APPROVAL_SRV/tasks/task-pr-01/attachments/att-1/content/Quote.pdf?documentId=10001234');
-
-      // Verify legacy 'object' and redundant fields are absent
-      expect((result as any).object).toBeUndefined();
-      expect(result.decisions.length).toBe(2);
-      expect((result as any).businessContext).toBeUndefined();
-      expect((result as any).processingLogs).toBeUndefined();
-    });
-
-    it('should skip decision fetching and return empty decisions if normalTask is false', async () => {
-      const mockTaskRuntime = {
-        InstanceID: 'task-pr-01',
-        Status: 'READY',
-        TaskDefinitionID: 'BUS2105',
-        TaskTitle: 'Approve PR 10001234',
-        CreatedOn: '2026-07-01T08:00:00Z',
-        CreatedByName: 'Nguyen Van A',
-        Priority: 'MEDIUM',
-        decisions: []
-      };
-      mockTaskAdapter.getTaskRuntime.mockResolvedValue(mockTaskRuntime);
-
-      const mockDetail = {
-        objectType: 'PR',
-        documentType: 'ZASS',
-        objectId: '10001234',
-        header: {
-          purchaseRequisition: '10001234',
-          userFullName: 'Nguyen Van A',
-          purReqCreationDate: '2026-06-25T08:00:00Z',
-          totalNetAmount: 150000000,
-          displayCurrency: 'VND'
-        },
-        items: [],
-        comments: [],
-        attachments: []
-      };
-      mockSapOdataAdapter.getDetail.mockResolvedValue(mockDetail);
-      mockSapOdataAdapter.getInstances.mockResolvedValue([
-        { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND', normalTask: false, typeid: 'BUS2105' }
-      ]);
-
-      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234', businessObjectType: 'PR' }, 'jwt');
-
-      expect(result.task.instanceId).toBe('task-pr-01');
-      expect(result.task.normalTask).toBe(false);
-      expect(result.decisions).toEqual([]);
+      expect(result.businessObject).toEqual(mockRawEntity);
+      expect(result.taskprocessing.task?.InstanceID).toBe('task-pr-01');
+      expect(result.taskprocessing.decisionOptions.length).toBe(2);
+      expect(result.taskprocessing.decisionOptions[0].DecisionKey).toBe('0001');
     });
   });
 

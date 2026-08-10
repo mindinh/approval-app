@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { InboxProcessor } from '../lib/processors/inbox-processor';
-import { ConfigRegistry } from '../lib/mapping/config-registry';
 import { AppError } from '../lib/utils/error-handler';
-import { buildFieldSchema } from '../lib/processors/inbox-utils';
 import { fetchReferencePrDetail } from '../lib/integrations/reference-pr';
 import {
     resolveIdentity,
@@ -201,46 +199,6 @@ export class InboxController {
         });
     };
 
-    /**
-     * @openapi
-     * /tasks/object-configs:
-     *   get:
-     *     summary: Fetch object type UI schemas
-     *     description: Returns UI schema and field configuration maps loaded from srv/configuration/object-types JSON files.
-     *     security:
-     *       - BearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Config map dictionary by object type
-     */
-    getObjectConfigs = (_req: Request, res: Response): void => {
-        const configs = ConfigRegistry.getInstance().list();
-        const configMap: Record<string, any> = {};
-
-        for (const c of configs) {
-            const objectType = c.object.objectType.toUpperCase();
-            const fieldSchema = buildFieldSchema(c);
-
-            const schemaPayload = {
-                objectType,
-                displayName: c.object.displayName,
-                aliases: c.object.aliases || [],
-                uiSchema: c.uiSchema,
-                fieldSchema,
-                cardChips: c.cardChips || [],
-                actions: c.actions || []
-            };
-
-            configMap[objectType] = schemaPayload;
-            if (c.object.aliases) {
-                for (const alias of c.object.aliases) {
-                    configMap[alias.toUpperCase()] = schemaPayload;
-                }
-            }
-        }
-
-        res.json({ configs: configMap });
-    };
 
     /**
      * @openapi
@@ -658,13 +616,12 @@ export class InboxController {
             let docNum = req.query.documentId ? String(req.query.documentId) : '';
             const { sapUser, userJwt } = resolveIdentity(req);
 
-            const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-            if (isMockMode && (!docNum || docNum === 'undefined')) {
-                const taskId = String(req.params.id);
+            if (!docNum || docNum === 'undefined') {
+                const taskId = String(req.params.id || '');
                 if (taskId && taskId !== 'undefined') {
                     try {
-                        const detail = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
-                        docNum = detail.task.businessContext?.documentId || '';
+                        const detail: any = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
+                        docNum = detail.taskprocessing?.task?.businessContext?.documentId || detail.businessObject?.DocumentNumber || detail.businessObject?.PurchaseRequisition || detail.businessObject?.PurchaseOrder || '';
                     } catch (e: any) {
                         console.warn(`Failed to resolve documentId for task ${taskId}: ${e.message}`);
                     }
@@ -678,8 +635,29 @@ export class InboxController {
             }
 
             const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
+            let contentType = file.contentType || 'application/octet-stream';
+            const rawParamFileName = Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName;
+            const fileNameLower = String(file.fileName || rawParamFileName || '').toLowerCase();
+
+            // Infer PDF content-type if binary starts with %PDF- or filename ends with .pdf
+            if (contentType === 'application/octet-stream' || contentType === 'application/x-forcedownload' || !contentType) {
+                if (fileNameLower.endsWith('.pdf') || (file.data && file.data.length >= 4 && file.data[0] === 0x25 && file.data[1] === 0x50 && file.data[2] === 0x44 && file.data[3] === 0x46)) {
+                    contentType = 'application/pdf';
+                } else if (fileNameLower.endsWith('.png')) {
+                    contentType = 'image/png';
+                } else if (fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg')) {
+                    contentType = 'image/jpeg';
+                } else if (fileNameLower.endsWith('.gif')) {
+                    contentType = 'image/gif';
+                } else if (fileNameLower.endsWith('.txt')) {
+                    contentType = 'text/plain; charset=utf-8';
+                } else if (fileNameLower.endsWith('.csv')) {
+                    contentType = 'text/csv; charset=utf-8';
+                }
+            }
+
             const encodedFileName = encodeURIComponent(file.fileName);
-            res.setHeader('Content-Type', file.contentType);
+            res.setHeader('Content-Type', contentType);
             res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"; filename*=UTF-8''${encodedFileName}`);
             res.send(file.data);
         } catch (error) {

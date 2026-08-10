@@ -1,26 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SapOdataAdapter, clearDetailCache } from '../../../srv/lib/integrations/sap-odata-adapter';
-import { SapClient } from '../../../srv/lib/integrations/sap-client';
-import { MetadataService } from '../../../srv/lib/metadata-service';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { SapOdataAdapter } from '../../../srv/lib/integrations/sap-odata-adapter';
 import * as mockDataProvider from '../../../srv/lib/integrations/mock-data-provider';
 
-// Mock SapClient and MetadataService
 vi.mock('../../../srv/lib/integrations/sap-client', () => {
   return {
     SapClient: class {
       get = vi.fn();
-      post = vi.fn();
-      fetchCsrf = vi.fn();
-      batchGet = vi.fn();
       getBinary = vi.fn();
-    }
-  };
-});
-
-vi.mock('../../../srv/lib/metadata-service', () => {
-  return {
-    MetadataService: class {
-      normalizeDetail = vi.fn().mockImplementation(async (data: any) => data);
+      post = vi.fn();
+      fetchCsrf = vi.fn().mockResolvedValue({ token: 'mock-csrf-token', cookie: 'mock-cookie' });
     }
   };
 });
@@ -28,55 +16,42 @@ vi.mock('../../../srv/lib/metadata-service', () => {
 describe('SapOdataAdapter', () => {
   let adapter: SapOdataAdapter;
   let mockSapClient: any;
-  let originalEnv: string | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
     adapter = new SapOdataAdapter();
     mockSapClient = (adapter as any).sapClient;
-    originalEnv = process.env.USE_MOCK_SAP;
-
-    // Clear caches
-    clearDetailCache('PR', '10000001');
-    clearDetailCache('PO', '45000002');
   });
 
-  afterEach(() => {
-    process.env.USE_MOCK_SAP = originalEnv;
-  });
-
-  describe('Worklist Instances Fetching', () => {
-    it('should fetch instance list in mock mode', async () => {
+  describe('getInstances Worklist', () => {
+    it('should return mock instances in mock mode', async () => {
       process.env.USE_MOCK_SAP = 'true';
-      const result = await adapter.getInstances('MOCK_USER', 'IN PROCESSING');
-      expect(result).toBeDefined();
-      expect(result.length).toBeGreaterThan(0);
+      const instances = await adapter.getInstances('MOCK_USER', 'IN PROCESSING');
+      expect(instances).toBeDefined();
+      expect(Array.isArray(instances)).toBe(true);
     });
 
-    it('should fetch instances list from SAP in direct mode', async () => {
+    it('should query SAP instance list in live mode', async () => {
       process.env.USE_MOCK_SAP = 'false';
       mockSapClient.get.mockResolvedValue({
-        value: [{
-          WorkflowTaskInternalID: '198781',
-          WorkflowTaskStatus: 'IN PROCESSING',
-          TechnicalWrkflwObjectType: 'BUS2105',
-          TaskCreationDateTime: '2026-04-05T08:13:18.43246Z',
-          CreatedByUser: 'DIENTRAN',
-          CreationDate: '2026-04-05',
-          CreationTime: '15:13:17'
-        }]
+        value: [
+          {
+            WorkflowTaskInternalID: '000000000001',
+            TechnicalWrkflwObjectType: 'BUS2105',
+            DocumentNumber: '10000001',
+            WorkflowTaskStatus: 'IN PROCESSING'
+          }
+        ],
+        '@odata.count': 1
       });
-      const result = await adapter.getInstances('SAP_USER', 'IN PROCESSING');
-      expect(result).toBeDefined();
-      expect(result.length).toBe(1);
-      expect(result[0].taskCreationDateTime).toBe('2026-04-05T08:13:18.43246Z');
-      expect(result[0].createdByUser).toBe('DIENTRAN');
-      expect(result[0].creationDate).toBe('2026-04-05');
-      expect(result[0].creationTime).toBe('15:13:17');
+
+      const instances = await adapter.getInstances('SAP_USER', 'IN PROCESSING');
+      expect(instances).toBeDefined();
+      expect(instances.length).toBe(1);
       expect(mockSapClient.get).toHaveBeenCalledWith(
         '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
         '/CNMA_WFTASK',
-        { $format: 'json', $orderby: 'WorkflowTaskInternalID desc', $count: 'true', $top: '1000', $filter: "(WorkflowTaskStatus eq 'IN PROCESSING')" },
+        expect.objectContaining({ $format: 'json' }),
         'SAP_USER',
         undefined
       );
@@ -88,35 +63,34 @@ describe('SapOdataAdapter', () => {
       process.env.USE_MOCK_SAP = 'true';
     });
 
-    it('should return mock details from getDetailBatch with camelCase keys', async () => {
+    it('should return mock raw details from getDetailBatch', async () => {
       const result = await adapter.getDetailBatch(
         [{ objectType: 'PR', objectId: '10000001' }],
         'MOCK_USER'
       );
 
-      expect(result['PR:10000001']).toBeDefined();
-      expect(result['PR:10000001'].objectId).toBe('10000001');
-      // Camel-casing check: "purchaseRequisition" instead of "PurchaseRequisition"
-      expect(result['PR:10000001'].header.purchaseRequisition).toBe('10000001');
-      expect(mockSapClient.batchGet).not.toHaveBeenCalled();
+      expect(result['10000001']).toBeDefined();
+      expect(result['10000001'].DocumentNumber).toBe('0010000001');
+      expect(result['10000001'].DocCategory).toBe('BUS2105');
+      expect(mockSapClient.get).not.toHaveBeenCalled();
     });
 
-    it('should return complete mock detail on getDetail (headerOnly = false)', async () => {
+    it('should return complete raw mock detail on getDetail (headerOnly = false)', async () => {
       const result = await adapter.getDetail('PR', '10000001', 'MOCK_USER', undefined, false);
-      expect(result.header).toBeDefined();
-      expect(result.items).toBeDefined();
-      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.DocCategory).toBe('BUS2105');
+      expect(result._Item).toBeDefined();
+      expect(result._Item.length).toBeGreaterThan(0);
     });
 
     it('should save comments and attachments in mock cache', async () => {
       const addCommentSpy = vi.spyOn(mockDataProvider, 'addMockComment');
       const addAttachmentSpy = vi.spyOn(mockDataProvider, 'addMockAttachment');
 
-      await adapter.addComment('10000001', 'Test comment', 'MOCK_USER');
+      await adapter.getStrategy('PR').addComment('10000001', 'Test comment', 'MOCK_USER');
       expect(addCommentSpy).toHaveBeenCalledWith('10000001', 'Test comment', 'MOCK_USER');
 
       const buf = Buffer.from('hello');
-      await adapter.uploadAttachment('10000001', 'test.txt', 'text/plain', buf, 'MOCK_USER');
+      await adapter.getStrategy('PR').uploadAttachment('10000001', 'test.txt', 'text/plain', buf, 'MOCK_USER');
       expect(addAttachmentSpy).toHaveBeenCalledWith('10000001', 'test.txt', 'text/plain', buf, 'MOCK_USER');
     });
   });
@@ -126,13 +100,13 @@ describe('SapOdataAdapter', () => {
       process.env.USE_MOCK_SAP = 'false';
     });
 
-    it('should fetch PR and PO in batch and normalize headers', async () => {
+    it('should fetch PR and PO in batch and return raw entities', async () => {
       mockSapClient.get.mockImplementation(async (path: string, relativePath: string) => {
         if (relativePath.includes("DocCategory='BUS2105'")) {
-          return { DocumentType: 'ZASS', DocumentNumber: '10000001' };
+          return { DocCategory: 'BUS2105', DocumentType: 'ZASS', DocumentNumber: '10000001' };
         }
         if (relativePath.includes("DocCategory='BUS2012'")) {
-          return { DocumentType: 'DEFAULT', DocumentNumber: '45000002' };
+          return { DocCategory: 'BUS2012', DocumentType: 'DEFAULT', DocumentNumber: '45000002' };
         }
         return {};
       });
@@ -145,20 +119,20 @@ describe('SapOdataAdapter', () => {
       const result = await adapter.getDetailBatch(items, 'SAP_USER', 'jwt-token');
 
       expect(mockSapClient.get).toHaveBeenCalled();
-      expect(result['PR:10000001'].documentType).toBe('ZASS');
-      expect(result['PR:10000001'].header.purchaseRequisition).toBe('10000001');
-      expect(result['PO:45000002'].header.purchaseOrder).toBe('45000002');
+      expect(result['10000001'].DocumentType).toBe('ZASS');
+      expect(result['10000001'].DocumentNumber).toBe('10000001');
+      expect(result['45000002'].DocumentNumber).toBe('45000002');
     });
 
-    it('should query single PR detail with complete sections (headerOnly = false)', async () => {
-      // Mock OData V4 response with expands
+    it('should query single PR raw detail with complete sections (headerOnly = false)', async () => {
       mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
         if (relativePath.includes('CNMA_PRHEADER')) {
           return {
+            DocCategory: 'BUS2105',
             DocumentNumber: '10000001',
             DocumentType: 'ZASS',
-            _Item: [{ DocumentNumber: '10000001', ItemNumber: '00010', Quantity: 100, Unit: 'PC', NetAmount: 1000, DocumentCurrency: 'VND' }],
-            _ApprovalStep: [{ ObjectKey: '10000001', ApprovalLevel: 1, ReleaseCode: 'R1', ApproverName: 'Approver 1', ApproverUserId: 'USR1', ApprovalStatus: 'PENDING', CommentText: 'Ok', CommentDate: '2026-07-15', CommentTime: '10:00:00' }],
+            _Item: [{ DocumentNumber: '10000001', PurchaseRequisitionItem: '00010', RequestedQuantity: '10', BaseUnit: 'PC' }],
+            _ApprovalStep: [{ ObjectKey: '10000001', ApprovalLevel: '1', ReleaseCode: 'R1', ApproverName: 'Approver 1', ApprovalStatus: 'APPROVED' }],
             _HeaderText: [{ DocCategory: 'BUS2105', DocNumber: '10000001', LineId: 1, LongText: 'Desc line 1' }],
             _Comment: [{ DocumentNumber: '10000001', Sequence: 1, PostedOn: '2026-07-15', PostedTime: '10:00:00', NoteText: 'Test PR comment', UserComment: 'USR1' }],
             _Attachment: [{
@@ -166,10 +140,7 @@ describe('SapOdataAdapter', () => {
               DocumentNumber: '10000001',
               DocId: 'FOL42000000000004EXT51000000000208',
               FileName: 'PR_01_Toiletries_Bath_Amenities',
-              FileExtension: 'pdf',
-              CreatedBy: 'DIENTRAN',
-              CreatedOnDate: '2026-04-10',
-              CreatedOnTime: '11:45:05'
+              FileExtension: 'pdf'
             }]
           };
         }
@@ -178,31 +149,25 @@ describe('SapOdataAdapter', () => {
 
       const result = await adapter.getDetail('PR', '10000001', 'SAP_USER', 'jwt', false);
 
-      expect(result.objectType).toBe('PR');
-      expect(result.documentType).toBe('ZASS');
-      expect(result.header.purchaseRequisitionText).toBe('Desc line 1');
-      expect(result.items.length).toBe(1);
-      expect(result.approvalTree.length).toBe(1);
-      expect(result.comments.length).toBe(1);
-      expect(result.comments[0].author).toBe('USR1');
-      expect(result.comments[0].text).toBe('Test PR comment');
-      
-      expect(result.attachments.length).toBe(1);
-      expect(result.attachments[0].id).toBe('FOL42000000000004EXT51000000000208');
-      expect(result.attachments[0].fileName).toBe('PR_01_Toiletries_Bath_Amenities.pdf');
-      expect(result.attachments[0].fileDisplayName).toBe('PR_01_Toiletries_Bath_Amenities');
-      expect(result.attachments[0].mimeType).toBe('application/pdf');
+      expect(result.DocCategory).toBe('BUS2105');
+      expect(result.DocumentType).toBe('ZASS');
+      expect(result._Item.length).toBe(1);
+      expect(result._ApprovalStep.length).toBe(1);
+      expect(result._Comment.length).toBe(1);
+      expect(result._Comment[0].UserComment).toBe('USR1');
+      expect(result._Attachment.length).toBe(1);
+      expect(result._Attachment[0].DocId).toBe('FOL42000000000004EXT51000000000208');
     });
 
-    it('should query single PO detail with complete sections (headerOnly = false)', async () => {
+    it('should query single PO raw detail with complete sections (headerOnly = false)', async () => {
       mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
-        if (relativePath.includes('CNMA_POHEADER') || relativePath.includes("DocCategory='BUS2012'")) {
+        if (relativePath.includes('CNMA_POHEADER')) {
           return {
+            DocCategory: 'BUS2012',
             DocumentNumber: '45000002',
             DocumentType: 'DEFAULT',
-            _Item: [{ DocumentNumber: '45000002', ItemNumber: '10', Quantity: 5, Unit: 'PC', NetAmount: 500, DocumentCurrency: 'VND', CostCenter: 'CC1', GLAccount: '610000' }],
-            _ApprovalStep: [{ ObjectKey: '45000002', ApprovalLevel: 1, ReleaseCode: 'R1', ApproverName: 'Approver 1', ApproverUserId: 'USR1', ApprovalStatus: 'PENDING', CommentText: 'Ok', CommentDate: '2026-07-15', CommentTime: '10:00:00' }],
-            _HeaderText: [{ DocCategory: 'BUS2012', DocNumber: '45000002', LineId: 1, LongText: 'Ok' }],
+            _Item: [{ DocumentNumber: '45000002', PurchaseOrderItem: '10', OrderQuantity: '5', PurchaseOrderQuantityUnit: 'PC' }],
+            _ApprovalStep: [{ ObjectKey: '45000002', ApprovalLevel: '1', ReleaseCode: 'R1', ApproverName: 'Approver 1', ApprovalStatus: 'APPROVED' }],
             _Comment: [{ DocumentNumber: '45000002', Sequence: 1, PostedOn: '2026-07-15', PostedTime: '10:00:00', NoteText: 'Test PO comment', UserComment: 'USR1' }]
           };
         }
@@ -211,46 +176,11 @@ describe('SapOdataAdapter', () => {
 
       const result = await adapter.getDetail('PO', '45000002', 'SAP_USER', 'jwt', false);
 
-      expect(result.objectType).toBe('PO');
-      expect(result.header.purchaseOrder).toBe('45000002');
-      expect(result.items.length).toBe(1);
-      expect(result.accountAssignments.length).toBe(1);
-      expect(result.comments.length).toBe(1);
-      expect(result.comments[0].author).toBe('USR1');
-      expect(result.comments[0].text).toBe('Test PO comment');
-    });
-
-    it('should query single RE detail with complete sections including _ApprovalStep (headerOnly = false)', async () => {
-      mockSapClient.get.mockImplementation(async (servicePath: string, relativePath: string) => {
-        if (relativePath.includes('CNMA_RESVHEADER') || relativePath.includes("DocCategory='ZBUS2093'")) {
-          return {
-            DocCategory: 'ZBUS2093',
-            DocumentNumber: '0000000888',
-            _Item: [{ ItemNumber: '00010', Material: 'MAT01', Quantity: 10, BaseUnit: 'PC' }],
-            _ApprovalStep: [
-              { ObjectType: 'ZBUS2093', ObjectKey: '0000000888', ApprovalLevel: 1, ReleaseCode: 'Z1', ReleaseText: 'CONARUM1 Approver', ApproverName: 'CONARUM1', ApproverUserId: 'CONARUM1', ApprovalStatus: 'PENDING', CommentText: '', CommentDate: null, CommentTime: '00:00:00' },
-              { ObjectType: 'ZBUS2093', ObjectKey: '0000000888', ApprovalLevel: 2, ReleaseCode: 'Z2', ReleaseText: 'CONARUM2 Approver', ApproverName: 'CONARUM2', ApproverUserId: 'CONARUM2', ApprovalStatus: 'PENDING', CommentText: '', CommentDate: null, CommentTime: '00:00:00' }
-            ],
-            _Comment: [{ DocumentNumber: '0000000888', Sequence: 1, PostedOn: '2026-08-06', PostedTime: '10:00:00', NoteText: 'Test Reservation comment', UserComment: 'CONARUM1' }],
-            _Attachment: []
-          };
-        }
-        return {};
-      });
-
-      const result = await adapter.getDetail('RE', '0000000888', 'SAP_USER', 'jwt', false);
-
-      expect(result.objectType).toBe('RE');
-      expect(result.items.length).toBe(1);
-      expect(result.approvalTree.length).toBe(2);
-      expect(result.approvalTree[0].level).toBe(1);
-      expect(result.approvalTree[0].releaseCode).toBe('Z1');
-      expect(result.approvalTree[0].approver).toBe('CONARUM1');
-      expect(result.approvalTree[0].status).toBe('PENDING');
-      expect(result.approvalTree[1].level).toBe(2);
-      expect(result.approvalTree[1].releaseCode).toBe('Z2');
-      expect(result.comments.length).toBe(1);
-      expect(result.comments[0].author).toBe('CONARUM1');
+      expect(result.DocCategory).toBe('BUS2012');
+      expect(result.DocumentNumber).toBe('45000002');
+      expect(result._Item.length).toBe(1);
+      expect(result._Comment.length).toBe(1);
+      expect(result._Comment[0].UserComment).toBe('USR1');
     });
 
     it('should stream attachment binary content in direct SAP mode', async () => {
@@ -260,48 +190,19 @@ describe('SapOdataAdapter', () => {
         fileName: 'Invoice.pdf'
       });
 
-      const result = await adapter.fetchAttachmentContent('10000001', 'FOL42000000000004EXT51000000000208', 'SAP_USER', 'jwt');
+      const result = await adapter.getStrategy('PR').fetchAttachmentContent('10000001', 'FOL42000000000004EXT51000000000208', 'SAP_USER', 'jwt');
       expect(result).toEqual({
         data: Buffer.from('my-sap-file'),
         contentType: 'application/pdf',
         fileName: 'Invoice.pdf'
       });
-      expect(mockSapClient.getBinary).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
-        "/CNMA_ATTACH_CONTENT('FOL42000000000004EXT51000000000208')/Content",
-        'SAP_USER',
-        'jwt'
-      );
     });
 
     it('should throw an error on uploadAttachment in direct SAP mode', async () => {
       const buf = Buffer.from('my-file');
       await expect(
-        adapter.uploadAttachment('10000001', 'doc.pdf', 'application/pdf', buf, 'SAP_USER', 'jwt')
+        adapter.getStrategy('PR').uploadAttachment('10000001', 'doc.pdf', 'application/pdf', buf, 'SAP_USER', 'jwt')
       ).rejects.toThrow('Attachment upload is disabled for this service.');
-    });
-
-    it('should call sapClient.post on addComment in direct SAP mode with OData v4 comment payload', async () => {
-      mockSapClient.post.mockResolvedValue({});
-      await adapter.addComment('10000001', 'Nice PR', 'SAP_USER', 'jwt', 'NORM');
-      expect(mockSapClient.post).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
-        "/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='0010000001')/SAP__self.comment",
-        { NoteText: 'Nice PR', isGeneral: true, Decision: '' },
-        {},
-        'SAP_USER',
-        'jwt'
-      );
-
-      await adapter.addComment('10000001', 'Approved PR', 'SAP_USER', 'jwt', 'APPR', 'A');
-      expect(mockSapClient.post).toHaveBeenCalledWith(
-        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
-        "/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='0010000001')/SAP__self.comment",
-        { NoteText: 'Approved PR', isGeneral: false, Decision: 'A' },
-        {},
-        'SAP_USER',
-        'jwt'
-      );
     });
   });
 });

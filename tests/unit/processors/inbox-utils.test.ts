@@ -5,10 +5,8 @@ import {
     cleanBusinessObjectForList,
     formatTaskTitle,
     filterComments,
-    buildFieldSchema,
     decorateActions,
-    decorateAttachments,
-    composeTaskMeta
+    decorateAttachments
 } from '../../../srv/lib/processors/inbox-utils';
 
 describe('inbox-utils', () => {
@@ -102,45 +100,6 @@ describe('inbox-utils', () => {
         });
     });
 
-    describe('buildFieldSchema', () => {
-        it('should walk root and collection mappings to construct dynamic fieldSchema', () => {
-            const config = {
-                mappings: {
-                    root: [
-                        { targetPath: 'header.purchaseRequisition', label: 'PR Number', type: 'string' },
-                        { targetPath: 'header.totalNetAmount', label: 'Total', transform: 'number' }
-                    ],
-                    collections: {
-                        items: {
-                            fields: [
-                                { targetPath: 'items.quantity', label: 'Qty', transform: 'number' }
-                            ]
-                        }
-                    }
-                }
-            };
-
-            const schema = buildFieldSchema(config);
-            expect(schema['purchaseRequisition']).toEqual({
-                key: 'purchaseRequisition',
-                label: 'PR Number',
-                dataPath: '$.header.purchaseRequisition',
-                dataType: 'TEXT'
-            });
-            expect(schema['totalNetAmount']).toEqual({
-                key: 'totalNetAmount',
-                label: 'Total',
-                dataPath: '$.header.totalNetAmount',
-                dataType: 'AMOUNT'
-            });
-            expect(schema['quantity']).toEqual({
-                key: 'quantity',
-                label: 'Qty',
-                dataPath: '$.items.quantity',
-                dataType: 'QUANTITY'
-            });
-        });
-    });
 
     describe('decorateActions', () => {
         it('should decorate SAP decisions with UI nature and confirmation attributes', () => {
@@ -187,25 +146,4 @@ describe('inbox-utils', () => {
         });
     });
 
-    describe('composeTaskMeta', () => {
-        it('should compose task metadata safely even when taskRuntime is null', () => {
-            const meta = composeTaskMeta({
-                instanceId: '198810',
-                taskRuntime: null,
-                inst: { status: 'READY', instid: '0010001838' },
-                objectType: 'PR',
-                instid: '0010001838',
-                projectedObject: {},
-                businessChips: [],
-                normalTask: true
-            });
-
-            expect(meta.instanceId).toBe('198810');
-            expect(meta.sapOrigin).toBe('LOCAL');
-            expect(meta.title).toBe('Approve PR 0010001838');
-            expect(meta.status).toBe('READY');
-            expect(meta.priority).toBe('MEDIUM');
-            expect(meta.businessContext).toEqual({ type: 'PR', documentId: '0010001838' });
-        });
-    });
 });

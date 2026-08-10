@@ -4,33 +4,60 @@ const mockAttachmentsCache: Record<string, any[]> = {};
 const mockAttachmentContentCache: Record<string, { data: Buffer; contentType: string; fileName: string }> = {};
 
 export function addMockComment(objectId: string, text: string, author: string = 'Current User') {
-    const paddedId = objectId.padStart(10, '0');
-    if (!mockCommentsCache[paddedId]) {
-        mockCommentsCache[paddedId] = [];
-    }
-    mockCommentsCache[paddedId].push({
+    const cleanId = objectId ? String(objectId).replace(/^0+/, '') : '';
+    const paddedId = /^\d+$/.test(cleanId) ? cleanId.padStart(10, '0') : cleanId;
+
+    const commentObj = {
         author,
         text,
         postedOn: new Date().toISOString().split('T')[0],
         postedTime: new Date().toISOString().split('T')[1].split('.')[0]
-    });
+    };
+
+    const keys = new Set([objectId, cleanId, paddedId]);
+    for (const key of keys) {
+        if (!key) continue;
+        if (!mockCommentsCache[key]) {
+            mockCommentsCache[key] = [];
+        }
+        mockCommentsCache[key].push(commentObj);
+    }
 }
 
 export function addMockAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, createdBy: string = 'Current User') {
-    const paddedId = objectId.padStart(10, '0');
-    if (!mockAttachmentsCache[paddedId]) {
-        mockAttachmentsCache[paddedId] = [];
-    }
+    const cleanId = objectId ? String(objectId).replace(/^0+/, '') : '';
+    const paddedId = /^\d+$/.test(cleanId) ? cleanId.padStart(10, '0') : cleanId;
     const attachId = `attach-${Date.now()}`;
-    mockAttachmentsCache[paddedId].push({
+
+    const attachObj = {
         id: attachId,
         fileName,
         mimeType,
         fileSize: buffer.byteLength,
         createdBy,
         createdAt: new Date().toISOString()
-    });
+    };
+
+    const keys = new Set([objectId, cleanId, paddedId]);
+    for (const key of keys) {
+        if (!key) continue;
+        if (!mockAttachmentsCache[key]) {
+            mockAttachmentsCache[key] = [];
+        }
+        mockAttachmentsCache[key].push(attachObj);
+    }
+
     mockAttachmentContentCache[`${paddedId}-${attachId}`] = {
+        data: buffer,
+        contentType: mimeType,
+        fileName
+    };
+    mockAttachmentContentCache[`${cleanId}-${attachId}`] = {
+        data: buffer,
+        contentType: mimeType,
+        fileName
+    };
+    mockAttachmentContentCache[`${objectId}-${attachId}`] = {
         data: buffer,
         contentType: mimeType,
         fileName
@@ -38,8 +65,9 @@ export function addMockAttachment(objectId: string, fileName: string, mimeType: 
 }
 
 export function getMockAttachmentContent(objectId: string, attachId: string) {
-    const paddedId = objectId.padStart(10, '0');
-    return mockAttachmentContentCache[`${paddedId}-${attachId}`] || null;
+    const cleanId = objectId ? String(objectId).replace(/^0+/, '') : '';
+    const paddedId = /^\d+$/.test(cleanId) ? cleanId.padStart(10, '0') : cleanId;
+    return mockAttachmentContentCache[`${paddedId}-${attachId}`] || mockAttachmentContentCache[`${cleanId}-${attachId}`] || mockAttachmentContentCache[`${objectId}-${attachId}`] || null;
 }
 
 export function getMockAttachmentContentById(attachId: string) {
@@ -52,13 +80,15 @@ export function getMockAttachmentContentById(attachId: string) {
 }
 
 export function getMockComments(objectId: string) {
-    const paddedId = objectId.padStart(10, '0');
-    return mockCommentsCache[paddedId] || [];
+    const cleanId = objectId ? String(objectId).replace(/^0+/, '') : '';
+    const paddedId = /^\d+$/.test(cleanId) ? cleanId.padStart(10, '0') : cleanId;
+    return mockCommentsCache[objectId] || mockCommentsCache[cleanId] || mockCommentsCache[paddedId] || [];
 }
 
 export function getMockAttachments(objectId: string) {
-    const paddedId = objectId.padStart(10, '0');
-    return mockAttachmentsCache[paddedId] || [];
+    const cleanId = objectId ? String(objectId).replace(/^0+/, '') : '';
+    const paddedId = /^\d+$/.test(cleanId) ? cleanId.padStart(10, '0') : cleanId;
+    return mockAttachmentsCache[objectId] || mockAttachmentsCache[cleanId] || mockAttachmentsCache[paddedId] || [];
 }
 
 export function getMockInstances(status?: string | string[]) {
@@ -1504,5 +1534,270 @@ export function getMockStatusCounts() {
         }
     ];
 }
+
+export function getMockRawDetail(objectType: string, objectId: string): Record<string, any> {
+    const rawPadded = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
+    const inst = getMockInstances().find(i => i.instid === objectId || i.instanceID === objectId || i.instid === rawPadded);
+    const docType = inst?.doctyp || (objectType === 'PR' ? 'ZASS' : objectType === 'PO' ? 'ZASS' : 'DEFAULT');
+    const docTypeDesc = inst?.doctyp_desc || docType;
+
+    const mockComments = getMockComments(objectId).map(c => ({
+        UserComment: c.author || 'Current User',
+        NoteText: c.text || '',
+        PostedOn: c.postedOn || '2026-06-25',
+        PostedTime: c.postedTime || '09:00:00'
+    }));
+
+    const mockAttachments = getMockAttachments(objectId).map(a => ({
+        DocId: a.id,
+        FileName: a.fileName,
+        MimeType: a.mimeType,
+        Length: String(a.fileSize || 0),
+        CreatedBy: a.createdBy || 'Current User',
+        CreatedOnDate: a.createdAt ? a.createdAt.split('T')[0] : '2026-06-25',
+        CreatedOnTime: a.createdAt ? a.createdAt.split('T')[1].split('.')[0] : '09:00:00'
+    }));
+
+    if (objectType === 'RE') {
+        return {
+            DocCategory: 'ZBUS2093',
+            DocumentNumber: rawPadded,
+            DocumentId: rawPadded,
+            DocumentType: 'RESV',
+            DocumentTypeText: 'Reservation',
+            UserName: 'Le Van C',
+            CreatedByUser: 'Le Van C',
+            CreationDate: '2026-06-24',
+            CreationTime: '14:20:00',
+            TotalNetAmountLocalCrcy: '5000000.00',
+            Total: '5000000.00',
+            LocalCurrency: 'VND',
+            Currency: 'VND',
+            Plant: '1000',
+            PlantName: 'Main Factory',
+            MovementType: '201',
+            MovementTypeName: 'Goods issue for cost center',
+            CostCenter: 'CC1001',
+            CostCenterName: 'Administration CC',
+            ReleaseStrategyText: 'RE Standard Release',
+            ReleaseStrategyName: 'RE Standard Release',
+            _Item: [
+                {
+                    Material: 'MAT-SF-01',
+                    MaterialText: 'Safety Goggles',
+                    shortText: 'Safety Goggles',
+                    ItemText: 'For inspection team floor visit',
+                    Quantity: '10',
+                    BaseUnit: 'PC',
+                    MovingAveragePrice: '150000.00',
+                    Price: '1500000.00',
+                    Plant: '1000',
+                    PlantName: 'Main Factory',
+                    StorageLocation: 'SL01',
+                    StorageLocationName: 'General Store',
+                    RequirementDate: '2026-06-30',
+                    GLAccount: '610500',
+                    GLAccountText: 'Safety Supplies Opex'
+                },
+                {
+                    Material: 'MAT-SF-02',
+                    MaterialText: 'Nitrile Gloves Pack',
+                    shortText: 'Nitrile Gloves Pack',
+                    ItemText: 'Protective gloves for lab',
+                    Quantity: '50',
+                    BaseUnit: 'SET',
+                    MovingAveragePrice: '70000.00',
+                    Price: '3500000.00',
+                    Plant: '1000',
+                    PlantName: 'Main Factory',
+                    StorageLocation: 'SL01',
+                    StorageLocationName: 'General Store',
+                    RequirementDate: '2026-06-30',
+                    GLAccount: '610500',
+                    GLAccountText: 'Safety Supplies Opex'
+                }
+            ],
+            _ApprovalStep: [
+                {
+                    ApprovalLevel: '1',
+                    ReleaseCode: 'R1',
+                    ReleaseText: 'Department Head Approval',
+                    ApproverName: 'Nguyen Van Manager',
+                    ApprovalStatus: 'APPROVED',
+                    CommentText: 'Approved for safety department',
+                    CommentDate: '2026-06-24',
+                    CommentTime: '15:00:00'
+                }
+            ],
+            _Comment: mockComments.length > 0 ? mockComments : [
+                { UserComment: 'Le Van C', NoteText: 'Safety gear needed for factory floor inspection.', PostedOn: '2026-06-24', PostedTime: '14:25:00' }
+            ],
+            _Attachment: mockAttachments
+        };
+    }
+
+    if (objectType === 'CLAIM') {
+        return {
+            DocCategory: 'ZCLAIM',
+            DocumentNumber: rawPadded,
+            ClaimNumber: rawPadded,
+            DocumentType: 'EXP_CLAIM',
+            DocumentTypeText: 'Expense Claim',
+            UserName: 'Pham Van D',
+            Claimant: 'Pham Van D',
+            CreatedByUser: 'Pham Van D',
+            CreationDate: '2026-06-27',
+            CreationTime: '11:00:00',
+            TotalAmount: '5000000.00',
+            Currency: 'VND',
+            CompanyCode: '1000',
+            CompanyCodeName: 'CNMA Corporation',
+            Purpose: 'Quarterly sales review workshop and customer relationship building in Da Nang office.',
+            HeaderNote: 'Quarterly sales review workshop and customer relationship building in Da Nang office.',
+            PaidBy: 'CNMA Finance Dept',
+            BankDetails: 'Techcombank - 987654321',
+            _Item: [
+                { ItemNo: '1', ReceiptDate: '2026-06-20', ExpenseType: 'Taxi Fare', Amount: '350000.00', Description: 'Client visit transportation' },
+                { ItemNo: '2', ReceiptDate: '2026-06-21', ExpenseType: 'Business Lunch', Amount: '1500000.00', Description: 'Lunch meeting with client representatives' },
+                { ItemNo: '3', ReceiptDate: '2026-06-22', ExpenseType: 'Hotel Accommodation', Amount: '3150000.00', Description: 'Lodging in Da Nang office support' }
+            ],
+            _ApprovalStep: [
+                { ApprovalLevel: '1', ReleaseCode: 'R1', ReleaseText: 'Manager Approval', ApproverName: 'Nguyen Van Manager', ApprovalStatus: 'APPROVED', CommentText: 'Approved travel expense', CommentDate: '2026-06-27', CommentTime: '12:00:00' }
+            ],
+            _Comment: mockComments.length > 0 ? mockComments : [
+                { UserComment: 'Pham Van D', NoteText: 'Expense claim for Da Nang business travel.', PostedOn: '2026-06-27', PostedTime: '11:05:00' }
+            ],
+            _Attachment: mockAttachments.length > 0 ? mockAttachments : [
+                { DocId: 'receipt-01', FileName: 'Hotel_Receipt.pdf', MimeType: 'application/pdf', Length: '1548576', CreatedBy: 'Pham Van D', CreatedOnDate: '2026-06-27', CreatedOnTime: '11:00:00' }
+            ]
+        };
+    }
+
+    if (objectType === 'PO') {
+        const isZub = docType === 'ZUB';
+        return {
+            DocCategory: 'BUS2012',
+            DocumentNumber: rawPadded,
+            PurchaseOrder: rawPadded,
+            DocumentType: docType,
+            DocumentTypeText: docTypeDesc,
+            CreatedByUser: 'Tran Thi B',
+            Supplier: isZub ? '' : 'VEN-1001',
+            SupplierName: isZub ? '' : 'Dell Vietnam Ltd',
+            VendorDisplay: isZub ? '' : 'VEN-1001 - Dell Vietnam Ltd',
+            ReleaseStrategyName: 'PO Release Strategy Level 2',
+            CompanyCode: '1000',
+            CompanyCodeName: 'CNMA Corporation',
+            CreationDate: '2026-06-26',
+            CreationTime: '10:00:00',
+            PaymentTerms: isZub ? '' : 'NT30',
+            PaymentTermsDescription: isZub ? '' : 'Net 30 days',
+            TotalNetValueBeforeTax: isZub ? '0.00' : '100000000.00',
+            TotalFreightAmount: isZub ? '0.00' : '5000000.00',
+            TotalVatAmount: isZub ? '0.00' : '10000000.00',
+            TotalOrderValue: '115000000.00',
+            TotalAmount: '115000000.00',
+            HeaderNote: isZub ? 'Internal stock transfer for branch expansion' : 'Purchase order for IT hardware accessories',
+            PurchaseOrderText: isZub ? 'Internal stock transfer for branch expansion' : 'Purchase order for IT hardware accessories',
+            ...(isZub ? {
+                ReceivingPlant: '2000',
+                ReceivingPlantName: 'Branch Plant',
+                SupplyingPlant: '1000',
+                SupplyingPlantName: 'Main Plant'
+            } : {}),
+            _Item: [
+                {
+                    PurchaseOrder: rawPadded,
+                    PurchaseOrderItem: '00010',
+                    Plant: '1000',
+                    PlantName: 'Main Plant',
+                    StorageLocation: 'SL01',
+                    StorageLocationName: 'General Store',
+                    Material: 'MAT-LAP-001',
+                    PurchaseOrderItemText: 'Dell Latitude 5540',
+                    MaterialGroup: '001',
+                    MaterialGroupText: 'IT Hardware',
+                    OrderQuantity: '5',
+                    PurchaseOrderQuantityUnit: 'PC',
+                    DeliveryDate: '2026-07-20',
+                    NetPriceAmount: '20000000.00',
+                    NetAmount: '100000000.00',
+                    ReferenceDocumentNumber: '10000001',
+                    PurchaseRequisition: '10000001',
+                    GLAccount: '610100',
+                    GLAccountText: 'IT Equipment Expense',
+                    FundsCenter: 'FC01',
+                    FundsCenterName: 'IT Funds Center',
+                    CommitmentItem: 'CI-001',
+                    CommitmentItemText: 'Hardware CI'
+                }
+            ],
+            _ApprovalStep: [
+                { ApprovalLevel: '1', ReleaseCode: 'R1', ReleaseText: 'Purchasing Manager', ApproverName: 'Tran Thi Director', ApprovalStatus: 'APPROVED', CommentText: 'Approved PO', CommentDate: '2026-06-26', CommentTime: '11:00:00' }
+            ],
+            _Comment: mockComments,
+            _Attachment: mockAttachments
+        };
+    }
+
+    // Default: PR
+    return {
+        DocCategory: 'BUS2105',
+        DocumentNumber: rawPadded,
+        PurchaseRequisition: rawPadded,
+        DocumentType: docType,
+        DocumentTypeText: docTypeDesc,
+        CreatedByUser: 'Nguyen Van A',
+        UserName: 'Nguyen Van A',
+        UserFullName: 'Nguyen Van A',
+        FundsCenter: 'FC01',
+        FundsCenterName: 'IT Funds Center',
+        CreationDate: '2026-06-25',
+        CreationTime: '08:00:00',
+        ReleaseStrategyName: 'PR Release Strategy Level 1',
+        ReleaseStrategyText: 'PR Level 1 Approval',
+        TotalNetAmountLocalCrcy: '150000000.00',
+        Total: '150000000.00',
+        LocalCurrency: 'VND',
+        Currency: 'VND',
+        CompanyCode: '1000',
+        CompanyCodeName: 'CNMA Corporation',
+        HeaderNote: 'IT Department Laptop Purchase',
+        PurchaseRequisitionText: 'IT Department Laptop Purchase',
+        Purpose: 'Equipment for new software engineers',
+        PaidBy: 'CNMA Headquarters',
+        BankDetails: 'Vietcombank - 1234567890',
+        _Item: [
+            {
+                PurchaseRequisition: rawPadded,
+                PurchaseRequisitionItem: '00010',
+                Plant: '1000',
+                PlantName: 'Main Factory',
+                StorageLocation: 'SL01',
+                StorageLocationName: 'General Store',
+                Material: 'MAT-LAP-001',
+                PurchaseRequisitionItemText: 'MacBook Pro M3 Max 16"',
+                MaterialGroup: '001',
+                MaterialGroupText: 'IT Hardware',
+                RequestedQuantity: '2',
+                BaseUnit: 'PC',
+                DeliveryDate: '2026-07-15',
+                PurchaseRequisitionPrice: '75000000.00',
+                PurReqnItemTotalAmount: '150000000.00',
+                GLAccount: '610100',
+                GLAccountText: 'IT Equipment Expense',
+                CommitmentItem: 'CI-001',
+                CommitmentItemText: 'Hardware CI',
+                ...(docType === 'ZMAK' ? { OrderInternalID: '200000106', OrderInternalName: 'Summer Launch Campaign' } : {})
+            }
+        ],
+        _ApprovalStep: [
+            { ApprovalLevel: '1', ReleaseCode: 'R1', ReleaseText: 'Department Head Approval', ApproverName: 'Nguyen Van Manager', ApprovalStatus: 'APPROVED', CommentText: 'Approved for budget', CommentDate: '2026-06-25', CommentTime: '09:00:00' }
+        ],
+        _Comment: mockComments,
+        _Attachment: mockAttachments
+    };
+}
+
 
 
