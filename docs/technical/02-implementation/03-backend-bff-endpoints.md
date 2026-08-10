@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-05 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-10 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -12,26 +12,9 @@ All API routes below are relative to:
 ---
 
 ## 🛠️ Debug Endpoints
-These endpoints are designed for troubleshooting configurations, token bindings, and user identities.
+These endpoints are designed for troubleshooting token bindings, user identities, and auth headers.
 
-### 1. GET `/debug-config`
-*   **Purpose**: Get a diagnostics dump of all loaded JSON configuration objects, alias maps, and configuration directory resolution status.
-*   **Authentication**: Unauthenticated (bypasses JWT checks for easy browser/curl diagnostic access).
-*   **Response Payload Schema**:
-    ```json
-    {
-      "resolvedConfigDir": "d:\\learning\\test\\cnma_approval\\srv\\configuration\\object-types",
-      "configDirExists": true,
-      "configsLoaded": ["CLAIM", "PO", "PR", "RESERVATION"],
-      "aliases": {
-        "BUS2081": "PO",
-        "BUS2105": "PR"
-      },
-      "configs": { ... }
-    }
-    ```
-
-### 2. GET `/tasks/debug/current-user`
+### 1. GET `/tasks/debug/current-user`
 *   **Purpose**: Get details about the resolved SAP User and BTP Identity.
 *   **Response Headers Analyzed**: Reads incoming `x-sap-user` (for development mocks) and standard JWT authorization.
 *   **Response Payload Schema**:
@@ -47,19 +30,19 @@ These endpoints are designed for troubleshooting configurations, token bindings,
     }
     ```
 
-### 3. GET `/tasks/debug/jwt`
+### 2. GET `/tasks/debug/jwt`
 *   **Purpose**: Read and decode the raw JWT authorization token payload.
 *   **Response Payload Schema**: Returns raw token preview, decoded claims, and raw claims envelope.
 
-### 4. GET `/tasks/debug/auth-summary`
+### 3. GET `/tasks/debug/auth-summary`
 *   **Purpose**: Returns a diagnostic summary mapping BTP configuration variables, Cloud Connector destination links, and parsed authorization header presence.
 
 ---
 
 ## 👤 Identity & Dashboard Endpoints
 
-### 5. GET `/tasks/me`
-*   **Purpose**: Resolves logged-in user profile, displaying name, email, and resolved role scope (Admin vs User).
+### 4. GET `/tasks/me`
+*   **Purpose**: Resolves logged-in user profile, displaying name, email, and resolved role scope.
 *   **Response Payload Schema**:
     ```json
     {
@@ -73,7 +56,7 @@ These endpoints are designed for troubleshooting configurations, token bindings,
     }
     ```
 
-### 6. GET `/tasks/dashboard`
+### 5. GET `/tasks/dashboard`
 *   **Purpose**: Returns high-level metrics for dashboard cards (aggregates status counts, document type counts, items, total active amounts, currencies, and document numbers across PR, PO, Claim, and Reservation document types).
 *   **Response Payload Schema**:
     ```json
@@ -104,11 +87,9 @@ These endpoints are designed for troubleshooting configurations, token bindings,
     }
     ```
 
-### 7. GET `/reference-pr/:prNumber`
+### 6. GET `/reference-pr/:prNumber`
 *   **Purpose**: Fetches detailed header and line item context for a Reference Purchase Requisition from SAP API `API_PURCHASEREQ_PROCESS_SRV` or local mock provider when referenced by a PO line item.
-*   **Authentication**: Supported via JWT Bearer or session.
-*   **Path Parameters**:
-    *   `:prNumber` (Required): 10-digit Purchase Requisition number (e.g., `10000042`).
+*   **Path Parameters**: `:prNumber` (Required) — 10-digit Purchase Requisition number (e.g., `10000042`).
 *   **Response Payload Schema**:
     ```json
     {
@@ -140,127 +121,97 @@ These endpoints are designed for troubleshooting configurations, token bindings,
 
 ## 📋 Task Details & Worklist Endpoints
 
-
-### 8. GET `/tasks/tasks`
+### 7. GET `/tasks/tasks`
 *   **Purpose**: Retrieve the current user's active approval queue (`IN PROCESSING` state).
-*   **Query Parameters**:
-    *   `top` (Optional): Maximum number of entries to return (for pagination).
-    *   `skip` (Optional): Number of entries to skip.
-*   **Performance Optimization**: Task list data is fetched directly from CDS view `ZC_WORKFLOWTASK` via `SapOdataAdapter.getInstances()`. Redundant `TASKPROCESSING/TaskCollection` calls have been eliminated, cutting query latency by 50%.
+*   **Query Parameters**: `top` (Optional), `skip` (Optional).
 
 ### 8. GET `/tasks/tasks/approved`
 *   **Purpose**: Retrieve historical queue containing tasks processed by the user (`COMPLETED` state).
-*   **Query Parameters**: Same as active worklist.
 
-### 9. GET `/tasks/:id`
-*   **Purpose**: Fetch the consolidated canonical detail payload for a single task. Returns header data, line items, workflow steps, comments (filtered of empty/system noise), attachments, decisions, and dynamic UI layout definitions (`uiSchema`).
-*   **URL Parameter**: `id` represents the unique Task Instance ID.
+### 9. GET `/tasks/tasks/:id`
+*   **Purpose**: Fetch raw business object and taskprocessing details concurrently. Returns minimal envelope with unmapped SAP OData structure and workflow execution state.
+*   **URL Parameter**: `:id` represents the unique Task Instance ID.
 *   **Query Parameters**:
     *   `typeid` (Optional): Fallback task definition code.
-    *   `instid` (Optional): Target document ID (e.g. PR/PO/Claim/Reservation number).
+    *   `instid` (Optional): Target document ID.
     *   `businessObjectType` (Optional): Explicit document classification (`PR`, `PO`, `CLAIM`, or `RE`).
-*   **Response Payload Schema (Flat Canonical Format)**:
+*   **Response Payload Schema (Raw Envelope Format)**:
     ```json
     {
-      "taskId": "198820",
-      "instanceId": "198820",
-      "status": "IN_PROCESSING",
-      "priority": "MEDIUM",
-      "createdOn": "2026-07-27T04:54:59.000Z",
-      "createdByName": "SAP_WFRT",
-      "requestorName": "MINHDT",
-      "objectType": "PR",
-      "documentId": "0010001861",
-      "documentType": "ZEXP",
-      "documentTypeDisplay": "ZEXP - Expense PR",
-      "companyCode": "1710",
-      "companyCodeDisplay": "1710 - Company Code 1710",
-      "total": 426.4,
-      "currency": "USD",
-      "releaseStrategyName": "Release Strategy 1",
-      "normalTask": true,
-      "decisions": [
-        { "key": "0001", "text": "Approve", "nature": "POSITIVE", "commentMandatory": false },
-        { "key": "0002", "text": "Reject", "nature": "NEGATIVE", "commentMandatory": false }
-      ],
-      "approvalSteps": [
-        { "documentId": "0010001861", "level": 1, "releaseCode": "Z1", "approver": "Hieu Lam Chi", "approverUserId": "HIEULC", "status": "PENDING", "noteText": "", "postedOn": "", "postedTime": "00:00:00" }
-      ],
-      "items": [
-        {
-          "item": "10",
-          "plant": "1710 - US TRADING PLANT",
-          "shortText": "test1",
-          "materialGroup": "01 - Material group 01",
-          "quantity": 100,
-          "unit": "PC",
-          "deliveryDate": "2026-07-30T00:00:00.000Z",
-          "price": 100000,
-          "totalAmount": 10000000,
-          "glAccount": "65100000 - Office Supplies",
-          "commitmentItemShortId": "1001201000 - Chi phí công tác-test",
-          "documentCurrency": "VND",
-          "localCurrency": "USD"
-        }
-      ],
-      "attachments": [],
-      "comments": [],
-      "task": {
-        "instanceId": "198820",
-        "sapOrigin": "LOCAL",
-        "title": "Please release purchase requisition 10001861",
-        "status": "READY",
-        "priority": "MEDIUM",
-        "createdOn": "2026-07-27T04:54:59.000Z",
-        "requestorName": "MINHDT",
-        "taskDefinitionId": "TS20000159",
-        "supports": { "forward": true, "comments": true },
-        "businessContext": { "type": "PR", "documentId": "0010001861" },
-        "total": 426.4,
-        "curr_vnd": "USD",
-        "normalTask": true
-      },
-      "header": {
-        "purchaseRequisition": "0010001861",
-        "userFullName": "MINHDT",
-        "purchaseRequisitionType": "ZEXP",
-        "purchaseRequisitionTypeDisplay": "ZEXP - Expense PR",
-        "companyCodeDisplay": "1710 - Company Code 1710",
-        "companyCode": "1710",
-        "totalNetAmount": 426.4,
-        "displayCurrency": "USD",
-        "releaseStrategyName": "Release Strategy 1",
-        "createdOn": "2026-07-27T00:00:00.000Z"
-      },
-      "workflow": {
-        "strategyName": "Release Strategy 1",
-        "steps": [
-          { "documentId": "0010001861", "level": 1, "releaseCode": "Z1", "approver": "Hieu Lam Chi", "approverUserId": "HIEULC", "status": "PENDING" }
+      "businessObject": {
+        "DocumentNumber": "0010001861",
+        "DocCategory": "BUS2105",
+        "DocumentType": "ZEXP",
+        "DocumentTypeText": "Expense PR",
+        "CreatedByUser": "MINHDT",
+        "UserName": "Do Tu Minh",
+        "CompanyCode": "1710",
+        "CompanyCodeName": "US TRADING COMPANY",
+        "TotalNetAmountLocalCrcy": 426.4,
+        "LocalCurrency": "USD",
+        "ReleaseStrategyName": "Release Strategy 1",
+        "CreationDate": "2026-07-27",
+        "CreationTime": "04:54:59",
+        "_Item": [
+          {
+            "PurchaseRequisitionItem": "00010",
+            "Plant": "1710",
+            "PlantName": "US TRADING PLANT",
+            "ShortText": "Office Supplies Requisition",
+            "MaterialGroup": "01",
+            "MaterialGroupName": "Material group 01",
+            "RequestedQuantity": 100,
+            "BaseUnit": "PC",
+            "ValuationPrice": 100000,
+            "TotalValue": 10000000,
+            "GLAccount": "65100000",
+            "GLAccountName": "Office Supplies"
+          }
         ],
-        "comments": []
+        "_ApprovalStep": [
+          {
+            "ApprovalLevel": 1,
+            "ReleaseCode": "Z1",
+            "ReleaseText": "Manager Approval",
+            "ApproverName": "Hieu Lam Chi",
+            "ApprovalStatus": "PENDING"
+          }
+        ],
+        "_Comment": [],
+        "_Attachment": []
+      },
+      "taskprocessing": {
+        "task": {
+          "instanceId": "198820",
+          "sapOrigin": "LOCAL",
+          "title": "Please release purchase requisition 10001861",
+          "status": "READY",
+          "priority": "MEDIUM",
+          "createdOn": "2026-07-27T04:54:59.000Z",
+          "requestorName": "MINHDT"
+        },
+        "decisionOptions": [
+          { "decisionKey": "0001", "decisionText": "Approve", "nature": "POSITIVE" },
+          { "decisionKey": "0002", "decisionText": "Reject", "nature": "NEGATIVE" }
+        ]
       }
     }
     ```
-
-### 10. GET `/tasks/tasks/:id/workflow-approval-tree` [DEPRECATED]
-*   **Status**: **Deprecated.**
-*   **Deprecation Note**: Workflow approval steps and comment logs are now included directly inside `object.workflow.steps` and `object.workflow.comments` within the primary `GET /tasks/tasks/:id` response, eliminating redundant network roundtrips.
 
 ---
 
 ## ✍️ Collaboration & Action Endpoints
 
-### 11. POST `/tasks/tasks/:id/decision`
-*   **Purpose**: Executes an approval or rejection decision.
-*   **ERP Sync**: When comments are provided on PR decisions, the decision code (`A` for Approve, `R` for Reject) and text are pushed to SAP document notes.
+### 10. POST `/tasks/tasks/:id/decision`
+*   **Purpose**: Executes an approval or rejection decision on SAP Task Gateway and updates ERP document notes when comments are provided.
 *   **Request Payload Schema**:
     ```json
     {
       "decisionKey": "0001",
       "sapDecisionKey": "0001",
-      "comment": "Approved upon review of documentation.",
+      "comment": "Approved upon review.",
       "_context": {
-        "documentId": "10002341",
+        "documentId": "10001861",
         "businessObjectType": "PR"
       }
     }
@@ -270,7 +221,7 @@ These endpoints are designed for troubleshooting configurations, token bindings,
     {
       "success": true,
       "result": {
-        "instanceId": "task-pr-01",
+        "instanceId": "198820",
         "decisionKey": "0001",
         "status": "COMPLETED",
         "message": "Decision 0001 executed successfully."
@@ -278,35 +229,17 @@ These endpoints are designed for troubleshooting configurations, token bindings,
     }
     ```
 
-### 12. POST `/tasks/tasks/:id/comments`
-*   **Purpose**: Post a comment note into the document timeline.
+### 11. POST `/tasks/tasks/:id/comments`
+*   **Purpose**: Add a new timeline comment note to the SAP business document.
 *   **Request Payload Schema**:
     ```json
     {
-      "text": "Please provide the official quote sheet.",
+      "text": "Please clarify specification on line 10.",
       "_context": {
-        "documentId": "10002341"
+        "documentId": "10001861"
       }
     }
     ```
-*   **Response Payload Schema**:
-    ```json
-    {
-      "success": true,
-      "message": "Comment added successfully."
-    }
-    ```
 
-### 13. POST `/tasks/tasks/:id/attachments` & POST `/tasks/pr/:docNum/attachments` [DISABLED]
-*   **Status**: **Disabled.**
-*   **Response**: Returns `403 Forbidden` (`"Attachment upload is disabled."`). Upload functionality is hidden in the user interface.
-
-### 14. GET `/tasks/tasks/:id/attachments/:attId/content/:filename` & GET `/tasks/pr/:docNum/attachments/:attachId/content/:filename`
-*   **Purpose**: Stream and download the binary contents of an attachment while explicitly preserving the file name.
-*   **Availability**: **Supported in both Mock and Real S/4HANA modes.** In real mode, it fetches the binary stream directly from S/4HANA's `ZI_DOC_ATTACH_CONTENT` OData service.
-*   **URL Route Parameter**:
-    *   `:filename` (Required in path): URL-encoded attachment filename (e.g. `Quote_Sheet.pdf`) passed to preserve file extension and title during download.
-*   **Query Parameters**:
-    *   `documentId` (Optional): Associated document number. If omitted in request query, the backend resolves `documentId` dynamically from the task context.
-    *   `disposition` (Optional): `'inline'` (default, for browser preview) or `'attachment'` (to force download).
-
+### 12. GET `/tasks/tasks/:id/attachments/:attId/content/:filename`
+*   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition.

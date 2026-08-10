@@ -1,6 +1,6 @@
 # Architectural Decision Records (ADRs)
 
-> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-07-09 | **Status:** Active
+> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-08-10 | **Status:** Active
 
 This document logs critical architectural choices made during the development of the **CNMA Approval** application, detailing context, options considered, and consequences.
 
@@ -11,6 +11,7 @@ This document logs critical architectural choices made during the development of
 *   [**ADR 01: Decoupled REST Express BFF instead of CAP OData Service**](#adr-01-decoupled-rest-express-bff-instead-of-cap-odata-service)
 *   [**ADR 02: In-Memory TTL/LRU Cache for Detail Queries**](#adr-02-in-memory-ttl-lru-cache-for-detail-queries)
 *   [**ADR 03: Unified OData Integration Adapter with Strategy Pattern**](#adr-03-unified-odata-integration-adapter-with-strategy-pattern)
+*   [**ADR 04: Raw OData Direct Transfer and Declarative Frontend Renderer Architecture**](#adr-04-raw-odata-direct-transfer-and-declarative-frontend-renderer-architecture)
 
 ---
 
@@ -73,7 +74,7 @@ Outbound integration calls to SAP S/4HANA OData services were historically split
 ### Options Considered
 1. **Option A**: Keep current unstructured adapter files, branching queries using extensive `if-else` / `switch` structures.
 2. **Option B**: Extract strategies into a nested subfolder hierarchy (e.g., `srv/lib/integrations/strategies/`).
-3. **Option C**: Merge base query operations into a single integration facade ([sap-odata-adapter.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts)) and implement flat, kebab-case entity strategies under the existing integrations directory ([pr-strategy.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr-strategy.ts) and [po-strategy.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po-strategy.ts)) conforming to a common strategy interface ([detail-strategy.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/detail-strategy.ts)).
+3. **Option C**: Merge base query operations into a single integration facade ([sap-odata-adapter.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts)) and implement flat, kebab-case entity strategies under the existing integrations directory conforming to a common strategy interface.
 
 ### Decision
 We chose **Option C**.
@@ -87,3 +88,27 @@ We chose **Option C**.
 ### Consequences
 * **Pros**: Extensible integration structure, clean dependency tracking, single-point client caching, and 100/100 code-review score.
 * **Cons**: Requires explicit registration of new strategy classes in the `SapOdataAdapter` constructor.
+
+---
+
+## ADR 04: Raw OData Direct Transfer and Declarative Frontend Renderer Architecture
+
+### Context
+Historically, the backend BFF converted raw SAP OData JSON into an intermediate canonical DTO model driven by complex backend JSON mapping configurations (`srv/configuration/object-types/[type]/config.json`). This introduced field renaming bugs, loss of SAP field types, heavy backend maintenance overhead, and duplicate dynamic UI section registry logic between backend and frontend.
+
+### Options Considered
+1. **Option A**: Retain backend canonical mapping engine and `config.json` files while adding custom transformation hooks per subtype.
+2. **Option B**: Transfer raw S/4HANA OData payloads directly through the backend BFF to the frontend, stripping only transport containers (`__metadata`, `__deferred`), and build a declarative, rule-based raw OData renderer engine in React (`app/cnma_approval_ui/src/renderers/`).
+
+### Decision
+We chose **Option B (Raw OData Direct Transfer & Declarative Frontend Renderer)**.
+
+### Rationale
+* **Zero Data Loss & 100% Visual Parity**: Raw OData properties retain their exact backend casing, numeric precision, and date representations.
+* **Declarative Layout Management**: Frontend field catalogs (`[type].fields.ts`) and layout view definitions (`[type].views.ts`) govern Overview cards and Details tables using pure primitive formatters and visibility predicates.
+* **Performance**: Eliminates backend JSON mapping pass and canonical DTO cloning overhead.
+* **Maintainability**: Adding new fields or tweaking subtype column orders requires only declarative frontend renderer edits without touching backend code or configuration files.
+
+### Consequences
+* **Pros**: Zero backend mapping maintenance, transparent payload tracing, 100% type-safe declarative renderer pipeline.
+* **Cons**: Frontend field catalogs must explicitly map raw OData property names (e.g. `DocumentNumber`, `TotalOrderValue`, `Supplier`).
