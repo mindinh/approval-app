@@ -1,6 +1,6 @@
 # Business Data Dictionary
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-05 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-15 | **Status:** Active
 
 This data dictionary defines key procurement, financial, and inventory concepts used throughout the **CNMA Approval** portal. These fields map directly to information imported from S/4HANA ERP records.
 
@@ -117,4 +117,23 @@ A **Material Reservation** is an internal inventory request to reserve warehouse
 *   **Material Code & Description**: Inventory code and description.
 *   **Quantity Reserved**: Quantity set aside in stock.
 *   **Unit of Issue**: Warehouse unit of measurement.
+
+---
+
+## 👥 Business Users & Collaboration Entities (`CNMA_BUSUSER`)
+
+The collaboration sub-system references the SAP business users directory for tagging and task forwarding:
+
+### User Directory Fields (`CNMA_BUSUSER`)
+*   **SAPUserName**: Unique SAP user ID / login name (e.g. `MINHDT`, `DUNGNV`).
+*   **FullName**: Complete display name of the user (e.g. `Do Tu Minh`).
+*   **FirstName**: User's given name.
+*   **LastName**: User's surname / family name.
+*   **EmailAddress**: Primary corporate email address for workflow and CC notifications.
+
+### Task Forwarding Parameters
+*   **instanceId**: SAP Task Gateway workflow task instance identifier.
+*   **forwardTo**: Target SAP user ID to whom task ownership and release authorization is delegated.
+*   **comment**: Reason or instruction note recorded by the original approver when delegating the task. Automatically pushed as an ERP document note (`[Forwarded to ${forwardTo}] ${comment}`).
+
 

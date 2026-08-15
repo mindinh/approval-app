@@ -1,6 +1,6 @@
 # Project Codebase Structure
 
-> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-10 | **Status:** Active
+> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-15 | **Status:** Active
 
 This document provides a comprehensive folder structure walkthrough mapping key components of both the CAP backend BFF and the Vite React frontend.
 
@@ -28,18 +28,31 @@ cnma-approval/
 │   │   │   │   │   ├── claim/         # Claim Form view definitions (claim.view.ts)
 │   │   │   │   │   ├── po/            # Purchase Order catalogs (po.fields.ts, po.views.ts)
 │   │   │   │   │   ├── pr/            # Purchase Requisition catalogs (pr.fields.ts, pr.views.ts)
-│   │   │   │   │   └── reservation/   # Material Reservation catalogs (reservation.view.ts)
+│   │   │   │   │   └── reservation/   # Material Reservation catalogs (reservation.fields.ts, reservation.view.ts)
 │   │   │   │   └── ObjectView.registry.ts # Master registry resolver for DocCategory & DocumentType
 │   │   │   ├── pages/                 # Full page view structures
 │   │   │   │   ├── Dashboard/         # Dashboard metrics page & custom hooks
 │   │   │   │   └── Inbox/             # Unified inbox workspace page
 │   │   │   │       ├── components/    # Sub-panels, modals, and panel views
+│   │   │   │       │   ├── ForwardTaskDialog.tsx  # Task forwarding user search modal
+│   │   │   │       │   ├── RichMentionInput.tsx   # Text input supporting @mention user tagging
+│   │   │   │       │   ├── TagUserDialog.tsx      # CC user tagging dialog modal
+│   │   │   │       │   ├── TaskActionPanel.tsx    # Floating action bar (Approve, Reject, Forward, Tag)
 │   │   │   │       │   ├── TaskCard.tsx
+│   │   │   │       │   ├── TaskDetailSkeletons.tsx # Skeleton loading states
 │   │   │   │       │   ├── TaskDetailView.tsx
+│   │   │   │       │   ├── TeamsMentionDropdown.tsx # Autocomplete list for user mentions
 │   │   │   │       │   └── panels/    # OverviewPanel, AttachmentsPanel, CommentsPanel, WorkflowApprovalPanel
-│   │   │   │       ├── hooks/         # Inbox query hooks (useInbox, inboxQueries)
+│   │   │   │       ├── hooks/         # Query hooks (useInbox, useSearchUsers, useBusUsers, useTaskFilters)
+│   │   │   │       ├── mappers/       # Task card mapping (taskCard.mapper.ts)
 │   │   │   │       └── index.tsx      # Inbox page composition root
 │   │   │   ├── services/              # API Client fetch queries (Axios REST clients)
+│   │   │   ├── styles/                # CSS styling, tokens, and Tailwind theme rules
+│   │   │   └── utils/                 # Utilities & launchpad helpers (launchpad.ts, parseError.ts)
+│   │   ├── tests/                     # Vitest unit tests for components & renderers
+│   │   └── package.json               # Frontend dependencies & scripts
+│   └── router/                        # Standalone Approuter proxy (BTP Cloud Foundry deployment)
+```ervices/              # API Client fetch queries (Axios REST clients)
 │   │   │   └── styles/                # CSS styling, tokens, and Tailwind theme rules
 │   │   ├── tests/                     # Vitest unit tests for components & renderers
 │   │   └── package.json               # Frontend dependencies & scripts

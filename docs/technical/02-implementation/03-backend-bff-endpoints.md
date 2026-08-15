@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-10 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-15 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -243,3 +243,64 @@ These endpoints are designed for troubleshooting token bindings, user identities
 
 ### 12. GET `/tasks/tasks/:id/attachments/:attId/content/:filename`
 *   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition.
+
+### 13. GET `/tasks/search-users`
+*   **Purpose**: Search system users for task forwarding/delegation dialog autocompletion.
+*   **Query Parameters**: `SearchPattern` or `q` (Search text string e.g. `minh`).
+*   **Response Payload Schema**:
+    ```json
+    {
+      "value": [
+        {
+          "userId": "MINHDT",
+          "uniqueName": "MINHDT",
+          "displayName": "Do Tu Minh",
+          "email": "minh.do@conarum.com",
+          "department": "IT Procurement"
+        }
+      ]
+    }
+    ```
+
+### 14. GET `/tasks/bus-users`
+*   **Purpose**: Query `CNMA_BUSUSER` business users table for `@mention` user tagging and CC notification dialog autocompletion.
+*   **Query Parameters**: `q` or `SearchPattern` (Search query string e.g. `dung`).
+*   **Response Payload Schema**:
+    ```json
+    {
+      "value": [
+        {
+          "SAPUserName": "DUNGNV",
+          "FirstName": "Nguyen Van",
+          "LastName": "Dung",
+          "FullName": "Nguyen Van Dung",
+          "EmailAddress": "dung.nguyen@conarum.com"
+        }
+      ]
+    }
+    ```
+
+### 15. POST `/tasks/tasks/:id/forward`
+*   **Purpose**: Forwards a workflow task instance to another SAP user, and records a formatted audit comment `[Forwarded to ${forwardTo}] ${comment}` on the underlying document note in S/4HANA.
+*   **Request Payload Schema**:
+    ```json
+    {
+      "forwardTo": "DUNGNV",
+      "comment": "Please review technical line items before approval.",
+      "_context": {
+        "documentId": "10001861",
+        "businessObjectType": "PR"
+      }
+    }
+    ```
+*   **Response Payload Schema**:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "instanceId": "198820",
+        "forwardTo": "DUNGNV",
+        "status": "FORWARDED"
+      }
+    }
+    ```

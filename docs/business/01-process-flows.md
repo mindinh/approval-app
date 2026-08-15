@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-05 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-15 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -8,7 +8,7 @@ This document maps out the operational and lifecycle processes governing the **C
 
 ## 1. End-to-End User Journey Flow
 
-The sequence diagram below outlines a business user's journey through the unified approval interface, from logging into the portal to completing an approval decision on a task:
+The sequence diagram below outlines a business user's journey through the unified approval interface, from logging into the portal to completing an approval decision or forwarding a task:
 
 ```mermaid
 sequenceDiagram
@@ -37,12 +37,19 @@ sequenceDiagram
         BFF->>ERP: Request file contents from SAP server
         ERP-->>BFF: Send file content
         BFF-->>Portal: Display embedded PDF / Image
-    else Post Comment
-        Approver->>Portal: Type note and click Submit
+    else Post Comment with @Mention
+        Approver->>Portal: Type note with "@user" tag and click Submit
         Portal->>BFF: Post comment message
         BFF->>ERP: Sync comment to ERP document notes
         ERP-->>BFF: Acknowledge comment persistence
-        BFF-->>Portal: Refresh timeline with new note
+        BFF-->>Portal: Refresh timeline with tagged note
+    else Forward Task
+        Approver->>Portal: Select Forward, search target user, & enter justification
+        Portal->>BFF: POST /tasks/:id/forward (target user & comment)
+        BFF->>ERP: Delegate task in SAP Task Gateway & write audit note
+        ERP-->>BFF: Confirm delegation
+        BFF-->>Portal: Deliver success confirmation
+        Portal-->>Approver: Remove task from active queue
     end
 
     Approver->>Portal: Select Approve or Reject
@@ -55,9 +62,9 @@ sequenceDiagram
 
 ---
 
-## 2. Decision-Making Lifecycle Flow
+## 2. Decision-Making & Delegation Lifecycle Flow
 
-This flowchart maps the lifecycle states of a workflow task and the path to final completion:
+This flowchart maps the lifecycle states of a workflow task, including forwarding and completion:
 
 ```mermaid
 flowchart TD
@@ -66,10 +73,16 @@ flowchart TD
     
     StateReady -->|Approver opens task| Review[Review Details, Line Items & Attachments]
     
-    Review --> ActionSelected{Decision Action}
+    Review --> ActionSelected{Decision / Delegation Action}
     
     ActionSelected -->|Approve| ConfirmApprove[Approve Task]
     ActionSelected -->|Reject| CommentCheck{Requires Comment?}
+    ActionSelected -->|Forward| ForwardSearch[Search Target User in ForwardTaskDialog]
+    
+    ForwardSearch --> ForwardComment[Input Optional Delegation Reason]
+    ForwardComment --> ExecForward[Submit Forward Request to SAP Task Gateway]
+    ExecForward --> AuditNote[Write [Forwarded to User] Audit Note to ERP]
+    AuditNote --> MoveHistory
     
     CommentCheck -->|Yes| InputComment[Approver Inputs Justification]
     InputComment --> ConfirmReject[Reject Task]
@@ -80,7 +93,7 @@ flowchart TD
     PostERP --> ERPValidation{ERP Accepts Decision?}
     
     ERPValidation -->|Yes| MoveHistory[Move Task to Completed Queue]
-    MoveHistory --> FinalState([State: COMPLETED])
+    MoveHistory --> FinalState([State: COMPLETED / DELEGATED])
     
     ERPValidation -->|No| ErrorState[Error Logged in Portal]
     ErrorState --> Review
@@ -90,26 +103,31 @@ flowchart TD
 
 ## 3. Collaboration & Synchronization Flow
 
-Comments and attachments are synced directly back to S/4HANA to maintain audit integrity across procurement and financial documents:
+Comments, `@mentions`, CC tags, and attachments are synced directly back to S/4HANA to maintain audit integrity across procurement and financial documents:
 
 ```mermaid
 flowchart LR
     subgraph UI [User Interface]
-        CommentInput[Input Comment]
+        CommentInput[Input Comment with @Mention]
+        TagInput[Select CC Users in TagUserDialog]
         FileInput[Upload Attachment File]
     end
 
     subgraph BFF [BTP BFF Server]
         AuthCheck{Verify Scope}
+        UserSearch[Query CNMA_BUSUSER Table]
         Parser[Format / Read Stream]
     end
 
     subgraph ERP [SAP S/4HANA ERP Core]
         GOS[Generic Object Services]
         Notes[ERP Document Notes: PR / PO / Claim / Reservation]
+        BusUsers[CNMA_BUSUSER Directory]
     end
 
     CommentInput -->|POST request| AuthCheck
+    TagInput -->|Search q=user| UserSearch
+    UserSearch -->|Query| BusUsers
     FileInput -->|POST raw stream| AuthCheck
 
     AuthCheck -->|Valid| Parser
@@ -120,3 +138,4 @@ flowchart LR
     Notes -->|Sync Acknowledged| UI
     GOS -->|Sync Acknowledged| UI
 ```
+

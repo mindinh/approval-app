@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Declarative Renderer Engine
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-10 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-15 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, raw OData consumption, and the **Declarative Raw OData Renderer Engine** of the **CNMA Approval** frontend.
 
@@ -16,18 +16,20 @@ The frontend application uses a master-detail layout for the inbox workspace:
   ├── Left Pane: TaskList.tsx (with pull-to-refresh hook: usePullToRefresh.ts)
   │     ├── TaskCard.tsx (Task title, badges, document numbers, total amounts via taskCard.mapper.ts)
   │     └── TaskPagination.tsx
-  └── Right Pane: TaskDetailView.tsx
+  └── Right Pane: TaskDetailView.tsx (with TaskDetailSkeletons.tsx loading indicators)
         ├── Header & Status Badges (StatusHeaderBadges.tsx)
         ├── Dynamic Overview Cards & Tables (Driven by ObjectView.registry.ts & resolveBusinessSectionModel)
         ├── Tabbed View Panels:
         │     ├── OverviewPanel.tsx (Renders cards from BusinessSectionModel)
         │     ├── DetailsPanel.tsx (Renders item tables with interactive Reference PR badges)
-        │     ├── CommentsPanel.tsx (Timeline notes & comment submission)
+        │     ├── CommentsPanel.tsx (Timeline notes & RichMentionInput with TeamsMentionDropdown)
         │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
         │     └── WorkflowApprovalPanel.tsx (Approval release tree timeline)
-        ├── Drawer Modals:
-        │     └── ReferencePrDetailView.tsx (Slide-over drawer for PR lookup driven by useReferencePr.ts)
-        └── Action Panel: DecisionBar (Floating Approve/Reject actions with comment dialog)
+        ├── Dialog Modals:
+        │     ├── ReferencePrDetailView.tsx (Slide-over drawer for PR lookup driven by useReferencePr.ts)
+        │     ├── ForwardTaskDialog.tsx (Task forwarding/delegation user search driven by useSearchUsers.ts)
+        │     └── TagUserDialog.tsx (CC user tagging modal driven by useBusUsers.ts)
+        └── Action Panel: TaskActionPanel.tsx (Approve, Reject, Forward, Tag User actions & confirmation dialogs)
 ```
 
 ---
@@ -40,8 +42,11 @@ The frontend relies on **React Query (TanStack Query v5)** for managing asynchro
     *   `['tasks', 'history', pagination]`: Cache key for completed approval items.
     *   `['tasks', 'detail', instanceId]`: Cache key for single task detail raw payload (`RawTaskDetailResponse`).
     *   `['referencePR', prNumber]`: Cache key for Reference Purchase Requisition lookup.
+    *   `['searchUsers', query]`: Cache key for user search results (`useSearchUsers.ts`).
+    *   `['busUsers', query]`: Cache key for CNMA business user search results (`useBusUsers.ts`).
 *   **Mutations**:
     *   Posting a decision runs `useMutation` which invalidates `['tasks', 'active']` and `['tasks', 'history']` to trigger automatic re-fetches.
+    *   Forwarding a task invalidates `['tasks', 'active']` and removes the item from the pending list.
     *   Posting a comment invalidates `['tasks', 'detail', instanceId]`.
 
 ---

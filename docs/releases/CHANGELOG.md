@@ -2,6 +2,35 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [1.0.9] - 2026-08-15
+
+### Added
+*   **Task Forwarding & Delegation (`POST /tasks/:id/forward`)**:
+    *   Added backend controller endpoint `POST /tasks/:id/forward` and user search route `GET /tasks/search-users`.
+    *   Integrated forwarding logic in [`InboxProcessor`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts), [`TaskProcessingAdapter`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/taskprocessing-adapter.ts), [`SapOdataAdapter`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts), and [`MockDataProvider`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/mock-data-provider.ts).
+    *   Created frontend modal [`ForwardTaskDialog.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ForwardTaskDialog.tsx) and custom search hook [`useSearchUsers.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useSearchUsers.ts).
+    *   Automatically records a formatted audit comment `[Forwarded to ${forwardTo}] ${comment}` on the underlying document history in S/4HANA when forwarding with a comment note.
+*   **Business User Tagging & Rich Mentions (`@mention`)**:
+    *   Added backend endpoint `GET /tasks/bus-users` to query `CNMA_BUSUSER` business users table for CC user tagging.
+    *   Created frontend components [`RichMentionInput.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx), [`TeamsMentionDropdown.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TeamsMentionDropdown.tsx), [`TagUserDialog.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TagUserDialog.tsx), and hook [`useBusUsers.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useBusUsers.ts).
+    *   Integrated `@mention` inline autocomplete into [`CommentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx).
+*   **Unified Task Action Panel (`TaskActionPanel.tsx`)**:
+    *   Replaced legacy decision bar with [`TaskActionPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx), consolidating **Approve**, **Reject**, **Forward**, and **Tag User** actions with confirmation dialogs and rich mention text input.
+*   **Reservation Declarative Field Primitives**:
+    *   Added [`reservation.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/reservation/reservation.fields.ts) and updated [`reservation.view.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/reservation/reservation.view.ts) for declarative raw rendering of Material Reservation objects.
+*   **Launchpad Deep-Linking & Task Loading Skeletons**:
+    *   Added [`launchpad.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/launchpad.ts) utility for cross-app navigation in SAP Fiori Launchpad environments.
+    *   Added [`TaskDetailSkeletons.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailSkeletons.tsx) for smooth skeleton loading states in master-detail view.
+
+### Changed
+*   **Centralized Total Amount Resolution (`resolveTaskTotalAmount`)**:
+    *   Created centralized amount helper [`resolveTaskTotalAmount`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-utils.ts) to standardize total net amount resolution order across ZUB Stock Transfer Purchase Orders, standard Purchase Orders (BUS2012), Purchase Requisitions, and Reservation objects.
+    *   Updated [`taskCard.mapper.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts) and [`TaskList.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskList.tsx) to consume standardized amount fields.
+*   **Inbox Filter & Quick Status Tabs**:
+    *   Updated [`inboxFilterConfig.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/inboxFilterConfig.ts) and [`useTaskFilters.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useTaskFilters.ts) to support tab status filtering ("All", "Pending", "Approved", "Rejected") and enhanced search predicates.
+
+---
+
 ## [1.0.8] - 2026-08-05
 
 ### Added

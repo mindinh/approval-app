@@ -54,14 +54,30 @@ Located in the **Attachments** tab, this manages related files:
 ### 4. Comments Panel
 Located in the **Comments** tab, this acts as the collaboration log:
 *   **Timeline View**: Displays notes written by previous approvers and comments pulled from the ERP (`_Comment` navigation).
-*   **Post Comment**: Type a new comment and click **Send** to post it.
+*   **Rich User Mentions (`@mention`)**: Type `@` into the comment box to activate the user dropdown autocompletion. Select a colleague from the list to mention them directly in your comment thread.
+*   **Post Comment**: Type a new comment and click **Send** to post it to the ERP document note history.
 
 ---
 
-## ✍️ Executing Decisions
-When you are ready to make a decision, use the floating **Decision Panel**:
-1.  **Select Action**: Click **Approve** or **Reject** (or specific custom actions loaded from SAP).
-2.  **Add Comments**: If the action requires a comment (usually *Reject* requires a justification), input the comment text in the textbox.
-3.  **Confirm**: Submit the decision. The portal executes the action against the SAP Gateway, removes the task from your active queue, and pushes any justification comment back into the ERP.
-4.  **Error Handling**: If a network failure or SAP Gateway exception occurs, a clear **Error Modal** appears explaining the exact root cause, HTTP status code, and actionable advice to resolve the issue.
+## ✍️ Executing Decisions & Delegating Tasks
+When you are ready to make a decision or delegate a task, use the floating **Task Action Panel**:
+
+1.  **Approve or Reject**:
+    *   Click **Approve** or **Reject**.
+    *   If rejecting, enter a justification comment in the input area.
+    *   Confirm the action. The portal pushes the decision code (`A` for Approve, `R` for Reject) and comment to SAP Task Gateway, updating your worklist.
+
+2.  **Forward Task**:
+    *   Click **Forward** in the action bar to delegate the task to another user.
+    *   In the **Forward Task** dialog, search for the target user by name or user ID.
+    *   Enter an optional delegation note explaining why the task is being forwarded.
+    *   Click **Forward Task**. The task is re-assigned to the target user in SAP Task Gateway, an audit comment `[Forwarded to ${forwardTo}] ${comment}` is recorded on the ERP document history, and the task is removed from your active queue.
+
+3.  **Tag User (CC Notification)**:
+    *   Click **Tag User** in the action bar to select business colleagues for notification.
+    *   Search and select users from the `CNMA_BUSUSER` directory dialog to attach CC mentions to your comment.
+
+4.  **Error Handling**:
+    *   If a network failure or SAP Gateway exception occurs, a clear **Error Modal** appears explaining the exact root cause, HTTP status code, and actionable advice to resolve the issue.
+
 
