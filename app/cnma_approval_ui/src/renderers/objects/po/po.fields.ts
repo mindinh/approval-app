@@ -4,7 +4,7 @@ import { formatRawDate, formatRawMultilineText } from '../../core/formatters';
 export const PO_OVERVIEW_FIELDS = {
     poNumber: text({ source: 'DocumentNumber|PurchaseOrder', label: 'PO Number' }),
     documentType: codeText({ code: 'DocumentType', text: 'DocumentTypeText', label: 'Document Type' }),
-    requester: text({ source: 'CreatedByUser|UserName', label: 'Requester' }),
+    requester: text({ source: 'UserName', label: 'Requester' }),
     vendor: text({
         source: 'Vendor',
         label: 'Vendor',
@@ -27,13 +27,14 @@ export const PO_OVERVIEW_FIELDS = {
     shippingFee: amount({ value: 'TotalFreightAmount', currency: 'LocalCurrency', label: 'Shipping Fee' }),
     vat: amount({ value: 'TotalVatAmount', currency: 'LocalCurrency', label: 'VAT' }),
     total: amount({ value: 'TotalOrderValue|TotalAmount|Total', currency: 'LocalCurrency', label: 'Total' }),
-    headerNote: text({ source: 'HeaderNote', label: 'Header Note', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') }),
+    headerText: text({ source: 'HeaderText', label: 'Header Text', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') }),
+    headerNote: text({ source: 'HeaderNote', label: 'Header Note', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderNote') }),
 
     // ZUB specific
     zubRequester: codeText({ code: 'CreatedByUser', text: 'ReceivingPlantName', label: 'Requester' }),
     supplyingPlant: codeText({ code: 'SupplyingPlant', text: 'SupplyingPlantName', label: 'Supplying Plant' }),
-    zubTotalAmount: amount({ value: 'TotalOrderValue|TotalAmount|Total', currency: 'LocalCurrency', label: 'Total Amount' }),
-    zubHeaderText: text({ source: 'HeaderNote', label: 'Header Text', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') })
+    zubTotalAmount: amount({ value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', label: 'Total Amount' }),
+    zubHeaderText: text({ source: 'HeaderText', label: 'Header Text', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') })
 };
 
 export const PO_TABLE_COLUMNS = {
@@ -51,5 +52,9 @@ export const PO_TABLE_COLUMNS = {
     referencePr: tableCol({ key: 'referencePr', header: 'Reference PR', source: 'ReferenceDocumentNumber' }),
     glAccount: tableCol({ key: 'glAccount', header: 'G/L Account', code: 'GLAccount', text: 'GLAccountText' }),
     fundsCenter: tableCol({ key: 'fundsCenter', header: 'Funds Center', code: 'FundsCenter', text: 'FundsCenterName' }),
-    commitmentItem: tableCol({ key: 'commitmentItem', header: 'Commitment Item', code: 'CommitmentItem', text: 'CommitmentItemDescription' })
+    commitmentItem: tableCol({ key: 'commitmentItem', header: 'Commitment Item', code: 'CommitmentItem', text: 'CommitmentItemDescription' }),
+
+    // ZUB specific columns
+    zubValuationPrice: tableCol({ key: 'valuationPrice', header: 'Valuation Price', value: 'ValuationPricePRCD', currency: 'LocalCurrency|DocumentCurrency', align: 'right' }),
+    zubTotalValue: tableCol({ key: 'totalValue', header: 'Total Value', value: 'TotalNetAmountLocalCrcy|TotalNetAmountLocalCrcyPRCD|TotalNetAmountDocCrcy', currency: 'LocalCurrency|DocumentCurrency', align: 'right' })
 };

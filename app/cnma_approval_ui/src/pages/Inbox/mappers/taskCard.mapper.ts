@@ -28,6 +28,24 @@ export interface BusinessChip {
 
 // ─── Mapper ────────────────────────────────────────────────
 
+export function resolveFrontendTotalAmount(task: InboxTask): number | undefined {
+    const typeUpper = (task.objectType || task.businessContext?.type || '').toUpperCase();
+    const isPO = typeUpper === 'PO' || typeUpper === 'BUS2012';
+    const docTypeUpper = (task.documentType || task.doctyp || task.documentTypeDisplay || '').toUpperCase();
+    const isZubPo = isPO && (docTypeUpper.includes('ZUB') || task.documentType === 'ZUB');
+
+    if (isZubPo) {
+        const val = task.TotalNetAmountLocalCrcy ?? task.totalNetAmountLocalCrcy ?? task.total;
+        return val !== undefined && val !== null ? Number(val) : undefined;
+    }
+    if (isPO) {
+        const val = task.TotalOrderValue ?? task.totalOrderValue ?? task.total;
+        return val !== undefined && val !== null ? Number(val) : undefined;
+    }
+    const val = task.total ?? task.TotalNetAmountLocalCrcy ?? task.TotalOrderValue;
+    return val !== undefined && val !== null ? Number(val) : undefined;
+}
+
 /**
  * Extract key business details per document type from the task's
  * businessContext (enriched by the backend at list level).
@@ -119,17 +137,18 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
     }
 
     // 3. Root-level total amount fallback (ensure no duplicate Total chip is added)
-    const typeUpper = (task.objectType || task.businessContext?.type || '').toUpperCase();
-    const isReservation = typeUpper === 'RE' || typeUpper === 'ZBUS2093' || typeUpper === 'BUS2093';
     const hasTotalChip = chips.some((c) => c.label === 'Total' || c.label === 'Total Amount');
-    if (!hasTotalChip && task.total !== undefined && task.total !== null) {
+    const totalValue = resolveFrontendTotalAmount(task);
+
+    if (!hasTotalChip && totalValue !== undefined && totalValue !== null) {
         const totalCurrency = task.curr_vnd || task.doc_curr || 'VND';
         chips.push({
             label: 'Total',
-            value: formatAmountWithCurrency(task.total, totalCurrency),
+            value: formatAmountWithCurrency(totalValue, totalCurrency),
             isPrimary: true,
         });
     }
+
 
     // 4. Root-level Company Code fallback
     const hasCompCodeChip = chips.some((c) => c.label === 'Company Code');
@@ -143,6 +162,9 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
     // 5. Root-level Document Type fallback (e.g. Type: ZFO8 - Expense PO or RESV - Reservation)
     const hasTypeChip = chips.some((c) => c.label === 'Type');
     if (!hasTypeChip) {
+        const objTypeUpper = (task.objectType || task.businessContext?.type || '').toUpperCase();
+        const docTypeUpper = (task.documentType || task.documentTypeDisplay || '').toUpperCase();
+        const isReservation = objTypeUpper === 'RE' || objTypeUpper === 'ZBUS2093' || objTypeUpper === 'BUS2093' || docTypeUpper.includes('RESV') || docTypeUpper === 'RE';
         const typeVal = task.documentTypeDisplay || (isReservation ? 'RESV - Reservation' : undefined);
         if (typeVal) {
             chips.push({

@@ -153,10 +153,24 @@
         "totalAmountCurrency": "Total Amount + Currency",
         "companyCode": "Company Code",
         "headerNote": "Header Note",
+        "headerText": "Header Text",
         "purpose": "Purpose",
         "paidBy": "Paid By",
         "bankDetails": "Bank Details",
         "overview": "Overview"
+    },
+    "comments": {
+        "title": "Comments",
+        "tagUserTitle": "Tag Users (CC)",
+        "tagUserDescription": "Search and select users to mention or CC in this comment.",
+        "searchLabel": "Search Users",
+        "searchPlaceholder": "Search by name, SAP user, or email...",
+        "selectedUsers": "Selected ({{count}})",
+        "applyTags": "Apply Tags ({{count}})",
+        "noUsersFound": "No users found matching query.",
+        "typeToSearch": "Type to search users by name, user ID, or email...",
+        "tagUser": "CC / Tag Users",
+        "taggedUsers": "Tagged Users"
     },
     "decision": {
         "approve": "Approve",
@@ -180,6 +194,22 @@
         "massRejecting": "Rejecting {{count}} tasks...",
         "massApproveSuccess": "{{count}} tasks approved successfully",
         "massRejectSuccess": "{{count}} tasks rejected successfully"
+    },
+    "forward": {
+        "title": "Forward Task",
+        "description": "Select a recipient user to forward this task to.",
+        "descriptionWithTitle": "Forward \"{{title}}\" to another recipient.",
+        "searchLabel": "Search Recipient",
+        "searchPlaceholder": "Search by name, user ID, or email...",
+        "noUsersFound": "No users found matching query.",
+        "typeToSearch": "Type to search recipient users...",
+        "selectedUser": "Selected: {{name}} ({{id}})",
+        "changeUser": "Change",
+        "noteLabel": "Optional Note",
+        "notePlaceholder": "Add an optional comment for the recipient...",
+        "cancel": "Cancel",
+        "submit": "Forward Task",
+        "submitting": "Forwarding..."
     },
     "status": {
         "inApproving": "In Approving",

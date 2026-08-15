@@ -9,7 +9,9 @@ import {
     useInfiniteApprovedTasks,
     useTaskDetail,
     useDecision,
+    useForward,
 } from '@/pages/Inbox/hooks/useInbox';
+
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { useIsMobile, useSidebar, Button } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
@@ -81,8 +83,10 @@ export default function InboxPage() {
     } = useTaskDetail(selectedTaskId, informationHints, undefined, selectedTask);
 
     const decisionMutation = useDecision();
+    const forwardMutation = useForward();
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
+
 
     const rawDetail = detailResponse as any;
     const detailTaskId = rawDetail?.taskprocessing?.task?.InstanceID ||
@@ -136,6 +140,10 @@ export default function InboxPage() {
             if (!selectedTaskId) return;
             // Forward task context to BFF to avoid redundant SAP $batch fetch
             const task = activeDetail?.task;
+            const bo = activeDetail?.businessObject;
+            const docNum = task?.businessContext?.documentId || activeDetail?.documentId || bo?.DocumentNumber || bo?.PurchaseRequisition || bo?.PurchaseOrder || bo?.ReservationNumber || bo?.ClaimNumber;
+            const boType = task?.businessContext?.type || activeDetail?.docCategory || bo?.DocCategory || activeDetail?.objectType || '';
+
             decisionMutation.mutate(
                 {
                     instanceId: selectedTaskId,
@@ -143,11 +151,11 @@ export default function InboxPage() {
                         decisionKey,
                         comment,
                         type: 'APPR',
-                        _context: task ? {
-                            sapOrigin: task.sapOrigin,
-                            documentId: task.businessContext?.documentId,
-                            businessObjectType: task.businessContext?.type,
-                        } : undefined,
+                        _context: {
+                            sapOrigin: task?.sapOrigin || 'LOCAL',
+                            documentId: docNum,
+                            businessObjectType: boType,
+                        },
                     },
                 },
                 {
@@ -179,6 +187,54 @@ export default function InboxPage() {
         },
         [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, scope, showError]
     );
+
+    const handleForward = useCallback(
+        (forwardTo: string, comment?: string) => {
+            if (!selectedTaskId) return;
+            const task = activeDetail?.task;
+            forwardMutation.mutate(
+                {
+                    instanceId: selectedTaskId,
+                    request: {
+                        forwardTo,
+                        comment,
+                        _context: task ? {
+                            sapOrigin: task.sapOrigin,
+                            documentId: task.businessContext?.documentId,
+                            businessObjectType: task.businessContext?.type,
+                        } : undefined,
+                    },
+                },
+                {
+                    onSuccess: () => {
+                        const currentIndex = tasks.findIndex((t) => t.instanceId === selectedTaskId);
+                        let nextTaskId = null;
+                        if (currentIndex !== -1 && tasks.length > 1) {
+                            if (currentIndex < tasks.length - 1) {
+                                nextTaskId = tasks[currentIndex + 1].instanceId;
+                            } else {
+                                nextTaskId = tasks[currentIndex - 1].instanceId;
+                            }
+                        }
+
+                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
+                        if (nextTaskId) {
+                            navigate(`${basePath}/${encodeURIComponent(nextTaskId)}`);
+                        } else {
+                            navigate(basePath);
+                        }
+                    },
+                    onError: (err) => {
+                        showError(err, {
+                            title: 'Forward Failed',
+                        });
+                    },
+                }
+            );
+        },
+        [selectedTaskId, activeDetail, forwardMutation, navigate, tasks, scope, showError]
+    );
+
 
     const handleMassDecision = useCallback(
         (decisionKey: string, comment: string, taskIds: string[]) => {
@@ -260,15 +316,18 @@ export default function InboxPage() {
                                     isLoading={isDetailLoading}
                                     isError={isErrorDetail}
                                     error={errorDetail}
-                                    onRetry={() => void refetchDetail()}
+                                    onRetry={handleRefreshTasks}
                                     isSecondaryLoading={isSecondaryLoading}
                                     onBack={handleBack}
                                     onDecision={handleDecision}
+                                    onForward={handleForward}
                                     isExecuting={decisionMutation.isPending}
+                                    isForwarding={forwardMutation.isPending}
                                     isMobile
                                     isApprovedScope={!isMyScope}
                                     showActionPanel={showTaskActions && isMyScope}
                                 />
+
                             </motion.div>
                         ) : (
                             <motion.div
@@ -350,14 +409,17 @@ export default function InboxPage() {
                         isLoading={isDetailLoading}
                         isError={isErrorDetail}
                         error={errorDetail}
-                        onRetry={() => void refetchDetail()}
+                        onRetry={handleRefreshTasks}
                         isSecondaryLoading={isSecondaryLoading}
                         onBack={handleBack}
                         onDecision={handleDecision}
+                        onForward={handleForward}
                         isExecuting={decisionMutation.isPending}
+                        isForwarding={forwardMutation.isPending}
                         isApprovedScope={!isMyScope}
                         showActionPanel={showTaskActions && isMyScope}
                     />
+
                 )}
             </main>
         </div>

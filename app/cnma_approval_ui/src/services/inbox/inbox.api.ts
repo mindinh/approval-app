@@ -6,10 +6,13 @@ import type {
     TaskAttachment,
     DecisionRequest,
     ForwardRequest,
+    UserSearchResult,
+    BusUser,
     WorkflowApprovalTreeResponse,
     DashboardResponse,
     ReferencePrDetailResponse,
 } from './inbox.types';
+
 
 // Keep API paths relative so Work Zone managed approuter can resolve app-local routes.
 const BASE_URL = 'api/cnma/APPROVAL_SRV/tasks';
@@ -146,6 +149,28 @@ export const inboxApi = {
         );
         return data;
     },
+
+    /**
+     * Search users for task forwarding.
+     */
+    searchUsers: async (pattern: string): Promise<UserSearchResult[]> => {
+        const { data } = await axiosInstance.get<{ value: UserSearchResult[] }>(
+            `${BASE_URL}/search-users?SearchPattern=${encodeURIComponent(pattern)}`
+        );
+        return data?.value || [];
+    },
+
+    /**
+     * Search CNMA_BUSUSER for CC tagging.
+     */
+    getBusUsers: async (pattern: string): Promise<BusUser[]> => {
+        const { data } = await axiosInstance.get<{ value: BusUser[] }>(
+            `${BASE_URL}/bus-users?q=${encodeURIComponent(pattern)}`
+        );
+        return data?.value || [];
+    },
+
+
 
     /**
      * Add a comment to a task.

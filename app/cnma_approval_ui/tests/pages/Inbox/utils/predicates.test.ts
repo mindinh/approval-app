@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
+    isInApprovingStatus,
     formatApprovalStatus,
     isSapUserMappingMissing,
     extractErrorMessage,
@@ -31,14 +32,14 @@ describe('normalizeApprovalStatus', () => {
 });
 
 describe('isPendingApprovalStatus', () => {
-    it.each(['PENDING', 'IN_PROCESS', 'CURRENT', 'OPEN'])(
+    it.each(['PENDING', 'IN_PROCESS', 'IN APPROVING', 'IN_APPROVING', 'CURRENT', 'OPEN'])(
         'returns true for %s',
         (status) => {
             expect(isPendingApprovalStatus(status)).toBe(true);
         }
     );
 
-    it.each(['pending', 'in_process', 'current', 'open'])(
+    it.each(['pending', 'in_process', 'in approving', 'in_approving', 'current', 'open'])(
         'returns true for lowercase variant %s',
         (status) => {
             expect(isPendingApprovalStatus(status)).toBe(true);
@@ -60,6 +61,30 @@ describe('isPendingApprovalStatus', () => {
     it('returns false for unknown statuses', () => {
         expect(isPendingApprovalStatus('COMPLETED')).toBe(false);
         expect(isPendingApprovalStatus('RANDOM_STATUS')).toBe(false);
+    });
+});
+
+describe('isInApprovingStatus', () => {
+    it.each(['IN APPROVING', 'IN_APPROVING', 'IN_PROCESS', 'IN PROCESS'])(
+        'returns true for %s',
+        (status) => {
+            expect(isInApprovingStatus(status)).toBe(true);
+        }
+    );
+
+    it.each(['in approving', 'in_approving', 'in process'])(
+        'returns true for lowercase variant %s',
+        (status) => {
+            expect(isInApprovingStatus(status)).toBe(true);
+        }
+    );
+
+    it('returns false for PENDING', () => {
+        expect(isInApprovingStatus('PENDING')).toBe(false);
+    });
+
+    it('returns false for APPROVED', () => {
+        expect(isInApprovingStatus('APPROVED')).toBe(false);
     });
 });
 

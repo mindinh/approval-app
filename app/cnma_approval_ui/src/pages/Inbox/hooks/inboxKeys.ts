@@ -39,4 +39,12 @@ export const inboxKeys = {
     // ─── PR Attachments ────────────────────────────────────
     prAttachments: (documentNumber: string) =>
         [...inboxKeys.all, 'pr-attachments', documentNumber] as const,
+
+    // ─── Search Users ──────────────────────────────────────
+    searchUsers: (pattern: string) => [...inboxKeys.all, 'searchUsers', pattern] as const,
+
+    // ─── CNMA Business Users (CC Tagging) ──────────────────
+    busUsers: (pattern: string) => [...inboxKeys.all, 'busUsers', pattern] as const,
 };
+
+

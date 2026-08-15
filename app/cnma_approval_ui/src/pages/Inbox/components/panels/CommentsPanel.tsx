@@ -1,16 +1,48 @@
-/**
- * CommentsPanel — displays merged task + workflow comments with add-comment form.
- */
-import { useState, useMemo } from 'react';
-import { Send, Loader2, MessageSquare, User } from 'lucide-react';
-import { Button, Textarea } from '@cnma/react-ui';
-import type { TaskDetail, WorkflowApprovalComment } from '@/services/inbox/inbox.types';
+import { useState, useMemo, useRef } from 'react';
+import { Send, Loader2, MessageSquare, User, AtSign, X } from 'lucide-react';
+import { Button, Textarea, Badge } from '@cnma/react-ui';
+import type { TaskDetail, WorkflowApprovalComment, BusUser } from '@/services/inbox/inbox.types';
 import { useAddComment } from '@/pages/Inbox/hooks/useInbox';
+import { TeamsMentionDropdown } from '@/pages/Inbox/components/TeamsMentionDropdown';
+import { RichMentionInput, type RichMentionInputRef } from '@/pages/Inbox/components/RichMentionInput';
 import { formatRelative } from '@/pages/Inbox/utils/formatters';
 import { mergeAndDeduplicateComments } from '@/pages/Inbox/mappers/comments.mapper';
-import { Empty } from '@/pages/Inbox/utils/shared';
 import { formatDate, formatDateTime } from '@/utils/formatters/date';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+
+function renderFormattedCommentText(text: string) {
+    if (!text) return null;
+    const mentionRegex = /(<tag>.*?<\/tag>|@[\p{L}\p{N}._-]+(?:\s+[\p{Lu}\p{N}_][\p{L}\p{N}._-]*)*)/gu;
+    const parts = text.split(mentionRegex);
+
+    return parts.map((part, idx) => {
+        if (part.startsWith('<tag>') && part.endsWith('</tag>')) {
+            const content = part.slice(5, -6);
+            return (
+                <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20 rounded-md mx-0.5 align-baseline"
+                >
+                    {content}
+                </Badge>
+            );
+        }
+        if (part.startsWith('@') && part.length > 1) {
+            return (
+                <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20 rounded-md mx-0.5 align-baseline"
+                >
+                    {part}
+                </Badge>
+            );
+        }
+        return <span key={idx}>{part}</span>;
+    });
+}
 
 export function CommentsPanel({
     detail,
@@ -29,7 +61,13 @@ export function CommentsPanel({
     isLoadingWorkflowComments?: boolean;
     allowAddComment?: boolean;
 }) {
+    const { t } = useTranslation();
     const [commentText, setCommentText] = useState('');
+    const [isMentionOpen, setIsMentionOpen] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+    const [mentionIndex, setMentionIndex] = useState(-1);
+    const [taggedUsers, setTaggedUsers] = useState<BusUser[]>([]);
+    const richInputRef = useRef<RichMentionInputRef>(null);
     const addCommentMutation = useAddComment();
 
     const merged = useMemo(
@@ -55,19 +93,45 @@ export function CommentsPanel({
             {
                 onSuccess: () => {
                     setCommentText('');
+                    setTaggedUsers([]);
+                    setIsMentionOpen(false);
+                    richInputRef.current?.clear();
                     onCommentAdded?.();
                 },
             }
         );
     };
 
+    const handleSelectMentionUser = (user: BusUser) => {
+        richInputRef.current?.insertMention(user, mentionQuery);
+
+        setTaggedUsers((prev) => {
+            if (prev.some((u) => u.SAPUserName === user.SAPUserName)) return prev;
+            return [...prev, user];
+        });
+
+        setIsMentionOpen(false);
+    };
+
+    const handleTriggerMention = () => {
+        richInputRef.current?.focus();
+        setIsMentionOpen(true);
+        setMentionQuery('');
+    };
+
+    const handleRemoveTag = (sapUserName: string) => {
+        setTaggedUsers((prev) => prev.filter((u) => u.SAPUserName !== sapUserName));
+    };
+
     return (
-        <div className="bg-card rounded-none sm:rounded-xl shadow-none sm:shadow-sm border border-border/40 overflow-hidden flex flex-col">
-            <div className="px-5 py-4 border-b border-border/60 flex items-center gap-2 text-foreground">
-                <MessageSquare className="size-5 text-muted-foreground/80" />
-                <h3 className="text-base font-semibold">Comments</h3>
+        <div className="bg-card rounded-none sm:rounded-xl shadow-none sm:shadow-sm border border-border/40 overflow-visible relative flex flex-col">
+            <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between text-foreground">
+                <div className="flex items-center gap-2">
+                    <MessageSquare className="size-5 text-muted-foreground/80" />
+                    <h3 className="text-base font-semibold">{t('comments.title', 'Comments')}</h3>
+                </div>
             </div>
-            
+
             <div className="p-5 flex flex-col space-y-6">
                 {/* Comment list */}
                 {isLoadingWorkflowComments && (
@@ -78,7 +142,7 @@ export function CommentsPanel({
                         No comments yet.
                     </div>
                 )}
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
                     {merged.map((comment) => (
                         <div
                             key={comment.id}
@@ -90,31 +154,43 @@ export function CommentsPanel({
                                 <span>·</span>
                                 <span className="shrink-0">{formatDateTime(comment.createdAt)}</span>
                             </div>
-                            <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground min-w-0">{comment.text}</div>
+                            <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground min-w-0">
+                                {renderFormattedCommentText(comment.text)}
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Comment input */}
+                {/* Comment input area */}
                 {allowAddComment && instanceId && (
-                    <div className="flex flex-col gap-3">
-                        <Textarea
-                            placeholder="Write a comment..."
-                            value={commentText}
-                            onChange={(e) => setCommentText(e.target.value)}
-                            maxLength={255}
-                            rows={3}
-                            className="resize-none bg-card border-border focus-visible:ring-ring font-sans"
-                            onKeyDown={(e) => {
-                                if (e.ctrlKey && e.key === 'Enter') {
-                                    handleSubmit();
-                                }
-                            }}
+                    <div className="flex flex-col gap-3 relative">
+                        {/* MS Teams Style Mention Dropdown Popover */}
+                        <TeamsMentionDropdown
+                            isOpen={isMentionOpen}
+                            searchQuery={mentionQuery}
+                            onSelectUser={handleSelectMentionUser}
+                            onClose={() => setIsMentionOpen(false)}
                         />
+
+                        <RichMentionInput
+                            ref={richInputRef}
+                            value={commentText}
+                            onChange={setCommentText}
+                            onMentionQuery={(query, idx, open) => {
+                                setMentionQuery(query);
+                                setMentionIndex(idx);
+                                setIsMentionOpen(open);
+                            }}
+                            onSubmit={handleSubmit}
+                            placeholder="Write a comment... (Type '@' to mention someone)"
+                        />
+
                         <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground/60">
-                                Ctrl+Enter to submit {commentText.length > 0 && `· ${commentText.length}/255`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground/60">
+                                    Ctrl+Enter to submit {commentText.length > 0 && `· ${commentText.length}/255`}
+                                </span>
+                            </div>
                             <Button
                                 onClick={handleSubmit}
                                 disabled={!commentText.trim() || addCommentMutation.isPending}
@@ -135,3 +211,6 @@ export function CommentsPanel({
         </div>
     );
 }
+
+
+

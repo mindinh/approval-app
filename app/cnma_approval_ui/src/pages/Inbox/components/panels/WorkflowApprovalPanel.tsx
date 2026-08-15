@@ -2,7 +2,7 @@
  * WorkflowApprovalPanel — displays the PR approval tree with expandable steps.
  */
 import { useState } from 'react';
-import { CheckCircle2, Circle, Check, User, Clock3, MessageSquare, Loader2 } from 'lucide-react';
+import { CheckCircle2, MessageSquare, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge, Button } from '@cnma/react-ui';
 import type { WorkflowApprovalTreeResponse } from '@/services/inbox/inbox.types';
@@ -10,6 +10,7 @@ import { safe } from '@/pages/Inbox/utils/formatters';
 import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
+    isInApprovingStatus,
     formatApprovalStatus,
 } from '@/pages/Inbox/utils/predicates';
 import { cn } from '@/lib/utils';
@@ -34,7 +35,10 @@ export function WorkflowApprovalPanel({
     };
 
     const steps = Array.isArray(data?.steps) ? [...data.steps].sort((a, b) => a.level - b.level) : [];
-    const currentIndex = steps.findIndex((step) => isPendingApprovalStatus(step.status));
+    const inApprovingIndex = steps.findIndex((step) => isInApprovingStatus(step.status));
+    const currentIndex = inApprovingIndex >= 0
+        ? inApprovingIndex
+        : steps.findIndex((step) => isPendingApprovalStatus(step.status));
     const nextIndex = currentIndex >= 0 && currentIndex < steps.length - 1 ? currentIndex + 1 : -1;
 
     return (
@@ -142,7 +146,7 @@ export function WorkflowApprovalPanel({
                                                 "font-medium",
                                                 isCompleted ? "text-success" : (isCurrent ? "text-warning" : "text-muted-foreground")
                                             )}>
-                                                {formatApprovalStatus(statusRaw)}
+                                                {isCurrent && statusRaw === 'PENDING' ? 'In Approving' : formatApprovalStatus(statusRaw)}
                                             </span>
                                         </div>
 

@@ -1,6 +1,5 @@
 import type { ObjectViewDefinition } from '../../core/renderer.types';
-import { text, codeText, amount, date, tableCol } from '../../core/fields';
-import { formatRawDate } from '../../core/formatters';
+import { RESERVATION_OVERVIEW_FIELDS, RESERVATION_TABLE_COLUMNS } from './reservation.fields';
 
 export const RESERVATION_VIEW: ObjectViewDefinition = {
     docCategory: 'ZBUS2093',
@@ -8,15 +7,15 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
         id: 'reservation-summary',
         title: 'Document Summary',
         fields: [
-            text({ source: 'DocumentNumber|DocumentId', label: 'Document number' }),
-            codeText({ code: 'DocumentType', text: 'DocumentTypeText', label: 'Document type' }),
-            text({ source: 'UserName|CreatedByUser', label: 'Requester' }),
-            date({ source: 'CreationDate', label: 'Created on', timeSource: 'CreationTime' }),
-            amount({ value: 'TotalNetAmountLocalCrcy|Total', currency: 'LocalCurrency|Currency', label: 'Total amount' }),
-            codeText({ code: 'Plant', text: 'PlantName', label: 'Plant' }),
-            codeText({ code: 'MovementType', text: 'MovementTypeName', label: 'Movement type' }),
-            codeText({ code: 'CostCenter', text: 'CostCenterName', label: 'Cost center' }),
-            text({ source: 'ReleaseStrategyText|ReleaseStrategyName', label: 'Release Strategy Name' })
+            RESERVATION_OVERVIEW_FIELDS.documentNumber,
+            RESERVATION_OVERVIEW_FIELDS.documentType,
+            RESERVATION_OVERVIEW_FIELDS.requester,
+            RESERVATION_OVERVIEW_FIELDS.creationDate,
+            RESERVATION_OVERVIEW_FIELDS.totalAmount,
+            RESERVATION_OVERVIEW_FIELDS.plant,
+            RESERVATION_OVERVIEW_FIELDS.movementType,
+            RESERVATION_OVERVIEW_FIELDS.costCenter,
+            RESERVATION_OVERVIEW_FIELDS.releaseStrategyName
         ]
     },
     lineItemTable: {
@@ -24,16 +23,15 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
         title: 'Line Items',
         sourcePath: '_Item',
         columns: [
-            tableCol({ key: 'material', header: 'Material Number', source: 'Material' }),
-            tableCol({ key: 'materialText', header: 'Material Text', source: 'MaterialText' }),
-            tableCol({ key: 'itemText', header: 'ITEM TEXT', source: 'ItemText' }),
-            tableCol({ key: 'quantity', header: 'Quantity', value: 'Quantity', unit: 'BaseUnit', align: 'right' }),
-            tableCol({ key: 'cost', header: 'Cost (Giá vốn)', value: 'MovingAveragePrice', align: 'right' }),
-            tableCol({ key: 'value', header: 'Value (Giá trị)', value: 'Price', align: 'right' }),
-            tableCol({ key: 'plant', header: 'Plant', code: 'Plant', text: 'PlantName' }),
-            tableCol({ key: 'storageLocation', header: 'Storage location', code: 'StorageLocation', text: 'StorageLocationName' }),
-            tableCol({ key: 'requirementDate', header: 'Requirement date', source: 'RequirementDate', formatter: (val) => formatRawDate(val) }),
-            tableCol({ key: 'glAccount', header: 'G/L account', code: 'GLAccount', text: 'GLAccountText' })
+            RESERVATION_TABLE_COLUMNS.material,
+            RESERVATION_TABLE_COLUMNS.itemText,
+            RESERVATION_TABLE_COLUMNS.quantity,
+            RESERVATION_TABLE_COLUMNS.cost,
+            RESERVATION_TABLE_COLUMNS.value,
+            RESERVATION_TABLE_COLUMNS.plant,
+            RESERVATION_TABLE_COLUMNS.storageLocation,
+            RESERVATION_TABLE_COLUMNS.requirementDate,
+            RESERVATION_TABLE_COLUMNS.glAccount
         ]
     }
 };

@@ -4,7 +4,7 @@ import { formatRawDate, formatRawMultilineText } from '../../core/formatters';
 export const PR_OVERVIEW_FIELDS = {
     documentNumber: text({ source: 'DocumentNumber|PurchaseRequisition', label: 'Document Number' }),
     documentType: codeText({ code: 'DocumentType', text: 'DocumentTypeText', label: 'Document Type' }),
-    createdByUser: text({ source: 'CreatedByUser|UserName|UserFullName', label: 'Requester' }),
+    createdByUser: text({ source: 'UserName', label: 'Requester' }),
     fundsCenter: codeText({ code: 'FundsCenter', text: 'FundsCenterName', label: 'Funds Center' }),
     creationDate: date({ source: 'CreationDate', label: 'Created On', timeSource: 'CreationTime' }),
     releaseStrategyName: text({ source: 'ReleaseStrategyName|ReleaseStrategyText', label: 'Release Strategy Name' }),

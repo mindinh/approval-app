@@ -119,23 +119,49 @@ export function TaskList({
         }
     }, [showTaskActions, selection.selectionMode, selection.toggleSelection, onSelectTask]);
 
-    // ─── Infinite scroll sentinel ───────────────────────────
-    const sentinelRef = useRef<HTMLDivElement | null>(null);
-    useEffect(() => {
-        const sentinel = sentinelRef.current;
-        if (!sentinel || !onLoadMore) return;
+    // ─── Infinite scroll sentinel (Callback Ref for clean unmount/remount) ─
+    const observerRef = useRef<IntersectionObserver | null>(null);
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                    onLoadMore();
+    const sentinelCallbackRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+                observerRef.current = null;
+            }
+
+            if (!node || !onLoadMore) return;
+
+            const container = ptr.containerRef.current;
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                        onLoadMore();
+                    }
+                },
+                {
+                    root: container || null,
+                    rootMargin: '100px',
+                    threshold: 0,
                 }
-            },
-            { threshold: 0.1 }
-        );
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+            );
+            observer.observe(node);
+            observerRef.current = observer;
+        },
+        [hasNextPage, isFetchingNextPage, onLoadMore, ptr.containerRef]
+    );
+
+    // ─── Auto-fetch next page when filtering and local results are empty ────────
+    useEffect(() => {
+        if (
+            filters.hasLocalFilter &&
+            filters.filteredTasks.length === 0 &&
+            hasNextPage &&
+            !isFetchingNextPage &&
+            onLoadMore
+        ) {
+            onLoadMore();
+        }
+    }, [filters.hasLocalFilter, filters.filteredTasks.length, hasNextPage, isFetchingNextPage, onLoadMore]);
 
     // ─── Derived state ─────────────────────────────────────
     const { t } = useTranslation();
@@ -283,7 +309,13 @@ export function TaskList({
                 {isError && tasks.length === 0 ? (
                     <ListErrorState error={error} onRefresh={onRefresh} isRefreshing={isRefreshing} />
                 ) : filters.filteredTasks.length === 0 ? (
-                    <EmptyState hasSearch={!!filters.appliedValues.search?.trim()} hasFilters={true} />
+                    <EmptyState
+                        hasSearch={!!filters.appliedValues.search?.trim()}
+                        hasFilters={filters.hasLocalFilter}
+                        hasNextPage={hasNextPage}
+                        isFetchingNextPage={isFetchingNextPage}
+                        onLoadMore={onLoadMore}
+                    />
                 ) : (
                     <div
                         className={cn(
@@ -313,7 +345,7 @@ export function TaskList({
                         ))}
 
                         {/* ── Infinite Scroll Sentinel ── */}
-                        <div ref={sentinelRef} className="h-4" />
+                        <div ref={sentinelCallbackRef} className="h-4" />
                         {isFetchingNextPage && (
                             <div className="flex items-center justify-center py-4 gap-2">
                                 <Loader2 className="size-4 animate-spin text-primary" />
@@ -699,23 +731,54 @@ function ListErrorState({
 function EmptyState({
     hasSearch,
     hasFilters,
+    hasNextPage,
+    isFetchingNextPage,
+    onLoadMore,
 }: {
     hasSearch: boolean;
     hasFilters: boolean;
+    hasNextPage?: boolean;
+    isFetchingNextPage?: boolean;
+    onLoadMore?: () => void;
 }) {
     const { t } = useTranslation();
     const message = hasSearch || hasFilters ? t('inbox.noMatchingTasks', 'No matching tasks') : t('inbox.inboxEmpty', 'Inbox is empty');
     const sub = hasSearch || hasFilters
-        ? t('inbox.tryAdjusting', 'Try adjusting your search or filter criteria.')
+        ? isFetchingNextPage
+            ? t('inbox.searchingServerTasks', 'Searching remaining tasks on server...')
+            : t('inbox.tryAdjusting', 'Try adjusting your search or filter criteria.')
         : t('inbox.noPendingTasks', 'No pending tasks assigned to you.');
 
     return (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="mb-4 rounded-full bg-muted p-4">
-                <Inbox className="size-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center px-6 py-16 text-center space-y-3">
+            <div className="mb-1 rounded-full bg-muted p-4">
+                {isFetchingNextPage ? (
+                    <Loader2 className="size-8 animate-spin text-primary" />
+                ) : (
+                    <Inbox className="size-8 text-muted-foreground" />
+                )}
             </div>
-            <h3 className="mb-1 text-sm font-medium text-foreground">{message}</h3>
+            <h3 className="text-sm font-medium text-foreground">{message}</h3>
             <p className="max-w-56 text-xs text-muted-foreground">{sub}</p>
+
+            {hasNextPage && (hasSearch || hasFilters) && onLoadMore && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onLoadMore}
+                    disabled={isFetchingNextPage}
+                    className="mt-2 text-xs gap-1.5 rounded-lg"
+                >
+                    {isFetchingNextPage ? (
+                        <>
+                            <Loader2 className="size-3.5 animate-spin text-primary" />
+                            <span>{t('inbox.searchingServer', 'Searching server...')}</span>
+                        </>
+                    ) : (
+                        <span>{t('inbox.loadMoreToSearch', 'Load more tasks to search')}</span>
+                    )}
+                </Button>
+            )}
         </div>
     );
 }

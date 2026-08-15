@@ -1,5 +1,6 @@
 import type { FieldDefinition, TableColumnDefinition } from './renderer.types';
 import { formatRawDate, formatRawAmount, formatRawQuantity, formatCodeText, formatRawValue } from './formatters';
+import { getRecordVal } from './objectView';
 
 export function text(config: {
     source: string;
@@ -32,7 +33,7 @@ export function codeText(config: {
         code: config.code,
         text: config.text,
         align: config.align,
-        formatter: (_, record) => formatCodeText(record[config.code], record[config.text])
+        formatter: (_, record) => formatCodeText(getRecordVal(record, config.code), getRecordVal(record, config.text))
     };
 }
 
@@ -50,7 +51,7 @@ export function amount(config: {
         currency: config.currency,
         align: config.align || 'right',
         formatter: (val, record) => {
-            const curr = config.currency ? String(record[config.currency] || '') : undefined;
+            const curr = config.currency ? String(getRecordVal(record, config.currency) || '') : undefined;
             return formatRawAmount(val, curr);
         }
     };
@@ -70,7 +71,7 @@ export function quantity(config: {
         unit: config.unit,
         align: config.align || 'right',
         formatter: (val, record) => {
-            const uom = config.unit ? String(record[config.unit] || '') : undefined;
+            const uom = config.unit ? String(getRecordVal(record, config.unit) || '') : undefined;
             return formatRawQuantity(val, uom);
         }
     };

@@ -17,6 +17,7 @@ const standardPoOverviewCard = {
         PO_OVERVIEW_FIELDS.shippingFee,
         PO_OVERVIEW_FIELDS.vat,
         PO_OVERVIEW_FIELDS.total,
+        PO_OVERVIEW_FIELDS.headerText,
         PO_OVERVIEW_FIELDS.headerNote
     ]
 };
@@ -32,11 +33,9 @@ const zubPoOverviewCard = {
         PO_OVERVIEW_FIELDS.releaseStrategy,
         PO_OVERVIEW_FIELDS.companyCode,
         PO_OVERVIEW_FIELDS.creationDate,
-        PO_OVERVIEW_FIELDS.paymentTerms,
-        PO_OVERVIEW_FIELDS.subtotal,
-        PO_OVERVIEW_FIELDS.shippingFee,
-        PO_OVERVIEW_FIELDS.vat,
-        PO_OVERVIEW_FIELDS.total,
+        PO_OVERVIEW_FIELDS.zubTotalAmount,
+        PO_OVERVIEW_FIELDS.zubHeaderText,
+        PO_OVERVIEW_FIELDS.headerNote
     ]
 };
 
@@ -80,8 +79,8 @@ export const PO_VIEWS: Record<string, ObjectViewDefinition> = {
                 PO_TABLE_COLUMNS.material,
                 PO_TABLE_COLUMNS.shortText,
                 PO_TABLE_COLUMNS.quantity,
-                PO_TABLE_COLUMNS.valuationPrice,
-                PO_TABLE_COLUMNS.totalValue,
+                PO_TABLE_COLUMNS.zubValuationPrice,
+                PO_TABLE_COLUMNS.zubTotalValue,
                 PO_TABLE_COLUMNS.deliveryDate,
                 PO_TABLE_COLUMNS.materialGroup,
                 PO_TABLE_COLUMNS.plant,

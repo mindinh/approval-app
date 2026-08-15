@@ -69,26 +69,33 @@ export function formatRawMultilineText(value: unknown, record?: any, navPropName
     const extractLines = (arr: any[]): string[] => {
         return arr.map(item => {
             if (item === null || item === undefined) return '';
-            if (typeof item === 'string') return item.trim();
+            if (typeof item === 'string') return item;
             if (typeof item === 'object') {
                 const textVal = item.LongText ?? item.TextLine ?? item.NoteText ?? item.longText ?? item.text ?? item.Text ?? '';
-                return String(textVal).trim();
+                return String(textVal);
             }
-            return String(item).trim();
-        }).filter(Boolean);
+            return String(item);
+        });
+    };
+
+    const processArray = (arr: any[]): string | null => {
+        const lines = extractLines(arr);
+        const hasContent = lines.some(l => l.trim() !== '');
+        if (!hasContent) return null;
+        return lines.join('\n').trimEnd();
     };
 
     if (Array.isArray(value) && value.length > 0) {
-        const lines = extractLines(value);
-        if (lines.length > 0) return lines.join('\n');
+        const result = processArray(value);
+        if (result !== null) return result;
     }
 
     if (record && typeof record === 'object' && navPropName) {
         const keys = Object.keys(record);
         const matchKey = keys.find(k => k.toLowerCase() === navPropName.toLowerCase());
         if (matchKey && Array.isArray(record[matchKey]) && record[matchKey].length > 0) {
-            const lines = extractLines(record[matchKey]);
-            if (lines.length > 0) return lines.join('\n');
+            const result = processArray(record[matchKey]);
+            if (result !== null) return result;
         }
     }
 

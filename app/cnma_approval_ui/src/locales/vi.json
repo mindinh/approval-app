@@ -152,10 +152,24 @@
         "totalAmountCurrency": "Tổng tiền + Tiền tệ",
         "companyCode": "Mã công ty",
         "headerNote": "Ghi chú header",
+        "headerText": "Văn bản header",
         "purpose": "Mục đích",
         "paidBy": "Thanh toán bởi",
         "bankDetails": "Thông tin ngân hàng",
         "overview": "Tổng quan"
+    },
+    "comments": {
+        "title": "Bình luận",
+        "tagUserTitle": "Gắn thẻ người dùng (CC)",
+        "tagUserDescription": "Tìm kiếm và chọn người dùng để nhắc đến hoặc CC trong bình luận này.",
+        "searchLabel": "Tìm kiếm người dùng",
+        "searchPlaceholder": "Tìm theo tên, mã SAP, hoặc email...",
+        "selectedUsers": "Đã chọn ({{count}})",
+        "applyTags": "Áp dụng thẻ ({{count}})",
+        "noUsersFound": "Không tìm thấy người dùng phù hợp.",
+        "typeToSearch": "Nhập để tìm kiếm theo tên, mã SAP, hoặc email...",
+        "tagUser": "CC / Gắn thẻ",
+        "taggedUsers": "Người dùng được gắn thẻ"
     },
     "decision": {
         "approve": "Phê duyệt",
@@ -179,6 +193,22 @@
         "massRejecting": "Đang từ chối {{count}} công việc...",
         "massApproveSuccess": "Đã phê duyệt {{count}} công việc thành công",
         "massRejectSuccess": "Đã từ chối {{count}} công việc thành công"
+    },
+    "forward": {
+        "title": "Chuyển tiếp công việc",
+        "description": "Chọn người nhận để chuyển tiếp công việc này.",
+        "descriptionWithTitle": "Chuyển tiếp \"{{title}}\" cho người nhận khác.",
+        "searchLabel": "Tìm kiếm người nhận",
+        "searchPlaceholder": "Tìm theo tên, mã người dùng, hoặc email...",
+        "noUsersFound": "Không tìm thấy người dùng phù hợp.",
+        "typeToSearch": "Nhập để tìm kiếm người nhận...",
+        "selectedUser": "Đã chọn: {{name}} ({{id}})",
+        "changeUser": "Thay đổi",
+        "noteLabel": "Ghi chú (Không bắt buộc)",
+        "notePlaceholder": "Thêm ghi chú cho người nhận...",
+        "cancel": "Hủy",
+        "submit": "Chuyển tiếp",
+        "submitting": "Đang chuyển tiếp..."
     },
     "status": {
         "inApproving": "Đang duyệt",

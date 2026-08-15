@@ -79,7 +79,8 @@ export function resolveObjectView(
     // 1. Evaluate Overview Card
     if (definition.overviewCard) {
         const cardFields: DetailField[] = [];
-        for (const fieldDef of definition.overviewCard.fields) {
+        for (const fieldDef of (definition.overviewCard.fields || [])) {
+            if (!fieldDef) continue;
             const evaluated = evalField(fieldDef, businessObject);
             if (evaluated) {
                 cardFields.push(evaluated);
@@ -96,8 +97,9 @@ export function resolveObjectView(
     if (definition.lineItemTable) {
         const rawItems = businessObject[definition.lineItemTable.sourcePath] || [];
         const itemsArray = Array.isArray(rawItems) ? rawItems : [];
+        const validCols = (definition.lineItemTable.columns || []).filter((col): col is TableColumnDefinition => Boolean(col));
 
-        const columns: DetailTableColumn[] = definition.lineItemTable.columns.map(col => ({
+        const columns: DetailTableColumn[] = validCols.map(col => ({
             key: col.key,
             label: col.header,
             align: col.align || 'left'
@@ -105,7 +107,7 @@ export function resolveObjectView(
 
         const rows: DetailTableRow[] = itemsArray.map((rowRecord: RawODataEntity, idx: number) => {
             const rowValues: Record<string, string> = {};
-            for (const colDef of definition.lineItemTable!.columns) {
+            for (const colDef of validCols) {
                 rowValues[colDef.key] = evalColumn(colDef, rowRecord);
             }
             const rowId = String(rowRecord.ItemNumber || rowRecord.PurchaseRequisitionItem || rowRecord.PurchaseOrderItem || rowRecord.ItemNo || idx + 1);

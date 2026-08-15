@@ -23,8 +23,24 @@ export function isPendingApprovalStatus(value?: string): boolean {
     return (
         status === 'PENDING' ||
         status === 'IN_PROCESS' ||
+        status === 'IN PROCESS' ||
+        status === 'IN APPROVING' ||
+        status === 'IN_APPROVING' ||
         status === 'CURRENT' ||
         status === 'OPEN'
+    );
+}
+
+/**
+ * Returns `true` if the approval status explicitly represents an "in approving" state.
+ */
+export function isInApprovingStatus(value?: string): boolean {
+    const status = normalizeApprovalStatus(value);
+    return (
+        status === 'IN APPROVING' ||
+        status === 'IN_APPROVING' ||
+        status === 'IN_PROCESS' ||
+        status === 'IN PROCESS'
     );
 }
 

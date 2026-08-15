@@ -1,9 +1,8 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { ScrollArea, Skeleton, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@cnma/react-ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Skeleton } from '@cnma/react-ui';
 
-import { DecisionPanel } from './DecisionPanel';
 import type { TaskDetail as TaskDetailType } from '@/services/inbox/inbox.types';
-import { ArrowLeft, FileText, Undo2, AlertTriangle, RotateCcw, Info, Loader2, RefreshCw, ArrowDown } from 'lucide-react';
+import { ArrowLeft, FileText, AlertTriangle, RotateCcw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -25,95 +24,9 @@ import {
 import { resolveBusinessSectionModel } from '@/renderers';
 import { useTranslation } from 'react-i18next';
 import { ReferencePrDetailView } from './ReferencePrDetailView';
-
-function normalizeDetailForView(detail: any) {
-    if (!detail) return null;
-    const bo = detail.businessObject || (detail.header ? { ...detail.header, _Item: detail.items } : detail);
-    const tp = detail.taskprocessing;
-
-    const docCategory = String(bo?.DocCategory || detail.objectType || detail.task?.businessContext?.type || 'PR').toUpperCase();
-    const documentId = String(bo?.DocumentNumber || bo?.PurchaseRequisition || bo?.PurchaseOrder || bo?.ReservationNumber || bo?.ClaimNumber || bo?.DocumentId || detail.documentId || '');
-
-    const rawSteps = bo?._ApprovalStep || detail.approvalSteps || detail.approvalTree || [];
-    const steps = Array.isArray(rawSteps) ? rawSteps.map((s: any) => ({
-        documentId: s.ObjectKey || s.DocumentNumber || documentId,
-        level: Number(s.ApprovalLevel ?? s.level ?? 0),
-        releaseCode: s.ReleaseCode || s.releaseCode || '',
-        releaseText: s.ReleaseText || s.releaseText || s.ReleaseCode || '',
-        approver: s.ApproverName || s.approver || '',
-        approverUserId: s.ApproverUserId || s.approverUserId || '',
-        status: s.ApprovalStatus || s.status || '',
-        noteText: s.CommentText || s.noteText || '',
-        postedOn: s.CommentDate || s.postedOn || '',
-        postedTime: s.CommentTime || s.postedTime || ''
-    })) : [];
-
-    const rawComments = bo?._Comment || detail.comments || [];
-    const comments = Array.isArray(rawComments) ? rawComments.map((c: any, idx: number) => ({
-        id: c.id || c.DocId || `comment-${idx}`,
-        text: c.NoteText || c.noteText || c.text || '',
-        createdBy: c.UserComment || c.author || c.createdBy || 'User',
-        createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || new Date().toISOString()
-    })) : [];
-
-    const rawAttachments = bo?._Attachment || detail.attachments || [];
-    const attachments = Array.isArray(rawAttachments) ? rawAttachments.map((att: any, idx: number) => ({
-        id: att.DocId || att.id || `attach-${idx}`,
-        fileName: att.FileName || att.fileName || '',
-        mimeType: att.MimeType || att.mimeType || 'application/octet-stream',
-        fileSize: Number(att.Length || att.fileSize || 0),
-        createdBy: att.CreatedBy || att.createdBy || '',
-        createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : att.createdAt || new Date().toISOString()
-    })) : [];
-
-    const rawDecisions = tp?.decisionOptions || detail.decisions || detail.task?.decisions || [];
-    const decisions = Array.isArray(rawDecisions) ? rawDecisions.map((d: any) => ({
-        key: String(d.DecisionKey || d.key || ''),
-        text: String(d.DecisionText || d.text || ''),
-        nature: (d.Nature || (String(d.DecisionKey || d.key) === '0001' ? 'POSITIVE' : String(d.DecisionKey || d.key) === '0002' ? 'NEGATIVE' : 'NEUTRAL')) as any,
-        commentMandatory: d.CommentMandatory === true
-    })) : [];
-
-    const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
-    const title = tp?.task?.TaskTitle || detail.task?.title || `${docCategory} ${documentId}`;
-
-    return {
-        rawDetail: detail,
-        businessObject: bo,
-        docCategory,
-        documentId,
-        instanceId,
-        title,
-        status: tp?.task?.Status || detail.task?.status || 'READY',
-        priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',
-        createdOn: tp?.task?.CreatedOn || detail.task?.createdOn,
-        createdByName: tp?.task?.CreatedByName || detail.task?.createdByName,
-        normalTask: detail.normalTask ?? detail.task?.normalTask ?? true,
-        task: {
-            instanceId,
-            title,
-            status: tp?.task?.Status || detail.task?.status || 'READY',
-            priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',
-            normalTask: detail.normalTask ?? detail.task?.normalTask ?? true,
-            sapOrigin: tp?.task?.SAP__Origin || detail.task?.sapOrigin || 'LOCAL',
-            businessContext: {
-                type: docCategory as any,
-                documentId
-            }
-        },
-        workflowData: {
-            documentId,
-            releaseStrategyName: bo.ReleaseStrategyName || bo.ReleaseStrategyText || detail.releaseStrategyName || '',
-            steps,
-            comments: []
-        },
-        decisions,
-        attachments,
-        comments,
-        processingLogs: detail.processingLogs || [],
-        workflowLogs: detail.workflowLogs || []
-    };
-}
+import { normalizeDetailForView } from '../utils/normalizeTaskDetail';
+import { TaskActionPanel } from './TaskActionPanel';
+import { TaskDetailSkeleton, SecondaryTabSkeleton } from './TaskDetailSkeletons';
 
 interface TaskDetailViewProps {
     detail: any;
@@ -124,7 +37,10 @@ interface TaskDetailViewProps {
     isSecondaryLoading?: boolean;
     onBack: () => void;
     onDecision: (decisionKey: string, comment: string) => void;
+    onForward?: (forwardTo: string, comment?: string) => void;
+    onUndo?: () => void;
     isExecuting: boolean;
+    isForwarding?: boolean;
     isMobile?: boolean;
     isApprovedScope?: boolean;
     showActionPanel?: boolean;
@@ -139,7 +55,10 @@ export function TaskDetailView({
     isSecondaryLoading = false,
     onBack,
     onDecision,
+    onForward,
+    onUndo,
     isExecuting,
+    isForwarding = false,
     isMobile = false,
     isApprovedScope = false,
     showActionPanel = true,
@@ -149,6 +68,7 @@ export function TaskDetailView({
         () => (detail ? resolveBusinessSectionModel(detail) : null),
         [detail]
     );
+
     const [tabState, setTabState] = useState<{ taskId: string; tab: string }>({
         taskId: '',
         tab: 'overview',
@@ -159,7 +79,7 @@ export function TaskDetailView({
     const { t } = useTranslation();
 
     const ptr = usePullToRefresh({
-        onRefresh: onRetry ? () => void onRetry() : () => {},
+        onRefresh: onRetry ? () => void onRetry() : () => { },
         isRefreshing: isSecondaryLoading || isLoading,
         disabled: !isMobile || !onRetry,
     });
@@ -171,8 +91,7 @@ export function TaskDetailView({
     }, [viewData, queryClient]);
 
     const activeTaskId = viewData?.instanceId || '';
-    const activeTab =
-        viewData && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
+    const activeTab = viewData && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
 
     useEffect(() => {
         setActiveSubView(null);
@@ -407,7 +326,7 @@ export function TaskDetailView({
                 </div>
             )}
 
-            {/* ── Desktop Tabs (unchanged) ── */}
+            {/* ── Desktop Tabs ── */}
             {!isMobile && (
                 <Tabs
                     value={activeTab}
@@ -526,7 +445,6 @@ export function TaskDetailView({
             {/* ── Mobile Tabs ── */}
             {isMobile && (
                 <>
-                    {/* Scrollable tab bar */}
                     <div className="px-4 pb-2 bg-muted/30 shrink-0">
                         <div className="rounded-b-xl border border-x-border/40 border-b-border/40 border-t-0 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
                             <div className="flex overflow-x-auto no-scrollbar">
@@ -572,7 +490,6 @@ export function TaskDetailView({
                         </div>
                     </div>
 
-                    {/* Animated tab content */}
                     <div className="flex-1 min-h-0 w-full min-w-0 overflow-hidden relative">
                         <AnimatePresence initial={false} mode="popLayout" custom={animationDirection}>
                             <motion.div
@@ -592,39 +509,38 @@ export function TaskDetailView({
                                         isMobile && 'will-change-scroll [webkit-overflow-scrolling:touch]'
                                     )}
                                 >
-                                    {/* ── Mobile Pull-to-Refresh Indicator ── */}
                                     {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (
                                         <div
                                             className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
                                             style={{
                                                 height: ptr.isRefreshing ? 48 : Math.min(ptr.pullDistance, 60),
-                                                opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 40, 1),
+                                                opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 50, 1),
                                             }}
                                         >
-                                            <div className="flex items-center gap-2 rounded-full bg-card px-3.5 py-1 text-xs font-semibold text-primary shadow-sm border border-border">
-                                                {ptr.isRefreshing ? (
-                                                    <>
-                                                        <Loader2 className="size-3.5 animate-spin text-primary" />
-                                                        <span>{t('common.refreshing', 'Refreshing...')}</span>
-                                                    </>
-                                                ) : ptr.isThresholdReached ? (
-                                                    <>
-                                                        <RefreshCw className="size-3.5 text-primary animate-bounce" />
-                                                        <span>{t('common.releaseToRefresh', 'Release to refresh')}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <ArrowDown
-                                                            className="size-3.5 text-primary transition-transform duration-200"
-                                                            style={{ transform: `rotate(${Math.min(ptr.pullDistance * 3, 180)}deg)` }}
-                                                        />
-                                                        <span>{t('common.pullToRefresh', 'Pull down to refresh')}</span>
-                                                    </>
-                                                )}
-                                            </div>
+                                            {ptr.isRefreshing ? (
+                                                <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                                                    <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                    <span>{t('common.refreshing', 'Refreshing...')}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <span
+                                                        className="transition-transform duration-200"
+                                                        style={{ transform: `rotate(${ptr.pullDistance > 50 ? 180 : 0}deg)` }}
+                                                    >
+                                                        ↓
+                                                    </span>
+                                                    <span>
+                                                        {ptr.pullDistance > 50
+                                                            ? t('common.releaseToRefresh', 'Release to refresh')
+                                                            : t('common.pullToRefresh', 'Pull down to refresh')}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
-                                    <div className="px-4 py-4 pb-24 space-y-4 w-full min-w-0">
+
+                                    <div className="p-4 space-y-4 pb-24">
                                         {renderTabContent(activeTab, true)}
                                     </div>
                                 </div>
@@ -640,7 +556,10 @@ export function TaskDetailView({
                     <TaskActionPanel
                         detail={viewData}
                         onDecision={onDecision}
+                        onForward={onForward}
+                        onUndo={onUndo}
                         isExecuting={isExecuting}
+                        isForwarding={isForwarding}
                         isApprovedScope={isApprovedScope}
                         isMobile={isMobile}
                     />
@@ -654,118 +573,14 @@ export function TaskDetailView({
                         <TaskActionPanel
                             detail={viewData}
                             onDecision={onDecision}
+                            onForward={onForward}
+                            onUndo={onUndo}
                             isExecuting={isExecuting}
+                            isForwarding={isForwarding}
                             isApprovedScope={isApprovedScope}
                             isMobile={isMobile}
                         />
                     </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-function TaskActionPanel({
-    detail,
-    onDecision,
-    isExecuting,
-    isApprovedScope,
-    isMobile,
-}: {
-    detail: TaskDetailType;
-    onDecision: (decisionKey: string, comment: string) => void;
-    isExecuting: boolean;
-    isApprovedScope?: boolean;
-    isMobile?: boolean;
-}) {
-    if (isApprovedScope) {
-        const { t } = useTranslation();
-        return (
-            <div className="flex w-full items-center justify-end">
-                <Button variant="outline" className="font-semibold text-foreground/80" size="sm" onClick={() => { }} disabled={isExecuting}>
-                    <Undo2 className="size-4 mr-1.5" />
-                    {t('decision.undo', 'Undo')}
-                </Button>
-            </div>
-        );
-    }
-
-    const decisions = detail.decisions || detail.task?.decisions || [];
-    const hasAction = decisions.length > 0;
-    if (!hasAction) return null;
-
-    return (
-        <div className="flex w-full items-center justify-end gap-2">
-            {decisions.length > 0 && (
-                <DecisionPanel
-                    decisions={decisions}
-                    onExecute={onDecision}
-                    isExecuting={isExecuting}
-                    isMobile={isMobile}
-                />
-            )}
-        </div>
-    );
-}
-function SecondaryTabSkeleton({ message }: { message: string }) {
-    return (
-        <div className="space-y-3 rounded-lg border border-border/70 bg-card p-4">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-56" />
-            <Skeleton className="h-20 w-full" />
-            <p className="text-xs text-muted-foreground">{message}</p>
-        </div>
-    );
-}
-
-function TaskDetailSkeleton({ onBack, isMobile }: { onBack: () => void; isMobile: boolean }) {
-    return (
-        <div className="flex flex-col h-full">
-            {isMobile ? (
-                <div className="px-4 pt-4 pb-2 bg-muted/30">
-                    <div className="rounded-xl bg-white border border-border/40 shadow-sm px-4 py-4 space-y-2">
-                        <div className="flex items-start gap-2">
-                            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 mt-0.5 size-8 p-0 rounded-md hover:bg-muted">
-                                <ArrowLeft className="size-5 text-foreground" />
-                            </Button>
-                            <Skeleton className="h-6 w-2/3" />
-                        </div>
-                        <div className="flex gap-2 pl-7 mt-1.5">
-                            <Skeleton className="h-5 w-24 rounded-md" />
-                            <Skeleton className="h-5 w-16 rounded-md" />
-                            <Skeleton className="h-5 w-16 rounded-md" />
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="flex items-start gap-3 p-4 border-b border-border/50">
-                    <div className="flex-1 space-y-2">
-                        <Skeleton className="h-6 w-2/3" />
-                        <div className="flex gap-2">
-                            <Skeleton className="h-5 w-20 rounded-md" />
-                            <Skeleton className="h-5 w-20 rounded-md" />
-                            <Skeleton className="h-5 w-20 rounded-md" />
-                        </div>
-                    </div>
-                </div>
-            )}
-            {isMobile ? (
-                <>
-                    <div className="flex gap-1 px-4 py-2 border-b border-border/50">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <Skeleton key={i} className="h-9 w-20 rounded-lg" />
-                        ))}
-                    </div>
-                    <div className="p-4 space-y-4">
-                        <Skeleton className="h-14 w-full" />
-                        <Skeleton className="h-40 w-full" />
-                    </div>
-                </>
-            ) : (
-                <div className="p-4 space-y-4">
-                    <Skeleton className="h-14 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                    <Skeleton className="h-56 w-full" />
                 </div>
             )}
         </div>

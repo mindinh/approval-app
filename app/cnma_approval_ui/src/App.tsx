@@ -9,6 +9,7 @@ import { PwaInstallBanner } from './components/PwaInstallBanner';
 const HomePage = lazy(() => import('./pages/Home/HomePage'));
 const InboxPage = lazy(() => import('./pages/Inbox'));
 const DashboardPage = lazy(() => import('./pages/Dashboard/DashboardPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
 import HomeSkeleton from './components/skeletons/HomeSkeleton';
 import InboxSkeleton from './components/skeletons/InboxSkeleton';
@@ -92,6 +93,12 @@ export default function App() {
                         <Route path="/dashboard" element={
                             <Suspense fallback={<DashboardSkeleton />}>
                                 <DashboardPage />
+                            </Suspense>
+                        } />
+                        {/* Fallback 404 Not Found route */}
+                        <Route path="*" element={
+                            <Suspense fallback={<HomeSkeleton />}>
+                                <NotFoundPage />
                             </Suspense>
                         } />
                     </Route>

@@ -33,14 +33,15 @@ describe('INBOX_FILTER_CONFIG', () => {
         expect(priorityField?.options).toContainEqual({ value: 'HIGH', label: 'High' });
     });
 
-    it('defines documentType selection option options', () => {
+    it('defines documentType multiselect options (18 object types)', () => {
         const docTypeField = INBOX_FILTER_CONFIG.find(f => f.key === 'documentType');
-        expect(docTypeField?.type).toBe('select');
-        expect(docTypeField?.options).toEqual([
-            { value: 'PR', label: 'Purchase Requisition' },
-            { value: 'PO', label: 'Purchase Order' },
-            { value: 'ZBUS2093', label: 'Reservation' },
-        ]);
+        expect(docTypeField?.type).toBe('multiselect');
+        expect((docTypeField as any)?.showSelectAll).toBe(true);
+        expect(docTypeField?.options).toHaveLength(18);
+        expect(docTypeField?.options).toContainEqual({ value: 'Asset PR', label: 'Asset PR' });
+        expect(docTypeField?.options).toContainEqual({ value: 'Expense PO', label: 'Expense PO' });
+        expect(docTypeField?.options).toContainEqual({ value: 'Reservation', label: 'Reservation' });
+        expect(docTypeField?.options).toContainEqual({ value: 'Claim', label: 'Claim' });
     });
 
     it('defines normalTask selection option options', () => {

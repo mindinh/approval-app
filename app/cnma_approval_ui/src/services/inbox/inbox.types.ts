@@ -447,7 +447,29 @@ export interface DecisionRequest {
 export interface ForwardRequest {
     forwardTo: string;
     comment?: string;
+    _context?: DecisionRequestContext;
 }
+
+export interface UserSearchResult {
+    userId: string;
+    uniqueName?: string;
+    displayName: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    department?: string;
+    company?: string;
+}
+
+export interface BusUser {
+    SAPUserName: string;
+    FirstName: string;
+    LastName: string;
+    FullName: string;
+    EmailAddress: string;
+}
+
+
 
 // ─── Reference PR Types ───────────────────────────────────
 
