@@ -10,7 +10,7 @@ export class PrDetail extends BaseRawDetail {
         entity: 'CNMA_PRHEADER',
         docCategory: 'BUS2105',
         navigations: [
-            '_Item',
+            '_Item($orderby=ItemNumber asc)',
             '_ApprovalStep',
             '_HeaderText',
             '_Attachment',
@@ -33,11 +33,12 @@ export class PrDetail extends BaseRawDetail {
         const relativePath = `/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='${paddedId}')/SAP__self.comment`;
 
         const cleanText = text ? text.trim().substring(0, 255) : '';
-        const isGeneral = type !== 'APPR';
+        const isAppr = type === 'APPR';
+        const isGeneral = isAppr ? false : true;
         const payload = {
             NoteText: cleanText,
             isGeneral,
-            Decision: isGeneral ? '' : (decision || 'A')
+            Decision: isAppr ? (decision || 'A') : ''
         };
 
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, userJwt);

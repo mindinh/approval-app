@@ -112,22 +112,39 @@ export abstract class BaseRawDetail implements Detail {
         const cleaned = this.cleanRawEntity(rawHeader);
 
         if (!headerOnly && params.$expand) {
-            const missingNavs = this.source.navigations.filter(nav => cleaned[nav] === undefined || cleaned[nav] === null);
+            const missingNavs = this.source.navigations.filter(nav => {
+                const navKey = nav.replace(/\(.*\)/, '').trim();
+                return cleaned[navKey] === undefined || cleaned[navKey] === null;
+            });
             if (missingNavs.length > 0) {
                 await Promise.all(
                     missingNavs.map(async (nav) => {
+                        const navKey = nav.replace(/\(.*\)/, '').trim();
+                        const queryParams: Record<string, string> = { $format: 'json' };
+
+                        const match = nav.match(/\(([^)]+)\)/);
+                        if (match && match[1]) {
+                            const innerOptions = match[1].split(';');
+                            for (const option of innerOptions) {
+                                const [optKey, optVal] = option.split('=');
+                                if (optKey && optVal) {
+                                    queryParams[optKey.trim()] = optVal.trim();
+                                }
+                            }
+                        }
+
                         try {
                             const res: any = await this.sapClient.get(
                                 servicePath,
-                                `${headerUrl}/${nav}`,
-                                { $format: 'json' },
+                                `${headerUrl}/${navKey}`,
+                                queryParams,
                                 sapUser,
                                 userJwt
                             );
                             const val = res?.value || res?.d?.results || res?.d || [];
-                            cleaned[nav] = Array.isArray(val) ? val.map(item => this.cleanRawEntity(item)) : this.cleanRawEntity(val);
+                            cleaned[navKey] = Array.isArray(val) ? val.map(item => this.cleanRawEntity(item)) : this.cleanRawEntity(val);
                         } catch {
-                            cleaned[nav] = [];
+                            cleaned[navKey] = [];
                         }
                     })
                 );

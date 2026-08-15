@@ -1735,6 +1735,12 @@ export function getMockRawDetail(objectType: string, objectId: string): Record<s
             _ApprovalStep: [
                 { ApprovalLevel: '1', ReleaseCode: 'R1', ReleaseText: 'Purchasing Manager', ApproverName: 'Tran Thi Director', ApprovalStatus: 'APPROVED', CommentText: 'Approved PO', CommentDate: '2026-06-26', CommentTime: '11:00:00' }
             ],
+            _HeaderText: [
+                { DocCategory: 'BUS2012', DocNumber: rawPadded, LineId: 1, LongText: isZub ? 'Internal stock transfer for branch expansion' : 'Purchase order for IT hardware accessories' }
+            ],
+            _HeaderNote: [
+                { DocCategory: 'BUS2012', DocNumber: rawPadded, LineId: 1, LongText: 'Special header note instructions for PO processing' }
+            ],
             _Comment: mockComments,
             _Attachment: mockAttachments
         };
@@ -1798,6 +1804,119 @@ export function getMockRawDetail(objectType: string, objectId: string): Record<s
         _Attachment: mockAttachments
     };
 }
+
+export function getMockUsers(searchPattern: string): any[] {
+    const mockUsers = [
+        {
+            SAP__Origin: '',
+            UniqueName: 'CONARUM1',
+            DisplayName: 'Approver CONARUM1',
+            FirstName: 'Approver',
+            LastName: 'CONARUM1',
+            Company: 'Conarum Vietnam Ltd',
+            Department: 'IT Consulting',
+            Email: 'hieu.lam@conarum.com',
+            WorkPhone: '',
+            MobilePhone: '',
+            HomePhone: ''
+        },
+        {
+            SAP__Origin: '',
+            UniqueName: 'CONARUM2',
+            DisplayName: 'Approver CONARUM2',
+            FirstName: 'Approver',
+            LastName: 'CONARUM2',
+            Company: 'Conarum Vietnam Ltd',
+            Department: 'Finance & Accounting',
+            Email: 'duyen.tran@conarum.com',
+            WorkPhone: '',
+            MobilePhone: '',
+            HomePhone: ''
+        },
+        {
+            SAP__Origin: '',
+            UniqueName: 'CONARUM',
+            DisplayName: 'prorequest CONARUM',
+            FirstName: 'prorequest',
+            LastName: 'CONARUM',
+            Company: 'Conarum Vietnam Ltd',
+            Department: 'Operations',
+            Email: 'giang.pham@conarum.com',
+            WorkPhone: '',
+            MobilePhone: '',
+            HomePhone: ''
+        }
+    ];
+
+    if (!searchPattern || !searchPattern.trim()) {
+        return mockUsers;
+    }
+
+    const term = searchPattern.trim().toLowerCase();
+    return mockUsers.filter(u =>
+        u.UniqueName.toLowerCase().includes(term) ||
+        u.DisplayName.toLowerCase().includes(term) ||
+        u.FirstName.toLowerCase().includes(term) ||
+        u.LastName.toLowerCase().includes(term) ||
+        u.Email.toLowerCase().includes(term)
+    );
+}
+
+export interface MockBusUser {
+    SAPUserName: string;
+    FirstName: string;
+    LastName: string;
+    FullName: string;
+    EmailAddress: string;
+}
+
+export function getMockBusUsers(searchPattern: string): MockBusUser[] {
+    const mockBusUsers: MockBusUser[] = [
+        {
+            SAPUserName: 'CONARUM1',
+            FirstName: 'Approver',
+            LastName: 'CONARUM1',
+            FullName: 'Approver CONARUM1',
+            EmailAddress: 'hieu.lam@conarum.com'
+        },
+        {
+            SAPUserName: 'CONARUM2',
+            FirstName: 'Approver',
+            LastName: 'CONARUM2',
+            FullName: 'Approver CONARUM2',
+            EmailAddress: 'duyen.tran@conarum.com'
+        },
+        {
+            SAPUserName: 'CONARUM3',
+            FirstName: 'prorequest',
+            LastName: 'CONARUM',
+            FullName: 'prorequest CONARUM',
+            EmailAddress: 'giang.pham@conarum.com'
+        },
+        {
+            SAPUserName: 'MINHDT',
+            FirstName: 'Minh',
+            LastName: 'Doan',
+            FullName: 'Minh Doan',
+            EmailAddress: 'minh.doan@conarum.com'
+        }
+    ];
+
+    if (!searchPattern || !searchPattern.trim()) {
+        return mockBusUsers;
+    }
+
+    const term = searchPattern.trim().toLowerCase();
+    return mockBusUsers.filter(u =>
+        u.SAPUserName.toLowerCase().includes(term) ||
+        u.FirstName.toLowerCase().includes(term) ||
+        u.LastName.toLowerCase().includes(term) ||
+        u.FullName.toLowerCase().includes(term) ||
+        u.EmailAddress.toLowerCase().includes(term)
+    );
+}
+
+
 
 
 

@@ -1,9 +1,10 @@
 import { SapClient } from './sap-client';
 import { ODATA_SERVICES } from '../processors/odata-config';
-import { getMockTasks, getMockTaskRuntime } from './mock-data-provider';
+import { getMockTasks, getMockTaskRuntime, getMockUsers } from './mock-data-provider';
 
 export class TaskprocessingAdapter {
     private sapClient = new SapClient();
+
 
     async getTasks(sapUser: string, userJwt?: string, customFilter?: string): Promise<any[]> {
         const isMockMode = process.env.USE_MOCK_SAP !== 'false';
@@ -118,4 +119,62 @@ export class TaskprocessingAdapter {
 
         return await this.sapClient.post(path, url, payload, headers, sapUser, userJwt);
     }
+
+    private escapeODataLiteral(val: string): string {
+        if (!val) return '';
+        return val.replace(/'/g, "''");
+    }
+
+    async searchUsers(searchPattern: string, sapUser: string, userJwt?: string): Promise<any[]> {
+        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+        if (isMockMode) {
+            return getMockUsers(searchPattern);
+        }
+
+        const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
+        const safePattern = encodeURIComponent(this.escapeODataLiteral(searchPattern));
+        const response: any = await this.sapClient.get(
+            path,
+            '/SearchUsers',
+            {
+                $format: 'json',
+                SearchPattern: `'${safePattern}'`,
+                MaxResults: 100
+            },
+            sapUser,
+            userJwt
+        );
+        return response?.d?.results || [];
+    }
+
+    async forwardTask(instanceId: string, forwardTo: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
+        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
+        if (isMockMode) {
+            return { success: true, message: `Mock task ${instanceId} forwarded to ${forwardTo}.` };
+        }
+
+        const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
+        const { token, cookie } = await this.sapClient.fetchCsrf(path, sapUser, userJwt);
+
+        const paddedId = this.padId(instanceId);
+        const safeId = encodeURIComponent(this.escapeODataLiteral(paddedId));
+        const safeForwardTo = encodeURIComponent(this.escapeODataLiteral(forwardTo));
+        let url = `/Forward?InstanceID='${safeId}'&ForwardTo='${safeForwardTo}'`;
+        if (comment) {
+            const safeComment = encodeURIComponent(this.escapeODataLiteral(comment));
+            url += `&Comments='${safeComment}'`;
+        }
+
+        const headers: Record<string, string> = {
+            'x-csrf-token': token,
+            'Accept': 'application/json'
+        };
+        if (cookie) {
+            headers.Cookie = cookie;
+        }
+
+        return await this.sapClient.post(path, url, {}, headers, sapUser, userJwt);
+    }
 }
+
+

@@ -149,6 +149,13 @@ describe('SapOdataAdapter', () => {
 
       const result = await adapter.getDetail('PR', '10000001', 'SAP_USER', 'jwt', false);
 
+      expect(mockSapClient.get).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('CNMA_PRHEADER'),
+        expect.objectContaining({ $expand: expect.stringContaining('_Item($orderby=ItemNumber asc)') }),
+        'SAP_USER',
+        'jwt'
+      );
       expect(result.DocCategory).toBe('BUS2105');
       expect(result.DocumentType).toBe('ZASS');
       expect(result._Item.length).toBe(1);
@@ -176,6 +183,13 @@ describe('SapOdataAdapter', () => {
 
       const result = await adapter.getDetail('PO', '45000002', 'SAP_USER', 'jwt', false);
 
+      expect(mockSapClient.get).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('CNMA_POHEADER'),
+        expect.objectContaining({ $expand: expect.stringContaining('_Item($orderby=ItemNumber asc)') }),
+        'SAP_USER',
+        'jwt'
+      );
       expect(result.DocCategory).toBe('BUS2012');
       expect(result.DocumentNumber).toBe('45000002');
       expect(result._Item.length).toBe(1);

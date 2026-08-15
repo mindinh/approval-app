@@ -11,7 +11,8 @@ import {
     formatTaskTitle,
     filterComments,
     decorateActions,
-    decorateAttachments
+    decorateAttachments,
+    resolveTaskTotalAmount
 } from './inbox-utils';
 
 export class InboxProcessor {
@@ -135,21 +136,42 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
-            const ctxType = context?.businessObjectType || context?.objectType || context?.type;
-            const isSupportedType = ctxType === 'PR' || ctxType === 'PO' || ctxType === 'RE';
-            if (comment && comment.trim() && context?.documentId && (isSupportedType || !ctxType)) {
+            let docId = context?.documentId;
+            let ctxType = context?.businessObjectType || context?.objectType || context?.type;
+
+            if (!docId && instanceId) {
                 try {
-                    const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
-                        String(sapDecisionKey).toLowerCase().includes('reject') ||
-                        String(decisionKey).toLowerCase().includes('reject');
-                    const decisionCode = isReject ? 'R' : 'A';
-                    await this.addComment(context.documentId, comment, sapUser, userJwt, 'APPR', decisionCode, ctxType);
-                    this.logger.info(`Successfully pushed decision comment (${decisionCode}) to ${ctxType || 'document'} ${context.documentId}`);
-                } catch (e: any) {
-                    this.logger.warn(`Failed to push decision comment to document ${context.documentId}: ${e.message}`);
+                    const taskDetail = await this.getTaskDetail(instanceId, sapUser || '', undefined, userJwt);
+                    const bo = taskDetail?.businessObject || {};
+                    docId = bo.DocumentNumber || bo.PurchaseRequisition || bo.PurchaseOrder || bo.ReservationNumber || bo.ClaimNumber || bo.DocumentId;
+                    if (!ctxType) {
+                        ctxType = bo.DocCategory || bo.ObjectType || bo.DocumentType;
+                    }
+                } catch (err: any) {
+                    this.logger.warn(`Could not resolve task details for decision comment fallback: ${err.message}`);
                 }
             }
 
+            const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
+                String(sapDecisionKey).toLowerCase().includes('reject') ||
+                String(decisionKey).toLowerCase().includes('reject');
+            const decisionCode = isReject ? 'R' : 'A';
+
+            // 1. Call OData service (/SAP__self.comment) for decision note
+            if (docId) {
+                try {
+                    const defaultText = isReject ? `Rejected by ${sapUser || 'user'}` : `Approved by ${sapUser || 'user'}`;
+                    const noteText = comment && comment.trim() ? comment.trim() : defaultText;
+                    await this.addComment(docId, noteText, sapUser, userJwt, 'APPR', decisionCode, ctxType);
+                    this.logger.info(`Successfully pushed OData decision comment (${decisionCode}) to ${ctxType || 'document'} ${docId}`);
+                } catch (e: any) {
+                    this.logger.warn(`Failed to push decision comment to document ${docId}: ${e.message}`);
+                }
+            } else {
+                this.logger.warn(`Audit Warning: Decision executed but could not push OData comment because documentId is unknown for task ${instanceId}`);
+            }
+
+            // 2. Call standard TASKPROCESSING API
             return await this.taskAdapter.executeDecision(instanceId, sapDecisionKey, comment, sapUser, userJwt);
         } catch (error: any) {
             this.logger.error(`Error in executeDecision: ${error.message}`);
@@ -301,7 +323,7 @@ export class InboxProcessor {
     private _buildTaskCard(inst: any, matchingTask: any, rawBusinessObject: any, objectType: string, overrideStatus?: string) {
         const rawObj = rawBusinessObject || {};
         const requesterName = rawObj.CreatedByUser || rawObj.CreatedByName || rawObj.UserName || rawObj.UserFullName || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
-        const calcTotal = inst?.total !== undefined && inst?.total !== null ? Number(inst.total) : (rawObj.TotalNetAmountLocalCrcy || rawObj.TotalOrderValue || rawObj.TotalAmount || rawObj.Total || undefined);
+        const calcTotal = resolveTaskTotalAmount(inst, rawObj, objectType);
         const docTypeDisplay = inst?.doctyp_desc
             || (rawObj.DocumentType && rawObj.DocumentTypeText ? `${rawObj.DocumentType} - ${rawObj.DocumentTypeText}` : (rawObj.DocumentTypeText || rawObj.DocumentTypeDisplay || inst?.doctyp || objectType));
 
@@ -353,4 +375,99 @@ export class InboxProcessor {
 
         return cleanBusinessObjectForList(card);
     }
+
+    async searchUsers(searchPattern: string, sapUser: string, userJwt?: string) {
+        this.logger.info(`Searching users with pattern: "${searchPattern}" for user: ${sapUser}`);
+        try {
+            const rawUsers = await this.taskAdapter.searchUsers(searchPattern, sapUser, userJwt);
+            if (!Array.isArray(rawUsers)) return [];
+
+            return rawUsers.map((u: any) => ({
+                userId: u.UniqueName || u.UserId || u.id || '',
+                uniqueName: u.UniqueName || u.UserId || '',
+                displayName: u.DisplayName || `${u.FirstName || ''} ${u.LastName || ''}`.trim() || u.UniqueName || '',
+                firstName: u.FirstName || undefined,
+                lastName: u.LastName || undefined,
+                email: u.Email || undefined,
+                department: u.Department || undefined,
+                company: u.Company || undefined
+            }));
+        } catch (error: any) {
+            this.logger.error(`Error in searchUsers: ${error.message}`);
+            throw new AppError(`Failed to search users: ${error.message}`, 500);
+        }
+    }
+
+    async searchBusUsers(searchPattern: string, sapUser: string, userJwt?: string) {
+        this.logger.info(`Searching bus users with pattern: "${searchPattern}" for user: ${sapUser}`);
+        try {
+            const rawUsers = await this.sapOdataAdapter.searchBusUsers(searchPattern, sapUser, userJwt);
+            if (!Array.isArray(rawUsers)) return [];
+
+            return rawUsers.map((u: any) => ({
+                SAPUserName: u.SAPUserName || u.sapUserName || u.id || '',
+                FirstName: u.FirstName || u.firstName || '',
+                LastName: u.LastName || u.lastName || '',
+                FullName: u.FullName || u.fullName || `${u.FirstName || ''} ${u.LastName || ''}`.trim() || u.SAPUserName || '',
+                EmailAddress: u.EmailAddress || u.emailAddress || u.Email || u.email || ''
+            }));
+        } catch (error: any) {
+            this.logger.error(`Error in searchBusUsers: ${error.message}`);
+            throw new AppError(`Failed to search business users: ${error.message}`, 500);
+        }
+    }
+
+
+    async forwardTask(
+        instanceId: string,
+        forwardTo: string,
+        comment?: string,
+        sapUser?: string,
+        userJwt?: string,
+        context?: { documentId?: string; businessObjectType?: string; objectType?: string; type?: string }
+    ) {
+        this.logger.info(`Forwarding task ${instanceId} to user ${forwardTo}`);
+        try {
+            if (!forwardTo || !forwardTo.trim()) {
+                throw new AppError('Target user (forwardTo) is required', 400);
+            }
+
+            const result = await this.taskAdapter.forwardTask(instanceId, forwardTo.trim(), comment || '', sapUser || '', userJwt);
+
+            let docId = context?.documentId;
+            let ctxType = context?.businessObjectType || context?.objectType || context?.type;
+
+            if (!docId && instanceId) {
+                try {
+                    const taskDetail = await this.getTaskDetail(instanceId, sapUser || '', undefined, userJwt);
+                    const bo = taskDetail?.businessObject || {};
+                    docId = bo.DocumentNumber || bo.PurchaseRequisition || bo.PurchaseOrder || bo.ReservationNumber || bo.ClaimNumber || bo.DocumentId;
+                    if (!ctxType) {
+                        ctxType = bo.DocCategory || bo.ObjectType || bo.DocumentType;
+                    }
+                } catch (err: any) {
+                    this.logger.warn(`Could not resolve task details for forward audit comment fallback: ${err.message}`);
+                }
+            }
+
+            if (comment && comment.trim()) {
+                if (docId) {
+                    try {
+                        await this.addComment(docId, `[Forwarded to ${forwardTo}] ${comment}`, sapUser || '', userJwt, 'FORWARD', undefined, ctxType);
+                    } catch (e: any) {
+                        this.logger.warn(`Non-fatal: Failed to record forward comment on document ${docId}: ${e.message}`);
+                    }
+                } else {
+                    this.logger.warn(`Audit Warning: Forward comment was provided but could not record to document audit history because documentId is unknown for task ${instanceId}`);
+                }
+            }
+
+            return result;
+        } catch (error: any) {
+            this.logger.error(`Error in forwardTask: ${error.message}`);
+            if (error instanceof AppError) throw error;
+            throw new AppError(`Failed to forward task: ${error.message}`, 500);
+        }
+    }
 }
+

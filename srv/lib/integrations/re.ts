@@ -29,11 +29,12 @@ export class ReDetail extends BaseRawDetail {
         const relativePath = `/CNMA_RESVHEADER(DocCategory='ZBUS2093',DocumentNumber='${paddedId}')/SAP__self.comment`;
 
         const cleanText = text ? text.trim().substring(0, 255) : '';
-        const isGeneral = type !== 'APPR';
+        const isAppr = type === 'APPR';
+        const isGeneral = isAppr ? false : true;
         const payload = {
             NoteText: cleanText,
             isGeneral,
-            Decision: isGeneral ? '' : (decision || 'A')
+            Decision: isAppr ? (decision || 'A') : ''
         };
 
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, userJwt);

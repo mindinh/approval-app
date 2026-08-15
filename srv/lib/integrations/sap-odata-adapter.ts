@@ -5,9 +5,10 @@ import { PoDetail } from './po';
 import { ReDetail } from './re';
 import { ClaimDetail } from './claim';
 import { ODATA_SERVICES } from '../processors/odata-config';
-import { getMockInstances, getMockDocTypeCounts, getMockStatusCounts } from './mock-data-provider';
+import { getMockInstances, getMockDocTypeCounts, getMockStatusCounts, getMockBusUsers } from './mock-data-provider';
 import { MetadataService } from '../metadata-service';
 import { CnmaTaskByStatusEntity, CnmaTaskByDocTypeEntity } from '../types/sap-odata.types';
+import { resolveTaskTotalAmount } from '../processors/inbox-utils';
 
 export function clearDetailCache(_objectType: string, _objectId: string) {
     // No-op function preserved for test suite compatibility
@@ -118,7 +119,9 @@ export class SapOdataAdapter {
             doctyp: item.DocumentType,
             doctyp_desc: item.DocumentTypeText,
             normalTask: item.NormalTask !== false,
-            total: item.TotalNetAmountLocalCrcy !== undefined && item.TotalNetAmountLocalCrcy !== null ? Number(item.TotalNetAmountLocalCrcy) : undefined,
+            total: resolveTaskTotalAmount(item),
+            TotalOrderValue: item.TotalOrderValue !== undefined && item.TotalOrderValue !== null ? Number(item.TotalOrderValue) : undefined,
+            TotalNetAmountLocalCrcy: item.TotalNetAmountLocalCrcy !== undefined && item.TotalNetAmountLocalCrcy !== null ? Number(item.TotalNetAmountLocalCrcy) : undefined,
             curr_vnd: item.LocalCurrency,
             total_doc_curr: item.TotalNetAmountDocCrcy !== undefined && item.TotalNetAmountDocCrcy !== null ? Number(item.TotalNetAmountDocCrcy) : undefined,
             doc_curr: item.DocumentCurrency,
@@ -290,4 +293,52 @@ export class SapOdataAdapter {
             return getMockStatusCounts();
         }
     }
+
+    async searchBusUsers(searchPattern: string, sapUser: string, userJwt?: string): Promise<any[]> {
+        const forceMock = process.env.USE_MOCK_DATA === 'true';
+        if (forceMock) {
+            return getMockBusUsers(searchPattern);
+        }
+
+        try {
+            const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+            const params: Record<string, string> = { $format: 'json', $top: '500' };
+
+            const response: any = await this.sapClient.get(
+                path,
+                '/CNMA_BUSUSER',
+                params,
+                sapUser,
+                userJwt
+            );
+            const value = response?.value || response?.d?.results || response?.d || response;
+            const list = Array.isArray(value) ? value : [];
+
+            if (!searchPattern || !searchPattern.trim()) {
+                return list;
+            }
+
+            const term = searchPattern.trim().toLowerCase();
+            return list.filter((u: any) => {
+                const sapUserName = (u.SAPUserName || u.sapUserName || '').toLowerCase();
+                const firstName = (u.FirstName || u.firstName || '').toLowerCase();
+                const lastName = (u.LastName || u.lastName || '').toLowerCase();
+                const fullName = (u.FullName || u.fullName || '').toLowerCase();
+                const email = (u.EmailAddress || u.emailAddress || u.Email || '').toLowerCase();
+
+                return (
+                    sapUserName.includes(term) ||
+                    firstName.includes(term) ||
+                    lastName.includes(term) ||
+                    fullName.includes(term) ||
+                    email.includes(term)
+                );
+            });
+        } catch (err: any) {
+            console.error(`[SapOdataAdapter] Failed to fetch CNMA_BUSUSER from SAP backend:`, err.message);
+            return getMockBusUsers(searchPattern);
+        }
+    }
 }
+
+

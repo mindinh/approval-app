@@ -183,3 +183,44 @@ export function decorateAttachments(attachments: any[], instanceId: string, inst
         };
     });
 }
+
+/**
+ * Centralized helper to resolve total amount for a task / business object.
+ * Standardizes resolution order for ZUB Purchase Orders, standard Purchase Orders (BUS2012), and other objects.
+ */
+export function resolveTaskTotalAmount(item: any, rawBusinessObject?: any, objectType?: string): number | undefined {
+    if (!item && !rawBusinessObject) return undefined;
+    const rawObj = rawBusinessObject || {};
+    const objTypeUpper = String(objectType || rawObj.DocCategory || item?.DocCategory || item?.typeid || item?.TechnicalWrkflwObjectType || '').toUpperCase();
+    const docTypeUpper = String(rawObj.DocumentType || item?.DocumentType || item?.doctyp || item?.documentType || '').toUpperCase();
+
+    const isPO = objTypeUpper === 'PO' || objTypeUpper === 'BUS2012';
+    const isZub = isPO && (docTypeUpper === 'ZUB' || docTypeUpper.includes('ZUB'));
+
+    if (isZub) {
+        const val = item?.TotalNetAmountLocalCrcy ?? item?.totalNetAmountLocalCrcy ?? rawObj.TotalNetAmountLocalCrcy;
+        if (val !== undefined && val !== null) return Number(val);
+        const fallbackVal = item?.TotalOrderValue ?? item?.totalOrderValue ?? item?.total ?? rawObj.TotalOrderValue;
+        if (fallbackVal !== undefined && fallbackVal !== null) return Number(fallbackVal);
+        return undefined;
+    }
+
+    if (isPO) {
+        const val = item?.TotalOrderValue ?? item?.totalOrderValue ?? rawObj.TotalOrderValue;
+        if (val !== undefined && val !== null) return Number(val);
+        const fallbackVal = item?.TotalNetAmountLocalCrcy ?? item?.totalNetAmountLocalCrcy ?? item?.total ?? rawObj.TotalNetAmountLocalCrcy;
+        if (fallbackVal !== undefined && fallbackVal !== null) return Number(fallbackVal);
+        return undefined;
+    }
+
+    // Standard fallback
+    if (item?.total !== undefined && item?.total !== null) return Number(item.total);
+    const rawVal = rawObj.TotalNetAmountLocalCrcy ?? rawObj.TotalOrderValue ?? rawObj.TotalAmount ?? rawObj.Total;
+    if (rawVal !== undefined && rawVal !== null) return Number(rawVal);
+
+    const itemRawVal = item?.TotalNetAmountLocalCrcy ?? item?.TotalOrderValue;
+    if (itemRawVal !== undefined && itemRawVal !== null) return Number(itemRawVal);
+
+    return undefined;
+}
+

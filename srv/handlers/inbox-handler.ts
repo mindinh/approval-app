@@ -23,6 +23,13 @@ export function createInboxRouter(): Router {
     router.get('/pr/:docNum/attachments/:attachId/content/:fileName?', controller.streamPrAttachment);
     router.get('/attachments/:attachId/content/:fileName?', controller.streamAttachment);
 
+    // 5. User search for forwarding (must be before /:id)
+    router.get('/search-users', controller.getSearchUsers);
+
+    // 5b. CNMA Business Users search for CC tagging (must be before /:id)
+    router.get('/bus-users', controller.getBusUsers);
+
+
     // 6. Root tasks list (must be before /:id)
     router.get('/', controller.getTasks);
 
@@ -36,6 +43,8 @@ export function createInboxRouter(): Router {
     router.post('/:id/comments', controller.postComment);
     router.get('/:id/attachments/:attId/content/:fileName?', controller.streamAttachment);
     router.post('/:id/decision', controller.postDecision);
+    router.post('/:id/forward', controller.postForwardTask);
 
     return router;
 }
+

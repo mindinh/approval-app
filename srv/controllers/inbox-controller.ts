@@ -821,6 +821,119 @@ export class InboxController {
 
     /**
      * @openapi
+     * /tasks/search-users:
+     *   get:
+     *     summary: Search users for task forwarding
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: SearchPattern
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: q
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Array of matched user objects
+     */
+    getSearchUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const pattern = String(req.query.SearchPattern || req.query.q || req.query.searchPattern || '').trim();
+            const { sapUser, userJwt } = resolveIdentity(req);
+
+            const users = await this.processor.searchUsers(pattern, sapUser, userJwt);
+            res.json({ value: users });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * @openapi
+     * /tasks/bus-users:
+     *   get:
+     *     summary: Search CNMA_BUSUSER for CC tagging
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: q
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Array of matched CNMA_BUSUSER objects
+     */
+    getBusUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const pattern = String(req.query.SearchPattern || req.query.q || req.query.searchPattern || '').trim();
+            const { sapUser, userJwt } = resolveIdentity(req);
+
+            const users = await this.processor.searchBusUsers(pattern, sapUser, userJwt);
+            res.json({ value: users });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+
+    /**
+     * @openapi
+     * /tasks/{id}/forward:
+     *   post:
+     *     summary: Forward task to another user
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               forwardTo:
+     *                 type: string
+     *               comment:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Success envelope
+     */
+    postForwardTask = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const instanceId = req.params.id;
+            const { forwardTo, comment, _context } = req.body;
+            const { sapUser, userJwt } = resolveIdentity(req);
+
+            if (!forwardTo || typeof forwardTo !== 'string') {
+                throw new AppError('Target user (forwardTo) is required', 400);
+            }
+
+            const result = await this.processor.forwardTask(
+                String(instanceId || ''),
+                String(forwardTo).trim(),
+                comment ? String(comment) : '',
+                String(sapUser || ''),
+                userJwt,
+                _context
+            );
+            res.json({ success: true, result });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * @openapi
      * /tasks:
      *   get:
      *     summary: Catch-all fallback list
@@ -840,3 +953,4 @@ export class InboxController {
         }
     };
 }
+
