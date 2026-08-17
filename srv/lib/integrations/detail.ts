@@ -1,4 +1,7 @@
+import { TaggedUser, AddCommentOptions } from './comment.types';
 import { ObjectTypeCode } from '../processors/object-config';
+
+export type { TaggedUser, AddCommentOptions, ObjectTypeCode };
 
 export interface Detail {
     readonly objectType: ObjectTypeCode;
@@ -20,9 +23,7 @@ export interface Detail {
         objectId: string,
         text: string,
         sapUser: string,
-        userJwt?: string,
-        type?: string,
-        decision?: string
+        options?: AddCommentOptions
     ): Promise<void>;
 
     uploadAttachment?(

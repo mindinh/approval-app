@@ -1,11 +1,11 @@
 import { SapClient } from './sap-client';
 import { Detail } from './detail';
+import { AddCommentOptions } from './comment.types';
 import { PrDetail } from './pr';
 import { PoDetail } from './po';
 import { ReDetail } from './re';
 import { ClaimDetail } from './claim';
-import { ODATA_SERVICES } from '../processors/odata-config';
-import { getMockInstances, getMockDocTypeCounts, getMockStatusCounts, getMockBusUsers } from './mock-data-provider';
+import { ODATA_SERVICES, resolveObjectTypeFromTypeId } from '../processors/odata-config';
 import { MetadataService } from '../metadata-service';
 import { CnmaTaskByStatusEntity, CnmaTaskByDocTypeEntity } from '../types/sap-odata.types';
 import { resolveTaskTotalAmount } from '../processors/inbox-utils';
@@ -20,20 +20,16 @@ export class SapOdataAdapter {
     private readonly strategies = new Map<string, Detail>();
 
     constructor() {
-        this.register(new PrDetail(this.sapClient, this.metadataService));
-        this.register(new PoDetail(this.sapClient, this.metadataService));
-        this.register(new ReDetail(this.sapClient, this.metadataService));
-        this.register(new ClaimDetail(this.sapClient, this.metadataService));
+        this.strategies.set('PR', new PrDetail(this.sapClient, this.metadataService));
+        this.strategies.set('PO', new PoDetail(this.sapClient, this.metadataService));
+        this.strategies.set('RE', new ReDetail(this.sapClient, this.metadataService));
+        this.strategies.set('CLAIM', new ClaimDetail(this.sapClient, this.metadataService));
     }
 
-    private register(strategy: Detail) {
-        this.strategies.set(strategy.objectType, strategy);
-    }
-
-    private getStrategy(objectType: string): Detail {
-        const strategy = this.strategies.get(objectType);
+    getStrategy(objectType: string): Detail {
+        const strategy = this.strategies.get(objectType.toUpperCase());
         if (!strategy) {
-            throw new Error(`Integration Strategy not implemented for: ${objectType}`);
+            throw new Error(`Unsupported object type strategy: ${objectType}`);
         }
         return strategy;
     }
@@ -47,20 +43,6 @@ export class SapOdataAdapter {
         pagination?: { top?: number; skip?: number },
         selectFields?: string
     ): Promise<any[]> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            const mockItems = getMockInstances(status);
-            const total = mockItems.length;
-            let result = mockItems;
-            if (pagination?.skip !== undefined || pagination?.top !== undefined) {
-                const skip = pagination.skip ?? 0;
-                const top = pagination.top ?? result.length;
-                result = result.slice(skip, skip + top);
-            }
-            (result as any).totalCount = total;
-            return result;
-        }
-
         const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const entitySet = ODATA_SERVICES.INSTANCE_LIST.entitySet;
 
@@ -200,29 +182,28 @@ export class SapOdataAdapter {
         if (type && this.strategies.has(type)) {
             return type;
         }
+
+        if (type) {
+            const mappedType = resolveObjectTypeFromTypeId(type);
+            if (mappedType && this.strategies.has(mappedType)) {
+                return mappedType;
+            }
+        }
+
         const cleanId = objectId.replace(/^0+/, '');
         if (cleanId.startsWith('4')) return 'PO';
         if (cleanId.startsWith('1')) return 'PR';
         if (cleanId.startsWith('5')) return 'RE';
         if (cleanId.startsWith('9')) return 'CLAIM';
 
-        const instances = getMockInstances();
-        const inst = instances.find(i => i.instid === objectId || i.instid === cleanId || i.instanceID === objectId);
-        if (inst) {
-            if (inst.typeid === 'BUS2012') return 'PO';
-            if (inst.typeid === 'BUS2105') return 'PR';
-            if (inst.typeid === 'BUS2093' || inst.typeid === 'ZBUS2093') return 'RE';
-            if (inst.typeid === 'ZCLAIM') return 'CLAIM';
-        }
-
         return 'PR';
     }
 
-    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = '', objectType?: string): Promise<void> {
-        const targetType = this.resolveObjectType(objectId, objectType);
+    async addComment(objectId: string, text: string, sapUser: string, options?: AddCommentOptions): Promise<void> {
+        const targetType = this.resolveObjectType(objectId, options?.objectType);
         const strategy = this.getStrategy(targetType);
         if (strategy.addComment) {
-            await strategy.addComment(objectId, text, sapUser, userJwt, type, decision);
+            await strategy.addComment(objectId, text, sapUser, options);
         } else {
             throw new Error(`addComment not supported for strategy: ${strategy.objectType}`);
         }
@@ -249,11 +230,6 @@ export class SapOdataAdapter {
     }
 
     async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByDocTypeEntity[]> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            return getMockDocTypeCounts();
-        }
-
         try {
             const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
             const response: any = await this.sapClient.get(
@@ -267,16 +243,11 @@ export class SapOdataAdapter {
             return Array.isArray(value) ? value : [];
         } catch (err: any) {
             console.error(`[SapOdataAdapter] Failed to fetch CNMA_TASKBYDOCTYPE:`, err.message);
-            return getMockDocTypeCounts();
+            return [];
         }
     }
 
     async getStatusCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByStatusEntity[]> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            return getMockStatusCounts();
-        }
-
         try {
             const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
             const response: any = await this.sapClient.get(
@@ -290,16 +261,11 @@ export class SapOdataAdapter {
             return Array.isArray(value) ? value : [];
         } catch (err: any) {
             console.error(`[SapOdataAdapter] Failed to fetch CNMA_TASKBYSTATUS:`, err.message);
-            return getMockStatusCounts();
+            return [];
         }
     }
 
     async searchBusUsers(searchPattern: string, sapUser: string, userJwt?: string): Promise<any[]> {
-        const forceMock = process.env.USE_MOCK_DATA === 'true';
-        if (forceMock) {
-            return getMockBusUsers(searchPattern);
-        }
-
         try {
             const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
             const params: Record<string, string> = { $format: 'json', $top: '500' };
@@ -336,7 +302,7 @@ export class SapOdataAdapter {
             });
         } catch (err: any) {
             console.error(`[SapOdataAdapter] Failed to fetch CNMA_BUSUSER from SAP backend:`, err.message);
-            return getMockBusUsers(searchPattern);
+            return [];
         }
     }
 }

@@ -3,7 +3,6 @@ import { MetadataService } from '../metadata-service';
 import { Detail } from './detail';
 import { ObjectTypeCode } from '../processors/object-config';
 import { ODATA_SERVICES } from '../processors/odata-config';
-import { getMockRawDetail } from './mock-data-provider';
 import { AppError } from '../utils/error-handler';
 
 export interface RawDetailSource {
@@ -62,10 +61,6 @@ export abstract class BaseRawDetail implements Detail {
     ): Promise<any> {
         if (!objectId) {
             throw new Error('Document ID is required but was not provided');
-        }
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            return getMockRawDetail(this.source.objectType, objectId);
         }
 
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
@@ -159,14 +154,7 @@ export abstract class BaseRawDetail implements Detail {
         sapUser: string,
         userJwt?: string
     ): Promise<Record<string, any>> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
         const results: Record<string, any> = {};
-        if (isMockMode) {
-            for (const item of itemsToFetch) {
-                results[item.objectId] = getMockRawDetail(item.objectType, item.objectId);
-            }
-            return results;
-        }
 
         await Promise.all(
             itemsToFetch.map(async (item) => {

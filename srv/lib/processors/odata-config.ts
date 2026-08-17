@@ -2,19 +2,24 @@ import { ObjectTypeCode } from './object-config';
 
 export const SAP_TYPEID_OBJECT_MAP: Record<string, ObjectTypeCode> = {
   // PR
+  "PR": "PR",
   "BUS2105": "PR",
   "WS90000001": "PR", // example workflow task template ID
 
   // PO
+  "PO": "PO",
   "BUS2012": "PO",
   "TS20000166": "PO", // Standard PO release task
   "TS20000172": "PO", // Standard PO item release task
 
   // Reservation
+  "RE": "RE",
+  "RESERVATION": "RE",
   "BUS2093": "RE",
   "ZBUS2093": "RE",
 
   // Claim
+  "CLAIM": "CLAIM",
   "ZCLAIM": "CLAIM"
 };
 

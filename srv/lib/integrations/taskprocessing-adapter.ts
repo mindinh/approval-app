@@ -1,31 +1,10 @@
 import { SapClient } from './sap-client';
 import { ODATA_SERVICES } from '../processors/odata-config';
-import { getMockTasks, getMockTaskRuntime, getMockUsers } from './mock-data-provider';
 
 export class TaskprocessingAdapter {
     private sapClient = new SapClient();
 
-
     async getTasks(sapUser: string, userJwt?: string, customFilter?: string): Promise<any[]> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        console.log(`[DEBUG Adapter] isMockMode = ${isMockMode}, USE_MOCK_SAP = "${process.env.USE_MOCK_SAP}"`);
-        if (isMockMode) {
-            const tasks = getMockTasks();
-            if (customFilter) {
-                if (customFilter.includes("Status eq 'COMPLETED'")) {
-                    return tasks.filter((t: any) => t.Status === 'COMPLETED');
-                }
-                if (customFilter.includes("InstanceID eq")) {
-                    const matches = customFilter.match(/'([^']+)'/g);
-                    if (matches) {
-                        const ids = matches.map(m => m.replace(/'/g, ''));
-                        return tasks.filter((t: any) => ids.includes(t.InstanceID));
-                    }
-                }
-            }
-            return tasks.filter((t: any) => t.Status !== 'COMPLETED');
-        }
-
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
         const filterVal = customFilter || "Status eq 'READY' or Status eq 'RESERVED' or Status eq 'IN_PROGRESS'";
         const response: any = await this.sapClient.get(
@@ -47,15 +26,6 @@ export class TaskprocessingAdapter {
     }
 
     async getTaskRuntime(instanceId: string, sapUser: string, userJwt?: string, normalTask = true): Promise<any> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            const runtime = getMockTaskRuntime(instanceId);
-            if (!normalTask) {
-                runtime.decisions = [];
-            }
-            return runtime;
-        }
-
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
         const paddedId = this.padId(instanceId);
         const taskUrl = `/TaskCollection(InstanceID='${encodeURIComponent(paddedId)}')`;
@@ -93,11 +63,6 @@ export class TaskprocessingAdapter {
     }
 
     async executeDecision(instanceId: string, sapDecisionKey: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            return { success: true, message: `Mock decision ${sapDecisionKey} executed.` };
-        }
-
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
         const { token, cookie } = await this.sapClient.fetchCsrf(path, sapUser, userJwt);
 
@@ -126,11 +91,6 @@ export class TaskprocessingAdapter {
     }
 
     async searchUsers(searchPattern: string, sapUser: string, userJwt?: string): Promise<any[]> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            return getMockUsers(searchPattern);
-        }
-
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
         const safePattern = encodeURIComponent(this.escapeODataLiteral(searchPattern));
         const response: any = await this.sapClient.get(
@@ -148,11 +108,6 @@ export class TaskprocessingAdapter {
     }
 
     async forwardTask(instanceId: string, forwardTo: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            return { success: true, message: `Mock task ${instanceId} forwarded to ${forwardTo}.` };
-        }
-
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
         const { token, cookie } = await this.sapClient.fetchCsrf(path, sapUser, userJwt);
 

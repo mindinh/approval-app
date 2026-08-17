@@ -1,5 +1,5 @@
 import { BaseRawDetail, RawDetailSource } from './base';
-import { addMockComment, addMockAttachment, getMockAttachmentContent, getMockAttachmentContentById } from './mock-data-provider';
+import { AddCommentOptions } from './comment.types';
 import { AppError } from '../utils/error-handler';
 
 export class ClaimDetail extends BaseRawDetail {
@@ -16,31 +16,15 @@ export class ClaimDetail extends BaseRawDetail {
         ]
     } as const;
 
-    async addComment(objectId: string, text: string, sapUser: string, userJwt?: string, type = 'NORM', decision = ''): Promise<void> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            addMockComment(objectId, text, sapUser);
-            return;
-        }
+    async addComment(_objectId: string, _text: string, _sapUser: string, _options?: AddCommentOptions): Promise<void> {
+        // Claim comment handling
     }
 
-    async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string): Promise<void> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            addMockAttachment(objectId, fileName, mimeType, buffer, sapUser);
-            return;
-        }
+    async uploadAttachment(_objectId: string, _fileName: string, _mimeType: string, _buffer: Buffer, _sapUser: string, _userJwt?: string): Promise<void> {
         throw new AppError('Attachment upload is disabled for this service.', 405);
     }
 
-    async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
-        const isMockMode = process.env.USE_MOCK_SAP !== 'false';
-        if (isMockMode) {
-            if (objectId) {
-                return getMockAttachmentContent(objectId, attachId);
-            }
-            return getMockAttachmentContentById(attachId);
-        }
+    async fetchAttachmentContent(_objectId: string, _attachId: string, _sapUser: string, _userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
         return null;
     }
 }

@@ -1,5 +1,6 @@
 import { TaskprocessingAdapter } from '../integrations/taskprocessing-adapter';
 import { SapOdataAdapter } from '../integrations/sap-odata-adapter';
+import { AddCommentOptions } from '../integrations/comment.types';
 import { resolveObjectTypeFromTypeId } from './odata-config';
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
@@ -162,7 +163,7 @@ export class InboxProcessor {
                 try {
                     const defaultText = isReject ? `Rejected by ${sapUser || 'user'}` : `Approved by ${sapUser || 'user'}`;
                     const noteText = comment && comment.trim() ? comment.trim() : defaultText;
-                    await this.addComment(docId, noteText, sapUser, userJwt, 'APPR', decisionCode, ctxType);
+                    await this.addComment(docId, noteText, sapUser, { userJwt, decision: decisionCode, objectType: ctxType, taskId: instanceId });
                     this.logger.info(`Successfully pushed OData decision comment (${decisionCode}) to ${ctxType || 'document'} ${docId}`);
                 } catch (e: any) {
                     this.logger.warn(`Failed to push decision comment to document ${docId}: ${e.message}`);
@@ -227,10 +228,10 @@ export class InboxProcessor {
         }
     }
 
-    async addComment(documentId: string, text: string, sapUser: string, userJwt?: string, type: string = 'NORM', decision: string = '', objectType?: string) {
-        this.logger.info(`Adding comment to document ${documentId} (objectType: ${objectType || 'auto'}) of type ${type} (decision: ${decision || 'none'})`);
+    async addComment(documentId: string, text: string, sapUser: string, options?: AddCommentOptions) {
+        this.logger.info(`Adding comment to document ${documentId} (objectType: ${options?.objectType || 'auto'}) (decision: ${options?.decision || 'none'})`);
         try {
-            await this.sapOdataAdapter.addComment(documentId, text, sapUser, userJwt, type, decision, objectType);
+            await this.sapOdataAdapter.addComment(documentId, text, sapUser, options);
         } catch (error: any) {
             this.logger.error(`Error in addComment: ${error.message}`);
             throw new AppError(`Failed to add comment: ${error.message}`, 500);
@@ -365,7 +366,7 @@ export class InboxProcessor {
             },
             supports: {
                 forward: overrideStatus === 'COMPLETED' ? false : (matchingTask?.SupportsForward ?? true),
-                comments: process.env.USE_MOCK_SAP !== 'false' ? (matchingTask?.SupportsComments ?? true) : false
+                comments: matchingTask?.SupportsComments ?? true
             },
             total: calcTotal !== undefined ? Number(calcTotal) : undefined,
             curr_vnd: inst.curr_vnd || rawObj.LocalCurrency || rawObj.Currency || rawObj.DocumentCurrency || undefined,
@@ -453,7 +454,7 @@ export class InboxProcessor {
             if (comment && comment.trim()) {
                 if (docId) {
                     try {
-                        await this.addComment(docId, `[Forwarded to ${forwardTo}] ${comment}`, sapUser || '', userJwt, 'FORWARD', undefined, ctxType);
+                        await this.addComment(docId, `[Forwarded to ${forwardTo}] ${comment}`, sapUser || '', { userJwt, objectType: ctxType, taskId: instanceId });
                     } catch (e: any) {
                         this.logger.warn(`Non-fatal: Failed to record forward comment on document ${docId}: ${e.message}`);
                     }

@@ -1,5 +1,6 @@
 import { SapClient } from './sap-client';
 import { Logger } from '../utils/logger';
+import { AppError } from '../utils/error-handler';
 
 export interface ReferencePrHeader {
     purchaseRequisition: string;
@@ -82,13 +83,6 @@ export async function fetchReferencePrDetail(
     const stripped = prNumber.replace(/^0+/, '');
     const cleanPrNumber = stripped.length > 0 ? stripped : (prNumber || '0');
     const paddedPrNumber = cleanPrNumber.padStart(10, '0');
-
-    const isMockMode = process.env.USE_MOCK_SAP === 'true';
-
-    if (isMockMode) {
-        logger.info(`[Mock] Generating Reference PR detail for: ${paddedPrNumber}`);
-        return getMockReferencePrDetail(paddedPrNumber);
-    }
 
     try {
         logger.info(`[SAP OData] Querying ${SERVICE_PATH}/A_PurchaseRequisitionHeader('${paddedPrNumber}')?$expand=${FULL_EXPAND}`);
@@ -197,84 +191,10 @@ export async function fetchReferencePrDetail(
                 items
             };
         }
+        throw new AppError(`Reference PR ${paddedPrNumber} not found`, 404);
     } catch (err: any) {
+        if (err instanceof AppError) throw err;
         logger.error(`Failed to fetch Reference PR from SAP API_PURCHASEREQ_PROCESS_SRV: ${err.message}`, err);
+        throw new AppError(`Failed to fetch Reference PR ${paddedPrNumber}: ${err.message}`, 404);
     }
-
-    logger.warn(`Falling back to mock reference detail for PR: ${paddedPrNumber}`);
-    return getMockReferencePrDetail(paddedPrNumber);
-}
-
-function getMockReferencePrDetail(prNumber: string): ReferencePrDetail {
-    return {
-        header: {
-            purchaseRequisition: prNumber,
-            purchaseRequisitionType: 'ZNB1',
-            purchaseRequisitionTypeDisplay: 'ZNB1 - Standard Purchase Requisition',
-            createdByUser: 'SAP_USER_01',
-            createdByFullName: 'Nguyen Van A (PO Requisitioner)',
-            creationDate: '2026-03-15',
-            purchaseRequisitionStatus: 'RELEASED',
-            purchaseRequisitionStatusText: 'Approved / Fully Released',
-            purReqnDescription: `Purchase Requisition for Project Expansion (Ref: ${prNumber})`,
-            totalAmount: 154500000,
-            currency: 'VND',
-            companyCode: '1000',
-            companyCodeName: '1000 - Conarum Vietnam Co., Ltd.',
-            plant: '1000',
-            plantName: '1000 - Main Manufacturing Plant',
-            purchasingGroup: 'P01',
-            headerNote: 'Reference PR issued for raw materials and hardware components procurement under Q1 Budget.'
-        },
-        items: [
-            {
-                purchaseRequisition: prNumber,
-                purchaseRequisitionItem: '10',
-                material: 'MAT-10042',
-                purchaseRequisitionItemText: 'High Performance Server Rack Server Chassis 4U',
-                plant: '1000',
-                plantName: '1000 - Main Plant',
-                storageLocation: '1001',
-                storageLocationName: '1001 - Central Warehouse',
-                materialGroup: 'IT-HW',
-                materialGroupName: 'IT Hardware & Systems',
-                requestedQuantity: 5,
-                baseUnit: 'EA',
-                purchaseRequisitionPrice: 18500000,
-                totalAmount: 92500000,
-                purReqnItemCurrency: 'VND',
-                deliveryDate: '2026-04-10',
-                glAccount: '6321000',
-                glAccountName: '6321000 - IT Hardware Expense',
-                costCenter: 'CC-1020',
-                costCenterName: 'CC-1020 - IT Infrastructure Dept',
-                wbsElement: 'PRJ-2026-01.1',
-                commitmentItem: 'COMM-IT-01'
-            },
-            {
-                purchaseRequisition: prNumber,
-                purchaseRequisitionItem: '20',
-                material: 'MAT-20098',
-                purchaseRequisitionItemText: 'Fiber Optic Cable 10Gbps Multi-mode 50m',
-                plant: '1000',
-                plantName: '1000 - Main Plant',
-                storageLocation: '1002',
-                storageLocationName: '1002 - Tech Parts',
-                materialGroup: 'NET-CAB',
-                materialGroupName: 'Networking Cables',
-                requestedQuantity: 20,
-                baseUnit: 'ROLL',
-                purchaseRequisitionPrice: 3100000,
-                totalAmount: 62000000,
-                purReqnItemCurrency: 'VND',
-                deliveryDate: '2026-04-12',
-                glAccount: '6321000',
-                glAccountName: '6321000 - IT Hardware Expense',
-                costCenter: 'CC-1020',
-                costCenterName: 'CC-1020 - IT Infrastructure Dept',
-                wbsElement: 'PRJ-2026-01.2',
-                commitmentItem: 'COMM-IT-02'
-            }
-        ]
-    };
 }

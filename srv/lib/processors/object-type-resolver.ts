@@ -110,9 +110,8 @@ export class ObjectTypeResolver {
                 normalTask = false;
             }
 
-            const isMockMode = process.env.USE_MOCK_SAP !== 'false';
             let runtimeResult = null;
-            if (isMockMode || normalTask) {
+            if (normalTask) {
                 runtimeResult = await Promise.resolve(this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask)).catch((e) => {
                     this.logger.warn(`Failed to fetch task runtime: ${e.message}`);
                     return null;

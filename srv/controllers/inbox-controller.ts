@@ -126,7 +126,7 @@ export class InboxController {
                 hasJwt: Boolean(jwtInfo.token),
             },
             sapContext: {
-                authMode: process.env.USE_MOCK_SAP === 'true' ? 'mock' : (process.env.SAP_USE_DESTINATION === 'true' ? 'principal-propagation' : 'technical-user'),
+                authMode: process.env.SAP_USE_DESTINATION === 'true' ? 'principal-propagation' : 'technical-user',
                 propagationExpected: process.env.SAP_USE_DESTINATION === 'true',
                 sapUser: sapUser,
                 destinationName: process.env.SAP_TASK_DESTINATION || 'SAP_ABAP_BACKEND',
@@ -198,6 +198,7 @@ export class InboxController {
             email: sapUser.includes('@') ? sapUser.toLowerCase() : `${sapUser.toLowerCase()}@${process.env.DEFAULT_EMAIL_DOMAIN || 'conarum.com'}`
         });
     };
+
 
 
     /**
@@ -523,14 +524,27 @@ export class InboxController {
      */
     postComment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { text, _context, objectType } = req.body;
+            const { text, _context, objectType, taggedUsers, TAGGEDUSER, taskId } = req.body;
             const docNum = String(_context?.documentId || req.query.documentId || '');
             const targetType = String(objectType || _context?.objectType || _context?.businessObjectType || _context?.type || req.query.objectType || '').toUpperCase().trim();
+            const currentTaskId = String(req.params.id || taskId || req.body.instanceId || _context?.instanceId || '');
             if (!docNum || !text) {
                 throw new AppError('Missing documentId or text', 400);
             }
             const { sapUser, userJwt } = resolveIdentity(req);
-            await this.processor.addComment(docNum, String(text), sapUser, userJwt, 'NORM', '', targetType);
+
+            const rawTags = Array.isArray(taggedUsers) ? taggedUsers : Array.isArray(TAGGEDUSER) ? TAGGEDUSER : [];
+            const formattedTaggedUsers = rawTags.map((u: any) => ({
+                USERNAME: String(u?.USERNAME || u?.username || u?.SAPUserName || '').trim(),
+                EMAIL: String(u?.EMAIL || u?.email || u?.EmailAddress || '').trim(),
+            }));
+
+            await this.processor.addComment(docNum, String(text), sapUser, {
+                userJwt,
+                objectType: targetType,
+                taskId: currentTaskId,
+                taggedUsers: formattedTaggedUsers,
+            });
             res.json({ success: true, message: 'Comment added successfully.' });
         } catch (error) {
             next(error);
