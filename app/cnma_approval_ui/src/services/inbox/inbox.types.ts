@@ -428,11 +428,23 @@ export interface TaskActionResponse {
 
 // ─── API Requests ─────────────────────────────────────────
 
+export interface TaggedUser {
+    USERNAME: string;
+    EMAIL: string;
+}
+
 /** Context forwarded to BFF to avoid redundant SAP $batch fetch. */
 export interface DecisionRequestContext {
     sapOrigin?: string;
     documentId?: string;
     businessObjectType?: string;
+}
+
+export interface AddCommentPayload {
+    instanceId: string;
+    text: string;
+    context?: DecisionRequestContext;
+    taggedUsers?: TaggedUser[];
 }
 
 export interface DecisionRequest {

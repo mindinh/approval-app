@@ -33,6 +33,9 @@ modules:
       SAP_TASK_DESTINATION: "VJ_DS4"
       SAP_TASK_CLIENT: "300"
       USE_MOCK_SAP: "false"
+      SAP_LAUNCHPAD_BASE_URL: "https://proconarum-vj-qas.launchpad.cfapps.ap11.hana.ondemand.com/site?siteId=4dc3f27d-2323-459c-8470-058fe64e8ca2"
+      SAP_PR_APP_ID_HINT: "2079f675-98bf-427c-a523-05b63006c5f1"
+      SAP_PR_INTENT_PATTERN: "#F2229-Display?sap-ushell-config=headerless&sap-ui-app-id-hint={appIdHint}&/C_PurchaseReqnHeader(PurchaseRequisition='{prNumber}',DraftUUID=guid'00000000-0000-0000-0000-000000000000',IsActiveEntity=true)"
     build-parameters:
       builder: npm
       ignore:

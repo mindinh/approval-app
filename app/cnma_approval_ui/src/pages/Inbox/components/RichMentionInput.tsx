@@ -5,6 +5,8 @@ export interface RichMentionInputRef {
     insertMention: (user: BusUser, queryText: string) => void;
     clear: () => void;
     focus: () => void;
+    getFormattedText: () => string;
+    getActiveUserNames: () => string[];
 }
 
 interface RichMentionInputProps {
@@ -39,7 +41,9 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
                         }
                     }
                 } else if (node.nodeType === Node.TEXT_NODE) {
-                    result += node.nodeValue || '';
+                    const rawText = node.nodeValue || '';
+                    // Escape raw user-entered <tag> and </tag> so they don't spoof system mention tags
+                    result += rawText.replace(/<tag>/g, '&lt;tag&gt;').replace(/<\/tag>/g, '&lt;/tag&gt;');
                 }
             };
 
@@ -113,6 +117,16 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
                 editorRef.current?.focus();
             },
             getFormattedText,
+            getActiveUserNames: (): string[] => {
+                if (!editorRef.current) return [];
+                const badges = editorRef.current.querySelectorAll('span[data-sap-user]');
+                const usernames: string[] = [];
+                badges.forEach((b) => {
+                    const u = b.getAttribute('data-sap-user');
+                    if (u) usernames.push(u);
+                });
+                return usernames;
+            },
         }));
 
         // Reset innerHTML if value is cleared from outside
@@ -155,7 +169,7 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-            if (e.ctrlKey && e.key === 'Enter') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
                 onSubmit();
             }

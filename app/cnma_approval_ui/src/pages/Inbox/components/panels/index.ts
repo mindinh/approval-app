@@ -1,5 +1,4 @@
 import { LayoutDashboard, List, GitBranch, Paperclip, MessageSquare } from 'lucide-react';
-import { mergeAndDeduplicateComments } from '@/pages/Inbox/mappers/comments.mapper';
 import type { WorkflowApprovalComment } from '@/services/inbox/inbox.types';
 
 export { OverviewPanel } from './OverviewPanel';
@@ -37,7 +36,7 @@ export function makeTabDefinitions({
         }))
         : [];
 
-    const mergedCommentsCount = mergeAndDeduplicateComments(commentsList, workflowComments).length;
+    const mergedCommentsCount = commentsList.length + (workflowComments?.length || 0);
     const rawAttachments = bo?._Attachment || detail?.attachments || [];
     const finalAttachmentCount = attachmentCount ?? (Array.isArray(rawAttachments) ? rawAttachments.length : 0);
 

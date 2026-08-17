@@ -44,39 +44,22 @@ export function OverviewPanel({
     const renderFieldValue = (key: string, label: string, val: string) => {
         if (isReferencePrField(key, label) && val !== '-' && val.trim() !== '') {
             const launchpadUrl = buildSapPrLaunchpadUrl(val);
-            return (
-                <div className="inline-flex items-center gap-1.5">
-                    {onSelectReferencePr ? (
-                        <Button
-                            variant="link"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onSelectReferencePr(val);
-                            }}
-                            className="h-auto p-0 font-bold text-primary hover:underline text-sm"
-                            title={t('task.viewReferencePrInApp', 'View Reference PR in app')}
-                        >
-                            <span>{val}</span>
-                        </Button>
-                    ) : (
-                        <span className="font-bold text-primary text-sm">{val}</span>
-                    )}
-
-                    {launchpadUrl && (
-                        <a
-                            href={launchpadUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center justify-center p-1 rounded hover:bg-primary/10 text-primary transition-colors"
-                            title={t('task.openInS4Hana', 'Open in S/4HANA Fiori Launchpad')}
-                        >
-                            <ExternalLink className="size-3.5" />
-                        </a>
-                    )}
-                </div>
-            );
+            if (launchpadUrl) {
+                return (
+                    <a
+                        href={launchpadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline text-sm"
+                        title={t('task.openInS4Hana', 'Open in S/4HANA Fiori Launchpad')}
+                    >
+                        <span>{val}</span>
+                        <ExternalLink className="size-3.5 shrink-0" />
+                    </a>
+                );
+            }
+            return <span className="font-bold text-primary text-sm">{val}</span>;
         }
         return val;
     };

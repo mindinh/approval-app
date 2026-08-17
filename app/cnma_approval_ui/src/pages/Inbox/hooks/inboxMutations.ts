@@ -13,7 +13,7 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import type { DecisionRequest, ForwardRequest, DecisionRequestContext } from '@/services/inbox/inbox.types';
+import type { DecisionRequest, ForwardRequest, DecisionRequestContext, TaggedUser } from '@/services/inbox/inbox.types';
 import { toast } from '@cnma/react-ui';
 import { extractErrorMessage } from '@/pages/Inbox/utils/predicates';
 import {
@@ -100,11 +100,13 @@ export function useAddComment() {
             instanceId,
             text,
             context,
+            taggedUsers,
         }: {
             instanceId: string;
             text: string;
             context?: DecisionRequestContext;
-        }) => inboxApi.addComment(instanceId, text, context),
+            taggedUsers?: TaggedUser[];
+        }) => inboxApi.addComment(instanceId, text, context, taggedUsers),
         onMutate: () => {
             const toastId = toast.loading('Adding comment...');
             return { toastId };

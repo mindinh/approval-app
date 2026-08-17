@@ -1,15 +1,18 @@
 import { useState, useMemo, useRef } from 'react';
 import { Send, Loader2, MessageSquare, User, AtSign, X } from 'lucide-react';
 import { Button, Textarea, Badge } from '@cnma/react-ui';
-import type { TaskDetail, WorkflowApprovalComment, BusUser } from '@/services/inbox/inbox.types';
+import type { TaskDetail, WorkflowApprovalComment, BusUser, TaggedUser } from '@/services/inbox/inbox.types';
 import { useAddComment } from '@/pages/Inbox/hooks/useInbox';
 import { TeamsMentionDropdown } from '@/pages/Inbox/components/TeamsMentionDropdown';
 import { RichMentionInput, type RichMentionInputRef } from '@/pages/Inbox/components/RichMentionInput';
 import { formatRelative } from '@/pages/Inbox/utils/formatters';
-import { mergeAndDeduplicateComments } from '@/pages/Inbox/mappers/comments.mapper';
 import { formatDate, formatDateTime } from '@/utils/formatters/date';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+
+function unescapeTags(str: string): string {
+    return str.replace(/&lt;tag&gt;/g, '<tag>').replace(/&lt;\/tag&gt;/g, '</tag>');
+}
 
 function renderFormattedCommentText(text: string) {
     if (!text) return null;
@@ -25,7 +28,7 @@ function renderFormattedCommentText(text: string) {
                     variant="secondary"
                     className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20 rounded-md mx-0.5 align-baseline"
                 >
-                    {content}
+                    {unescapeTags(content)}
                 </Badge>
             );
         }
@@ -40,7 +43,7 @@ function renderFormattedCommentText(text: string) {
                 </Badge>
             );
         }
-        return <span key={idx}>{part}</span>;
+        return <span key={idx}>{unescapeTags(part)}</span>;
     });
 }
 
@@ -70,20 +73,66 @@ export function CommentsPanel({
     const richInputRef = useRef<RichMentionInputRef>(null);
     const addCommentMutation = useAddComment();
 
-    const merged = useMemo(
-        () => mergeAndDeduplicateComments(detail.comments, workflowComments),
-        [detail.comments, workflowComments]
-    );
+    const merged = useMemo(() => {
+        const list: Array<{ id: string; text: string; createdBy: string; createdAt: string }> = [];
+
+        for (const wc of workflowComments || []) {
+            const text = (wc.noteText || (wc as any).text || '').trim();
+            if (!text) continue;
+            let dateStr = wc.postedOn || '';
+            if (wc.postedOn && wc.postedTime) {
+                let t = wc.postedTime;
+                if (t.startsWith('PT')) {
+                    t = t.replace('PT', '').replace('H', ':').replace('M', ':').replace('S', '');
+                }
+                dateStr += `T${t.split('.')[0]}`;
+            }
+            list.push({
+                id: `wc-${wc.docNum}-${dateStr}-${list.length}`,
+                text,
+                createdBy: wc.userComment || (wc as any).author || 'System',
+                createdAt: dateStr,
+            });
+        }
+
+        for (const tc of detail.comments || []) {
+            const text = (tc.text || '').trim();
+            if (!text) continue;
+            list.push({
+                id: tc.id || `tc-${list.length}`,
+                text: tc.text,
+                createdBy: tc.createdByName || tc.createdBy || 'Unknown',
+                createdAt: tc.createdAt || '',
+            });
+        }
+
+        return list;
+    }, [detail.comments, workflowComments]);
+
+    const handleCommentTextChange = (text: string) => {
+        setCommentText(text);
+        const activeUserNames = richInputRef.current?.getActiveUserNames() || [];
+        setTaggedUsers((prev) => prev.filter((u) => activeUserNames.includes(u.SAPUserName)));
+    };
 
     const handleSubmit = () => {
         if (!commentText.trim() || !instanceId) return;
         const docNum = context?.documentId || detail?.documentId || detail?.businessObject?.DocumentNumber || detail?.businessObject?.PurchaseRequisition || detail?.businessObject?.PurchaseOrder || detail?.businessObject?.ReservationNumber || detail?.businessObject?.ClaimNumber || instanceId;
         const boType = context?.businessObjectType || detail?.docCategory || detail?.businessObject?.DocCategory || detail?.objectType || '';
 
+        const activeUserNames = richInputRef.current?.getActiveUserNames() || [];
+        const activeTaggedUsers = taggedUsers.filter((u) => activeUserNames.includes(u.SAPUserName));
+
+        const formattedTaggedUsers: TaggedUser[] = activeTaggedUsers.map((u) => ({
+            USERNAME: u.SAPUserName,
+            EMAIL: u.EmailAddress || '',
+        }));
+
         addCommentMutation.mutate(
             {
                 instanceId,
                 text: commentText.trim(),
+                taggedUsers: formattedTaggedUsers,
                 context: {
                     sapOrigin: context?.sapOrigin || detail?.task?.sapOrigin || 'LOCAL',
                     documentId: docNum,
@@ -175,7 +224,7 @@ export function CommentsPanel({
                         <RichMentionInput
                             ref={richInputRef}
                             value={commentText}
-                            onChange={setCommentText}
+                            onChange={handleCommentTextChange}
                             onMentionQuery={(query, idx, open) => {
                                 setMentionQuery(query);
                                 setMentionIndex(idx);

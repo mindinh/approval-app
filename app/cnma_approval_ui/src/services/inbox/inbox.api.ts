@@ -8,6 +8,7 @@ import type {
     ForwardRequest,
     UserSearchResult,
     BusUser,
+    TaggedUser,
     WorkflowApprovalTreeResponse,
     DashboardResponse,
     ReferencePrDetailResponse,
@@ -26,6 +27,7 @@ export interface UserInfo {
     lastName?: string;
     email?: string;
 }
+
 
 /**
  * Inbox API — All backend calls for the inbox feature.
@@ -178,11 +180,12 @@ export const inboxApi = {
     addComment: async (
         instanceId: string,
         text: string,
-        context?: { sapOrigin?: string; documentId?: string; businessObjectType?: string }
+        context?: { sapOrigin?: string; documentId?: string; businessObjectType?: string },
+        taggedUsers?: TaggedUser[]
     ): Promise<TaskActionResponse> => {
         const { data } = await axiosInstance.post<TaskActionResponse>(
             `${BASE_URL}/${encodeURIComponent(instanceId)}/comments`,
-            { text, _context: context }
+            { text, _context: context, taggedUsers: taggedUsers || [] }
         );
         return data;
     },

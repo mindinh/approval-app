@@ -23,7 +23,7 @@ import {
 } from './panels';
 import { resolveBusinessSectionModel } from '@/renderers';
 import { useTranslation } from 'react-i18next';
-import { ReferencePrDetailView } from './ReferencePrDetailView';
+import { buildSapPrLaunchpadUrl } from '@/utils/launchpad';
 import { normalizeDetailForView } from '../utils/normalizeTaskDetail';
 import { TaskActionPanel } from './TaskActionPanel';
 import { TaskDetailSkeleton, SecondaryTabSkeleton } from './TaskDetailSkeletons';
@@ -98,7 +98,10 @@ export function TaskDetailView({
     }, [activeTaskId]);
 
     const handleSelectReferencePr = useCallback((prNumber: string) => {
-        setActiveSubView({ type: 'reference-pr', prNumber });
+        const url = buildSapPrLaunchpadUrl(prNumber);
+        if (url && typeof window !== 'undefined') {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
     }, []);
 
     const documentId = viewData?.documentId || '';
@@ -188,16 +191,6 @@ export function TaskDetailView({
         );
     }
 
-    if (activeSubView?.type === 'reference-pr') {
-        return (
-            <ReferencePrDetailView
-                prNumber={activeSubView.prNumber}
-                parentDocumentId={documentId}
-                onBack={() => setActiveSubView(null)}
-                isMobile={isMobile}
-            />
-        );
-    }
 
     // Render tab content (shared between mobile & desktop)
     const renderTabContent = (tabValue: string, mobile: boolean) => {
