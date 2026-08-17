@@ -275,9 +275,7 @@ describe('API Stress & Performance Benchmark Suite', () => {
                     await processor.addComment(
                         '10001234',
                         `Automated stress test comment #${i}`,
-                        'TEST_USER',
-                        undefined,
-                        'APPR'
+                        'TEST_USER'
                     );
                 },
                 { concurrency: 20, totalRequests: 100 }
@@ -349,9 +347,7 @@ describe('API Stress & Performance Benchmark Suite', () => {
                     await processor.addComment(
                         '10001234',
                         `E2E flow comment step #${i}`,
-                        'TEST_USER',
-                        undefined,
-                        'APPR'
+                        'TEST_USER'
                     );
 
                     // Step 5: Execute approval decision

@@ -153,7 +153,7 @@ describe('InboxProcessor', () => {
         { documentId: '10001234', businessObjectType: 'PR' }
       );
 
-      expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith('10001234', 'Looks good', 'MOCK_USER', 'jwt', 'APPR', 'A', 'PR');
+      expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith('10001234', 'Looks good', 'MOCK_USER', { userJwt: 'jwt', decision: 'A', objectType: 'PR', taskId: 'task-pr-01' });
       expect(mockTaskAdapter.executeDecision).toHaveBeenCalledWith('task-pr-01', '0001', 'Looks good', 'MOCK_USER', 'jwt');
     });
   });

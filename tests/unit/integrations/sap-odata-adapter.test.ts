@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SapOdataAdapter } from '../../../srv/lib/integrations/sap-odata-adapter';
-import * as mockDataProvider from '../../../srv/lib/integrations/mock-data-provider';
 
 vi.mock('../../../srv/lib/integrations/sap-client', () => {
   return {
@@ -24,15 +23,7 @@ describe('SapOdataAdapter', () => {
   });
 
   describe('getInstances Worklist', () => {
-    it('should return mock instances in mock mode', async () => {
-      process.env.USE_MOCK_SAP = 'true';
-      const instances = await adapter.getInstances('MOCK_USER', 'IN PROCESSING');
-      expect(instances).toBeDefined();
-      expect(Array.isArray(instances)).toBe(true);
-    });
-
-    it('should query SAP instance list in live mode', async () => {
-      process.env.USE_MOCK_SAP = 'false';
+    it('should query SAP instance list', async () => {
       mockSapClient.get.mockResolvedValue({
         value: [
           {
@@ -55,43 +46,6 @@ describe('SapOdataAdapter', () => {
         'SAP_USER',
         undefined
       );
-    });
-  });
-
-  describe('Mock Mode (USE_MOCK_SAP !== "false")', () => {
-    beforeEach(() => {
-      process.env.USE_MOCK_SAP = 'true';
-    });
-
-    it('should return mock raw details from getDetailBatch', async () => {
-      const result = await adapter.getDetailBatch(
-        [{ objectType: 'PR', objectId: '10000001' }],
-        'MOCK_USER'
-      );
-
-      expect(result['10000001']).toBeDefined();
-      expect(result['10000001'].DocumentNumber).toBe('0010000001');
-      expect(result['10000001'].DocCategory).toBe('BUS2105');
-      expect(mockSapClient.get).not.toHaveBeenCalled();
-    });
-
-    it('should return complete raw mock detail on getDetail (headerOnly = false)', async () => {
-      const result = await adapter.getDetail('PR', '10000001', 'MOCK_USER', undefined, false);
-      expect(result.DocCategory).toBe('BUS2105');
-      expect(result._Item).toBeDefined();
-      expect(result._Item.length).toBeGreaterThan(0);
-    });
-
-    it('should save comments and attachments in mock cache', async () => {
-      const addCommentSpy = vi.spyOn(mockDataProvider, 'addMockComment');
-      const addAttachmentSpy = vi.spyOn(mockDataProvider, 'addMockAttachment');
-
-      await adapter.getStrategy('PR').addComment('10000001', 'Test comment', 'MOCK_USER');
-      expect(addCommentSpy).toHaveBeenCalledWith('10000001', 'Test comment', 'MOCK_USER');
-
-      const buf = Buffer.from('hello');
-      await adapter.getStrategy('PR').uploadAttachment('10000001', 'test.txt', 'text/plain', buf, 'MOCK_USER');
-      expect(addAttachmentSpy).toHaveBeenCalledWith('10000001', 'test.txt', 'text/plain', buf, 'MOCK_USER');
     });
   });
 
