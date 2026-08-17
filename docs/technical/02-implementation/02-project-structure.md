@@ -1,6 +1,6 @@
 # Project Codebase Structure
 
-> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-15 | **Status:** Active
+> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-17 | **Status:** Active
 
 This document provides a comprehensive folder structure walkthrough mapping key components of both the CAP backend BFF and the Vite React frontend.
 
@@ -52,11 +52,6 @@ cnma-approval/
 │   │   ├── tests/                     # Vitest unit tests for components & renderers
 │   │   └── package.json               # Frontend dependencies & scripts
 │   └── router/                        # Standalone Approuter proxy (BTP Cloud Foundry deployment)
-```ervices/              # API Client fetch queries (Axios REST clients)
-│   │   │   └── styles/                # CSS styling, tokens, and Tailwind theme rules
-│   │   ├── tests/                     # Vitest unit tests for components & renderers
-│   │   └── package.json               # Frontend dependencies & scripts
-│   └── router/                        # Standalone Approuter proxy (BTP Cloud Foundry deployment)
 ├── docs/                              # Project documentation suite
 │   ├── business/                      # Business process flows, permissions, data dictionary
 │   ├── product/                       # User guide & introduction
@@ -71,7 +66,7 @@ cnma-approval/
 │   │   ├── integrations/              # Outbound connectors to SAP backend (Strategy pattern)
 │   │   │   ├── base.ts                # BaseRawDetail strategy class handling raw OData querying & unwrap
 │   │   │   ├── claim.ts               # Expense Claim raw detail strategy
-│   │   │   ├── mock-data-provider.ts  # Raw OData mock provider for local offline testing
+│   │   │   ├── comment.types.ts       # Unified comment payload contract and interface
 │   │   │   ├── po.ts                  # Purchase Order raw detail strategy
 │   │   │   ├── pr.ts                  # Purchase Requisition raw detail strategy
 │   │   │   ├── re.ts                  # Material Reservation raw detail strategy

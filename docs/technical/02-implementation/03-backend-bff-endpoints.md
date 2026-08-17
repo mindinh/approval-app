@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-15 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-17 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -230,11 +230,19 @@ These endpoints are designed for troubleshooting token bindings, user identities
     ```
 
 ### 11. POST `/tasks/tasks/:id/comments`
-*   **Purpose**: Add a new timeline comment note to the SAP business document.
+*   **Purpose**: Add a new timeline comment note to the SAP business document, supporting user tagging (`@mention`).
 *   **Request Payload Schema**:
     ```json
     {
-      "text": "Please clarify specification on line 10.",
+      "text": "Please clarify specification on line 10 @DUNGNV.",
+      "objectType": "PR",
+      "taskId": "198820",
+      "taggedUsers": [
+        {
+          "USERNAME": "DUNGNV",
+          "EMAIL": "dung.nguyen@conarum.com"
+        }
+      ],
       "_context": {
         "documentId": "10001861"
       }

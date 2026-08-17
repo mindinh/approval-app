@@ -1,6 +1,6 @@
 # System Configuration & Declarative Renderer Reference
 
-> **Owner:** Lead CAP Architect | **Last Updated:** 2026-08-10 | **Status:** Active
+> **Owner:** Lead CAP Architect | **Last Updated:** 2026-08-17 | **Status:** Active
 
 This document provides a reference guide for runtime environment variables, BTP destination settings, OData backend paths, and frontend declarative renderer layout specifications.
 

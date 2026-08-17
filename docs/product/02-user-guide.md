@@ -1,5 +1,7 @@
 # User Manual & Operations Guide
 
+> **Owner:** Product Manager | **Last Updated:** 2026-08-17 | **Status:** Active
+
 This guide describes how to operate the **CNMA Approval** portal to manage, review, and decide on procurement workflows.
 
 ---

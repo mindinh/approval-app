@@ -2,6 +2,28 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [1.0.10] - 2026-08-17
+
+### Added
+*   **Unified Comment Payload Interface (`comment.types.ts`)**:
+    *   Created [`comment.types.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/comment.types.ts) to define a standardized `CommentPayload` contract across all integration strategies (`po.ts`, `pr.ts`, `re.ts`, `reference-pr.ts`, `claim.ts`, `sap-odata-adapter.ts`).
+    *   Supported structured tagged users (`taggedUsers` / `TAGGEDUSER`) and document context in comment requests.
+*   **Dynamic Launchpad App ID & Base URL Resolution (`launchpad.ts`)**:
+    *   Updated [`launchpad.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/launchpad.ts) to support dynamic Fiori Launchpad App ID and URL resolution, allowing cross-app navigation without UI redeployment.
+*   **Code Review Audit Report (`Code-Review-260817.md`)**:
+    *   Added [`Code-Review-260817.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260817.md) documenting code quality verification and architectural compliance.
+
+### Refactored & Changed
+*   **Streamlined Backend Comment API & Controller**:
+    *   Simplified `addComment` handling in [`inbox-controller.ts`](file:///d:/learning/test/cnma_approval/srv/controllers/inbox-controller.ts) and [`inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts), eliminating redundant body field extractions.
+*   **Declarative Raw OData Frontend Renderers**:
+    *   Refactored panel components ([`OverviewPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/OverviewPanel.tsx), [`DetailsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx), [`TaskDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx)) to render raw OData responses directly using field primitives.
+*   **Dead Code Cleanup**:
+    *   Purged deprecated `mock-data-provider.ts` (1,922 lines of unused mock code removed from `srv/lib/integrations/`).
+    *   Removed redundant `comments.mapper.ts` and its corresponding test file [`comments.mapper.test.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/tests/pages/Inbox/mappers/comments.mapper.test.ts) from the frontend codebase.
+
+---
+
 ## [1.0.9] - 2026-08-15
 
 ### Added

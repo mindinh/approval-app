@@ -1,6 +1,6 @@
 # Business Data Dictionary
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-15 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-17 | **Status:** Active
 
 This data dictionary defines key procurement, financial, and inventory concepts used throughout the **CNMA Approval** portal. These fields map directly to information imported from S/4HANA ERP records.
 
