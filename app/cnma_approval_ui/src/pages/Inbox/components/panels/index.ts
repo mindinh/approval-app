@@ -36,8 +36,31 @@ export function makeTabDefinitions({
         }))
         : [];
 
-    const mergedCommentsCount = commentsList.length + (workflowComments?.length || 0);
+    const seenComments = new Set<string>();
+    let mergedCommentsCount = 0;
+
+    for (const c of commentsList) {
+        const text = String(c.text || '').trim().toLowerCase();
+        const author = String(c.createdBy || '').trim().toLowerCase();
+        const key = `${text}|${author}`;
+        if (text && !seenComments.has(key)) {
+            seenComments.add(key);
+            mergedCommentsCount++;
+        }
+    }
+
+    for (const wc of workflowComments || []) {
+        const text = String(wc.noteText || (wc as any).text || '').trim().toLowerCase();
+        const author = String(wc.userComment || (wc as any).author || '').trim().toLowerCase();
+        const key = `${text}|${author}`;
+        if (text && !seenComments.has(key)) {
+            seenComments.add(key);
+            mergedCommentsCount++;
+        }
+    }
+
     const rawAttachments = bo?._Attachment || detail?.attachments || [];
+
     const finalAttachmentCount = attachmentCount ?? (Array.isArray(rawAttachments) ? rawAttachments.length : 0);
 
     const docCategory = String(bo?.DocCategory || detail?.task?.businessContext?.type || detail?.objectType || detail?._meta?.objectType || '').toUpperCase();

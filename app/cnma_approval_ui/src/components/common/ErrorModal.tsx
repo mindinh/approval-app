@@ -82,7 +82,7 @@ export function ErrorModal({ open, error, onClose, onRetry }: ErrorModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="sm:max-w-md w-[92vw] max-h-[85vh] rounded-xl p-0 overflow-hidden flex flex-col border border-border shadow-2xl">
+            <DialogContent className="sm:max-w-md w-[92vw] max-h-[85dvh] my-auto rounded-xl p-0 overflow-hidden flex flex-col border border-border shadow-2xl">
                 {/* Header with visual icon & title */}
                 <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/40 shrink-0">
                     <div className="flex items-center gap-3">

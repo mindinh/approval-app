@@ -156,7 +156,16 @@
         "purpose": "Mục đích",
         "paidBy": "Thanh toán bởi",
         "bankDetails": "Thông tin ngân hàng",
-        "overview": "Tổng quan"
+        "overview": "Tổng quan",
+        "tableView": "Chế độ bảng",
+        "gridView": "Chế độ thẻ",
+        "tableViewShort": "Bảng",
+        "gridViewShort": "Thẻ",
+        "switchViewMode": "Chuyển chế độ xem",
+        "clickRowDetails": "Nhấp vào hàng để xem chi tiết đầy đủ",
+        "cardViewDesc": "Xem danh sách dạng thẻ đầy đủ",
+        "itemNum": "Mục #{{num}}",
+        "viewDetails": "Xem chi tiết"
     },
     "comments": {
         "title": "Bình luận",

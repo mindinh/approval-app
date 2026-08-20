@@ -171,8 +171,12 @@ export function buildItemsTable(rawItems?: any[], parentCurrency?: string): Deta
             item.TotalValue ??
             item.purReqnItemTotalAmount;
 
+        const deletedVal = item.Deleted ?? item.deleted ?? item.LOEKZ ?? item.DeletedFlag ?? item.deletionFlag;
+        const isDeleted = deletedVal != null && String(deletedVal).trim() !== '' && String(deletedVal).trim() !== '0' && String(deletedVal).toLowerCase().trim() !== 'false';
+
         return {
             id: String(item.item || item.itemNumber || item.purchaseOrderItem || idx),
+            isDeleted,
             values: {
                 item: normalizeDisplayValue(item.item || item.itemNumber || item.purchaseOrderItem),
                 plant: formatCodeWithText(item.plant || item.Plant || item.plantCode || item.PlantCode, item.plantName || item.plantText || item.PlantName || item.PlantText),

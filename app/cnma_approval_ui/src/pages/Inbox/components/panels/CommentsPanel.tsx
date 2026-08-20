@@ -245,7 +245,7 @@ export function CommentsPanel({
                                 disabled={!commentText.trim() || addCommentMutation.isPending}
                                 className={cn(
                                     "bg-primary hover:bg-primary-hover text-primary-foreground disabled:opacity-50",
-                                    "px-4 h-9 font-medium transition-colors"
+                                    "px-4 h-11 sm:h-9 font-medium transition-colors"
                                 )}
                             >
                                 {addCommentMutation.isPending && (

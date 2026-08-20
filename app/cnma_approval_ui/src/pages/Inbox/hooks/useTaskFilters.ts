@@ -11,7 +11,7 @@
  *   - Contain rendering logic
  *   - Trigger API calls (filtering is purely client-side on the current page)
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import type { FilterFieldConfig, FilterValues, FilterSettingItem } from '@/components/filterbar/types';
 import { initializeFilterValues } from '@/components/filterbar';
@@ -140,7 +140,7 @@ export function matchTaskDocumentType(task: InboxTask, target: string): boolean 
     return false;
 }
 
-export function useTaskFilters(tasks: InboxTask[]) {
+export function useTaskFilters(tasks: InboxTask[], scope?: string) {
     // ── Filter configuration ─────────────────────────────
     const [filterConfig, setFilterConfig] = useState<FilterFieldConfig[]>(
         () => INBOX_FILTER_CONFIG.filter((f) => f.visible !== false)
@@ -152,6 +152,17 @@ export function useTaskFilters(tasks: InboxTask[]) {
     const [appliedValues, setAppliedValues] = useState<FilterValues>(
         () => initializeFilterValues(INBOX_FILTER_CONFIG)
     );
+
+    // Auto-clear filters whenever scope changes (e.g., My Tasks <-> Approved Tasks)
+    const prevScopeRef = useRef(scope);
+    useEffect(() => {
+        if (prevScopeRef.current !== scope) {
+            prevScopeRef.current = scope;
+            const cleared = initializeFilterValues(INBOX_FILTER_CONFIG);
+            setFilterValues(cleared);
+            setAppliedValues(cleared);
+        }
+    }, [scope]);
 
     // ── Mobile filter drawer ─────────────────────────────
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -246,14 +257,16 @@ export function useTaskFilters(tasks: InboxTask[]) {
         }
 
         if (v.createdDate?.from || v.createdDate?.to) {
-            const from = v.createdDate.from ? new Date(v.createdDate.from).getTime() : 0;
-            const to = v.createdDate.to
-                ? new Date(v.createdDate.to).setHours(23, 59, 59, 999)
+            const fromDate = v.createdDate.from ? new Date(v.createdDate.from) : null;
+            const toDate = v.createdDate.to ? new Date(v.createdDate.to) : null;
+            const from = fromDate && !isNaN(fromDate.getTime()) ? fromDate.getTime() : 0;
+            const to = toDate && !isNaN(toDate.getTime())
+                ? new Date(toDate.getTime()).setHours(23, 59, 59, 999)
                 : Infinity;
             result = result.filter((task) => {
                 if (!task.createdOn) return false;
                 const t = new Date(task.createdOn).getTime();
-                return t >= from && t <= to;
+                return !isNaN(t) && t >= from && t <= to;
             });
         }
 

@@ -449,11 +449,11 @@ export function TaskDetailView({
                                             key={tab.value}
                                             onClick={() => handleMobileTabChange(tab.value)}
                                             className={cn(
-                                                'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full h-auto',
+                                                'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full min-h-[44px] h-auto',
                                                 'focus-visible:outline-none',
                                                 isActive
                                                     ? 'bg-primary text-white shadow-sm'
-                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70'
                                             )}
                                         >
                                             <tab.icon className={cn("size-3.5", isActive ? "text-white" : "text-muted-foreground/60")} />
@@ -483,7 +483,42 @@ export function TaskDetailView({
                         </div>
                     </div>
 
-                    <div className="flex-1 min-h-0 w-full min-w-0 overflow-hidden relative">
+                    <div
+                        ref={ptr.containerRef}
+                        className="flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background"
+                    >
+                        {/* ── Mobile Pull-to-Refresh Indicator (Available across all tabs) ── */}
+                        {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (
+                            <div
+                                className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
+                                style={{
+                                    height: ptr.isRefreshing ? 48 : Math.min(ptr.pullDistance, 60),
+                                    opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 50, 1),
+                                }}
+                            >
+                                {ptr.isRefreshing ? (
+                                    <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                                        <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                        <span>{t('common.refreshing', 'Refreshing...')}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <span
+                                            className="transition-transform duration-200"
+                                            style={{ transform: `rotate(${ptr.pullDistance > 50 ? 180 : 0}deg)` }}
+                                        >
+                                            ↓
+                                        </span>
+                                        <span>
+                                            {ptr.pullDistance > 50
+                                                ? t('common.releaseToRefresh', 'Release to refresh')
+                                                : t('common.pullToRefresh', 'Pull down to refresh')}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <AnimatePresence initial={false} mode="popLayout" custom={animationDirection}>
                             <motion.div
                                 key={activeTab}
@@ -492,50 +527,10 @@ export function TaskDetailView({
                                 animate={{ x: 0, opacity: 1, scale: 1 }}
                                 exit={{ x: `${-animationDirection * 20}%`, opacity: 0, scale: 0.98 }}
                                 transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
-                                className="absolute inset-0 w-full"
+                                className="w-full"
                             >
-                                <div
-                                    ref={ptr.containerRef}
-                                    {...(isMobile ? ptr.touchHandlers : {})}
-                                    className={cn(
-                                        'h-full w-full overflow-y-auto overflow-x-hidden scroll-smooth overscroll-y-contain touch-pan-y',
-                                        isMobile && 'will-change-scroll [webkit-overflow-scrolling:touch]'
-                                    )}
-                                >
-                                    {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (
-                                        <div
-                                            className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
-                                            style={{
-                                                height: ptr.isRefreshing ? 48 : Math.min(ptr.pullDistance, 60),
-                                                opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 50, 1),
-                                            }}
-                                        >
-                                            {ptr.isRefreshing ? (
-                                                <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                                                    <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                                    <span>{t('common.refreshing', 'Refreshing...')}</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                    <span
-                                                        className="transition-transform duration-200"
-                                                        style={{ transform: `rotate(${ptr.pullDistance > 50 ? 180 : 0}deg)` }}
-                                                    >
-                                                        ↓
-                                                    </span>
-                                                    <span>
-                                                        {ptr.pullDistance > 50
-                                                            ? t('common.releaseToRefresh', 'Release to refresh')
-                                                            : t('common.pullToRefresh', 'Pull down to refresh')}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    <div className="p-4 space-y-4 pb-24">
-                                        {renderTabContent(activeTab, true)}
-                                    </div>
+                                <div className="p-4 space-y-4 pb-32">
+                                    {renderTabContent(activeTab, true)}
                                 </div>
                             </motion.div>
                         </AnimatePresence>
@@ -561,7 +556,7 @@ export function TaskDetailView({
 
             {/* ── Mobile: floating action bar ── */}
             {isMobile && showActionPanel && (
-                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
                     <div className="pointer-events-auto rounded-2xl border border-border bg-white/98 p-3 shadow-[0_12px_28px_rgba(15,23,42,0.14)] empty:hidden">
                         <TaskActionPanel
                             detail={viewData}

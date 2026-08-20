@@ -23,6 +23,7 @@ export interface DetailTableColumn {
 export interface DetailTableRow {
     id: string;
     values: Record<string, string>;
+    isDeleted?: boolean;
 }
 
 export interface DetailTableModel {

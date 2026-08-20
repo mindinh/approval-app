@@ -80,7 +80,7 @@ export function TagUserDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogContent className="w-[92vw] sm:max-w-lg max-h-[85dvh] my-auto flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                         <AtSign className="w-5 h-5 text-primary" />
@@ -99,11 +99,12 @@ export function TagUserDialog({
                             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
+                                inputMode="search"
+                                autoComplete="off"
                                 placeholder={t('comments.searchPlaceholder', 'Search by name, SAP user, or email...')}
                                 value={searchPattern}
                                 onChange={(e) => setSearchPattern(e.target.value)}
-                                className="pl-9 pr-8"
-                                autoFocus
+                                className="pl-9 pr-8 h-11 sm:h-9 text-base"
                             />
                             {isLoading && (
                                 <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-primary" />
@@ -119,7 +120,7 @@ export function TagUserDialog({
                                         <div
                                             key={user.SAPUserName}
                                             onClick={() => handleToggleUser(user)}
-                                            className={`p-2.5 cursor-pointer flex items-center justify-between transition-colors hover:bg-muted/50 ${
+                                            className={`p-2.5 min-h-[48px] cursor-pointer flex items-center justify-between transition-colors hover:bg-muted/50 active:bg-muted/70 ${
                                                 isSelected ? 'bg-primary/5 border-l-4 border-primary' : ''
                                             }`}
                                         >
@@ -190,12 +191,12 @@ export function TagUserDialog({
                 </div>
 
                 <DialogFooter className="pt-3 border-t flex items-center justify-between sm:justify-between">
-                    <Button variant="outline" onClick={handleClose}>
+                    <Button variant="outline" onClick={handleClose} className="h-11 sm:h-9">
                         {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button
                         onClick={handleConfirm}
-                        className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                        className="bg-primary hover:bg-primary-hover text-primary-foreground h-11 sm:h-9"
                     >
                         <Check className="w-4 h-4 mr-1.5" />
                         {t('comments.applyTags', `Apply Tags (${selectedList.length})`, { count: selectedList.length })}

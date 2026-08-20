@@ -52,6 +52,7 @@ const standardPoTableColumns = [
     PO_TABLE_COLUMNS.storageLocation,
     PO_TABLE_COLUMNS.referencePr,
     PO_TABLE_COLUMNS.glAccount,
+    PO_TABLE_COLUMNS.internalOrder,
     PO_TABLE_COLUMNS.fundsCenter,
     PO_TABLE_COLUMNS.commitmentItem
 ];

@@ -51,8 +51,13 @@ export const PO_TABLE_COLUMNS = {
     totalValue: tableCol({ key: 'totalValue', header: 'Total Value', value: 'TotalNetAmountDocCrcy', currency: 'DocumentCurrency', align: 'right' }),
     referencePr: tableCol({ key: 'referencePr', header: 'Reference PR', source: 'ReferenceDocumentNumber' }),
     glAccount: tableCol({ key: 'glAccount', header: 'G/L Account', code: 'GLAccount', text: 'GLAccountText' }),
+    internalOrder: tableCol({ key: 'internalOrder', header: 'Internal Order', code: 'OrderInternalID', text: 'OrderInternalName' }),
     fundsCenter: tableCol({ key: 'fundsCenter', header: 'Funds Center', code: 'FundsCenter', text: 'FundsCenterName' }),
     commitmentItem: tableCol({ key: 'commitmentItem', header: 'Commitment Item', code: 'CommitmentItem', text: 'CommitmentItemDescription' }),
+
+    // ZMAK Marketing specific columns
+    zMakOrder: tableCol({ key: 'OrderInternalID', header: 'Order Internal', source: 'OrderInternalID' }),
+    zMakOrderText: tableCol({ key: 'OrderInternalName', header: 'Order Internal Text', source: 'OrderInternalName' }),
 
     // ZUB specific columns
     zubValuationPrice: tableCol({ key: 'valuationPrice', header: 'Valuation Price', value: 'ValuationPricePRCD', currency: 'LocalCurrency|DocumentCurrency', align: 'right' }),

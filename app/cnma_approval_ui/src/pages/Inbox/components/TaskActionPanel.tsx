@@ -64,7 +64,8 @@ export function TaskActionPanel({
     }
 
     const decisions = detail.decisions || detail.task?.decisions || [];
-    const supportsForward = (detail as any)?.supports?.forward !== false && (detail as any)?.task?.supports?.forward !== false;
+    const isNormalTask = (detail as any)?.normalTask ?? (detail as any)?.task?.normalTask ?? true;
+    const supportsForward = isNormalTask && (detail as any)?.supports?.forward !== false && (detail as any)?.task?.supports?.forward !== false;
 
     if (!decisions.length && !supportsForward) return null;
 
@@ -98,10 +99,9 @@ export function TaskActionPanel({
 
     // Compact uniform button styling
     const actionBtnClass = cn(
-        "h-8 min-w-24 px-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm rounded-md",
-        isMobile && "h-9 flex-1 min-w-0 text-xs rounded-lg"
+        "h-9 min-w-24 px-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-xs rounded-md",
+        isMobile && "h-11 flex-1 min-w-0 text-sm font-semibold rounded-xl"
     );
-
 
     return (
         <>
@@ -118,7 +118,7 @@ export function TaskActionPanel({
                         disabled={isExecuting || isForwarding}
                         className={actionBtnClass}
                     >
-                        <Forward className="size-4" />
+                        <Forward className="size-4 shrink-0" />
                         {t('decision.forward', 'Forward')}
                     </Button>
                 )}
@@ -144,7 +144,7 @@ export function TaskActionPanel({
                             className={actionBtnClass}
                         >
                             {isExecuting ? (
-                                <Loader2 className="size-4 animate-spin" />
+                                <Loader2 className="size-4 animate-spin shrink-0" />
                             ) : (
                                 <DecisionIcon nature={decision.nature} />
                             )}
@@ -178,9 +178,9 @@ export function TaskActionPanel({
                     }
                 }}
             >
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="w-[92vw] sm:max-w-md max-h-[85dvh] my-auto">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
+                        <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                             {activeDecision && (
                                 <DecisionIcon nature={activeDecision.nature} />
                             )}
@@ -208,16 +208,15 @@ export function TaskActionPanel({
                                 value={decisionComment}
                                 onChange={(e) => setDecisionComment(e.target.value)}
                                 maxLength={255}
-                                className="min-h-24 resize-none text-sm font-sans"
-                                autoFocus
+                                className="min-h-24 resize-none text-base sm:text-sm font-sans"
                             />
                         </div>
                     )}
 
-                    <DialogFooter className="gap-2 sm:gap-0">
+                    <DialogFooter className="grid grid-cols-2 gap-3 pt-3 sm:flex sm:justify-end sm:gap-2 border-t border-border/40">
                         <Button
                             variant="outline"
-                            className="mr-2 h-9 min-w-24"
+                            className="h-11 sm:h-9 w-full sm:w-auto rounded-xl font-semibold"
                             onClick={() => {
                                 setActiveDecision(null);
                                 setDecisionComment('');
@@ -229,10 +228,10 @@ export function TaskActionPanel({
                             variant={activeDecision?.nature === 'NEGATIVE' ? 'destructive' : 'success'}
                             onClick={handleConfirmDecision}
                             disabled={!canSubmitDecision || isExecuting}
-                            className="h-9 min-w-24 gap-1.5"
+                            className="h-11 sm:h-9 w-full sm:w-auto rounded-xl font-semibold gap-1.5"
                         >
                             {isExecuting ? (
-                                <Loader2 className="size-4 animate-spin" />
+                                <Loader2 className="size-4 animate-spin shrink-0" />
                             ) : (
                                 activeDecision && <DecisionIcon nature={activeDecision.nature} />
                             )}

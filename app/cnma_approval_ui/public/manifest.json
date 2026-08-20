@@ -19,7 +19,8 @@
           "semanticObject": "cnma_prorequest_s4h",
           "action": "approve",
           "title": "My Approval",
-          "subTitle": "Workflow Task Management"
+          "subTitle": "Workflow Task Management",
+          "icon": "apple-touch-icon.png"
         }
       }
     }
@@ -32,7 +33,7 @@
     "technology": "UI5",
     "fullWidth": true,
     "icons": {
-      "icon": "sap-icon://inbox"
+      "icon": "apple-touch-icon.png"
     },
     "deviceTypes": {
       "desktop": true,

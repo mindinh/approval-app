@@ -111,9 +111,12 @@ export function resolveObjectView(
                 rowValues[colDef.key] = evalColumn(colDef, rowRecord);
             }
             const rowId = String(rowRecord.ItemNumber || rowRecord.PurchaseRequisitionItem || rowRecord.PurchaseOrderItem || rowRecord.ItemNo || idx + 1);
+            const deletedVal = getRecordVal(rowRecord, 'Deleted|deleted|LOEKZ|DeletedFlag|deletionFlag');
+            const isDeleted = deletedVal != null && String(deletedVal).trim() !== '' && String(deletedVal).trim() !== '0' && String(deletedVal).toLowerCase().trim() !== 'false';
             return {
                 id: rowId,
-                values: rowValues
+                values: rowValues,
+                isDeleted
             };
         });
 

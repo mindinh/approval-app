@@ -98,7 +98,7 @@ export default function HomePage() {
         <div className="h-full overflow-y-auto bg-background">
                 {/* ── Gradient Header ────────────────────────── */}
                 <div
-                    className="relative px-5 pt-5 pb-16 bg-gradient-to-br from-primary to-primary-hover"
+                    className="relative px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-16 bg-gradient-to-br from-primary to-primary-hover"
                 >
                     {/* Hamburger */}
                     <div className="flex items-center justify-between mb-3">

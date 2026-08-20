@@ -157,7 +157,16 @@
         "purpose": "Purpose",
         "paidBy": "Paid By",
         "bankDetails": "Bank Details",
-        "overview": "Overview"
+        "overview": "Overview",
+        "tableView": "Table View",
+        "gridView": "Card View",
+        "tableViewShort": "Table",
+        "gridViewShort": "Card",
+        "switchViewMode": "Switch view mode",
+        "clickRowDetails": "Click a row to view complete details",
+        "cardViewDesc": "Full line items card view",
+        "itemNum": "Item #{{num}}",
+        "viewDetails": "View details"
     },
     "comments": {
         "title": "Comments",

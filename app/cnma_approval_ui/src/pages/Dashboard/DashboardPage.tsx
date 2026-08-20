@@ -400,7 +400,7 @@ export default function DashboardPage() {
         <div className="flex flex-col min-h-screen bg-background">
             {/* Mobile App Header */}
             {isMobile && (
-                <div className="px-4 py-3 flex items-center shadow-sm relative z-20 shrink-0 w-full min-h-16 bg-gradient-to-r from-primary to-primary-hover">
+                <div className="px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex items-center shadow-sm relative z-20 shrink-0 w-full bg-gradient-to-r from-primary to-primary-hover">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -610,7 +610,7 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="overflow-auto rounded-b-2xl max-h-96">
+                        <div className="overflow-y-auto overscroll-y-contain touch-pan-y [webkit-overflow-scrolling:touch] rounded-b-2xl max-h-96">
                             {tableRows.length === 0 ? (
                                 <div className="text-center py-10 text-sm text-muted-foreground border-t border-border">
                                     {t('dashboard.charts.noTasksFound', 'No tasks found')}
@@ -709,7 +709,7 @@ export default function DashboardPage() {
     // Layout Sync wrapper
     if (isMobile) {
         return (
-            <div className="relative h-full overflow-y-auto bg-background">
+            <div className="relative h-full overflow-y-auto overscroll-y-contain touch-pan-y [webkit-overflow-scrolling:touch] bg-background">
                 {dashboardContent}
             </div>
         );

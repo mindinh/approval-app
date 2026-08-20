@@ -1,8 +1,8 @@
 /**
  * Task Card Mapper — transforms raw InboxTask data into display-ready models.
  *
- * Extracts the useBusinessChips logic from TaskCard.tsx so that the component
- * receives pre-computed display data instead of applying business rules inline.
+ * Extracts business chip mapping and total amount resolution logic into
+ * pure, composable helper functions.
  */
 import type {
     InboxTask,
@@ -26,131 +26,208 @@ export interface BusinessChip {
     isPrimary?: boolean;
 }
 
-// ─── Mapper ────────────────────────────────────────────────
+// ─── Internal Helpers ──────────────────────────────────────
 
-export function resolveFrontendTotalAmount(task: InboxTask): number | undefined {
-    const typeUpper = (task.objectType || task.businessContext?.type || '').toUpperCase();
-    const isPO = typeUpper === 'PO' || typeUpper === 'BUS2012';
-    const docTypeUpper = (task.documentType || task.doctyp || task.documentTypeDisplay || '').toUpperCase();
-    const isZubPo = isPO && (docTypeUpper.includes('ZUB') || task.documentType === 'ZUB');
-
-    if (isZubPo) {
-        const val = task.TotalNetAmountLocalCrcy ?? task.totalNetAmountLocalCrcy ?? task.total;
-        return val !== undefined && val !== null ? Number(val) : undefined;
-    }
-    if (isPO) {
-        const val = task.TotalOrderValue ?? task.totalOrderValue ?? task.total;
-        return val !== undefined && val !== null ? Number(val) : undefined;
-    }
-    const val = task.total ?? task.TotalNetAmountLocalCrcy ?? task.TotalOrderValue;
-    return val !== undefined && val !== null ? Number(val) : undefined;
+/**
+ * Safely extracts the business object record from the cached detail response.
+ */
+function extractBusinessObject(cachedDetail?: any): any {
+    if (!cachedDetail) return undefined;
+    return (
+        cachedDetail.businessObject ||
+        cachedDetail.header ||
+        cachedDetail.rawDetail?.businessObject ||
+        cachedDetail.rawDetail?.header
+    );
 }
 
 /**
- * Extract key business details per document type from the task's
- * businessContext (enriched by the backend at list level).
- *
- * Pure function — no hooks, no side effects.
+ * Resolves normalized object category and document type flags.
  */
-export function mapBusinessChips(task: InboxTask): BusinessChip[] {
-    const chips: BusinessChip[] = [];
+function getDocumentTypes(task: InboxTask, bo?: any) {
+    const objectType = (
+        task.objectType ||
+        task.businessContext?.type ||
+        bo?.DocCategory ||
+        ''
+    ).toUpperCase();
 
-    // 1. If backend returns pre-configured dynamic chips, map and format them
-    if (task.businessChips && task.businessChips.length > 0) {
-        task.businessChips.forEach((chip) => {
-            let formattedValue = '';
-            if (chip.dataType === 'AMOUNT') {
-                const currency = chip.currency || task.curr_vnd || task.doc_curr;
-                formattedValue = formatAmountWithCurrency(chip.value, currency);
-            } else if (chip.dataType === 'DATE') {
-                formattedValue = formatDateShortLocale(String(chip.value));
-            } else if (chip.dataType === 'QUANTITY') {
-                const num = Number(chip.value);
-                const formattedNum = Number.isNaN(num) ? String(chip.value) : num.toLocaleString('vi-VN');
-                formattedValue = chip.unit ? `${formattedNum} ${chip.unit}` : formattedNum;
-            } else if (chip.dataType === 'BOOLEAN') {
-                formattedValue = chip.value ? 'Yes' : 'No';
-            } else {
-                formattedValue = String(chip.value);
-            }
+    const documentType = (
+        task.documentType ||
+        task.doctyp ||
+        task.documentTypeDisplay ||
+        bo?.DocumentType ||
+        ''
+    ).toUpperCase();
 
-            chips.push({
-                label: chip.label,
-                value: formattedValue,
-                isPrimary: chip.isPrimary,
-            });
-        });
-    } else {
-        // 2. Fallback to legacy hardcoded logic
-        const ctx = task.businessContext;
-        if (ctx) {
-            if (ctx.type === 'PO' && ctx.po) {
-                const po = ctx.po as PurchaseOrderFactsheetData;
-                const hdr = po.header;
-                if (hdr) {
-                    if (hdr.purchaseOrderNetAmount) {
-                        const cur = hdr.documentCurrency || '';
-                        chips.push({
-                            label: 'Total',
-                            value: `${formatAmount(hdr.purchaseOrderNetAmount)} ${cur}`.trim(),
-                            isPrimary: true,
-                        });
-                    }
-                    if (hdr.purchaseOrderTypeText) {
-                        chips.push({ label: 'Type', value: hdr.purchaseOrderTypeText });
-                    }
-                    if (hdr.supplierName || hdr.supplier) {
-                        chips.push({ value: (hdr.supplierName || hdr.supplier)! });
-                    }
-                    if (hdr.purchasingGroupName || hdr.companyCodeName) {
-                        chips.push({ label: 'Dept', value: (hdr.purchasingGroupName || hdr.companyCodeName)! });
-                    }
-                }
-            } else if (ctx.type === 'PR' && ctx.pr) {
-                const pr = ctx.pr as PurchaseRequisitionFactsheetData;
-                const hdr = pr.header;
-                if (hdr) {
-                    const totalValue = hdr.totalNetAmount;
-                    const totalCurrency = hdr.displayCurrency || '';
-                    if (totalValue) {
-                        chips.push({
-                            label: 'Total',
-                            value: `${formatAmount(totalValue)} ${totalCurrency}`.trim(),
-                            isPrimary: true,
-                        });
-                    }
-                    const prTypeVal = hdr.purchaseRequisitionTypeText || hdr.purchaseRequisitionType;
-                    if (prTypeVal) {
-                        chips.push({ label: 'Type', value: prTypeVal });
-                    }
-                    const compCodeVal = hdr.companyCodeDisplay || (hdr.companyCode ? (hdr.companyCodeName ? `${hdr.companyCode} - ${hdr.companyCodeName}` : `${hdr.companyCode} - `) : task.companyCodeDisplay);
-                    if (compCodeVal) {
-                        chips.push({ label: 'Company Code', value: compCodeVal });
-                    }
-                    const deptVal = hdr.departmentDisplay || hdr.department;
-                    if (deptVal) {
-                        chips.push({ label: 'Dept', value: deptVal });
-                    }
-                }
-            }
+    const isPO = objectType === 'PO' || objectType === 'BUS2012';
+    const isZubPo =
+        isPO &&
+        (documentType.includes('ZUB') ||
+            task.documentType === 'ZUB' ||
+            bo?.DocumentType === 'ZUB');
+
+    return { objectType, documentType, isPO, isZubPo };
+}
+
+/**
+ * Formats dynamic chips returned directly from backend.
+ */
+function formatDynamicChip(chip: any, task: InboxTask): BusinessChip {
+    let formattedValue = '';
+
+    switch (chip.dataType) {
+        case 'AMOUNT': {
+            const currency = chip.currency || task.curr_vnd || task.doc_curr;
+            formattedValue = formatAmountWithCurrency(chip.value, currency);
+            break;
+        }
+        case 'DATE': {
+            formattedValue = formatDateShortLocale(String(chip.value));
+            break;
+        }
+        case 'QUANTITY': {
+            const num = Number(chip.value);
+            const formattedNum = Number.isNaN(num)
+                ? String(chip.value)
+                : num.toLocaleString('vi-VN');
+            formattedValue = chip.unit ? `${formattedNum} ${chip.unit}` : formattedNum;
+            break;
+        }
+        case 'BOOLEAN': {
+            formattedValue = chip.value ? 'Yes' : 'No';
+            break;
+        }
+        default: {
+            formattedValue = String(chip.value ?? '');
+            break;
         }
     }
 
-    // 3. Root-level total amount fallback (ensure no duplicate Total chip is added)
-    const hasTotalChip = chips.some((c) => c.label === 'Total' || c.label === 'Total Amount');
-    const totalValue = resolveFrontendTotalAmount(task);
+    return {
+        label: chip.label,
+        value: formattedValue,
+        isPrimary: chip.isPrimary,
+    };
+}
 
-    if (!hasTotalChip && totalValue !== undefined && totalValue !== null) {
-        const totalCurrency = task.curr_vnd || task.doc_curr || 'VND';
-        chips.push({
-            label: 'Total',
-            value: formatAmountWithCurrency(totalValue, totalCurrency),
-            isPrimary: true,
-        });
+/**
+ * Maps legacy factsheet context (PO / PR) to chips if present.
+ */
+function mapLegacyContextChips(ctx: any): BusinessChip[] {
+    const chips: BusinessChip[] = [];
+    if (!ctx) return chips;
+
+    if (ctx.type === 'PO' && ctx.po?.header) {
+        const hdr = ctx.po.header as PurchaseOrderFactsheetData['header'];
+        if (hdr.purchaseOrderNetAmount) {
+            chips.push({
+                label: 'Total',
+                value: `${formatAmount(hdr.purchaseOrderNetAmount)} ${hdr.documentCurrency || ''}`.trim(),
+                isPrimary: true,
+            });
+        }
+        if (hdr.purchaseOrderTypeText) {
+            chips.push({ label: 'Type', value: hdr.purchaseOrderTypeText });
+        }
+        if (hdr.supplierName || hdr.supplier) {
+            chips.push({ value: (hdr.supplierName || hdr.supplier)! });
+        }
+        if (hdr.purchasingGroupName || hdr.companyCodeName) {
+            chips.push({ label: 'Dept', value: (hdr.purchasingGroupName || hdr.companyCodeName)! });
+        }
+    } else if (ctx.type === 'PR' && ctx.pr?.header) {
+        const hdr = ctx.pr.header as PurchaseRequisitionFactsheetData['header'];
+        if (hdr.totalNetAmount) {
+            chips.push({
+                label: 'Total',
+                value: `${formatAmount(hdr.totalNetAmount)} ${hdr.displayCurrency || ''}`.trim(),
+                isPrimary: true,
+            });
+        }
+        const prTypeVal = hdr.purchaseRequisitionTypeText || hdr.purchaseRequisitionType;
+        if (prTypeVal) {
+            chips.push({ label: 'Type', value: prTypeVal });
+        }
+        if (hdr.companyCodeDisplay) {
+            chips.push({ label: 'Company Code', value: hdr.companyCodeDisplay });
+        }
+        if (hdr.departmentDisplay || hdr.department) {
+            chips.push({ label: 'Dept', value: (hdr.departmentDisplay || hdr.department)! });
+        }
     }
 
+    return chips;
+}
 
-    // 4. Root-level Company Code fallback
+// ─── Total Amount Resolver ─────────────────────────────────
+
+export function resolveFrontendTotalAmount(task: InboxTask, cachedDetail?: any): number | undefined {
+    const bo = extractBusinessObject(cachedDetail);
+    const { isPO, isZubPo } = getDocumentTypes(task, bo);
+
+    // 1. Prioritize live business object from detail cache
+    if (bo) {
+        if (isZubPo) {
+            const val = bo.TotalNetAmountLocalCrcy ?? bo.totalNetAmountLocalCrcy ?? bo.TotalOrderValue ?? bo.totalOrderValue;
+            if (val != null) return Number(val);
+        } else if (isPO) {
+            const val = bo.TotalOrderValue ?? bo.totalOrderValue ?? bo.TotalNetAmountLocalCrcy ?? bo.totalNetAmountLocalCrcy;
+            if (val != null) return Number(val);
+        } else {
+            const val = bo.TotalNetAmountLocalCrcy ?? bo.TotalOrderValue ?? bo.TotalAmount ?? bo.total;
+            if (val != null) return Number(val);
+        }
+    }
+
+    // 2. Fallback to task item values
+    if (isZubPo) {
+        const val = task.TotalNetAmountLocalCrcy ?? task.totalNetAmountLocalCrcy ?? task.total;
+        return val != null ? Number(val) : undefined;
+    }
+    if (isPO) {
+        const val = task.TotalOrderValue ?? task.totalOrderValue ?? task.total;
+        return val != null ? Number(val) : undefined;
+    }
+    const val = task.total ?? task.TotalNetAmountLocalCrcy ?? task.TotalOrderValue;
+    return val != null ? Number(val) : undefined;
+}
+
+// ─── Main Mapper ───────────────────────────────────────────
+
+/**
+ * Extract key business details per document type from the task's
+ * businessContext (enriched by backend or live detail cache).
+ *
+ * Pure function — no hooks, no side effects.
+ */
+export function mapBusinessChips(task: InboxTask, cachedDetail?: any): BusinessChip[] {
+    // Step 1: Initialize base chips from dynamic backend chips or legacy factsheet context
+    const chips: BusinessChip[] =
+        task.businessChips && task.businessChips.length > 0
+            ? task.businessChips.map((chip) => formatDynamicChip(chip, task))
+            : mapLegacyContextChips(task.businessContext);
+
+    // Step 2: Total amount processing (overriding or injecting primary Total chip)
+    const totalValue = resolveFrontendTotalAmount(task, cachedDetail);
+    if (totalValue != null) {
+        const bo = extractBusinessObject(cachedDetail);
+        const totalCurrency = bo?.LocalCurrency || bo?.DocumentCurrency || task.curr_vnd || task.doc_curr || 'VND';
+        const formattedTotal = formatAmountWithCurrency(totalValue, totalCurrency);
+
+        const totalChipIdx = chips.findIndex((c) => c.label === 'Total' || c.label === 'Total Amount');
+        if (totalChipIdx !== -1) {
+            chips[totalChipIdx] = { ...chips[totalChipIdx], value: formattedTotal };
+        } else {
+            chips.push({
+                label: 'Total',
+                value: formattedTotal,
+                isPrimary: true,
+            });
+        }
+    }
+
+    // Step 3: Company Code fallback chip
     const hasCompCodeChip = chips.some((c) => c.label === 'Company Code');
     if (!hasCompCodeChip && task.companyCodeDisplay) {
         chips.push({
@@ -159,12 +236,17 @@ export function mapBusinessChips(task: InboxTask): BusinessChip[] {
         });
     }
 
-    // 5. Root-level Document Type fallback (e.g. Type: ZFO8 - Expense PO or RESV - Reservation)
+    // Step 4: Document Type fallback chip
     const hasTypeChip = chips.some((c) => c.label === 'Type');
     if (!hasTypeChip) {
-        const objTypeUpper = (task.objectType || task.businessContext?.type || '').toUpperCase();
-        const docTypeUpper = (task.documentType || task.documentTypeDisplay || '').toUpperCase();
-        const isReservation = objTypeUpper === 'RE' || objTypeUpper === 'ZBUS2093' || objTypeUpper === 'BUS2093' || docTypeUpper.includes('RESV') || docTypeUpper === 'RE';
+        const { objectType, documentType } = getDocumentTypes(task);
+        const isReservation =
+            objectType === 'RE' ||
+            objectType === 'ZBUS2093' ||
+            objectType === 'BUS2093' ||
+            documentType.includes('RESV') ||
+            documentType === 'RE';
+
         const typeVal = task.documentTypeDisplay || (isReservation ? 'RESV - Reservation' : undefined);
         if (typeVal) {
             chips.push({

@@ -99,40 +99,27 @@ export function FilterBar({
             <div className={`flex flex-col h-full bg-white ${className}`}>
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                     <h3 className="font-semibold text-lg">Filters</h3>
-                    {onAdaptFilter && (
-                        <Button variant="ghost" size="sm" onClick={() => setShowFilterSettings(true)} className="text-primary hover:bg-primary/5">
-                            <ListFilter className="w-4 h-4 mr-2" />
-                            Adapt Filter
-                        </Button>
-                    )}
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-                    {visibleFilters.map((fieldConfig) => (
+                    {allFilters.map((fieldConfig) => (
                         <FilterBarField
                             key={fieldConfig.key}
                             config={fieldConfig}
                             value={values[fieldConfig.key]}
                             onChange={(value) => handleFieldChange(fieldConfig.key, value)}
+                            isMobile={true}
                         />
                     ))}
                 </div>
-                <div className="p-4 border-t grid grid-cols-3 gap-3 bg-muted/30">
-                    <Button variant="outline" onClick={handleClear} className="col-span-1 h-11 rounded-xl">
+                <div className="p-4 pb-[calc(2.25rem+env(safe-area-inset-bottom,24px))] border-t grid grid-cols-3 gap-3 bg-background shadow-lg sticky bottom-0 z-10">
+                    <Button variant="outline" onClick={handleClear} className="col-span-1 h-11 rounded-xl font-medium">
                         <RotateCcw className="w-4 h-4 mr-2" />
                         Clear
                     </Button>
-                    <Button variant="default" onClick={handleApply} className="col-span-2 h-11 rounded-xl shadow-sm">
+                    <Button variant="default" onClick={handleApply} className="col-span-2 h-11 rounded-xl font-semibold shadow-sm">
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Apply'}
                     </Button>
                 </div>
-                {onAdaptFilter && (
-                    <FilterSettingsDialog
-                        open={showFilterSettings}
-                        onOpenChange={setShowFilterSettings}
-                        filters={filterSettingsItems}
-                        onApply={handleFilterSettingsApply}
-                    />
-                )}
             </div>
         );
     }
@@ -210,6 +197,7 @@ export function FilterBar({
                                     config={fieldConfig}
                                     value={values[fieldConfig.key]}
                                     onChange={(value) => handleFieldChange(fieldConfig.key, value)}
+                                    isMobile={false}
                                 />
                             ))}
                         </div>

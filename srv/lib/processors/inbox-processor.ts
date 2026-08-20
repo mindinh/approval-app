@@ -365,7 +365,7 @@ export class InboxProcessor {
                 documentId: inst.instid
             },
             supports: {
-                forward: overrideStatus === 'COMPLETED' ? false : (matchingTask?.SupportsForward ?? true),
+                forward: (inst.normalTask === false || overrideStatus === 'COMPLETED') ? false : (matchingTask?.SupportsForward ?? true),
                 comments: matchingTask?.SupportsComments ?? true
             },
             total: calcTotal !== undefined ? Number(calcTotal) : undefined,

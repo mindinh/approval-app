@@ -2,7 +2,29 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
-## [1.0.10] - 2026-08-17
+## [1.0.11] - 2026-08-20
+
+### Added
+*   **Mobile Multi-Select Filter Bottom-Sheet Overlay (`MobileMultiSelectFilter.tsx`)**:
+    *   Created [`MobileMultiSelectFilter.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/filterbar/MobileMultiSelectFilter.tsx) rendering a touch-optimized bottom-sheet sub-drawer for mobile multi-select filtering via `createPortal`. Includes live search, "Select All" / Clear action buttons, count badges, custom touch checkboxes, and async `optionsLoader` cleanup.
+    *   Added `MobileDateRangeFilter` in [`FilterBarField.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/filterbar/FilterBarField.tsx) providing an inline touch-friendly date range calendar for mobile filter bars.
+*   **Detail Table View Mode Switcher (`table` vs `grid`)**:
+    *   Added view mode toggle to [`DetailsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx) allowing desktop and tablet users to toggle between standard table view and collapsible card grid view for line items.
+*   **Code Review Audit Report (`Code-Review-260820.md`)**:
+    *   Added [`Code-Review-260820.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260820.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance (Code Score: 95/100).
+
+### Refactored & Changed
+*   **Callback Ref Architecture for Mobile Pull-to-Refresh (`usePullToRefresh.ts`)**:
+    *   Re-architected touch gesture event handling in [`usePullToRefresh.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/hooks/usePullToRefresh.ts) using callback refs (`setRef`) for dynamic DOM node binding across tab remounts.
+    *   Strictly scoped passive touch listeners to container elements to enable 100% native momentum touch scrolling without gesture interference.
+*   **Generic OData Deletion Indicator String Trimming**:
+    *   Updated `checkIsDeleted` in [`DetailsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx) to trim string values (`String(delVal).trim() !== ''`) before non-empty evaluation, preventing space-padded strings (`" "`) from triggering false-positive deleted indicators on active line items across all SAP document types.
+*   **Non-Normal Task Task Forwarding Guard**:
+    *   Updated [`inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts) and [`object-type-resolver.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/object-type-resolver.ts) to restrict forwarding capabilities (`SupportsForward: false`) on non-normal tasks (e.g., info/notification tasks).
+*   **Standardized Business Chip Mapper & Amount Resolution**:
+    *   Refactored [`taskCard.mapper.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts) to resolve primary total amounts from live detail cache and map document type fallback chips.
+
+---
 
 ### Added
 *   **Unified Comment Payload Interface (`comment.types.ts`)**:

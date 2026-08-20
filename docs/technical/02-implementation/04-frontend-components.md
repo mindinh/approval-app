@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Declarative Renderer Engine
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-17 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-20 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, raw OData consumption, and the **Declarative Raw OData Renderer Engine** of the **CNMA Approval** frontend.
 
@@ -13,15 +13,19 @@ The frontend application uses a master-detail layout for the inbox workspace:
 ```
 [Dashboard Page] -> High-level metrics, KPI summary cards, and quick status links
 [Inbox Page] -> Master-Detail Layout:
-  ├── Left Pane: TaskList.tsx (with pull-to-refresh hook: usePullToRefresh.ts)
+  ├── Header FilterBar: FilterBar.tsx & FilterBarField.tsx
+  │     ├── MobileMultiSelectFilter.tsx (Touch bottom-sheet overlay with option search & batch select)
+  │     ├── MobileDateRangeFilter (Inline touch calendar range picker)
+  │     └── FilterSettingsDialog.tsx (Adapt filter order & visibility)
+  ├── Left Pane: TaskList.tsx (with touch pull-to-refresh hook: usePullToRefresh.ts)
   │     ├── TaskCard.tsx (Task title, badges, document numbers, total amounts via taskCard.mapper.ts)
   │     └── TaskPagination.tsx
-  └── Right Pane: TaskDetailView.tsx (with TaskDetailSkeletons.tsx loading indicators)
+  └── Right Pane: TaskDetailView.tsx (with TaskDetailSkeletons.tsx loading indicators & PTR container ref)
         ├── Header & Status Badges (StatusHeaderBadges.tsx)
         ├── Dynamic Overview Cards & Tables (Driven by ObjectView.registry.ts & resolveBusinessSectionModel)
         ├── Tabbed View Panels:
         │     ├── OverviewPanel.tsx (Renders cards from BusinessSectionModel)
-        │     ├── DetailsPanel.tsx (Renders item tables with interactive Reference PR badges)
+        │     ├── DetailsPanel.tsx (Renders item tables with Table/Grid View Mode Switcher, Item Deletion Flags & Reference PR badges)
         │     ├── CommentsPanel.tsx (Timeline notes & RichMentionInput with TeamsMentionDropdown)
         │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
         │     └── WorkflowApprovalPanel.tsx (Approval release tree timeline)

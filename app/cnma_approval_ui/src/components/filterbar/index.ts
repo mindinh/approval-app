@@ -8,6 +8,7 @@
 export { FilterBar } from './FilterBar';
 export { FilterBarField } from './FilterBarField';
 export { FilterSettingsDialog } from './FilterSettingsDialog';
+export { MobileMultiSelectFilter } from './MobileMultiSelectFilter';
 
 // Utilities
 export { initializeFilterValues } from './utils';

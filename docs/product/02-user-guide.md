@@ -1,6 +1,6 @@
 # User Manual & Operations Guide
 
-> **Owner:** Product Manager | **Last Updated:** 2026-08-17 | **Status:** Active
+> **Owner:** Product Manager | **Last Updated:** 2026-08-20 | **Status:** Active
 
 This guide describes how to operate the **CNMA Approval** portal to manage, review, and decide on procurement workflows.
 
@@ -25,8 +25,9 @@ The **Inbox** holds your structured task list:
     *   Creation date and age of the task.
     *   Total net amount (with display currency e.g., VND) and VND equivalency.
     *   Priority badges (Low, Medium, High, Very High) to help prioritize.
+*   **Mobile Multi-Select Filter Sheets & Date Pickers**: On smartphone and tablet viewports, tapping multi-select filter fields opens an interactive bottom-sheet drawer with option search, "Select All" / Clear action buttons, and touch-friendly date range selection.
 *   **Mass Action Mode**: Check the checkboxes on multiple task cards to activate the mass action bar at the bottom, allowing you to approve several documents at once.
-*   **Mobile Pull to Refresh**: On touch mobile devices, swipe down from top of the task list to instantly refresh your pending approval queue.
+*   **Mobile Pull to Refresh**: On touch mobile devices, swipe down from top of the task list or detail view to instantly refresh your pending approval queue and latest document details.
 
 ---
 
@@ -35,6 +36,8 @@ Clicking a Task Card loads its comprehensive details in a split-screen view:
 
 ### 1. General Information & Items
 Displays header data (Company Code, Purchasing Organization, Supplier, total net value) followed by customized subtype layouts (Asset PR/PO, Subcontracting, Toll Manufacturing, Service PR/PO, Stock Transfer). For each line item:
+*   **View Mode Switcher (`Table` vs `Card Grid`)**: Toggle between standard desktop table layout and responsive card grid view for line items.
+*   **Item Deletion Indicators**: Line items marked as deleted in S/4HANA are clearly flagged with red background styling, strike-through text, and a **Trash** icon (`Item Deleted`).
 *   Item Number and description.
 *   Quantity, Unit of Measure, Net Price, and Net Value.
 *   Material Group.

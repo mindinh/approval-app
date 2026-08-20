@@ -4,13 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
 import { TaskList, TaskDetailView, MassSelectionView } from '@/pages/Inbox/components';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     useInfiniteTasks,
     useInfiniteApprovedTasks,
     useTaskDetail,
     useDecision,
     useForward,
+    invalidateTaskList,
 } from '@/pages/Inbox/hooks/useInbox';
+
 
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { useIsMobile, useSidebar, Button } from '@cnma/react-ui';
@@ -33,8 +36,9 @@ export default function InboxPage() {
     const isMobile = useIsMobile();
     const { setOpenMobile } = useSidebar();
 
-    // Reset selection state whenever scope changes
-    // Refs for auto-selection and scope tracking
+    const queryClient = useQueryClient();
+
+    // Reset selection state & invalidate query cache whenever scope changes
     const hasAutoSelected = useRef(false);
     const prevScopeRef = useRef<TaskScope>(scope);
     useEffect(() => {
@@ -43,8 +47,9 @@ export default function InboxPage() {
             setSelectionMode(false);
             setSelectedIds(new Set());
             hasAutoSelected.current = false; // Allow auto-select for the new scope
+            invalidateTaskList(queryClient, selectedTaskId);
         }
-    }, [scope]);
+    }, [scope, queryClient, selectedTaskId]);
 
     const isMyScope = scope === 'my';
     const showTaskActions = true;
@@ -269,14 +274,15 @@ export default function InboxPage() {
         });
     }, []);
 
-    const isRefreshing = activeTasksQuery.isRefetching || (isFetchingDetail && !isLoadingDetail);
+    const isRefreshing = activeTasksQuery.isRefetching || activeTasksQuery.isFetching || (isFetchingDetail && !isLoadingDetail);
 
     const handleRefreshTasks = useCallback(() => {
-        void activeTasksQuery.refetch();
+        invalidateTaskList(queryClient, selectedTaskId);
         if (selectedTaskId) {
             void refetchDetail();
         }
-    }, [activeTasksQuery, selectedTaskId, refetchDetail]);
+    }, [queryClient, selectedTaskId, refetchDetail]);
+
 
     const showMassSelection = showTaskActions && isMyScope && selectionMode && selectedIds.size > 0;
 
@@ -285,20 +291,21 @@ export default function InboxPage() {
             <div className="relative h-full flex flex-col min-h-0 overflow-hidden bg-background">
                 {/* Mobile App Header — always visible gradient bar */}
                 <div
-                    className="px-4 py-3 flex items-center shadow-sm relative z-20 shrink-0"
+                    className="px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex items-center justify-between shadow-sm relative z-20 shrink-0 min-h-[52px]"
                     style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' }}
                 >
                     <Button
                         variant="ghost"
                         onClick={() => setOpenMobile(true)}
-                        className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-white/10 active:bg-white/20 absolute left-4"
+                        className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-white/10 active:bg-white/20 p-0 relative z-10"
                         aria-label={t('nav.openMenu', 'Open navigation menu')}
                     >
                         <Menu size={22} className="text-white" />
                     </Button>
-                    <h1 className="text-lg font-bold text-white tracking-wide w-full text-center">
+                    <h1 className="absolute left-1/2 top-[calc(50%+env(safe-area-inset-top)/2)] -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-white tracking-wide text-center pointer-events-none whitespace-nowrap">
                         {scope === 'approved' ? t('nav.approvedTasks', 'Approved Tasks') : t('nav.myTasks', 'My Tasks')}
                     </h1>
+                    <div className="w-9 h-9" />
                 </div>
                 <div className="relative flex-1 min-h-0 w-full min-w-0">
                     <AnimatePresence mode="wait">

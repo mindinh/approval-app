@@ -54,7 +54,7 @@ export function ForwardTaskDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogContent className="w-[92vw] sm:max-w-lg max-h-[85dvh] my-auto flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                         <Forward className="w-5 h-5 text-blue-600" />
@@ -75,10 +75,12 @@ export function ForwardTaskDialog({
                             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 type="text"
+                                inputMode="search"
+                                autoComplete="off"
                                 placeholder={t('forward.searchPlaceholder', 'Search by name, user ID, or email...')}
                                 value={searchPattern}
                                 onChange={(e) => setSearchPattern(e.target.value)}
-                                className="pl-9 pr-8"
+                                className="pl-9 pr-8 h-11 sm:h-9 text-base"
                             />
                             {isLoading && (
                                 <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-blue-500" />
@@ -94,7 +96,7 @@ export function ForwardTaskDialog({
                                         <div
                                             key={user.userId || user.uniqueName}
                                             onClick={() => handleUserSelect(user)}
-                                            className={`p-2.5 cursor-pointer flex items-center justify-between transition-colors hover:bg-blue-50/60 ${isSelected ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                                            className={`p-2.5 min-h-[48px] cursor-pointer flex items-center justify-between transition-colors hover:bg-blue-50/60 active:bg-blue-50/80 ${isSelected ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                                                 }`}
                                         >
                                             <div className="flex items-start gap-2.5 min-w-0">
@@ -142,7 +144,7 @@ export function ForwardTaskDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedUser(null)}
-                                className="h-6 px-2 text-xs text-blue-700 hover:text-blue-900"
+                                className="h-11 sm:h-9 px-2 text-xs text-blue-700 hover:text-blue-900"
                             >
                                 {t('forward.changeUser', 'Change')}
                             </Button>
@@ -160,19 +162,19 @@ export function ForwardTaskDialog({
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
                             rows={3}
-                            className="resize-none"
+                            className="resize-none text-base sm:text-sm"
                         />
                     </div>
                 </div>
 
-                <DialogFooter className="pt-3 border-t">
-                    <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                <DialogFooter className="grid grid-cols-2 gap-3 pt-3 border-t sm:flex sm:justify-end sm:gap-2">
+                    <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="h-11 sm:h-9 rounded-xl font-semibold">
                         {t('forward.cancel', 'Cancel')}
                     </Button>
                     <Button
                         onClick={handleConfirm}
                         disabled={!selectedUser || isSubmitting}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-blue-600 hover:bg-blue-700 text-white h-11 sm:h-9 rounded-xl font-semibold"
                     >
                         {isSubmitting ? (
                             <>

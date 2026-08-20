@@ -81,7 +81,7 @@ export function FilterSettingsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+            <DialogContent className="w-[92vw] sm:max-w-md max-h-[85dvh] my-auto flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Adapt Filter</DialogTitle>
                 </DialogHeader>
@@ -93,7 +93,10 @@ export function FilterSettingsDialog({
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder="Search"
-                        className="pl-9"
+                        type="search"
+                        inputMode="search"
+                        autoComplete="off"
+                        className="pl-9 h-11 sm:h-9 text-base"
                     />
                 </div>
 
@@ -103,7 +106,7 @@ export function FilterSettingsDialog({
                     <Button
                         variant="link"
                         onClick={() => setShowUnselected(!showUnselected)}
-                        className="text-primary h-auto p-0 text-xs"
+                        className="text-primary h-auto p-0 text-xs min-h-[44px] sm:min-h-0 flex items-center"
                     >
                         {showUnselected ? 'Show All' : 'Hide Unselected'}
                     </Button>
@@ -118,7 +121,7 @@ export function FilterSettingsDialog({
                             <div
                                 key={filter.name}
                                 onClick={() => setSelectedIndex(realIdx)}
-                                className={`flex items-center gap-2 px-2 py-2.5 cursor-pointer transition-colors ${
+                                className={`flex items-center gap-2 px-2 py-2.5 cursor-pointer transition-colors min-h-[44px] ${
                                     isSelected ? 'bg-primary/5' : 'hover:bg-muted/30'
                                 }`}
                             >
@@ -134,7 +137,7 @@ export function FilterSettingsDialog({
                                             variant="ghost"
                                             size="icon"
                                             onClick={e => { e.stopPropagation(); moveFilter(realIdx, 0); }}
-                                            className="p-0.5 h-auto w-auto"
+                                            className="h-11 w-11 sm:h-7 sm:w-7 p-0"
                                             title="Move to top"
                                             disabled={realIdx === 0}
                                         >
@@ -144,7 +147,7 @@ export function FilterSettingsDialog({
                                             variant="ghost"
                                             size="icon"
                                             onClick={e => { e.stopPropagation(); moveFilter(realIdx, realIdx - 1); }}
-                                            className="p-0.5 h-auto w-auto"
+                                            className="h-11 w-11 sm:h-7 sm:w-7 p-0"
                                             title="Move up"
                                             disabled={realIdx === 0}
                                         >
@@ -154,7 +157,7 @@ export function FilterSettingsDialog({
                                             variant="ghost"
                                             size="icon"
                                             onClick={e => { e.stopPropagation(); moveFilter(realIdx, realIdx + 1); }}
-                                            className="p-0.5 h-auto w-auto"
+                                            className="h-11 w-11 sm:h-7 sm:w-7 p-0"
                                             title="Move down"
                                             disabled={realIdx === localFilters.length - 1}
                                         >
@@ -164,7 +167,7 @@ export function FilterSettingsDialog({
                                             variant="ghost"
                                             size="icon"
                                             onClick={e => { e.stopPropagation(); moveFilter(realIdx, localFilters.length - 1); }}
-                                            className="p-0.5 h-auto w-auto"
+                                            className="h-11 w-11 sm:h-7 sm:w-7 p-0"
                                             title="Move to bottom"
                                             disabled={realIdx === localFilters.length - 1}
                                         >

@@ -103,7 +103,7 @@ export function TaskList({
         onSelectedIdsChange,
     });
 
-    const filters = useTaskFilters(tasks);
+    const filters = useTaskFilters(tasks, scope);
 
     const ptr = usePullToRefresh({
         onRefresh,
@@ -121,6 +121,7 @@ export function TaskList({
 
     // ─── Infinite scroll sentinel (Callback Ref for clean unmount/remount) ─
     const observerRef = useRef<IntersectionObserver | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
     const sentinelCallbackRef = useCallback(
         (node: HTMLDivElement | null) => {
@@ -131,7 +132,7 @@ export function TaskList({
 
             if (!node || !onLoadMore) return;
 
-            const container = ptr.containerRef.current;
+            const container = scrollContainerRef.current;
             const observer = new IntersectionObserver(
                 (entries) => {
                     if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
@@ -147,7 +148,7 @@ export function TaskList({
             observer.observe(node);
             observerRef.current = observer;
         },
-        [hasNextPage, isFetchingNextPage, onLoadMore, ptr.containerRef]
+        [hasNextPage, isFetchingNextPage, onLoadMore]
     );
 
     // ─── Auto-fetch next page when filtering and local results are empty ────────
@@ -162,6 +163,21 @@ export function TaskList({
             onLoadMore();
         }
     }, [filters.hasLocalFilter, filters.filteredTasks.length, hasNextPage, isFetchingNextPage, onLoadMore]);
+
+    // ─── Auto-select first matching task when filters are applied (Desktop master-detail only) ─
+    useEffect(() => {
+        if (isMobile) return; // Never auto-navigate to task detail on mobile after searching/filtering
+        if (!filters.hasLocalFilter) return;
+        if (filters.filteredTasks.length === 0) return;
+
+        const isCurrentlySelectedInFiltered = filters.filteredTasks.some(
+            (t) => t.instanceId === selectedTaskId
+        );
+
+        if (!isCurrentlySelectedInFiltered) {
+            onSelectTask(filters.filteredTasks[0]);
+        }
+    }, [isMobile, filters.hasLocalFilter, filters.filteredTasks, selectedTaskId, onSelectTask]);
 
     // ─── Derived state ─────────────────────────────────────
     const { t } = useTranslation();
@@ -267,12 +283,11 @@ export function TaskList({
 
             {/* ── Task Results — native scroll so the scrollbar gutter sits OUTSIDE cards ── */}
             <div
-                ref={ptr.containerRef}
-                {...(isMobile ? ptr.touchHandlers : {})}
-                className={cn(
-                    'flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y',
-                    isMobile && 'will-change-scroll [webkit-overflow-scrolling:touch]'
-                )}
+                ref={(node) => {
+                    scrollContainerRef.current = node;
+                    ptr.containerRef(node);
+                }}
+                className="flex-1 min-h-0 overflow-y-auto bg-background"
             >
                 {/* ── Mobile Pull-to-Refresh Indicator ── */}
                 {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (

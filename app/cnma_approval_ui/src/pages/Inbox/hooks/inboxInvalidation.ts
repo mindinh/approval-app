@@ -87,3 +87,21 @@ export function invalidatePrAttachments(
     queryClient.invalidateQueries({ queryKey: ['inbox', 'pr-attachments', documentNumber] });
     queryClient.refetchQueries({ queryKey: ['inbox', 'pr-attachments', documentNumber] });
 }
+
+// ─── Policy: Manual refresh of task lists & detail panel ─────
+export function invalidateTaskList(queryClient: QueryClient, selectedTaskId?: string | null) {
+    queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
+    void queryClient.refetchQueries({ queryKey: inboxKeys.tasksPrefix() });
+    void queryClient.refetchQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
+
+    if (selectedTaskId) {
+        const cleanId = normId(selectedTaskId);
+        queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+        void queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+        if (selectedTaskId !== cleanId) {
+            queryClient.invalidateQueries({ queryKey: ['inbox', 'task', selectedTaskId] });
+            void queryClient.refetchQueries({ queryKey: ['inbox', 'task', selectedTaskId] });
+        }
+    }
+}

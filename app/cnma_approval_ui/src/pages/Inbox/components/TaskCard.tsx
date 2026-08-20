@@ -21,7 +21,11 @@ interface TaskCardProps {
  * Hook wrapper around the pure mapBusinessChips function.
  */
 function useBusinessChips(task: InboxTask): BusinessChip[] {
-    return useMemo(() => mapBusinessChips(task), [task.businessContext]);
+    const queryClient = useQueryClient();
+    const cleanId = task.instanceId ? String(task.instanceId).replace(/^0+/, '') : '';
+    const cachedDetail = queryClient.getQueryData(inboxKeys.taskDetail(cleanId)) || queryClient.getQueryData(inboxKeys.taskDetail(task.instanceId));
+
+    return useMemo(() => mapBusinessChips(task, cachedDetail), [task, cachedDetail]);
 }
 
 function getObjectTypeStyle(type?: string) {
@@ -80,21 +84,22 @@ export const TaskCard = memo(function TaskCard({
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
         return (
-            <Button
-                variant="ghost"
+            <div
+                role="button"
+                tabIndex={0}
                 id={`task-card-${task.instanceId}`}
                 onClick={() => onClick(task)}
                 onMouseEnter={handlePrefetch}
                 onFocus={handlePrefetch}
                 className={cn(
-                    // Layout — override Button defaults (items-center → items-stretch, h-auto)
-                    'relative w-full h-auto overflow-hidden rounded-2xl border',
+                    // Layout
+                    'relative w-full h-auto overflow-hidden rounded-2xl border cursor-pointer select-none',
                     'flex flex-col items-stretch justify-start gap-0',
                     'px-4 py-4',
                     // Text
                     'text-left whitespace-normal',
                     // Transitions / focus
-                    'transition-all duration-200',
+                    'transition-all duration-200 active:scale-[0.99] active:bg-muted/40',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     // Colour — base
                     'bg-card border-border',
@@ -189,7 +194,7 @@ export const TaskCard = memo(function TaskCard({
                             : '-'}
                     </span>
                 </div>
-            </Button>
+            </div>
         );
     }
 

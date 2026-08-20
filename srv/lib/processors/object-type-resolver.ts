@@ -82,7 +82,7 @@ export class ObjectTypeResolver {
                     CreatedOn: undefined,
                     CreatedByName: undefined,
                     TaskDefinitionID: inst ? (inst.typeid || '') : '',
-                    SupportsForward: isTaskCompleted ? false : true,
+                    SupportsForward: (isTaskCompleted || normalTask === false) ? false : true,
                     SupportsComments: true,
                     decisions: []
                 };

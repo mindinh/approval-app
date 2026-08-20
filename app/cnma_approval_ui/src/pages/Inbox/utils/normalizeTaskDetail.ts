@@ -52,8 +52,9 @@ export function normalizeDetailForView(detail: any) {
 
     const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
     const title = tp?.task?.TaskTitle || detail.task?.title || `${docCategory} ${documentId}`;
+    const isNormalTask = (detail.normalTask ?? detail.task?.normalTask) !== false;
     const supports = {
-        forward: (tp?.task?.SupportsForward ?? detail.supports?.forward ?? detail.task?.supports?.forward) !== false,
+        forward: isNormalTask && (tp?.task?.SupportsForward ?? detail.supports?.forward ?? detail.task?.supports?.forward) !== false,
         comments: (tp?.task?.SupportsComments ?? detail.supports?.comments ?? detail.task?.supports?.comments) !== false
     };
 

@@ -75,7 +75,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarWrapperProps>(
                     <SheetContent
                         data-sidebar="sidebar"
                         data-mobile="true"
-                        className="w-[var(--sidebar-width)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden border-r border-sidebar-border"
+                        className="w-[var(--sidebar-width)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden border-r border-sidebar-border h-[100dvh] pt-safe pb-safe"
                         side={side}
                     >
                         <div className="flex h-full w-full flex-col">{children}</div>

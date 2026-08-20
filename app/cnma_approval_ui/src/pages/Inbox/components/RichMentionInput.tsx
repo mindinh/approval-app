@@ -184,7 +184,7 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
                 onKeyUp={checkMentionQuery}
                 onKeyDown={handleKeyDown}
                 data-placeholder={placeholder || "Write a comment... (Type '@' to mention someone)"}
-                className="min-h-[88px] max-h-[160px] p-3 rounded-lg border border-border/60 bg-card text-foreground focus:outline-none focus-visible:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors font-sans text-sm overflow-y-auto whitespace-pre-wrap break-words relative empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/60 empty:before:pointer-events-none"
+                className="min-h-[88px] max-h-[160px] p-3 rounded-lg border border-border/60 bg-card text-foreground focus:outline-none focus-visible:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors font-sans text-base sm:text-sm overflow-y-auto whitespace-pre-wrap break-words relative empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/60 empty:before:pointer-events-none"
             />
         );
     }
