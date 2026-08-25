@@ -44,9 +44,22 @@ export interface TableDefinition {
     columns: TableColumnDefinition[];
 }
 
+export interface TaskCardStyleConfig {
+    colorKey: 'primary' | 'info' | 'warning' | 'success';
+    textClass?: string;
+    stripeClass?: string;
+}
+
+export interface TaskCardChipDefinition extends FieldDefinition {
+    isPrimary?: boolean;
+}
+
 export interface ObjectViewDefinition {
     docCategory: string;
     documentType?: string;
     overviewCard: CardDefinition;
     lineItemTable?: TableDefinition;
+    cardConfig?: TaskCardStyleConfig;
+    cardChips?: TaskCardChipDefinition[];
 }
+

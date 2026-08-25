@@ -86,21 +86,15 @@ export const inboxApi = {
     /**
      * Get full detail for a single task.
      */
-    getTaskDetail: async (
-        instanceId: string,
-        hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string; status?: string }
-    ): Promise<TaskDetailResponse> => {
-        const query = new URLSearchParams();
-        if (hints?.sapOrigin) query.set('sapOrigin', hints.sapOrigin);
-        if (hints?.documentId) query.set('documentId', hints.documentId);
-        if (hints?.businessObjectType) query.set('businessObjectType', hints.businessObjectType);
-        if (hints?.status) query.set('status', hints.status);
-        const qs = query.toString();
+    getTaskDetail: async (instanceId: string): Promise<TaskDetailResponse> => {
         const { data } = await axiosInstance.get<TaskDetailResponse>(
-            `${BASE_URL}/${encodeURIComponent(instanceId)}${qs ? `?${qs}` : ''}`
+            `${BASE_URL}/${encodeURIComponent(instanceId)}`
         );
         return data;
     },
+
+
+
 
 
     /**
@@ -308,30 +302,6 @@ export const inboxApi = {
         return inboxApi.getAttachmentContentUrl(attachId, documentNumber, sapOrigin, disposition);
     },
 
-    /**
-     * Upload an attachment to a PR document via the standalone API.
-     */
-    uploadPrAttachment: async (
-        documentNumber: string,
-        file: File,
-        sapOrigin?: string
-    ): Promise<TaskActionResponse> => {
-        const buffer = await file.arrayBuffer();
-        const headers: Record<string, string> = {
-            'Content-Type': file.type || 'application/octet-stream',
-            Slug: encodeURIComponent(file.name),
-        };
-        if (sapOrigin) {
-            headers['x-sap-origin'] = sapOrigin;
-        }
-
-        const { data } = await axiosInstance.post<TaskActionResponse>(
-            `${BASE_URL}/pr/${encodeURIComponent(documentNumber)}/attachments`,
-            buffer,
-            { headers }
-        );
-        return data;
-    },
 
     /**
      * Get details for a Reference PR from SAP API_PURCHASEREQ_PROCESS_SRV.

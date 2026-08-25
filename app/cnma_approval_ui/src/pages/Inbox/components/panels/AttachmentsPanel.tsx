@@ -1,7 +1,7 @@
 /**
- * AttachmentsPanel — file attachment list with upload, download, and preview.
+ * AttachmentsPanel — file attachment list with download and preview capabilities.
  */
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
     Download,
     Eye,
@@ -9,43 +9,40 @@ import {
     Image as ImageIcon,
     File,
     Loader2,
-    Upload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Input } from '@cnma/react-ui';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button } from '@cnma/react-ui';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 import { AttachmentPreviewCard, isPreviewableType } from '../AttachmentPreviewModal';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { useAddAttachment, useUploadPrAttachment } from '@/pages/Inbox/hooks/useInbox';
 import { formatDate, safe } from '@/pages/Inbox/utils/formatters';
 import { formatFileSize } from '@/renderers/TaskDetailSections.shared';
-import {
-    ALLOWED_ATTACHMENT_TYPES,
-    MAX_ATTACHMENT_SIZE_MB,
-    MAX_ATTACHMENT_SIZE_BYTES,
-} from '@/pages/Inbox/utils/constants';
 import { cleanFileName, friendlyFileType, Empty } from '@/pages/Inbox/utils/shared';
 import { cn } from '@/lib/utils';
 import { toast } from '@cnma/react-ui';
 
 /** File-type icon for mobile attachment cards */
-function FileIcon({ mimeType }: { mimeType?: string }) {
-    const mime = (mimeType || '').toLowerCase();
-    if (mime.startsWith('image/')) return <ImageIcon className="size-5" />;
-    if (mime === 'application/pdf') return <FileText className="size-5" />;
+function FileIcon({ mimeType, fileName }: { mimeType?: string; fileName?: string }) {
+    const mime = (mimeType || '').split(';')[0].toLowerCase().trim();
+    const ext = (fileName || '').split('?')[0].split('#')[0].split('.').pop()?.toLowerCase();
+
+    if (mime.startsWith('image/') || (ext && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext))) {
+        return <ImageIcon className="size-5" />;
+    }
+    if (mime === 'application/pdf' || mime === 'application/x-pdf' || ext === 'pdf' || mime.startsWith('text/') || (ext && ['txt', 'log', 'csv', 'json', 'xml', 'md'].includes(ext))) {
+        return <FileText className="size-5" />;
+    }
     return <File className="size-5" />;
 }
 
 export function AttachmentsPanel({
     detail,
     isMobile = false,
-    allowUpload = false,
     isPrLoading = false,
     isSecLoading = false,
 }: {
     detail: TaskDetail;
     isMobile?: boolean;
-    allowUpload?: boolean;
     isPrLoading?: boolean;
     isSecLoading?: boolean;
 }) {
@@ -57,52 +54,13 @@ export function AttachmentsPanel({
     const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
     const instanceId = detail?.task?.instanceId || detail?.instanceId || '';
     const isPreviewOpen = !!previewAttachment;
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const docType = (detail?.task?.businessContext?.type || detail?.docCategory || '').toUpperCase();
-    const isPR = docType === 'PR' || docType === 'BUS2105';
     const documentNumber = detail?.task?.businessContext?.documentId || detail?.documentId || '';
     const sapOrigin = detail?.task?.sapOrigin || 'LOCAL';
 
     // Use attachments from consolidated detail directly
     const displayedAttachments = detail.attachments || [];
-
     const isLoading = isPrLoading || (isSecLoading && displayedAttachments.length === 0);
-
-    const addAttachmentMutation = useAddAttachment();
-    const uploadPrAttachmentMutation = useUploadPrAttachment();
-    const isUploading = addAttachmentMutation.isPending || uploadPrAttachmentMutation.isPending;
-
-    const ALLOWED_TYPES = ALLOWED_ATTACHMENT_TYPES as readonly string[];
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        e.target.value = '';
-
-        if (!ALLOWED_TYPES.includes(file.type)) {
-            toast.error(`File type "${file.type || 'unknown'}" is not allowed. Supported: PDF, images, Office documents, text.`);
-            return;
-        }
-        if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
-            toast.error(`File size exceeds ${MAX_ATTACHMENT_SIZE_MB}MB limit.`);
-            return;
-        }
-
-        if (isPR && documentNumber) {
-            uploadPrAttachmentMutation.mutate({
-                documentNumber,
-                file,
-                sapOrigin,
-            });
-        } else {
-            addAttachmentMutation.mutate({
-                instanceId,
-                file,
-                sapOrigin,
-            });
-        }
-    };
 
     const getPreviewUrl = (attachmentId: string, fileName?: string) => {
         return inboxApi.getAttachmentContentUrl(attachmentId, documentNumber, sapOrigin, 'inline', fileName);
@@ -145,14 +103,6 @@ export function AttachmentsPanel({
         <div className={cn(
             isMobile ? 'w-full space-y-4' : 'flex gap-4 items-stretch w-full min-w-0 overflow-hidden h-full'
         )}>
-            {/* <Input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp,.odt,.ods,.odp"
-                onChange={handleFileUpload}
-            /> */}
-
             <div className={cn(
                 'transition-all duration-300 ease-in-out shrink-0 flex flex-col min-h-0 min-w-0',
                 isPreviewOpen && !isMobile ? 'w-80' : 'w-full'
@@ -190,7 +140,7 @@ export function AttachmentsPanel({
                                         <div className="flex items-start gap-3">
                                             {/* File type icon */}
                                             <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-destructive/10 text-destructive">
-                                                <FileIcon mimeType={attachment.mimeType} />
+                                                <FileIcon mimeType={attachment.mimeType} fileName={fileName} />
                                             </div>
 
                                             {/* File info */}
@@ -240,24 +190,6 @@ export function AttachmentsPanel({
                                 );
                             })
                         )}
-
-                        {/* Mobile upload attachment button disabled/hidden per request */}
-                        {/* {allowUpload && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="w-full"
-                            >
-                                {isUploading ? (
-                                    <Loader2 className="size-3.5 animate-spin mr-1.5" />
-                                ) : (
-                                    <Upload className="size-3.5 mr-1.5" />
-                                )}
-                                {isUploading ? 'Uploading...' : 'Upload Attachment'}
-                            </Button>
-                        )} */}
                     </div>
                 ) : (
                     /* ── Desktop: original card layout ── */
@@ -268,23 +200,6 @@ export function AttachmentsPanel({
                                     <CardTitle className="text-base">Attachments</CardTitle>
                                     <CardDescription>Files and links attached to this task</CardDescription>
                                 </div>
-                                {/* Upload attachment button disabled/hidden per request */}
-                                {/* {allowUpload && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={isUploading}
-                                        className="shrink-0"
-                                    >
-                                        {isUploading ? (
-                                            <Loader2 className="size-3.5 animate-spin" />
-                                        ) : (
-                                            <Upload className="size-3.5" />
-                                        )}
-                                        {isUploading ? 'Uploading...' : 'Upload'}
-                                    </Button>
-                                )} */}
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto pb-4 space-y-2 flex flex-col min-h-0">

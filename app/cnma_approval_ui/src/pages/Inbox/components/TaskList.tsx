@@ -636,7 +636,7 @@ function MobileHeader({
                     <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         id="inbox-search"
-                        placeholder={t('inbox.searchTasks', 'Search tasks...')}
+                        placeholder={t('inbox.searchTasks', 'Search by title...')}
                         value={filterValues.search || ''}
                         onChange={(e) => {
                             const val = e.target.value;

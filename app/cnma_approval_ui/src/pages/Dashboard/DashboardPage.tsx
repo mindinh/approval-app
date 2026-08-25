@@ -76,9 +76,7 @@ function DonutChart({
                                     key={`cell-${entry.label}`}
                                     fill={entry.color}
                                     opacity={isFiltered ? 0.35 : 1}
-                                    style={{
-                                        transition: 'all 0.3s ease',
-                                    }}
+                                    className="transition-all duration-300 ease-in-out"
                                 />
                             );
                         })}
@@ -119,10 +117,10 @@ function ClickableYAxisTick({ x, y, payload, onBarClick, selectedCategory, selec
     const isActive = !selectedCategory && !selectedType
         ? true
         : selectedType
-        ? selectedType === label || selectedType === item?.rawDocType
-        : selectedCategory
-        ? item?.category === selectedCategory
-        : true;
+            ? selectedType === label || selectedType === item?.rawDocType
+            : selectedCategory
+                ? item?.category === selectedCategory
+                : true;
 
     return (
         <g
@@ -232,17 +230,17 @@ function StackedBarChart({
                             }
                         }}
                         cursor="pointer"
-                        style={{ transition: 'all 0.3s ease' }}
+                        className="transition-all duration-300 ease-in-out"
                     >
                         {data.map((entry, index) => {
                             const catConf = CATEGORY_COLORS[entry.category] || CATEGORY_COLORS.OTHER;
                             const isMatch = !selectedCategory && !selectedType
                                 ? true
                                 : selectedType
-                                ? selectedType === entry.label || selectedType === entry.rawDocType
-                                : selectedCategory
-                                ? entry.category === selectedCategory
-                                : true;
+                                    ? selectedType === entry.label || selectedType === entry.rawDocType
+                                    : selectedCategory
+                                        ? entry.category === selectedCategory
+                                        : true;
 
                             return (
                                 <Cell
@@ -285,17 +283,18 @@ function CategoryLegend({
                 const isDimmed = selectedCategory !== null && !isSelected;
 
                 return (
-                    <button
+                    <Button
                         key={cat}
                         type="button"
+                        variant="ghost"
                         onClick={() => onCategoryClick(cat)}
                         className={cn(
                             "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer",
                             isSelected
                                 ? "ring-2 ring-offset-1 shadow-xs scale-105"
                                 : isDimmed
-                                ? "opacity-35 grayscale"
-                                : "opacity-90 hover:opacity-100 hover:scale-102"
+                                    ? "opacity-35 grayscale"
+                                    : "opacity-90 hover:opacity-100 hover:scale-102"
                         )}
                         style={{
                             backgroundColor: conf.bg,
@@ -307,7 +306,7 @@ function CategoryLegend({
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: conf.fill }} />
                         <span>{cat}</span>
                         <span className="font-bold tabular-nums">({count})</span>
-                    </button>
+                    </Button>
                 );
             })}
         </div>

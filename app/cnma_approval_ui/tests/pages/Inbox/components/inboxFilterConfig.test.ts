@@ -8,8 +8,8 @@ describe('INBOX_FILTER_CONFIG', () => {
         expect(keys).not.toContain('status');
         expect(keys).toContain('priority');
         expect(keys).toContain('documentType');
-        expect(keys).toContain('createdBy');
-        expect(keys).toContain('documentId');
+        expect(keys).not.toContain('createdBy');
+        expect(keys).not.toContain('documentId');
         expect(keys).toContain('createdDate');
     });
 
@@ -17,11 +17,8 @@ describe('INBOX_FILTER_CONFIG', () => {
         const search = INBOX_FILTER_CONFIG.find(f => f.key === 'search');
         expect(search?.visible).toBe(true);
 
-        const createdBy = INBOX_FILTER_CONFIG.find(f => f.key === 'createdBy');
-        expect(createdBy?.visible).toBe(false);
-
         const createdDate = INBOX_FILTER_CONFIG.find(f => f.key === 'createdDate');
-        expect(createdDate?.visible).toBe(false);
+        expect(createdDate?.visible).toBe(true);
     });
 
     it('defines correct priority options', () => {

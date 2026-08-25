@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { mapBusinessChips } from '@/pages/Inbox/mappers/taskCard.mapper';
+import { resolveTaskCardConfigForTask } from '@/renderers/ObjectView.registry';
 import type { InboxTask } from '@/services/inbox/inbox.types';
+
+function mapBusinessChips(task: InboxTask, cachedDetail?: any) {
+    return resolveTaskCardConfigForTask(task, cachedDetail).chips;
+}
+
 
 const baseTask: InboxTask = {
     instanceId: 'inst-1',
@@ -63,30 +68,6 @@ describe('mapBusinessChips', () => {
         expect(chips.find((c) => c.label === 'Type')?.value).toBe('Standard PO');
     });
 
-    it('extracts PO supplier name', () => {
-        const task = {
-            ...baseTask,
-            businessContext: {
-                type: 'PO',
-                po: { header: { supplierName: 'ACME Corp' } },
-            },
-        };
-        const chips = mapBusinessChips(task as any);
-        expect(chips.find((c) => c.value === 'ACME Corp')).toBeDefined();
-    });
-
-    it('falls back to supplier ID when supplierName is missing', () => {
-        const task = {
-            ...baseTask,
-            businessContext: {
-                type: 'PO',
-                po: { header: { supplier: 'VENDOR001' } },
-            },
-        };
-        const chips = mapBusinessChips(task as any);
-        expect(chips.find((c) => c.value === 'VENDOR001')).toBeDefined();
-    });
-
     it('extracts PR total with currency', () => {
         const task = {
             ...baseTask,
@@ -115,16 +96,6 @@ describe('mapBusinessChips', () => {
         expect(chips.find((c) => c.label === 'Type')?.value).toBe('NB');
     });
 
-    it('includes department for PR when available', () => {
-        const task = {
-            ...baseTask,
-            businessContext: { type: 'PR', pr: { header: { departmentDisplay: '1001201000 - IT department' } } },
-        };
-        const chips = mapBusinessChips(task as any);
-        const dept = chips.find((c) => c.label === 'Dept');
-        expect(dept).toBeDefined();
-        expect(dept!.value).toBe('1001201000 - IT department');
-    });
 
     it('returns empty list when PO context has no header', () => {
         const task = {

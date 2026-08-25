@@ -169,10 +169,12 @@ const EXT_LABEL_MAP: Record<string, string> = {
 
 /** Map a MIME type or file name to a short, human-readable label */
 export function friendlyFileType(mimeType?: string, fileName?: string): string {
-    const rawMime = (mimeType || '').toLowerCase().trim();
+    // Strip parameters (e.g. "application/pdf; charset=utf-8" -> "application/pdf")
+    const cleanMime = (mimeType || '').split(';')[0].toLowerCase().trim();
 
     const mimeMap: Record<string, string> = {
         'application/pdf': 'PDF',
+        'application/x-pdf': 'PDF',
         'application/msword': 'Word Document',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word Document',
         'application/vnd.ms-excel': 'Excel Spreadsheet',
@@ -193,29 +195,58 @@ export function friendlyFileType(mimeType?: string, fileName?: string): string {
         'text/plain': 'Text File',
         'text/csv': 'CSV',
         'text/html': 'HTML',
+        'text/markdown': 'Markdown',
         'image/png': 'PNG Image',
         'image/jpeg': 'JPEG Image',
+        'image/jpg': 'JPEG Image',
+        'image/pjpeg': 'JPEG Image',
         'image/gif': 'GIF Image',
         'image/webp': 'WebP Image',
         'image/svg+xml': 'SVG Image',
+        'image/bmp': 'BMP Image',
+        'image/x-icon': 'Icon Image',
+        'message/rfc822': 'Outlook Message',
+        'application/vnd.ms-outlook': 'Outlook Message',
     };
 
-    if (rawMime && rawMime !== 'application/octet-stream' && mimeMap[rawMime]) {
-        return mimeMap[rawMime];
+    // 1. Direct match with clean MIME type
+    if (cleanMime && cleanMime !== 'application/octet-stream' && cleanMime !== 'application/x-forcedownload' && mimeMap[cleanMime]) {
+        return mimeMap[cleanMime];
     }
 
-    // Fallback to extension matching if MIME is missing or generic octet-stream
+    // 2. Extension matching from fileName
     if (fileName) {
-        const cleanName = cleanFileName(fileName) || fileName;
-        const ext = cleanName.split('.').pop()?.toLowerCase();
-        if (ext && EXT_LABEL_MAP[ext]) {
-            return EXT_LABEL_MAP[ext];
+        const cleanName = (cleanFileName(fileName) || fileName).replace(/\.+$/, '').trim();
+        const parts = cleanName.split('?')[0].split('#')[0].split('.');
+        if (parts.length > 1) {
+            const ext = parts.pop()?.toLowerCase().trim();
+            if (ext && EXT_LABEL_MAP[ext]) {
+                return EXT_LABEL_MAP[ext];
+            }
+            if (ext && ext.length >= 2 && ext.length <= 5 && /^[a-z0-9]+$/.test(ext)) {
+                return `${ext.toUpperCase()} File`;
+            }
         }
     }
 
-    if (rawMime && rawMime !== 'application/octet-stream') {
-        return mimeMap[rawMime] || mimeType!;
+    // 3. Category matching based on MIME prefix
+    if (cleanMime && cleanMime !== 'application/octet-stream' && cleanMime !== 'application/x-forcedownload') {
+        if (cleanMime.startsWith('image/')) {
+            const subtype = cleanMime.split('/')[1].replace('+xml', '').toUpperCase();
+            return `${subtype} Image`;
+        }
+        if (cleanMime.startsWith('text/')) {
+            return 'Text File';
+        }
+        if (cleanMime.startsWith('audio/')) {
+            return 'Audio File';
+        }
+        if (cleanMime.startsWith('video/')) {
+            return 'Video File';
+        }
+        return mimeMap[cleanMime] || mimeType!;
     }
 
     return 'File';
 }
+

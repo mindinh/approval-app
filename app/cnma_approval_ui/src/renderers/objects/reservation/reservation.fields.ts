@@ -50,8 +50,12 @@ export const RESERVATION_TABLE_COLUMNS = {
     material: tableCol({
         key: 'material',
         header: 'Material Number',
-        code: 'Material',
-        text: 'MaterialText'
+        source: 'Material'
+    }),
+    materialText: tableCol({
+        key: 'materialText',
+        header: 'Material Text',
+        source: 'MaterialText'
     }),
     itemText: tableCol({
         key: 'itemText',

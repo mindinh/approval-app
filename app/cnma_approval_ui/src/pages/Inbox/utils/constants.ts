@@ -37,9 +37,12 @@ export const STATUS_CONFIG: Record<string, BadgeConfig> = {
     IN_PROGRESS: { variant: 'warning', label: 'In Approving' },
     IN_PROCESSING: { variant: 'warning', label: 'In Approving' },
     IN_APPROVING: { variant: 'warning', label: 'In Approving' },  // normalized dashboard label
+    PENDING_APPROVAL: { variant: 'warning', label: 'Pending Approval' },
+    PARTIALLY_APPROVED: { variant: 'warning', label: 'Partially Approved' },
     COMPLETED: { variant: 'success', label: 'Completed' },
     APPROVED: { variant: 'success', label: 'Approved' },
     REJECTED: { variant: 'destructive', label: 'Rejected' },
+    CANCELLED: { variant: 'secondary', label: 'Cancelled' },
 };
 
 export const STATUS_FALLBACK: BadgeConfig = { variant: 'secondary', label: '' };

@@ -11,17 +11,31 @@ const SAP_PR_APP_ID_HINT =
     import.meta.env.VITE_SAP_PR_APP_ID_HINT || '2079f675-98bf-427c-a523-05b63006c5f1';
 
 /**
- * Returns the base Fiori Launchpad site URL (without hash).
+ * Ensures sap-ushell-config=headerless parameter is present in the base query string.
+ */
+function appendUshellConfig(url: string): string {
+    if (url.includes('sap-ushell-config=')) {
+        return url;
+    }
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}sap-ushell-config=headerless`;
+}
+
+/**
+ * Returns the base Fiori Launchpad site URL (without hash),
+ * guaranteeing sap-ushell-config=headerless is included.
  */
 export function getLaunchpadBaseUrl(): string {
+    let baseUrl = import.meta.env.VITE_SAP_LAUNCHPAD_BASE_URL || DEFAULT_FALLBACK_LAUNCHPAD_SITE;
+
     if (typeof window !== 'undefined' && window.location) {
         const href = window.location.href;
         if (window.location.pathname.includes('/site') || href.includes('/site?siteId=')) {
-            return href.split('#')[0];
+            baseUrl = href.split('#')[0];
         }
     }
 
-    return import.meta.env.VITE_SAP_LAUNCHPAD_BASE_URL || DEFAULT_FALLBACK_LAUNCHPAD_SITE;
+    return appendUshellConfig(baseUrl);
 }
 
 /**

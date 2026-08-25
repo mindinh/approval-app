@@ -1,5 +1,24 @@
-import type { ObjectViewDefinition } from '../../core/renderer.types';
+import type { ObjectViewDefinition, TaskCardStyleConfig } from '../../core/renderer.types';
 import { PR_OVERVIEW_FIELDS, PR_TABLE_COLUMNS } from './pr.fields';
+import { text, codeText, amount, chip } from '../../core/fields';
+
+const standardPrCardConfig: TaskCardStyleConfig = {
+    colorKey: 'primary',
+    textClass: 'text-primary font-semibold',
+    stripeClass: 'before:bg-primary'
+};
+
+const standardPrCardChips = [
+    chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalNetAmount|totalNetAmount|total', currency: 'LocalCurrency|DisplayCurrency|displayCurrency|DocumentCurrency', label: 'Total' }), true),
+    chip(text({ source: 'DocumentTypeText|doctyp_desc|PurchaseRequisitionTypeText|purchaseRequisitionTypeText|documentTypeDisplay|DocumentType|PurchaseRequisitionType|purchaseRequisitionType', label: 'Type' })),
+];
+
+
+
+
+
+
+
 
 const defaultPrOverviewCard = {
     id: 'pr-summary',
@@ -39,6 +58,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZASS: {
         docCategory: 'BUS2105',
         documentType: 'ZASS',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-zass',
@@ -50,6 +71,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZEXP: {
         docCategory: 'BUS2105',
         documentType: 'ZEXP',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-zexp',
@@ -61,6 +84,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZMAK: {
         docCategory: 'BUS2105',
         documentType: 'ZMAK',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-zmak',
@@ -86,6 +111,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZNB1: {
         docCategory: 'BUS2105',
         documentType: 'ZNB1',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-znb1',
@@ -97,6 +124,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZNB2: {
         docCategory: 'BUS2105',
         documentType: 'ZNB2',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-znb2',
@@ -108,6 +137,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZTOL: {
         docCategory: 'BUS2105',
         documentType: 'ZTOL',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-ztol',
@@ -119,6 +150,8 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     DEFAULT: {
         docCategory: 'BUS2105',
         documentType: 'DEFAULT',
+        cardConfig: standardPrCardConfig,
+        cardChips: standardPrCardChips,
         overviewCard: defaultPrOverviewCard,
         lineItemTable: {
             id: 'pr-items-default',
@@ -128,3 +161,4 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
         }
     }
 };
+

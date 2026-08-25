@@ -157,7 +157,6 @@ export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
 
 export function useTaskDetail(
     instanceId: string | null,
-    hints?: { sapOrigin?: string; documentId?: string; businessObjectType?: string; status?: string },
     options?: { enabled?: boolean },
     placeholderTask?: InboxTask
 ) {
@@ -165,9 +164,12 @@ export function useTaskDetail(
 
     const query = useQuery<TaskDetailResponse, Error>({
         queryKey: inboxKeys.taskDetail(instanceId || ''),
-        queryFn: () => inboxApi.getTaskDetail(instanceId!, hints),
+        queryFn: () => inboxApi.getTaskDetail(instanceId!),
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
+
+
+
         placeholderData: (previousData) => {
             if (previousData) {
                 const prevId = (previousData as any)?.taskprocessing?.task?.InstanceID ||
@@ -181,8 +183,9 @@ export function useTaskDetail(
                 }
             }
             if (placeholderTask && placeholderTask.instanceId === instanceId) {
-                const docType = hints?.businessObjectType || placeholderTask.objectType || 'PR';
-                const docId = hints?.documentId || placeholderTask.documentId || '';
+                const docType = placeholderTask.objectType || placeholderTask.businessContext?.type || 'PR';
+                const docId = placeholderTask.documentId || placeholderTask.instid || placeholderTask.businessContext?.documentId || '';
+
 
                 return {
                     taskId: placeholderTask.instanceId,

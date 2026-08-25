@@ -64,7 +64,7 @@ export function makeTabDefinitions({
     const finalAttachmentCount = attachmentCount ?? (Array.isArray(rawAttachments) ? rawAttachments.length : 0);
 
     const docCategory = String(bo?.DocCategory || detail?.task?.businessContext?.type || detail?.objectType || detail?._meta?.objectType || '').toUpperCase();
-    const showWorkflow = ['PR', 'PO', 'RE', 'BUS2105', 'BUS2012', 'ZBUS2093', 'BUS2093'].includes(docCategory);
+    const showWorkflow = ['PR', 'PO', 'RE', 'CLAIM', 'BUS2105', 'BUS2012', 'ZBUS2093', 'BUS2093'].includes(docCategory);
 
     const tabs = [
         {

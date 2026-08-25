@@ -68,16 +68,6 @@ export default function InboxPage() {
     const selectedTask = selectedTaskId
         ? tasks.find((t) => t.instanceId === selectedTaskId)
         : undefined;
-    const informationHints = useMemo(() => {
-        if (!selectedTask) return undefined;
-        return {
-            sapOrigin: selectedTask.sapOrigin,
-            documentId: selectedTask.businessContext?.documentId,
-            businessObjectType: selectedTask.businessContext?.type,
-            status: selectedTask.status,
-        };
-    }, [selectedTask]);
-
     const {
         data: detailResponse,
         isLoading: isLoadingDetail,
@@ -85,7 +75,10 @@ export default function InboxPage() {
         isError: isErrorDetail,
         error: errorDetail,
         refetch: refetchDetail,
-    } = useTaskDetail(selectedTaskId, informationHints, undefined, selectedTask);
+    } = useTaskDetail(selectedTaskId, undefined, selectedTask);
+
+
+
 
     const decisionMutation = useDecision();
     const forwardMutation = useForward();
@@ -116,19 +109,21 @@ export default function InboxPage() {
 
     const isSecondaryLoading = isFetchingDetail && !!activeDetail;
 
-    // Auto-select first task on desktop when list loads and no task is selected
+    // Auto-select first task on desktop when list loads and no task is selected or selected task is stale
     useEffect(() => {
-        if (hasAutoSelected.current) return;
         const isMobileViewport = window.innerWidth < 768;
         if (isMobileViewport) return;
-        if (selectedTaskId) return;
         if (isLoadingList) return;
         if (tasks.length === 0) return;
 
-        hasAutoSelected.current = true;
-        const basePath = scope === 'approved' ? '/approved' : '/inbox';
-        navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
+        const isSelectedTaskInList = selectedTaskId && tasks.some((t) => t.instanceId === selectedTaskId);
+        if (!selectedTaskId || !isSelectedTaskInList) {
+            hasAutoSelected.current = true;
+            const basePath = scope === 'approved' ? '/approved' : '/inbox';
+            navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
+        }
     }, [selectedTaskId, isLoadingList, tasks, navigate, scope]);
+
 
 
     const handleSelectTask = useCallback((task: InboxTask) => {
@@ -197,19 +192,24 @@ export default function InboxPage() {
         (forwardTo: string, comment?: string) => {
             if (!selectedTaskId) return;
             const task = activeDetail?.task;
+            const bo = activeDetail?.businessObject;
+            const docNum = task?.businessContext?.documentId || activeDetail?.documentId || bo?.DocumentNumber || bo?.PurchaseRequisition || bo?.PurchaseOrder || bo?.ReservationNumber || bo?.ClaimNumber;
+            const boType = task?.businessContext?.type || activeDetail?.docCategory || bo?.DocCategory || activeDetail?.objectType || '';
+
             forwardMutation.mutate(
                 {
                     instanceId: selectedTaskId,
                     request: {
                         forwardTo,
                         comment,
-                        _context: task ? {
-                            sapOrigin: task.sapOrigin,
-                            documentId: task.businessContext?.documentId,
-                            businessObjectType: task.businessContext?.type,
-                        } : undefined,
+                        _context: {
+                            sapOrigin: task?.sapOrigin || 'LOCAL',
+                            documentId: docNum,
+                            businessObjectType: boType,
+                        },
                     },
                 },
+
                 {
                     onSuccess: () => {
                         const currentIndex = tasks.findIndex((t) => t.instanceId === selectedTaskId);

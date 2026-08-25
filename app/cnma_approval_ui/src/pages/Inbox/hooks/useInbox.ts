@@ -28,8 +28,6 @@ export {
     useDecision,
     useForward,
     useAddComment,
-    useAddAttachment,
-    useUploadPrAttachment,
 } from './inboxMutations';
 
 // Invalidation policies
@@ -37,8 +35,6 @@ export {
     invalidateAfterDecision,
     invalidateAfterForward,
     invalidateAfterComment,
-    invalidateAfterAttachment,
-    invalidatePrAttachments,
     invalidateTaskList,
 } from './inboxInvalidation';
 

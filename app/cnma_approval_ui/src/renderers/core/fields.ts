@@ -1,6 +1,11 @@
-import type { FieldDefinition, TableColumnDefinition } from './renderer.types';
+import type { FieldDefinition, TableColumnDefinition, TaskCardChipDefinition } from './renderer.types';
 import { formatRawDate, formatRawAmount, formatRawQuantity, formatCodeText, formatRawValue } from './formatters';
 import { getRecordVal } from './objectView';
+
+export function chip(fieldDef: FieldDefinition, isPrimary?: boolean): TaskCardChipDefinition {
+    return { ...fieldDef, isPrimary };
+}
+
 
 export function text(config: {
     source: string;
@@ -44,18 +49,22 @@ export function amount(config: {
     key?: string;
     align?: 'left' | 'center' | 'right';
 }): FieldDefinition {
+    const currencySource = config.currency || 'LocalCurrency';
+
     return {
         key: config.key || config.value,
         label: config.label,
         value: config.value,
-        currency: config.currency,
+        currency: currencySource,
         align: config.align || 'right',
         formatter: (val, record) => {
-            const curr = config.currency ? String(getRecordVal(record, config.currency) || '') : undefined;
-            return formatRawAmount(val, curr);
+            const curr = String(getRecordVal(record, currencySource) || '');
+            return formatRawAmount(val, curr || undefined);
         }
     };
 }
+
+
 
 export function quantity(config: {
     value: string;

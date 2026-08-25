@@ -101,7 +101,7 @@ export function FilterBar({
                     <h3 className="font-semibold text-lg">Filters</h3>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-                    {allFilters.map((fieldConfig) => (
+                    {visibleFilters.map((fieldConfig) => (
                         <FilterBarField
                             key={fieldConfig.key}
                             config={fieldConfig}

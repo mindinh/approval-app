@@ -449,7 +449,7 @@ export function TaskDetailView({
                                             key={tab.value}
                                             onClick={() => handleMobileTabChange(tab.value)}
                                             className={cn(
-                                                'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full min-h-[44px] h-auto',
+                                                'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full min-h-11 h-auto',
                                                 'focus-visible:outline-none',
                                                 isActive
                                                     ? 'bg-primary text-white shadow-sm'
@@ -471,8 +471,7 @@ export function TaskDetailView({
                                             {isActive && (
                                                 <motion.div
                                                     layoutId={`mobile-tab-indicator-${viewData?.instanceId}`}
-                                                    className="absolute inset-0 rounded-full bg-primary"
-                                                    style={{ zIndex: -1 }}
+                                                    className="absolute inset-0 rounded-full bg-primary -z-10"
                                                     transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
                                                 />
                                             )}

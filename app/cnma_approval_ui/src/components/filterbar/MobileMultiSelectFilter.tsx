@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronRight, Search, X, Check, Loader2 } from 'lucide-react';
+import { ChevronDown, Search, X, Check, Loader2 } from 'lucide-react';
 import { Button, Input } from '@cnma/react-ui';
 import type { MultiSelectFilterConfig, SelectOption } from './types';
 
@@ -106,10 +106,10 @@ export function MobileMultiSelectFilter({
             {/* ── Compact Trigger Input Box ── */}
             <div
                 onClick={handleOpen}
-                className="w-full h-11 px-3.5 border border-input rounded-xl bg-background hover:border-primary/50 transition-all flex items-center justify-between cursor-pointer select-none shadow-2xs group"
+                className="w-full h-11 px-3.5 border border-input rounded-md bg-card hover:border-primary/50 transition-all flex items-center justify-between cursor-pointer select-none shadow-xs group"
             >
                 <span
-                    className={`text-sm font-medium truncate ${
+                    className={`text-sm font-normal truncate ${
                         globalSelectedValues.length === 0
                             ? 'text-muted-foreground'
                             : 'text-foreground'
@@ -117,7 +117,7 @@ export function MobileMultiSelectFilter({
                 >
                     {triggerLabel}
                 </span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2" />
             </div>
 
             {/* ── Mobile Sub-Sheet Overlay ── */}
@@ -160,7 +160,7 @@ export function MobileMultiSelectFilter({
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Search options..."
-                                        className="pl-9 pr-8 h-10 text-sm bg-background rounded-lg border-border"
+                                        className="pl-9 pr-8 h-10 text-sm font-normal bg-background rounded-md border-border"
                                         type="text"
                                         inputMode="search"
                                         autoComplete="off"
@@ -175,26 +175,30 @@ export function MobileMultiSelectFilter({
                             )}
 
                             <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground font-medium">
+                                <span className="text-muted-foreground font-normal">
                                     {localSelected.length} of {options.length} selected
                                 </span>
                                 <div className="flex items-center gap-3">
                                     {config.showSelectAll !== false && (
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="ghost"
+                                            size="sm"
                                             onClick={handleSelectAll}
-                                            className="text-primary font-semibold hover:underline cursor-pointer"
+                                            className="h-auto p-0 text-xs text-primary font-medium hover:bg-transparent hover:underline cursor-pointer"
                                         >
                                             Select All
-                                        </button>
+                                        </Button>
                                     )}
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={handleClearAll}
-                                        className="text-muted-foreground hover:text-destructive transition-colors font-medium cursor-pointer"
+                                        className="h-auto p-0 text-xs text-muted-foreground hover:bg-transparent hover:text-destructive transition-colors font-normal cursor-pointer"
                                     >
                                         Clear
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -203,14 +207,15 @@ export function MobileMultiSelectFilter({
                         <div
                             data-vaul-no-drag
                             onTouchMove={(e) => e.stopPropagation()}
-                            className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-4 divide-y divide-border/30"
+                            className="flex-1 overflow-y-auto px-4 py-2 divide-y divide-border/40"
                         >
                             {isLoading ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span className="text-xs">Loading options...</span>
                                 </div>
                             ) : filteredOptions.length === 0 ? (
-                                <div className="text-center py-8 text-sm text-muted-foreground">
+                                <div className="py-12 text-center text-sm text-muted-foreground">
                                     No options match "{searchQuery}"
                                 </div>
                             ) : (
@@ -220,11 +225,11 @@ export function MobileMultiSelectFilter({
                                         <div
                                             key={opt.value}
                                             onClick={() => handleToggle(opt.value)}
-                                            className="flex items-center gap-3 py-3 cursor-pointer active:bg-muted/50 transition-colors min-h-[44px] select-none"
+                                            className="flex items-center gap-3 py-3 cursor-pointer active:bg-muted/50 transition-colors min-h-11 select-none"
                                         >
                                             {/* Custom 16px x 16px Crisp Checkbox */}
                                             <div
-                                                className={`w-4 h-4 rounded-[4px] border transition-colors flex items-center justify-center shrink-0 ${
+                                                className={`w-4 h-4 rounded border transition-colors flex items-center justify-center shrink-0 ${
                                                     isSelected
                                                         ? 'bg-primary border-primary text-primary-foreground'
                                                         : 'border-muted-foreground/40 bg-background'
@@ -232,7 +237,7 @@ export function MobileMultiSelectFilter({
                                             >
                                                 {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                                             </div>
-                                            <span className="text-sm font-medium text-foreground flex-1 break-words">
+                                            <span className="text-sm font-normal text-foreground flex-1 break-words">
                                                 {opt.label}
                                             </span>
                                         </div>
@@ -249,7 +254,7 @@ export function MobileMultiSelectFilter({
                             >
                                 <span>Select</span>
                                 {localSelected.length > 0 && (
-                                    <span className="text-[11px] font-normal opacity-90">
+                                    <span className="text-xs font-normal opacity-90">
                                         {localSelected.length} selected
                                     </span>
                                 )}

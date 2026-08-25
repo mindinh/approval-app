@@ -1,9 +1,25 @@
 import type { ObjectViewDefinition } from '../../core/renderer.types';
 import { RESERVATION_OVERVIEW_FIELDS, RESERVATION_TABLE_COLUMNS } from './reservation.fields';
+import { text, codeText, amount, chip } from '../../core/fields';
 
 export const RESERVATION_VIEW: ObjectViewDefinition = {
     docCategory: 'ZBUS2093',
+    cardConfig: {
+        colorKey: 'warning',
+        textClass: 'text-warning font-semibold',
+        stripeClass: 'before:bg-warning'
+    },
+    cardChips: [
+        chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalAmount|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total' }), true),
+        chip(text({ source: 'DocumentTypeText', label: 'Type' })),
+    ],
+
+
+
+
+
     overviewCard: {
+
         id: 'reservation-summary',
         title: 'Document Summary',
         fields: [
@@ -24,6 +40,7 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
         sourcePath: '_Item',
         columns: [
             RESERVATION_TABLE_COLUMNS.material,
+            RESERVATION_TABLE_COLUMNS.materialText,
             RESERVATION_TABLE_COLUMNS.itemText,
             RESERVATION_TABLE_COLUMNS.quantity,
             RESERVATION_TABLE_COLUMNS.cost,

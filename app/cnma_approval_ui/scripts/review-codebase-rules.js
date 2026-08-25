@@ -138,47 +138,60 @@ files.forEach(file => {
         if (ts.isJsxAttribute(node) && node.name.text === 'style' && node.initializer) {
             if (ts.isJsxExpression(node.initializer) && node.initializer.expression) {
                 const expr = node.initializer.expression;
-                // e.g. style={{ padding: '10px', color: '#ff0000' }}
                 if (ts.isObjectLiteralExpression(expr)) {
                     expr.properties.forEach(prop => {
                         if (ts.isPropertyAssignment(prop)) {
                             const name = prop.name.getText(sourceFile);
                             const val = prop.initializer;
-
-                            // Check for hardcoded pixel sizes or colors inside the style assignment
                             let valText = val.getText(sourceFile);
-                            let hasViolation = false;
 
-                            if (ts.isStringLiteral(val) || ts.isNoSubstitutionTemplateLiteral(val)) {
-                                const text = val.text;
-                                if (hexRegex.test(text) || pixelRegex.test(text) || /\d+px/i.test(text)) {
-                                    hasViolation = true;
-                                }
-                            } else if (ts.isNumericLiteral(val)) {
-                                // e.g. padding: 10
-                                if (['padding', 'margin', 'top', 'left', 'right', 'bottom', 'width', 'height', 'gap'].some(k => name.toLowerCase().includes(k))) {
-                                    hasViolation = true;
-                                }
+                            // Whitelist dynamic values: conditional expressions, dynamic variables, accessors, binary ops, calls, template expressions with substitutions
+                            let isDynamic = false;
+                            if (ts.isConditionalExpression(val) || 
+                                ts.isElementAccessExpression(val) || 
+                                ts.isPropertyAccessExpression(val) || 
+                                ts.isBinaryExpression(val) || 
+                                ts.isCallExpression(val) ||
+                                (ts.isTemplateExpression(val) && val.templateSpans.length > 0)) {
+                                isDynamic = true;
+                            } else if (ts.isIdentifier(val) && val.text !== 'undefined' && val.text !== 'null') {
+                                isDynamic = true;
                             }
 
-                            if (hasViolation) {
-                                addIssue(
-                                    'inlineStyles',
-                                    getLineNum(prop.getStart()),
-                                    `Hardcoded inline style property: '${name}: ${valText}'`,
-                                    node.getText(sourceFile)
-                                );
+                            if (!isDynamic) {
+                                let isViolation = false;
+                                if (ts.isStringLiteral(val) || ts.isNoSubstitutionTemplateLiteral(val)) {
+                                    const text = val.text;
+                                    if (hexRegex.test(text) || pixelRegex.test(text) || /\d+px/i.test(text) || 
+                                        ['white', 'black', 'red', 'blue'].includes(text.toLowerCase()) || 
+                                        ['100%', '0%', '100vh', '100vw'].includes(text) ||
+                                        name.toLowerCase().includes('index') ||
+                                        name.toLowerCase().includes('transition') ||
+                                        name.toLowerCase().includes('animation')) {
+                                        isViolation = true;
+                                    }
+                                } else if (ts.isNumericLiteral(val) || (ts.isPrefixUnaryExpression(val) && ts.isNumericLiteral(val.operand))) {
+                                    isViolation = true;
+                                }
+
+                                if (isViolation) {
+                                    addIssue(
+                                        'inlineStyles',
+                                        getLineNum(prop.getStart()),
+                                        `Static inline style property anti-pattern: '${name}: ${valText}'`,
+                                        node.getText(sourceFile)
+                                    );
+                                }
                             }
                         }
                     });
                 } else {
                     const exprText = expr.getText(sourceFile);
-                    if (exprText !== 'style' && exprText !== 'props.style' && exprText !== 'rest.style') {
-                        // General warning for non-trivial inline styles
+                    if (!['style', 'props.style', 'rest.style'].includes(exprText) && !ts.isIdentifier(expr)) {
                         addIssue(
                             'inlineStyles',
                             getLineNum(node.getStart()),
-                            `Dynamic inline style block detected: '${exprText}'`,
+                            `Non-standard inline style block: '${exprText}'`,
                             node.getText(sourceFile)
                         );
                     }

@@ -158,10 +158,7 @@ export function MassSelectionView({
 
             {/* Mass Action Footer */}
             <div className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-sm px-5 py-3">
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                        {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''} selected
-                    </span>
+                <div className="flex items-center justify-end">
                     <div className="flex items-center gap-2">
                         <Button
                             variant="destructive"

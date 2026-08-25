@@ -51,10 +51,7 @@ export function MassActionBar({
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="pointer-events-auto rounded-2xl border border-border bg-background/98 p-3 shadow-[0_12px_28px_rgba(15,23,42,0.14)]">
-                <div className="flex items-center gap-2">
-                    <div className="mr-auto text-sm font-medium text-muted-foreground">
-                        {selectedCount} selected
-                    </div>
+                <div className="flex justify-end items-center gap-2">
                     {selectedCount > 0 && onMassDecision && (
                         <>
                             <Button

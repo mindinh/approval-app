@@ -65,8 +65,8 @@ describe('makeTabDefinitions', () => {
         expect(commentsTab?.count).toBe(1);
     });
 
-    it('hides workflow tab for non-PR/non-PO tasks', () => {
-        const detail = makeMockDetail('CLAIM');
+    it('hides workflow tab for unsupported document tasks', () => {
+        const detail = makeMockDetail('UNKNOWN');
         const tabs = makeTabDefinitions({
             detail,
             workflowCount: 0,
@@ -81,6 +81,24 @@ describe('makeTabDefinitions', () => {
 
         const detailsTab = tabs.find(tab => tab.value === 'details');
         expect(detailsTab?.count).toBe(2);
+    });
+
+    it('returns tabs with workflow for CLAIM tasks', () => {
+        const detail = makeMockDetail('CLAIM');
+        const tabs = makeTabDefinitions({
+            detail,
+            workflowCount: 2,
+            workflowComments: [],
+            detailsCount: 1,
+            attachmentCount: 0,
+            t,
+        });
+
+        const tabValues = tabs.map(tab => tab.value);
+        expect(tabValues).toContain('workflow');
+
+        const workflowTab = tabs.find(tab => tab.value === 'workflow');
+        expect(workflowTab?.count).toBe(2);
     });
 
     it('returns tabs with workflow for PO tasks', () => {

@@ -22,6 +22,10 @@ export function isPendingApprovalStatus(value?: string): boolean {
     const status = normalizeApprovalStatus(value);
     return (
         status === 'PENDING' ||
+        status === 'PENDING_APPROVAL' ||
+        status === 'PENDING APPROVAL' ||
+        status === 'PARTIALLY_APPROVED' ||
+        status === 'PARTIALLY APPROVED' ||
         status === 'IN_PROCESS' ||
         status === 'IN PROCESS' ||
         status === 'IN APPROVING' ||

@@ -65,28 +65,6 @@ export function invalidateAfterComment(
     }
 }
 
-// ─── Policy: After uploading an attachment ─────────────────
-// Only detail/information views need to refresh to show the new file.
-export function invalidateAfterAttachment(
-    queryClient: QueryClient,
-    instanceId: string,
-) {
-    const cleanId = normId(instanceId);
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-    if (instanceId !== cleanId) {
-        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
-    }
-    queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-}
-
-// ─── Policy: After uploading a PR attachment ─────────────────
-export function invalidatePrAttachments(
-    queryClient: QueryClient,
-    documentNumber: string,
-) {
-    queryClient.invalidateQueries({ queryKey: ['inbox', 'pr-attachments', documentNumber] });
-    queryClient.refetchQueries({ queryKey: ['inbox', 'pr-attachments', documentNumber] });
-}
 
 // ─── Policy: Manual refresh of task lists & detail panel ─────
 export function invalidateTaskList(queryClient: QueryClient, selectedTaskId?: string | null) {

@@ -10,9 +10,9 @@ import type { FilterFieldConfig } from '@/components/filterbar/types';
 export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
     {
         key: 'search',
-        label: 'Task Title',
+        label: 'Request Search',
         type: 'text',
-        placeholder: 'Search by title...',
+        placeholder: 'Search by title, requestor...',
         visible: true,
     },
     {
@@ -69,23 +69,9 @@ export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
         ],
     },
     {
-        key: 'createdBy',
-        label: 'Requestor',
-        type: 'text',
-        placeholder: 'Search by requestor...',
-        visible: false,
-    },
-    {
-        key: 'documentId',
-        label: 'Document ID',
-        type: 'text',
-        placeholder: 'Search by doc ID...',
-        visible: false,
-    },
-    {
         key: 'createdDate',
         label: 'Created Date',
         type: 'dateRange',
-        visible: false,
+        visible: true,
     },
 ];

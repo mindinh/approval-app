@@ -139,8 +139,7 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
                     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
                 >
                     <div
-                        className="bg-card rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-border"
-                        style={{ animation: 'fadeInScale 0.2s ease-out' }}
+                        className="bg-card rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-border animate-in fade-in zoom-in-95 duration-200"
                     >
                         <div className="flex items-center gap-3 px-6 pt-6 pb-3">
                             <div

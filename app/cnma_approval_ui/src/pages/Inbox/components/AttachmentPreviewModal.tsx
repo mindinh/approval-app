@@ -214,7 +214,7 @@ function DocViewerPreview({
                         disableFileName: true,
                     },
                 }}
-                style={{ width: '100%', height: '100%', background: 'white' }}
+                className="w-full h-full bg-white"
             />
         </Suspense>
     );
@@ -295,10 +295,11 @@ function getMimeTypeFromExtension(fileName?: string): string | undefined {
 }
 
 /**
- * Determines which preview strategy to use for a given MIME type.
+ * Determines which preview strategy to use for a given MIME type or filename.
+ * Restricted strictly to PDF, plain text, and simple images per requirements.
  */
 function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
-    let mime = (mimeType || '').toLowerCase();
+    let mime = (mimeType || '').split(';')[0].toLowerCase().trim();
     const cleanFileName = (fileName || '').toLowerCase().split('?')[0].split('#')[0];
 
     // If mime is generic or empty, resolve it from the file name extension
@@ -309,13 +310,22 @@ function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
         }
     }
 
-    // Images → native <img>
-    if (mime.startsWith('image/') || cleanFileName.endsWith('.png') || cleanFileName.endsWith('.jpg') || cleanFileName.endsWith('.jpeg') || cleanFileName.endsWith('.gif') || cleanFileName.endsWith('.webp')) {
+    // Simple Images → native <img>
+    if (
+        mime.startsWith('image/') ||
+        cleanFileName.endsWith('.png') ||
+        cleanFileName.endsWith('.jpg') ||
+        cleanFileName.endsWith('.jpeg') ||
+        cleanFileName.endsWith('.gif') ||
+        cleanFileName.endsWith('.webp') ||
+        cleanFileName.endsWith('.svg') ||
+        cleanFileName.endsWith('.bmp')
+    ) {
         return 'image';
     }
 
     // PDF → native <iframe>
-    if (mime === 'application/pdf' || cleanFileName.endsWith('.pdf')) {
+    if (mime === 'application/pdf' || mime === 'application/x-pdf' || cleanFileName.endsWith('.pdf')) {
         return 'pdf';
     }
 
@@ -331,58 +341,31 @@ function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
         mime === 'text/xml' ||
         cleanFileName.endsWith('.txt') ||
         cleanFileName.endsWith('.csv') ||
-        cleanFileName.endsWith('.log')
+        cleanFileName.endsWith('.log') ||
+        cleanFileName.endsWith('.json') ||
+        cleanFileName.endsWith('.xml') ||
+        cleanFileName.endsWith('.md')
     ) {
         return 'txt';
     }
 
-    // Office DOCX → DocxViewer
-    if (
-        mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        mime === 'application/msword' ||
-        cleanFileName.endsWith('.docx') ||
-        cleanFileName.endsWith('.doc')
-    ) {
-        return 'docx';
+    // If cleanFileName has no extension and MIME is generic, default to 'pdf' so iframe can attempt stream preview
+    const ext = cleanFileName.replace(/\.+$/, '').split('.').pop()?.toLowerCase();
+    const hasKnownExt = ext && ext !== cleanFileName && ext.length >= 2;
+    if (!hasKnownExt && (!mime || mime === 'application/octet-stream' || mime === 'application/x-forcedownload')) {
+        return 'pdf';
     }
 
-    // Office XLSX → ExcelViewer
-    if (
-        mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        mime === 'application/vnd.ms-excel' ||
-        cleanFileName.endsWith('.xlsx') ||
-        cleanFileName.endsWith('.xls')
-    ) {
-        return 'xlsx';
-    }
-
-    // Other Office formats → DocViewer
-    if (OFFICE_MIME_TYPES.has(mime)) {
-        return 'docviewer';
-    }
-
-    return 'pdf';
+    // All other file types (Word, Excel, PowerPoint, ZIP, unknown) -> none
+    return 'none';
 }
 
-const OFFICE_MIME_TYPES = new Set([
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/vnd.oasis.opendocument.text',
-    'application/vnd.oasis.opendocument.spreadsheet',
-    'application/vnd.oasis.opendocument.presentation',
-    'text/csv',
-]);
-
 /**
- * Returns true if an attachment can be previewed or opened in the card viewer.
- * All attachments return true so the user can always click View.
+ * Returns true ONLY if an attachment can be previewed (PDF, Plain Text, or Simple Images).
  */
-export function isPreviewableType(_mimeType?: string, _fileName?: string): boolean {
-    return true;
+export function isPreviewableType(mimeType?: string, fileName?: string): boolean {
+    const kind = getPreviewKind(mimeType, fileName);
+    return kind === 'pdf' || kind === 'image' || kind === 'txt';
 }
 
 /**

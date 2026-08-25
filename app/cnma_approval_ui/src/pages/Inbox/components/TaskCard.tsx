@@ -4,11 +4,12 @@ import { Button } from '@cnma/react-ui';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { Clock, User, ChevronRight, FileText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { mapBusinessChips, type BusinessChip } from '@/pages/Inbox/mappers/taskCard.mapper';
 import { PriorityBadge, StatusBadge, TaskTypeBadge } from './TaskBadges';
 import { useQueryClient } from '@tanstack/react-query';
+
 import { inboxKeys } from '../hooks/inboxKeys';
 import { inboxApi } from '@/services/inbox/inbox.api';
+import { resolveTaskCardConfigForTask, type BusinessChip } from '@/renderers/ObjectView.registry';
 
 interface TaskCardProps {
     task: InboxTask;
@@ -18,30 +19,10 @@ interface TaskCardProps {
 }
 
 /**
- * Hook wrapper around the pure mapBusinessChips function.
+ * Custom hook to resolve Task Card configuration (chips and styling) directly from Task data.
  */
-function useBusinessChips(task: InboxTask): BusinessChip[] {
-    const queryClient = useQueryClient();
-    const cleanId = task.instanceId ? String(task.instanceId).replace(/^0+/, '') : '';
-    const cachedDetail = queryClient.getQueryData(inboxKeys.taskDetail(cleanId)) || queryClient.getQueryData(inboxKeys.taskDetail(task.instanceId));
-
-    return useMemo(() => mapBusinessChips(task, cachedDetail), [task, cachedDetail]);
-}
-
-function getObjectTypeStyle(type?: string) {
-    const defaultStyle = {
-        text: 'text-muted-foreground',
-        stripe: 'before:bg-transparent',
-    };
-    if (!type || type === 'UNKNOWN') return defaultStyle;
-
-    const map: Record<string, { text: string; stripe: string }> = {
-        PR: { text: 'text-primary font-semibold', stripe: 'before:bg-primary' },
-        PO: { text: 'text-info font-semibold', stripe: 'before:bg-info' },
-        RE: { text: 'text-warning font-semibold', stripe: 'before:bg-warning' },
-        CLAIM: { text: 'text-success font-semibold', stripe: 'before:bg-success' },
-    };
-    return map[type.toUpperCase()] || defaultStyle;
+function useTaskCardConfig(task: InboxTask) {
+    return useMemo(() => resolveTaskCardConfigForTask(task), [task]);
 }
 
 export const TaskCard = memo(function TaskCard({
@@ -52,34 +33,28 @@ export const TaskCard = memo(function TaskCard({
 }: TaskCardProps) {
     const queryClient = useQueryClient();
     const handlePrefetch = useCallback(() => {
-        const hints = {
-            sapOrigin: task.sapOrigin,
-            documentId: task.businessContext?.documentId,
-            businessObjectType: task.businessContext?.type,
-            status: task.status,
-        };
         void queryClient.prefetchQuery({
             queryKey: inboxKeys.taskDetail(task.instanceId),
-            queryFn: () => inboxApi.getTaskDetail(task.instanceId, hints),
+            queryFn: () => inboxApi.getTaskDetail(task.instanceId),
             staleTime: 5 * 60 * 1000,
         });
-    }, [queryClient, task]);
+    }, [queryClient, task.instanceId]);
+
+
     const contextType =
         task.businessContext?.type && task.businessContext.type !== 'UNKNOWN'
             ? task.businessContext.type
             : 'Workflow';
     const contextId = task.businessContext?.documentId || task.instanceId;
     const isHighPriority = task.priority === 'HIGH' || task.priority === 'VERY_HIGH';
-    const chips = useBusinessChips(task);
 
-    const typeStyle = getObjectTypeStyle(task.businessContext?.type);
+    const { style, chips } = useTaskCardConfig(task);
+    const colorKey = style.colorKey;
+    const typeStyle = {
+        text: style.textClass || 'text-muted-foreground',
+        stripe: style.stripeClass || 'before:bg-transparent',
+    };
     const stripeClass = isHighPriority ? 'before:bg-destructive' : typeStyle.stripe;
-
-    const typeUpper = task.businessContext?.type?.toUpperCase();
-    const colorKey = typeUpper === 'PO' ? 'info'
-        : typeUpper === 'RE' ? 'warning'
-            : typeUpper === 'CLAIM' ? 'success'
-                : 'primary';
 
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
@@ -162,7 +137,7 @@ export const TaskCard = memo(function TaskCard({
                 {/* ── Business detail chips ── */}
                 {chips.length > 0 && (
                     <div className="mt-3 flex w-full flex-wrap gap-1.5 text-xs">
-                        {chips.map((chip, i) => (
+                        {chips.map((chip: BusinessChip, i: number) => (
                             <span
                                 key={i}
                                 className={cn(
@@ -259,7 +234,7 @@ export const TaskCard = memo(function TaskCard({
             {/* ── Business detail chips ── */}
             {chips.length > 0 && (
                 <div className="mt-2.5 flex w-full flex-wrap gap-1.5 text-xs">
-                    {chips.map((chip, i) => (
+                    {chips.map((chip: BusinessChip, i: number) => (
                         <span
                             key={i}
                             className={cn(
@@ -307,3 +282,4 @@ export const TaskCard = memo(function TaskCard({
         </Button>
     );
 });
+
