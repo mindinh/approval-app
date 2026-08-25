@@ -25,7 +25,7 @@ The portal dynamically formats and renders details for different types of procur
 
 ### 4. Rich Interactivity & Collaboration
 *   **Real-time Comments**: Post notes and view discussion logs directly within the task context. Comments are synchronized with the S/4HANA backend to keep records unified.
-*   **Attachment Handling**: Stream attachments (e.g., PDFs, invoices, quotation sheets) straight from the ERP, and upload new files (e.g., support sheets, confirmation emails) on the fly.
+*   **Attachment Handling**: Stream and preview attachments (e.g., PDFs, invoices, quotation sheets) straight from the ERP.
 *   **Individual & Mass Actions**: Execute decisions (Approve, Reject) for a single document or select multiple tasks to approve in bulk.
 
 ---

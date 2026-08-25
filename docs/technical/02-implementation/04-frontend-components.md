@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Declarative Renderer Engine
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-20 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-24 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, raw OData consumption, and the **Declarative Raw OData Renderer Engine** of the **CNMA Approval** frontend.
 
@@ -18,7 +18,7 @@ The frontend application uses a master-detail layout for the inbox workspace:
   │     ├── MobileDateRangeFilter (Inline touch calendar range picker)
   │     └── FilterSettingsDialog.tsx (Adapt filter order & visibility)
   ├── Left Pane: TaskList.tsx (with touch pull-to-refresh hook: usePullToRefresh.ts)
-  │     ├── TaskCard.tsx (Task title, badges, document numbers, total amounts via taskCard.mapper.ts)
+  │     ├── TaskCard.tsx (Task title, badges, document numbers, total amounts via taskCardView.ts)
   │     └── TaskPagination.tsx
   └── Right Pane: TaskDetailView.tsx (with TaskDetailSkeletons.tsx loading indicators & PTR container ref)
         ├── Header & Status Badges (StatusHeaderBadges.tsx)
@@ -67,7 +67,8 @@ app/cnma_approval_ui/src/renderers/
 │   ├── formatters.ts          <-- Presentation formatters for dates, currency amounts, units, codes
 │   ├── objectView.ts          <-- Evaluates view definitions against raw entity to build BusinessSectionModel
 │   ├── predicates.ts          <-- Rule-based visibility helpers (when.eq, when.exists, when.in, when.all)
-│   └── renderer.types.ts      <-- Renderer contract types & interfaces
+│   ├── renderer.types.ts      <-- Renderer contract types & interfaces
+│   └── taskCardView.ts        <-- TaskCard view definition builder (title, badges, amounts)
 └── objects/
     ├── claim/                 <-- Claim view definitions (claim.view.ts)
     ├── po/                    <-- Purchase Order catalogs & subtype views (po.fields.ts, po.views.ts)

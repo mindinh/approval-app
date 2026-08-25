@@ -2,6 +2,30 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [1.0.12] - 2026-08-24
+
+### Added
+*   **Expense Claim (`CLAIM`) Document Type Integration**:
+    *   Added full support for Expense Claim headers (`CNMA_CLAIMHEADER`) and line items (`CNMA_CLAIMITEM`) across backend strategies ([`claim.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/claim.ts)), type resolvers ([`object-type-resolver.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/object-type-resolver.ts), [`odata-config.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/odata-config.ts)), and declarative frontend views ([`claim.view.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/claim/claim.view.ts)).
+    *   Updated `METADATA.xml` with OData EDMX definitions for `CNMA_CLAIMHEADER` and `CNMA_CLAIMITEM` entities.
+*   **Buffer Magic Bytes MIME & Extension Detector (`file-helper.ts`)**:
+    *   Added `detectMimeFromBuffer` in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts) for binary magic header inspection (PDF, PNG, JPEG, GIF, WebP, ZIP) and fallback lookup maps (`MIME_TYPE_MAP`, `EXT_FROM_MIME`).
+*   **Declarative Task Card Renderer (`taskCardView.ts`)**:
+    *   Created [`taskCardView.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/taskCardView.ts) under `src/renderers/core/` to drive TaskCard titles, badges, document numbers, and total amounts via [`ObjectView.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/ObjectView.registry.ts).
+*   **Code Review Audit Report (`Code-Review-260824.md`)**:
+    *   Added [`Code-Review-260824.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260824.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance.
+
+### Refactored & Changed
+*   **Purged Legacy Task Card Mapper**:
+    *   Removed `app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts` in favor of declarative renderer architecture.
+*   **Enhanced Object Type Resolver & Task Processing**:
+    *   Updated `resolveObjectTypeFromInstance` in [`object-type-resolver.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/object-type-resolver.ts) to evaluate `DocCategory`, `TechnicalWrkflwObjectType`, or `typeid`/`TaskDefinitionID`.
+    *   Bypassed TASKPROCESSING decision runtime fetching for `CLAIM` tasks (`SupportsForward: false`).
+*   **Streamlined Inbox Query Hooks**:
+    *   Refactored and simplified state invalidation and queries in [`inboxInvalidation.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/inboxInvalidation.ts), [`inboxQueries.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/inboxQueries.ts), and [`inboxMutations.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/inboxMutations.ts).
+
+---
+
 ## [1.0.11] - 2026-08-20
 
 ### Added

@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-17 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-24 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -129,7 +129,7 @@ These endpoints are designed for troubleshooting token bindings, user identities
 *   **Purpose**: Retrieve historical queue containing tasks processed by the user (`COMPLETED` state).
 
 ### 9. GET `/tasks/tasks/:id`
-*   **Purpose**: Fetch raw business object and taskprocessing details concurrently. Returns minimal envelope with unmapped SAP OData structure and workflow execution state.
+*   **Purpose**: Fetch raw business object and taskprocessing details concurrently. Returns minimal envelope with unmapped SAP OData structure and workflow execution state. For `CLAIM` document types, decision runtime fetching via TASKPROCESSING is bypassed (`SupportsForward: false`).
 *   **URL Parameter**: `:id` represents the unique Task Instance ID.
 *   **Query Parameters**:
     *   `typeid` (Optional): Fallback task definition code.
@@ -250,7 +250,7 @@ These endpoints are designed for troubleshooting token bindings, user identities
     ```
 
 ### 12. GET `/tasks/tasks/:id/attachments/:attId/content/:filename`
-*   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition.
+*   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition. Uses magic byte inspection (`detectMimeFromBuffer`) in `file-helper.ts` to identify PDF, PNG, JPEG, GIF, WebP, and ZIP streams when headers are ambiguous.
 
 ### 13. GET `/tasks/search-users`
 *   **Purpose**: Search system users for task forwarding/delegation dialog autocompletion.

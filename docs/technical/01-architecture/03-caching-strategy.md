@@ -53,7 +53,7 @@ Examples:
 ## ⚡ Cache Invalidation & Mutations
 
 To prevent displaying stale data after a user modifies a document:
-*   **Trigger Methods**: Whenever a comment is posted (`addComment`) or an attachment is uploaded (`uploadAttachment`), the cache must be invalidated.
+*   **Trigger Methods**: Whenever a comment is posted (`addComment`), the cache must be invalidated.
 *   **Invalidation Mechanism**: The helper function `clearDetailCache(objectType, objectId)` is executed:
     ```javascript
     export function clearDetailCache(objectType: string, objectId: string) {

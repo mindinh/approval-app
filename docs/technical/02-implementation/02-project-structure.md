@@ -1,6 +1,6 @@
 # Project Codebase Structure
 
-> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-17 | **Status:** Active
+> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-24 | **Status:** Active
 
 This document provides a comprehensive folder structure walkthrough mapping key components of both the CAP backend BFF and the Vite React frontend.
 
@@ -23,7 +23,8 @@ cnma-approval/
 │   │   │   │   │   ├── formatters.ts  # Value formatters for dates, amounts, quantities, codes
 │   │   │   │   │   ├── objectView.ts  # Layout evaluator converting raw entities to section model
 │   │   │   │   │   ├── predicates.ts  # Rule-based visibility helpers (when.eq, when.exists, etc.)
-│   │   │   │   │   └── renderer.types.ts # Renderer type definitions & contracts
+│   │   │   │   │   ├── renderer.types.ts # Renderer type definitions & contracts
+│   │   │   │   │   └── taskCardView.ts   # Declarative TaskCard card titles, chips, and total amount builder
 │   │   │   │   ├── objects/           # Object field catalogs & layout view definitions
 │   │   │   │   │   ├── claim/         # Claim Form view definitions (claim.view.ts)
 │   │   │   │   │   ├── po/            # Purchase Order catalogs (po.fields.ts, po.views.ts)
@@ -38,13 +39,12 @@ cnma-approval/
 │   │   │   │       │   ├── RichMentionInput.tsx   # Text input supporting @mention user tagging
 │   │   │   │       │   ├── TagUserDialog.tsx      # CC user tagging dialog modal
 │   │   │   │       │   ├── TaskActionPanel.tsx    # Floating action bar (Approve, Reject, Forward, Tag)
-│   │   │   │       │   ├── TaskCard.tsx
+│   │   │   │       │   ├── TaskCard.tsx           # Task card item (driven by taskCardView.ts)
 │   │   │   │       │   ├── TaskDetailSkeletons.tsx # Skeleton loading states
 │   │   │   │       │   ├── TaskDetailView.tsx
 │   │   │   │       │   ├── TeamsMentionDropdown.tsx # Autocomplete list for user mentions
 │   │   │   │       │   └── panels/    # OverviewPanel, AttachmentsPanel, CommentsPanel, WorkflowApprovalPanel
 │   │   │   │       ├── hooks/         # Query hooks (useInbox, useSearchUsers, useBusUsers, useTaskFilters)
-│   │   │   │       ├── mappers/       # Task card mapping (taskCard.mapper.ts)
 │   │   │   │       └── index.tsx      # Inbox page composition root
 │   │   │   ├── services/              # API Client fetch queries (Axios REST clients)
 │   │   │   ├── styles/                # CSS styling, tokens, and Tailwind theme rules
@@ -76,7 +76,7 @@ cnma-approval/
 │   │   ├── processors/                # Business processors and orchestrators
 │   │   │   ├── inbox-processor.ts     # Main orchestrator returning minimal raw task detail payload
 │   │   │   └── odata-config.ts        # OData service constants and path mappings
-│   │   └── utils/                     # Cache engine (ttl-lru-cache), MIME type resolver, logging, auth
+│   │   └── utils/                     # Cache engine (ttl-lru-cache), file-helper.ts (MIME magic byte detection), logging, auth
 │   ├── server.ts                      # Express bootstrap logic (passport, XSUAA JWT, REST routing)
 │   └── service.cds                    # CDS BFF Service path definitions
 ├── tests/                             # Backend Unit, Integration & Performance tests
