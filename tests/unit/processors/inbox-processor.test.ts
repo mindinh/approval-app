@@ -18,8 +18,8 @@ vi.mock('../../../srv/lib/integrations/sap-odata-adapter', () => {
       getDetailBatch = vi.fn();
       getDetail = vi.fn();
       addComment = vi.fn();
-      uploadAttachment = vi.fn();
       fetchAttachmentContent = vi.fn();
+
     }
   };
 });
@@ -42,7 +42,13 @@ describe('InboxProcessor', () => {
       
       const result = await processor.getTasks('MOCK_USER');
       expect(result).toEqual({ items: [], total: 0 });
-      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith('MOCK_USER', ['IN PROCESSING', 'IN_PROCESSING'], undefined, undefined, undefined);
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith(
+        'MOCK_USER',
+        expect.arrayContaining(['IN PROCESSING', 'IN_PROCESSING', 'Pending approval', 'Partially approved']),
+        undefined,
+        undefined,
+        undefined
+      );
     });
 
     it('should fetch tasks, apply pagination and format cards', async () => {
@@ -91,7 +97,13 @@ describe('InboxProcessor', () => {
 
       const res = await processor.getApprovedTasks('MOCK_USER', 'jwt', { top: 2 });
 
-      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith('MOCK_USER', 'COMPLETED', 'jwt', undefined, { top: 2 });
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith(
+        'MOCK_USER',
+        expect.arrayContaining(['COMPLETED', 'Approved', 'Rejected', 'Cancelled']),
+        'jwt',
+        undefined,
+        { top: 2 }
+      );
       expect(res.items.length).toBe(2);
       expect(res.items[0].instanceId).toBe('101');
       expect(res.items[0].status).toBe('COMPLETED');

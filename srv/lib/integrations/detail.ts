@@ -26,15 +26,6 @@ export interface Detail {
         options?: AddCommentOptions
     ): Promise<void>;
 
-    uploadAttachment?(
-        objectId: string,
-        fileName: string,
-        mimeType: string,
-        buffer: Buffer,
-        sapUser: string,
-        userJwt?: string
-    ): Promise<void>;
-
     fetchAttachmentContent?(
         objectId: string,
         attachId: string,

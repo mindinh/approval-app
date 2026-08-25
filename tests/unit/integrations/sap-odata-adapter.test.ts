@@ -165,12 +165,5 @@ describe('SapOdataAdapter', () => {
         fileName: 'Invoice.pdf'
       });
     });
-
-    it('should throw an error on uploadAttachment in direct SAP mode', async () => {
-      const buf = Buffer.from('my-file');
-      await expect(
-        adapter.getStrategy('PR').uploadAttachment('10000001', 'doc.pdf', 'application/pdf', buf, 'SAP_USER', 'jwt')
-      ).rejects.toThrow('Attachment upload is disabled for this service.');
-    });
   });
 });

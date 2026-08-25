@@ -19,23 +19,20 @@ export const SAP_TYPEID_OBJECT_MAP: Record<string, ObjectTypeCode> = {
   "ZBUS2093": "RE",
 
   // Claim
-  "CLAIM": "CLAIM",
-  "ZCLAIM": "CLAIM"
+  "CLAIM": "CLAIM"
 };
 
-export function resolveObjectTypeFromTypeId(typeid: string): ObjectTypeCode {
+export function resolveObjectTypeFromTypeId(typeid: string): ObjectTypeCode | undefined {
   if (!typeid) {
-    return "PR";
+    return undefined;
   }
-  const typeStr = String(typeid);
-  // Check if direct map exists
-  const objectType = SAP_TYPEID_OBJECT_MAP[typeStr];
+  const typeStr = String(typeid).toUpperCase();
+  const objectType = SAP_TYPEID_OBJECT_MAP[typeStr] || SAP_TYPEID_OBJECT_MAP[typeid];
   if (objectType) {
     return objectType;
   }
 
-  // Regex mapping checks for common prefixes/patterns
-  if (typeStr.includes("BUS2105") || typeStr.startsWith("TS") && typeStr.toLowerCase().includes("pr")) {
+  if (typeStr.includes("BUS2105") || (typeStr.startsWith("TS") && typeStr.toLowerCase().includes("pr"))) {
     return "PR";
   }
   if (typeStr.includes("BUS2012") || typeStr.toLowerCase().includes("po")) {
@@ -44,9 +41,27 @@ export function resolveObjectTypeFromTypeId(typeid: string): ObjectTypeCode {
   if (typeStr.includes("BUS2093") || typeStr.includes("ZBUS2093") || typeStr.toLowerCase().includes("res")) {
     return "RE";
   }
+  if (typeStr.includes("CLAIM")) {
+    return "CLAIM";
+  }
 
-  // Fallback to PR default
-  return "PR";
+  return undefined;
+}
+
+
+export function resolveObjectTypeFromInstance(inst: any, fallbackType: ObjectTypeCode = 'PR'): ObjectTypeCode {
+  if (!inst) return fallbackType;
+
+  const fromCategory = inst.DocCategory ? resolveObjectTypeFromTypeId(inst.DocCategory) || inst.DocCategory : undefined;
+  if (fromCategory) return fromCategory as ObjectTypeCode;
+
+  const fromTech = inst.TechnicalWrkflwObjectType ? resolveObjectTypeFromTypeId(inst.TechnicalWrkflwObjectType) || inst.TechnicalWrkflwObjectType : undefined;
+  if (fromTech) return fromTech as ObjectTypeCode;
+
+  const fromType = resolveObjectTypeFromTypeId(inst.typeid || inst.TaskDefinitionID || '');
+  if (fromType) return fromType;
+
+  return fallbackType;
 }
 
 export const ODATA_SERVICES = {
@@ -59,3 +74,4 @@ export const ODATA_SERVICES = {
     entitySet: 'CNMA_WFTASK'
   }
 };
+

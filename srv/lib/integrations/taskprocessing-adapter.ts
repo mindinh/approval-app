@@ -4,23 +4,6 @@ import { ODATA_SERVICES } from '../processors/odata-config';
 export class TaskprocessingAdapter {
     private sapClient = new SapClient();
 
-    async getTasks(sapUser: string, userJwt?: string, customFilter?: string): Promise<any[]> {
-        const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
-        const filterVal = customFilter || "Status eq 'READY' or Status eq 'RESERVED' or Status eq 'IN_PROGRESS'";
-        const response: any = await this.sapClient.get(
-            path,
-            '/TaskCollection',
-            {
-                $format: 'json',
-                $filter: filterVal,
-                $orderby: 'CreatedOn desc'
-            },
-            sapUser,
-            userJwt
-        );
-        return response?.d?.results || [];
-    }
-
     private padId(id: string): string {
         return /^\d+$/.test(id) ? id.padStart(12, '0') : id;
     }
@@ -30,11 +13,14 @@ export class TaskprocessingAdapter {
         const paddedId = this.padId(instanceId);
         const taskUrl = `/TaskCollection(InstanceID='${encodeURIComponent(paddedId)}')`;
         
-        // 1. Fetch task runtime data first
-        const taskRes: any = await this.sapClient.get<any>(path, taskUrl, { $format: 'json' }, sapUser, userJwt);
-        const task = taskRes?.d || {};
+        let task: any = {};
+        try {
+            const taskRes: any = await this.sapClient.get<any>(path, taskUrl, { $format: 'json' }, sapUser, userJwt);
+            task = taskRes?.d || {};
+        } catch (e: any) {
+            console.warn(`[Adapter] Non-fatal: Failed to fetch task runtime for task ${paddedId}: ${e.message}`);
+        }
         
-        // 2. Fetch decision options using the correct SAP__Origin resolved from task
         const origin = task.SAP__Origin || 'LOCAL';
         let decisions: any[] = [];
         if (normalTask) {
@@ -61,6 +47,8 @@ export class TaskprocessingAdapter {
             decisions
         };
     }
+
+
 
     async executeDecision(instanceId: string, sapDecisionKey: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { InboxProcessor } from '../lib/processors/inbox-processor';
 import { AppError } from '../lib/utils/error-handler';
 import { fetchReferencePrDetail } from '../lib/integrations/reference-pr';
+import { detectMimeFromBuffer } from '../lib/utils/file-helper';
 import {
     resolveIdentity,
     getSapUser,
@@ -570,35 +571,6 @@ export class InboxController {
      *         schema:
      *           type: string
      *       - in: header
-     *         name: content-type
-     *         schema:
-     *           type: string
-     *       - in: query
-     *         name: documentId
-     *         schema:
-     *           type: string
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/octet-stream:
-     *           schema:
-     *             type: string
-     *             format: binary
-     *     responses:
-     *       200:
-     *         description: Success envelope
-     */
-    postAttachment = async (_req: Request, _res: Response, next: NextFunction): Promise<void> => {
-        try {
-            // Attachment upload disabled per request
-            throw new AppError('Attachment upload is disabled.', 403);
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    /**
-     * @openapi
      * /tasks/tasks/{id}/attachments/{attId}/content:
      *   get:
      *     summary: Stream attachment binary content
@@ -745,41 +717,29 @@ export class InboxController {
                 return;
             }
 
+            let contentType = file.contentType || 'application/octet-stream';
+            let fileName = file.fileName || `attachment_${attachId}`;
+
+            if ((!contentType || contentType === 'application/octet-stream' || contentType === 'application/x-forcedownload') && file.data) {
+                const detected = detectMimeFromBuffer(file.data);
+                if (detected) {
+                    contentType = detected.mimeType;
+                    if (!fileName.includes('.') || fileName.endsWith('.')) {
+                        fileName = `${fileName.replace(/\.+$/, '')}.${detected.extension}`;
+                    }
+                }
+            }
+
             const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
-            const encodedFileName = encodeURIComponent(file.fileName);
-            res.setHeader('Content-Type', file.contentType);
-            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"; filename*=UTF-8''${encodedFileName}`);
+            const encodedFileName = encodeURIComponent(fileName);
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', `${disposition}; filename="${fileName}"; filename*=UTF-8''${encodedFileName}`);
             res.send(file.data);
         } catch (error) {
             next(error);
         }
     };
 
-    /**
-     * @openapi
-     * /tasks/pr/{docNum}/attachments:
-     *   post:
-     *     summary: Upload PR attachment
-     *     security:
-     *       - BearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: docNum
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Success envelope
-     */
-    uploadPrAttachment = async (_req: Request, _res: Response, next: NextFunction): Promise<void> => {
-        try {
-            // Attachment upload disabled per request
-            throw new AppError('Attachment upload is disabled.', 403);
-        } catch (error) {
-            next(error);
-        }
-    };
 
     /**
      * @openapi

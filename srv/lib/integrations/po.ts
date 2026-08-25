@@ -43,10 +43,6 @@ export class PoDetail extends BaseRawDetail {
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, options?.userJwt);
     }
 
-    async uploadAttachment(_objectId: string, _fileName: string, _mimeType: string, _buffer: Buffer, _sapUser: string, _userJwt?: string): Promise<void> {
-        throw new AppError('Attachment upload is disabled for this service.', 405);
-    }
-
     async fetchAttachmentContent(_objectId: string, attachId: string, sapUser: string, userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const relativePath = `/CNMA_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;

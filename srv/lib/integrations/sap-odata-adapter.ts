@@ -196,8 +196,9 @@ export class SapOdataAdapter {
         if (cleanId.startsWith('5')) return 'RE';
         if (cleanId.startsWith('9')) return 'CLAIM';
 
-        return 'PR';
+        return 'CLAIM';
     }
+
 
     async addComment(objectId: string, text: string, sapUser: string, options?: AddCommentOptions): Promise<void> {
         const targetType = this.resolveObjectType(objectId, options?.objectType);
@@ -206,16 +207,6 @@ export class SapOdataAdapter {
             await strategy.addComment(objectId, text, sapUser, options);
         } else {
             throw new Error(`addComment not supported for strategy: ${strategy.objectType}`);
-        }
-    }
-
-    async uploadAttachment(objectId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string, objectType?: string): Promise<void> {
-        const targetType = this.resolveObjectType(objectId, objectType);
-        const strategy = this.getStrategy(targetType);
-        if (strategy.uploadAttachment) {
-            await strategy.uploadAttachment(objectId, fileName, mimeType, buffer, sapUser, userJwt);
-        } else {
-            throw new Error(`uploadAttachment not supported for strategy: ${strategy.objectType}`);
         }
     }
 

@@ -107,14 +107,20 @@ export function cleanBusinessObjectForList(obj: any): any {
 export function formatTaskTitle(inst: any, matchingTask: any, objectType: string, overrideStatus?: string): string {
     if (matchingTask?.TaskTitle) return matchingTask.TaskTitle;
     if (inst?.TaskTitle) return inst.TaskTitle;
+    if (inst?.taskTitle) return inst.taskTitle;
     const isCompleted = overrideStatus === 'COMPLETED' || inst?.status === 'COMPLETED';
     const actionPrefix = inst?.normalTask === false 
         ? (isCompleted ? 'Reviewed' : 'Review') 
         : (isCompleted ? 'Approved' : 'Approve');
-    const typeDisplay = inst?.doctyp_desc || inst?.doctyp || objectType;
-    const docId = inst?.instid || inst?.instanceID || '';
+    let typeDisplay = inst?.doctyp_desc || inst?.DocumentTypeText || inst?.DocumentTypeDisplay || inst?.doctyp || objectType;
+    if (String(typeDisplay).toUpperCase() === 'CLAIM') {
+        typeDisplay = 'Claim';
+    }
+    const docId = inst?.DocumentNumber || inst?.TechnicalWrkflwObject || inst?.instid || inst?.instanceID || '';
     return `${actionPrefix} ${typeDisplay} ${docId}`.trim();
 }
+
+
 
 export function filterComments(raw: any[]): Comment[] {
     if (!Array.isArray(raw)) return [];
@@ -169,20 +175,104 @@ export function decorateActions(sapDecisions: any[], config: any): UiAction[] {
 export function decorateAttachments(attachments: any[], instanceId: string, instid: string): Attachment[] {
     if (!Array.isArray(attachments)) return [];
     return attachments.map((a: any, idx: number) => {
-        const attId = a.id || `attach-${idx}`;
+        const attId = a.id || a.DocId || a.ID || a.AttachId || a.attachId || `attach-${idx}`;
+        let rawFileName = String(
+            a.fileName || a.FileName || a.FileDisplayName || a.fileDisplayName || a.name || a.Name || a.Filename || a.filename || a.Title || a.title || a.Description || a.description || attId
+        ).trim();
+
+        // Remove trailing dots (e.g. "04_Amenities_Cost_Raise_Request_Cleaning_Supplies." -> "04_Amenities_Cost_Raise_Request_Cleaning_Supplies")
+        rawFileName = rawFileName.replace(/\.+$/, '').trim();
+
+        let mimeType = String(a.mimeType || a.MimeType || a.ContentType || a.contentType || a.Mimetype || a.mimetype || '').trim();
+        const rawType = String(
+            a.FileType || a.fileType || a.FileExtension || a.fileExtension || a.DocType || a.docType || a.Ext || a.ext || a.Format || a.format || a.Type || a.type || a.DocClass || a.docClass || a.Component || a.component || ''
+        ).toLowerCase().trim();
+
+        // Infer MIME if generic/missing and rawType is present
+        if ((!mimeType || mimeType === 'application/octet-stream' || mimeType === 'application/x-forcedownload') && rawType) {
+            const typeMap: Record<string, string> = {
+                pdf: 'application/pdf',
+                png: 'image/png',
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+                gif: 'image/gif',
+                webp: 'image/webp',
+                svg: 'image/svg+xml',
+                bmp: 'image/bmp',
+                ico: 'image/x-icon',
+                txt: 'text/plain',
+                log: 'text/plain',
+                csv: 'text/csv',
+                json: 'application/json',
+                xml: 'application/xml',
+                html: 'text/html',
+                htm: 'text/html',
+                md: 'text/markdown',
+                docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                doc: 'application/msword',
+                xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                xls: 'application/vnd.ms-excel',
+                pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                ppt: 'application/vnd.ms-powerpoint',
+                zip: 'application/zip',
+                rar: 'application/x-rar-compressed',
+                '7z': 'application/x-7z-compressed',
+                msg: 'application/vnd.ms-outlook',
+            };
+            if (typeMap[rawType]) {
+                mimeType = typeMap[rawType];
+            }
+        }
+
+        // Determine extension from filename or rawType
+        let hasExtension = rawFileName.includes('.') && rawFileName.split('.').pop()!.length >= 2;
+        let fileName = rawFileName || attId;
+
+        if (!hasExtension && rawType && /^[a-z0-9]+$/.test(rawType)) {
+            fileName = `${fileName}.${rawType}`;
+            hasExtension = true;
+        } else if (!hasExtension && mimeType && mimeType !== 'application/octet-stream') {
+            const extFromMime: Record<string, string> = {
+                'application/pdf': 'pdf',
+                'image/png': 'png',
+                'image/jpeg': 'jpg',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+                'image/svg+xml': 'svg',
+                'text/plain': 'txt',
+                'text/csv': 'csv',
+                'application/json': 'json',
+                'application/xml': 'xml',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+                'application/msword': 'doc',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+                'application/vnd.ms-excel': 'xls',
+                'application/zip': 'zip',
+            };
+            const cleanM = mimeType.split(';')[0].toLowerCase();
+            if (extFromMime[cleanM]) {
+                fileName = `${fileName}.${extFromMime[cleanM]}`;
+            }
+        }
+
+        const fileDisplayName = a.fileDisplayName || a.FileDisplayName || fileName;
+        const fileSize = Number(a.fileSize || a.Length || a.FileSize || a.length || 0);
+
         return {
             id: attId,
-            fileName: a.fileName || a.name || attId,
-            fileDisplayName: a.fileName || a.name || attId,
-            mimeType: a.mimeType || 'application/pdf',
-            fileSize: a.fileSize || 0,
-            createdBy: a.createdBy || 'SAP User',
-            createdByName: a.createdBy || 'SAP User',
-            createdAt: normalizeDate(a.createdAt),
-            link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content/${encodeURIComponent(a.fileName || a.name || 'file.pdf')}?documentId=${instid}`
+            fileName,
+            fileDisplayName,
+            mimeType: mimeType || 'application/octet-stream',
+            fileSize,
+            createdBy: a.createdBy || a.CreatedBy || a.CreatedByName || a.createdByName || 'SAP User',
+            createdByName: a.createdByName || a.CreatedByName || a.createdBy || a.CreatedBy || 'SAP User',
+            createdAt: normalizeDate(a.createdAt || a.CreatedOnDate),
+            link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content/${encodeURIComponent(fileName)}?documentId=${instid}`
         };
     });
 }
+
+
 
 /**
  * Centralized helper to resolve total amount for a task / business object.
@@ -215,7 +305,7 @@ export function resolveTaskTotalAmount(item: any, rawBusinessObject?: any, objec
 
     // Standard fallback
     if (item?.total !== undefined && item?.total !== null) return Number(item.total);
-    const rawVal = rawObj.TotalNetAmountLocalCrcy ?? rawObj.TotalOrderValue ?? rawObj.TotalAmount ?? rawObj.Total;
+    const rawVal = rawObj.TotalNetAmountLocalCrcy ?? rawObj.PaymentAmount ?? rawObj.TotalOrderValue ?? rawObj.TotalAmount ?? rawObj.Total;
     if (rawVal !== undefined && rawVal !== null) return Number(rawVal);
 
     const itemRawVal = item?.TotalNetAmountLocalCrcy ?? item?.TotalOrderValue;

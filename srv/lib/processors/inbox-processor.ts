@@ -1,7 +1,8 @@
 import { TaskprocessingAdapter } from '../integrations/taskprocessing-adapter';
 import { SapOdataAdapter } from '../integrations/sap-odata-adapter';
 import { AddCommentOptions } from '../integrations/comment.types';
-import { resolveObjectTypeFromTypeId } from './odata-config';
+import { resolveObjectTypeFromTypeId, resolveObjectTypeFromInstance } from './odata-config';
+
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
 import { ObjectTypeResolver } from './object-type-resolver';
@@ -10,40 +11,60 @@ import {
     normalizeDate,
     cleanBusinessObjectForList,
     formatTaskTitle,
-    filterComments,
-    decorateActions,
-    decorateAttachments,
     resolveTaskTotalAmount
 } from './inbox-utils';
 
-export class InboxProcessor {
-    private taskAdapter = new TaskprocessingAdapter();
-    private sapOdataAdapter = new SapOdataAdapter();
-    private objectTypeResolver = new ObjectTypeResolver(this.sapOdataAdapter, this.taskAdapter);
-    private logger = new Logger('InboxProcessor');
+/** Status list for active pending tasks ("My Tasks") */
+export const ACTIVE_TASK_STATUSES = [
+    'IN PROCESSING',
+    'IN_PROCESSING',
+    'Pending approval',
+    'Partially approved',
+    'Pending Approval',
+    'Partially Approved',
+    'PENDING APPROVAL',
+    'PARTIALLY APPROVED'
+];
 
+/** Status list for processed/historic tasks ("Approved Tasks") */
+export const APPROVED_TASK_STATUSES = [
+    'COMPLETED',
+    'Approved',
+    'Rejected',
+    'Cancelled',
+    'APPROVED',
+    'REJECTED',
+    'CANCELLED'
+];
+
+export class InboxProcessor {
+    private readonly taskAdapter = new TaskprocessingAdapter();
+    private readonly sapOdataAdapter = new SapOdataAdapter();
+    private readonly objectTypeResolver = new ObjectTypeResolver(this.sapOdataAdapter, this.taskAdapter);
+    private readonly logger = new Logger('InboxProcessor');
+
+    /**
+     * Retrieves active/pending approval tasks for the specified user.
+     */
     async getTasks(sapUser: string, userJwt?: string, pagination?: { top?: number; skip?: number }) {
         this.logger.info(`Fetching tasks for user: ${sapUser}`);
         try {
-            const customInstances = await this.sapOdataAdapter.getInstances(sapUser, ['IN PROCESSING', 'IN_PROCESSING'], userJwt, undefined, pagination);
+            const customInstances = await this.sapOdataAdapter.getInstances(
+                sapUser,
+                ACTIVE_TASK_STATUSES,
+                userJwt,
+                undefined,
+                pagination
+            );
             if (!customInstances || customInstances.length === 0) {
                 return { items: [], total: 0 };
             }
 
             const total = (customInstances as any).totalCount ?? customInstances.length;
-
-            let paginatedInstances = customInstances;
-            if (pagination?.top !== undefined || pagination?.skip !== undefined) {
-                const skip = pagination.skip ?? 0;
-                const top = pagination.top ?? paginatedInstances.length;
-                if (paginatedInstances.length > top) {
-                    paginatedInstances = paginatedInstances.slice(skip, skip + top);
-                }
-            }
+            const paginatedInstances = this._paginate(customInstances, pagination);
 
             const items = paginatedInstances.map((inst: any) => {
-                const objectType = resolveObjectTypeFromTypeId(inst.typeid || '');
-                return this._buildTaskCard(inst, undefined, undefined, objectType);
+                return this._buildTaskCard(inst);
             });
 
             return { items, total };
@@ -53,29 +74,31 @@ export class InboxProcessor {
         }
     }
 
+    /**
+     * Retrieves completed/historic tasks for the specified user.
+     */
     async getApprovedTasks(sapUser: string, userJwt?: string, pagination?: { top?: number; skip?: number }) {
         this.logger.info(`Fetching approved/completed tasks for user: ${sapUser}`);
         try {
-            const customInstances = await this.sapOdataAdapter.getInstances(sapUser, 'COMPLETED', userJwt, undefined, pagination);
+            const customInstances = await this.sapOdataAdapter.getInstances(
+                sapUser,
+                APPROVED_TASK_STATUSES,
+                userJwt,
+                undefined,
+                pagination
+            );
             if (!customInstances || customInstances.length === 0) {
                 return { items: [], total: 0 };
             }
 
             const total = (customInstances as any).totalCount ?? customInstances.length;
-
-            let paginatedInstances = customInstances;
-            if (pagination?.top !== undefined || pagination?.skip !== undefined) {
-                const skip = pagination.skip ?? 0;
-                const top = pagination.top ?? paginatedInstances.length;
-                if (paginatedInstances.length > top) {
-                    paginatedInstances = paginatedInstances.slice(skip, skip + top);
-                }
-            }
+            const paginatedInstances = this._paginate(customInstances, pagination);
 
             const items = paginatedInstances.map((inst: any) => {
-                const objectType = resolveObjectTypeFromTypeId(inst.typeid || '');
-                return this._buildTaskCard(inst, undefined, undefined, objectType, 'COMPLETED');
+                const overrideStatus = inst.status === 'COMPLETED' ? 'COMPLETED' : undefined;
+                return this._buildTaskCard(inst, overrideStatus);
             });
+
 
             return { items, total };
         } catch (error: any) {
@@ -84,6 +107,10 @@ export class InboxProcessor {
         }
     }
 
+
+    /**
+     * Fetches detailed header and task metadata for a single task instance.
+     */
     async getTaskDetail(
         instanceId: string,
         sapUser: string,
@@ -126,6 +153,9 @@ export class InboxProcessor {
         }
     }
 
+    /**
+     * Executes an approval or rejection decision on a task and syncs comment to SAP.
+     */
     async executeDecision(
         instanceId: string,
         decisionKey: string,
@@ -137,20 +167,13 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
-            let docId = context?.documentId;
-            let ctxType = context?.businessObjectType || context?.objectType || context?.type;
+            const docId = context?.documentId;
+            const ctxType = context?.businessObjectType || context?.objectType || context?.type;
+            const isClaim = String(ctxType || '').toUpperCase() === 'CLAIM';
 
-            if (!docId && instanceId) {
-                try {
-                    const taskDetail = await this.getTaskDetail(instanceId, sapUser || '', undefined, userJwt);
-                    const bo = taskDetail?.businessObject || {};
-                    docId = bo.DocumentNumber || bo.PurchaseRequisition || bo.PurchaseOrder || bo.ReservationNumber || bo.ClaimNumber || bo.DocumentId;
-                    if (!ctxType) {
-                        ctxType = bo.DocCategory || bo.ObjectType || bo.DocumentType;
-                    }
-                } catch (err: any) {
-                    this.logger.warn(`Could not resolve task details for decision comment fallback: ${err.message}`);
-                }
+            if (isClaim) {
+                this.logger.info(`Claim decision actions are currently disabled. Skipping all actions for Claim ${docId || instanceId}`);
+                return { status: 'SUCCESS', message: 'Claim decision action skipped.' };
             }
 
             const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
@@ -158,12 +181,13 @@ export class InboxProcessor {
                 String(decisionKey).toLowerCase().includes('reject');
             const decisionCode = isReject ? 'R' : 'A';
 
-            // 1. Call OData service (/SAP__self.comment) for decision note
+
+            // 1. Post decision note via OData service (/SAP__self.comment)
             if (docId) {
                 try {
                     const defaultText = isReject ? `Rejected by ${sapUser || 'user'}` : `Approved by ${sapUser || 'user'}`;
                     const noteText = comment && comment.trim() ? comment.trim() : defaultText;
-                    await this.addComment(docId, noteText, sapUser, { userJwt, decision: decisionCode, objectType: ctxType, taskId: instanceId });
+                    await this.addComment(docId, noteText, sapUser || '', { userJwt, decision: decisionCode, objectType: ctxType, taskId: instanceId });
                     this.logger.info(`Successfully pushed OData decision comment (${decisionCode}) to ${ctxType || 'document'} ${docId}`);
                 } catch (e: any) {
                     this.logger.warn(`Failed to push decision comment to document ${docId}: ${e.message}`);
@@ -172,19 +196,25 @@ export class InboxProcessor {
                 this.logger.warn(`Audit Warning: Decision executed but could not push OData comment because documentId is unknown for task ${instanceId}`);
             }
 
-            // 2. Call standard TASKPROCESSING API
+            // 2. Execute decision via TASKPROCESSING API
             return await this.taskAdapter.executeDecision(instanceId, sapDecisionKey, comment, sapUser, userJwt);
         } catch (error: any) {
+
             this.logger.error(`Error in executeDecision: ${error.message}`);
             throw new AppError(`Decision execution failed: ${error.message}`, 500);
         }
     }
 
+
+
+    /**
+     * Retrieves approval workflow tree and historical comments for a document.
+     */
     async getWorkflowApprovalTree(
-        documentId: string, 
-        sapUser: string, 
-        userJwt?: string, 
-        instanceId?: string, 
+        documentId: string,
+        sapUser: string,
+        userJwt?: string,
+        instanceId?: string,
         businessObjectType?: string
     ) {
         this.logger.info(`Fetching approval tree for document ${documentId} (type: ${businessObjectType || 'unknown'}, task: ${instanceId || 'unknown'})`);
@@ -238,16 +268,6 @@ export class InboxProcessor {
         }
     }
 
-    async uploadAttachment(documentId: string, fileName: string, mimeType: string, buffer: Buffer, sapUser: string, userJwt?: string, objectType?: string) {
-        this.logger.info(`Uploading attachment ${fileName} to document ${documentId}`);
-        try {
-            await this.sapOdataAdapter.uploadAttachment(documentId, fileName, mimeType, buffer, sapUser, userJwt, objectType);
-        } catch (error: any) {
-            this.logger.error(`Error in uploadAttachment: ${error.message}`);
-            throw new AppError(`Failed to upload attachment: ${error.message}`, 500);
-        }
-    }
-
     async getAttachmentContent(documentId: string, attachId: string, sapUser: string, userJwt?: string, objectType?: string) {
         this.logger.info(`Fetching attachment content for ${attachId} in document ${documentId}`);
         try {
@@ -280,7 +300,6 @@ export class InboxProcessor {
             this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => [])
         ]);
 
-        // Remap WorkflowTaskStatus: IN PROCESSING / IN_PROCESSING -> In Approving, COMPLETED -> Completed
         const statusCounts = statusCountsRaw.map((s: any) => {
             const rawStatus = (s.WorkflowTaskStatus || '').toUpperCase().trim();
             let statusLabel = 'In Approving';
@@ -319,62 +338,6 @@ export class InboxProcessor {
             items,
             total: items.length
         };
-    }
-
-    private _buildTaskCard(inst: any, matchingTask: any, rawBusinessObject: any, objectType: string, overrideStatus?: string) {
-        const rawObj = rawBusinessObject || {};
-        const requesterName = rawObj.CreatedByUser || rawObj.CreatedByName || rawObj.UserName || rawObj.UserFullName || inst?.createdByUser || matchingTask?.CreatedByName || undefined;
-        const calcTotal = resolveTaskTotalAmount(inst, rawObj, objectType);
-        const docTypeDisplay = inst?.doctyp_desc
-            || (rawObj.DocumentType && rawObj.DocumentTypeText ? `${rawObj.DocumentType} - ${rawObj.DocumentTypeText}` : (rawObj.DocumentTypeText || rawObj.DocumentTypeDisplay || inst?.doctyp || objectType));
-
-        const compCodeVal = rawObj.CompanyCode || inst?.companyCode || inst?.CompanyCode;
-        const compCodeName = rawObj.CompanyCodeName || inst?.companyCodeName || inst?.CompanyCodeName || '';
-        const compCodeDisplay = compCodeVal ? (compCodeName ? `${compCodeVal} - ${compCodeName}` : (String(compCodeVal).endsWith('-') ? compCodeVal : `${compCodeVal} - `)) : undefined;
-        const compCode = compCodeVal;
-        const relStrategy = rawObj.ReleaseStrategyName || rawObj.ReleaseStrategyText || inst?.releaseStrategyName;
-
-        const businessChips: any[] = [];
-        if (compCodeDisplay) {
-            businessChips.push({
-                label: 'Company Code',
-                value: compCodeDisplay,
-                dataType: 'TEXT'
-            });
-        }
-
-        const card: any = {
-            instanceId: inst.instanceID,
-            sapOrigin: matchingTask?.SAP__Origin || 'LOCAL',
-            title: matchingTask?.TaskTitle || formatTaskTitle(inst, matchingTask, objectType, overrideStatus),
-            status: overrideStatus || (inst.status || matchingTask?.Status || 'READY').replace(/\s+/g, '_'),
-            priority: normalizePriority(matchingTask?.Priority),
-            createdOn: normalizeDate(matchingTask?.CreatedOn || inst.taskCreationDateTime),
-            createdByName: matchingTask?.CreatedByName || undefined,
-            requestorName: requesterName,
-            taskDefinitionId: inst.typeid || matchingTask?.TaskDefinitionID,
-            instid: inst.instid,
-            documentId: inst.instid,
-            objectType: objectType,
-            documentTypeDisplay: docTypeDisplay || undefined,
-            companyCodeDisplay: compCodeDisplay || undefined,
-            companyCode: compCode || undefined,
-            releaseStrategyName: relStrategy || undefined,
-            businessContext: {
-                type: objectType,
-                documentId: inst.instid
-            },
-            supports: {
-                forward: (inst.normalTask === false || overrideStatus === 'COMPLETED') ? false : (matchingTask?.SupportsForward ?? true),
-                comments: matchingTask?.SupportsComments ?? true
-            },
-            total: calcTotal !== undefined ? Number(calcTotal) : undefined,
-            curr_vnd: inst.curr_vnd || rawObj.LocalCurrency || rawObj.Currency || rawObj.DocumentCurrency || undefined,
-            businessChips: businessChips && businessChips.length > 0 ? businessChips : undefined,
-            normalTask: inst.normalTask
-        };
-
-        return cleanBusinessObjectForList(card);
     }
 
     async searchUsers(searchPattern: string, sapUser: string, userJwt?: string) {
@@ -418,7 +381,6 @@ export class InboxProcessor {
         }
     }
 
-
     async forwardTask(
         instanceId: string,
         forwardTo: string,
@@ -435,21 +397,9 @@ export class InboxProcessor {
 
             const result = await this.taskAdapter.forwardTask(instanceId, forwardTo.trim(), comment || '', sapUser || '', userJwt);
 
-            let docId = context?.documentId;
-            let ctxType = context?.businessObjectType || context?.objectType || context?.type;
+            const docId = context?.documentId;
+            const ctxType = context?.businessObjectType || context?.objectType || context?.type;
 
-            if (!docId && instanceId) {
-                try {
-                    const taskDetail = await this.getTaskDetail(instanceId, sapUser || '', undefined, userJwt);
-                    const bo = taskDetail?.businessObject || {};
-                    docId = bo.DocumentNumber || bo.PurchaseRequisition || bo.PurchaseOrder || bo.ReservationNumber || bo.ClaimNumber || bo.DocumentId;
-                    if (!ctxType) {
-                        ctxType = bo.DocCategory || bo.ObjectType || bo.DocumentType;
-                    }
-                } catch (err: any) {
-                    this.logger.warn(`Could not resolve task details for forward audit comment fallback: ${err.message}`);
-                }
-            }
 
             if (comment && comment.trim()) {
                 if (docId) {
@@ -470,5 +420,68 @@ export class InboxProcessor {
             throw new AppError(`Failed to forward task: ${error.message}`, 500);
         }
     }
+
+    // ─── Private Helper Methods ────────────────────────────────
+
+    /**
+     * Slice instance array according to top/skip pagination params.
+     */
+    private _paginate<T>(instances: T[], pagination?: { top?: number; skip?: number }): T[] {
+        if (pagination?.top === undefined && pagination?.skip === undefined) {
+            return instances;
+        }
+        const skip = pagination.skip ?? 0;
+        const top = pagination.top ?? instances.length;
+        return instances.length > top ? instances.slice(skip, skip + top) : instances;
+    }
+
+
+    private _buildTaskCard(inst: any, overrideStatus?: string) {
+        const objectType = resolveObjectTypeFromInstance(inst, 'PR');
+
+        const requesterName = inst?.CreatedByUser || inst?.CreatedByName || inst?.createdByUser || inst?.UserName || inst?.UserFullName || undefined;
+        const calcTotal = resolveTaskTotalAmount(inst, undefined, objectType);
+        const docTypeDisplay = inst?.doctyp_desc || inst?.DocumentTypeText || inst?.DocumentTypeDisplay || inst?.doctyp || objectType;
+        const currency = inst?.LocalCurrency || inst?.curr_vnd || inst?.Currency || inst?.DocumentCurrency || 'VND';
+        const createdOn = normalizeDate(inst?.taskCreationDateTime || inst?.CreatedOn || inst?.CreationDate);
+
+        const card: any = {
+            ...inst,
+            instanceId: inst.instanceID || inst.instanceId,
+            sapOrigin: inst.SAP__Origin || 'LOCAL',
+            title: inst.TaskTitle || formatTaskTitle(inst, undefined, objectType, overrideStatus),
+            status: overrideStatus || (inst.status || 'READY').replace(/\s+/g, '_'),
+            priority: normalizePriority(inst.Priority || inst.priority),
+            createdOn: createdOn,
+            createdByName: requesterName,
+            requestorName: requesterName,
+            taskDefinitionId: inst.typeid || inst.TaskDefinitionID,
+            instid: inst.instid,
+            documentId: inst.instid,
+            objectType: objectType,
+            DocCategory: inst.DocCategory || inst.TechnicalWrkflwObjectType || objectType,
+            DocumentType: inst.DocumentType || inst.doctyp || undefined,
+            DocumentTypeText: docTypeDisplay,
+            documentTypeDisplay: docTypeDisplay,
+            businessContext: {
+                type: objectType,
+                documentId: inst.instid
+            },
+            supports: {
+                forward: (inst.normalTask === false || overrideStatus === 'COMPLETED') ? false : (inst.SupportsForward ?? inst.supports?.forward ?? true),
+                comments: inst.SupportsComments ?? inst.supports?.comments ?? true
+            },
+
+            total: calcTotal !== undefined ? Number(calcTotal) : undefined,
+            curr_vnd: currency,
+            LocalCurrency: currency,
+            DocumentCurrency: currency,
+            TotalNetAmountLocalCrcy: inst.TotalNetAmountLocalCrcy ?? calcTotal,
+            normalTask: inst.normalTask ?? true
+        };
+
+        return cleanBusinessObjectForList(card);
+    }
+
 }
 

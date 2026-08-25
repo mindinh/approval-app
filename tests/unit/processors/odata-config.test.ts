@@ -27,9 +27,10 @@ describe('odata-config', () => {
       expect(resolveObjectTypeFromTypeId('reservation_approval')).toBe('RE');
     });
 
-    it('should fallback to PR default for unknown type ids', () => {
-      expect(resolveObjectTypeFromTypeId('UNKNOWN_TYPE_ID')).toBe('PR');
-      expect(resolveObjectTypeFromTypeId('')).toBe('PR');
+    it('should fallback to undefined for unknown type ids', () => {
+      expect(resolveObjectTypeFromTypeId('UNKNOWN_TYPE_ID')).toBeUndefined();
+      expect(resolveObjectTypeFromTypeId('')).toBeUndefined();
     });
   });
 });
+

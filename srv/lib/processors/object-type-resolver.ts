@@ -1,6 +1,7 @@
 import { SapOdataAdapter } from '../integrations/sap-odata-adapter';
 import { TaskprocessingAdapter } from '../integrations/taskprocessing-adapter';
-import { resolveObjectTypeFromTypeId } from './odata-config';
+import { resolveObjectTypeFromTypeId, resolveObjectTypeFromInstance } from './odata-config';
+
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
 
@@ -10,18 +11,12 @@ export class ObjectTypeResolver {
     constructor(
         private sapOdataAdapter: SapOdataAdapter,
         private taskAdapter: TaskprocessingAdapter
-    ) {}
+    ) { }
 
     async resolve(
         instanceId: string,
         sapUser: string,
-        hints?: {
-            typeid?: string;
-            instid?: string;
-            businessObjectType?: string;
-            documentId?: string;
-            status?: string;
-        },
+        _hints?: any,
         userJwt?: string
     ): Promise<{
         objectType: string;
@@ -31,132 +26,94 @@ export class ObjectTypeResolver {
         businessObject: any;
         normalTask: boolean;
     }> {
-        let inst: any = null;
-        let normalTask = true;
-        let taskRuntime: any;
-        let businessObject: any;
+        this.logger.info(`Resolving details for task ${instanceId}`);
 
-        const hintInstid = hints?.documentId || hints?.instid;
-        const hintObjectType = hints?.businessObjectType;
-        const hintStatus = hints?.status ? hints.status.toUpperCase() : undefined;
-        const isKnownCompleted = hintStatus === 'COMPLETED';
+        const instancesResult = await Promise.resolve(
+            this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId)
+        ).catch(() => []);
 
-        if (hintInstid && hintObjectType && hintObjectType !== 'UNKNOWN') {
-            this.logger.info(`Parallel fetching details for task ${instanceId}: objectType=${hintObjectType}, instid=${hintInstid}`);
+        const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
+        const inst = instancesResult.find((i: any) => {
+            const rawId = String(
+                i.WorkflowTaskInternalID ||
+                i.instanceID ||
+                i.InstanceID ||
+                i.instanceId ||
+                ''
+            ).replace(/^0+/, '');
+            const rawDocNum = String(
+                i.DocumentNumber ||
+                i.TechnicalWrkflwObject ||
+                i.instid ||
+                ''
+            ).replace(/^0+/, '');
+            return rawId === targetId || rawDocNum === targetId;
+        });
 
-            // Fetch S/4HANA Detail and Instances. Only fetch TaskProcessing if task is NOT completed.
-            const [instancesResult, runtimeResult, detailResult] = await Promise.all([
-                Promise.resolve(this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId)).catch(() => []),
-                !isKnownCompleted
-                    ? Promise.resolve(this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, true)).catch((e) => {
-                        this.logger.warn(`Failed to fetch task runtime: ${e.message}`);
-                        return null;
-                    })
-                    : Promise.resolve(null),
-                this.sapOdataAdapter.getDetail(hintObjectType, hintInstid, sapUser, userJwt)
-            ]);
+        const normalTask = inst?.normalTask !== false;
+        const resolvedObjectType = resolveObjectTypeFromInstance(inst, 'PR');
 
-            inst = instancesResult.find((i: any) => {
-                const rawId = i.instanceID ? String(i.instanceID).replace(/^0+/, '') : '';
-                const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-                return rawId === targetId;
-            });
-            if (inst && inst.normalTask === false) {
-                normalTask = false;
+
+
+        let resolvedInstid =
+            inst?.DocumentNumber ||
+            inst?.TechnicalWrkflwObject ||
+            inst?.instid ||
+            inst?.documentId;
+
+        if (!resolvedInstid) {
+            resolvedInstid = /^\d+$/.test(instanceId) ? instanceId.padStart(10, '0') : instanceId;
+        }
+
+
+        if (!resolvedInstid) {
+            throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
+        }
+
+        // 1. Fetch S/4 Business Object details FIRST (e.g. CNMA_CLAIMHEADER for Claim)
+        const businessObject = await this.sapOdataAdapter.getDetail(resolvedObjectType, resolvedInstid, sapUser, userJwt);
+        const finalObjectType = businessObject?.DocCategory || resolvedObjectType;
+
+        const isTaskCompleted = inst?.status === 'COMPLETED';
+        let taskRuntime: any = null;
+
+        // 2. Fetch taskRuntime & decision options from TASKPROCESSING ONLY for non-Claim document types (PO, PR, RE...)
+        if (finalObjectType !== 'CLAIM' && !isTaskCompleted) {
+            try {
+                taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask);
+            } catch (e: any) {
+                this.logger.warn(`Failed to fetch TASKPROCESSING runtime for ${instanceId}: ${e.message}`);
             }
+        }
 
-            const isTaskCompleted = isKnownCompleted || (inst && inst.status === 'COMPLETED');
+        if (!taskRuntime) {
+            taskRuntime = {
+                InstanceID: instanceId,
+                SAP__Origin: 'LOCAL',
+                TaskTitle: inst ? `${normalTask === false ? 'Review' : 'Approve'} ${finalObjectType} ${resolvedInstid}` : '',
+                Status: inst ? inst.status : (isTaskCompleted ? 'COMPLETED' : 'READY'),
+                Priority: 'MEDIUM',
+                CreatedOn: undefined,
+                CreatedByName: undefined,
+                TaskDefinitionID: inst ? (inst.typeid || '') : '',
+                SupportsForward: (isTaskCompleted || normalTask === false || finalObjectType === 'CLAIM') ? false : true,
 
-            if (runtimeResult && !isTaskCompleted) {
-                taskRuntime = runtimeResult;
-                if (!normalTask) {
-                    taskRuntime.decisions = [];
-                }
-            } else {
-                taskRuntime = {
-                    InstanceID: instanceId,
-                    SAP__Origin: 'LOCAL',
-                    TaskTitle: inst ? `${inst.normalTask === false ? 'Review' : 'Approve'} ${hintObjectType} ${inst.instid}` : '',
-                    Status: inst ? inst.status : (isTaskCompleted ? 'COMPLETED' : 'READY'),
-                    Priority: 'MEDIUM',
-                    CreatedOn: undefined,
-                    CreatedByName: undefined,
-                    TaskDefinitionID: inst ? (inst.typeid || '') : '',
-                    SupportsForward: (isTaskCompleted || normalTask === false) ? false : true,
-                    SupportsComments: true,
-                    decisions: []
-                };
-            }
-
-            businessObject = detailResult;
-
-            return {
-                objectType: hintObjectType,
-                instid: hintInstid,
-                inst,
-                taskRuntime,
-                businessObject,
-                normalTask
-            };
-        } else {
-            this.logger.info(`Sequential fallback fetching details for task ${instanceId} (hints missing)`);
-            const instancesResult = await Promise.resolve(this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId)).catch(() => []);
-            inst = instancesResult.find((i: any) => {
-                const rawId = i.instanceID ? String(i.instanceID).replace(/^0+/, '') : '';
-                const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-                return rawId === targetId;
-            });
-            if (inst && inst.normalTask === false) {
-                normalTask = false;
-            }
-
-            let runtimeResult = null;
-            if (normalTask) {
-                runtimeResult = await Promise.resolve(this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask)).catch((e) => {
-                    this.logger.warn(`Failed to fetch task runtime: ${e.message}`);
-                    return null;
-                });
-            }
-
-            if (runtimeResult) {
-                taskRuntime = runtimeResult;
-                if (!normalTask) {
-                    taskRuntime.decisions = [];
-                }
-            } else {
-                const resolvedTypeFromInst = inst ? (resolveObjectTypeFromTypeId(inst.typeid) || 'PR') : 'PR';
-                taskRuntime = {
-                    InstanceID: instanceId,
-                    SAP__Origin: 'LOCAL',
-                    TaskTitle: inst ? `${inst.normalTask === false ? 'Review' : 'Approve'} ${resolvedTypeFromInst} ${inst.instid}` : '',
-                    Status: inst ? inst.status : 'READY',
-                    Priority: 'MEDIUM',
-                    CreatedOn: undefined,
-                    CreatedByName: undefined,
-                    TaskDefinitionID: inst ? (inst.typeid || '') : '',
-                    SupportsForward: false,
-                    SupportsComments: true,
-                    decisions: []
-                };
-            }
-
-            const resolvedObjectType = hintObjectType || (inst ? (resolveObjectTypeFromTypeId(inst.typeid) || 'PR') : (resolveObjectTypeFromTypeId(taskRuntime.TaskDefinitionID) || 'PR'));
-            let resolvedInstid = hintInstid || (inst ? inst.instid : undefined) || taskRuntime.TaskTitle?.match(/\d+/)?.[0] || '';
-
-            if (!resolvedInstid) {
-                throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
-            }
-
-            businessObject = await this.sapOdataAdapter.getDetail(resolvedObjectType, resolvedInstid, sapUser, userJwt);
-
-            return {
-                objectType: resolvedObjectType,
-                instid: resolvedInstid,
-                inst,
-                taskRuntime,
-                businessObject,
-                normalTask
+                SupportsComments: true,
+                decisions: []
             };
         }
+
+
+        return {
+            objectType: finalObjectType,
+            instid: resolvedInstid,
+
+            inst,
+            taskRuntime,
+            businessObject,
+            normalTask
+        };
     }
 }
+
+
