@@ -74,7 +74,14 @@ export function CommentsPanel({
     const addCommentMutation = useAddComment();
 
     const merged = useMemo(() => {
-        const list: Array<{ id: string; text: string; createdBy: string; createdAt: string }> = [];
+        const list: Array<{
+            id: string;
+            text: string;
+            createdBy: string;
+            createdAt: string;
+            forward?: boolean;
+            toUser?: string;
+        }> = [];
 
         for (const wc of workflowComments || []) {
             const text = (wc.noteText || (wc as any).text || '').trim();
@@ -103,6 +110,8 @@ export function CommentsPanel({
                 text: tc.text,
                 createdBy: tc.createdByName || tc.createdBy || 'Unknown',
                 createdAt: tc.createdAt || '',
+                forward: tc.forward === true,
+                toUser: tc.toUser || '',
             });
         }
 
