@@ -1,5 +1,6 @@
 import { BaseRawDetail, RawDetailSource } from './base';
 import { AddCommentOptions } from './comment.types';
+import { ForwardOnHeaderParams } from './detail';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { AppError } from '../utils/error-handler';
 
@@ -23,24 +24,23 @@ export class PoDetail extends BaseRawDetail {
         const paddedId = objectId.padStart(10, '0');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const relativePath = `/CNMA_POHEADER(DocCategory='BUS2012',DocumentNumber='${paddedId}')/SAP__self.comment`;
-
-        const cleanText = text ? text.trim().substring(0, 255) : '';
-        const isDecisionComment = Boolean(options?.decision && options.decision.trim());
-        const taskId = options?.taskId ? options.taskId.trim().substring(0, 12) : '';
-        const taggedUsers = (options?.taggedUsers || []).map((u) => ({
-            USERNAME: String(u.USERNAME || '').trim().substring(0, 12),
-            EMAIL: String(u.EMAIL || '').trim().substring(0, 241),
-        }));
-
-        const payload = {
-            TASKID: taskId,
-            NOTETEXT: cleanText,
-            ISGENERAL: !isDecisionComment,
-            DECISION: isDecisionComment ? options!.decision : '',
-            TAGGEDUSER: taggedUsers,
-        };
+        const payload = this.buildCommentPayload(text, options);
 
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, options?.userJwt);
+    }
+
+    /**
+     * Posts the entity-bound `forward` action on the PO header.
+     * URL: /CNMA_POHEADER(DocCategory='BUS2012',DocumentNumber='<padded10>')/SAP__self.forward
+     * Body: { task_id, notetext, to_user }
+     */
+    async forwardOnHeader(objectId: string, params: ForwardOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
+        const paddedId = objectId.padStart(10, '0');
+        const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+        const relativePath = `/CNMA_POHEADER(DocCategory='BUS2012',DocumentNumber='${paddedId}')/SAP__self.forward`;
+        const payload = this.buildForwardPayload(params);
+
+        await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, userJwt);
     }
 
     async fetchAttachmentContent(_objectId: string, attachId: string, sapUser: string, userJwt?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {

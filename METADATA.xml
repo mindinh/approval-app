@@ -150,7 +150,7 @@
                 <Property Name="VendorName3" Type="Edm.String" Nullable="false" MaxLength="35"/>
                 <Property Name="VendorName4" Type="Edm.String" Nullable="false" MaxLength="35"/>
                 <Property Name="PaymentAmount" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="variable"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="13"/>
                 <Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="CreatedByUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
                 <Property Name="UserName" Type="Edm.String" Nullable="false" MaxLength="80"/>
@@ -162,8 +162,9 @@
                 <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="MovementType" Type="Edm.String" Nullable="false" MaxLength="1"/>
                 <Property Name="MovementTypeName" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Property Name="ActionButton" Type="Edm.String" Nullable="false" MaxLength="1"/>
                 <NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType)"/>
-                <NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_CLAIMITEMType)"/>
+                <NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_CLAIM_ATTAType)"/>
                 <NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_COMMENTType)"/>
                 <NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_CLAIMITEMType)"/>
             </EntityType>
@@ -199,6 +200,7 @@
                 <Property Name="DocumentType" Type="Edm.String" Nullable="false" MaxLength="4"/>
                 <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/>
                 <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="PaymentAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="13"/>
                 <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
                 <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
@@ -352,6 +354,20 @@
                 <NavigationProperty Name="_HeaderText" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_HEADER_TXTType)"/>
                 <NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_POITEMType)"/>
             </EntityType>
+            <EntityType Name="CNMA_CLAIM_ATTAType" HasStream="true">
+                <Key>
+                    <PropertyRef Name="DocCategory"/>
+                    <PropertyRef Name="DocumentNumber"/>
+                    <PropertyRef Name="Docid"/>
+                </Key>
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="Docid" Type="Edm.Guid" Nullable="false"/>
+                <Property Name="FileName" Type="Edm.String" Nullable="false" MaxLength="128"/>
+                <Property Name="FileExtension" Type="Edm.String" Nullable="false" MaxLength="128"/>
+                <Property Name="Length" Type="Edm.Int32" Nullable="false"/>
+                <Property Name="Content" Type="Edm.Stream" Nullable="false"/>
+            </EntityType>
             <EntityType Name="CNMA_RESVHEADERType">
                 <Key>
                     <PropertyRef Name="DocCategory"/>
@@ -394,6 +410,8 @@
                 <Property Name="PostedTime" Type="Edm.TimeOfDay" Nullable="false"/>
                 <Property Name="NoteText" Type="Edm.String" Nullable="false" MaxLength="255"/>
                 <Property Name="UserComment" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="Forward" Type="Edm.Boolean" Nullable="false"/>
+                <Property Name="ToUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
             </EntityType>
             <EntityType Name="ZI_CNMA_HEADER_TXTType">
                 <Key>
@@ -467,6 +485,12 @@
                 <Property Name="SumNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
             </EntityType>
+            <ComplexType Name="zd_cnma_forward_rs">
+                <Property Name="DocCategory" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="NoteText" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Property Name="ToUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+            </ComplexType>
             <ComplexType Name="ZD_CNMA_COMMENT_RS">
                 <Property Name="CreatedBy" Type="Edm.String" Nullable="false" MaxLength="12"/>
                 <Property Name="CreatedOn" Type="Edm.Date" Nullable="true"/>
@@ -485,6 +509,7 @@
                 <Parameter Name="NOTETEXT" Type="Edm.String" Nullable="false" MaxLength="255"/>
                 <Parameter Name="ISGENERAL" Type="Edm.Boolean" Nullable="false"/>
                 <Parameter Name="DECISION" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Parameter Name="FORWARD" Type="Edm.Boolean" Nullable="false"/>
                 <Parameter Name="TAGGEDUSER" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZST_CNMA_TAG)" Nullable="false"/>
                 <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZD_CNMA_COMMENT_RS" Nullable="false"/>
             </Action>
@@ -494,8 +519,33 @@
                 <Parameter Name="NOTETEXT" Type="Edm.String" Nullable="false" MaxLength="255"/>
                 <Parameter Name="ISGENERAL" Type="Edm.Boolean" Nullable="false"/>
                 <Parameter Name="DECISION" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Parameter Name="FORWARD" Type="Edm.Boolean" Nullable="false"/>
                 <Parameter Name="TAGGEDUSER" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZST_CNMA_TAG)" Nullable="false"/>
                 <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZD_CNMA_COMMENT_RS" Nullable="false"/>
+            </Action>
+            <Action Name="forward" IsBound="true">
+                <Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_POHEADERType" Nullable="false"/>
+                <Parameter Name="task_id" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Parameter Name="notetext" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Parameter Name="to_user" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.zd_cnma_forward_rs" Nullable="false"/>
+            </Action>
+            <Action Name="approve" EntitySetPath="_it" IsBound="true">
+                <Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIMHEADERType" Nullable="false"/>
+                <Parameter Name="zcomment" Type="Edm.String" Nullable="false" MaxLength="150"/>
+                <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIMHEADERType" Nullable="true"/>
+            </Action>
+            <Action Name="reject" EntitySetPath="_it" IsBound="true">
+                <Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIMHEADERType" Nullable="false"/>
+                <Parameter Name="zcomment" Type="Edm.String" Nullable="false" MaxLength="150"/>
+                <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIMHEADERType" Nullable="true"/>
+            </Action>
+            <Action Name="forward" IsBound="true">
+                <Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_PRHEADERType" Nullable="false"/>
+                <Parameter Name="task_id" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Parameter Name="notetext" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Parameter Name="to_user" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.zd_cnma_forward_rs" Nullable="false"/>
             </Action>
             <Action Name="comment" IsBound="true">
                 <Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_POHEADERType" Nullable="false"/>
@@ -503,6 +553,17 @@
                 <Parameter Name="NOTETEXT" Type="Edm.String" Nullable="false" MaxLength="255"/>
                 <Parameter Name="ISGENERAL" Type="Edm.Boolean" Nullable="false"/>
                 <Parameter Name="DECISION" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Parameter Name="FORWARD" Type="Edm.Boolean" Nullable="false"/>
+                <Parameter Name="TAGGEDUSER" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZST_CNMA_TAG)" Nullable="false"/>
+                <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZD_CNMA_COMMENT_RS" Nullable="false"/>
+            </Action>
+            <Action Name="comment" IsBound="true">
+                <Parameter Name="_it" Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIMHEADERType" Nullable="false"/>
+                <Parameter Name="TASKID" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Parameter Name="NOTETEXT" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Parameter Name="ISGENERAL" Type="Edm.Boolean" Nullable="false"/>
+                <Parameter Name="DECISION" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Parameter Name="FORWARD" Type="Edm.Boolean" Nullable="false"/>
                 <Parameter Name="TAGGEDUSER" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZST_CNMA_TAG)" Nullable="false"/>
                 <ReturnType Type="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZD_CNMA_COMMENT_RS" Nullable="false"/>
             </Action>
@@ -511,10 +572,11 @@
                 <EntitySet Name="CNMA_BUSUSER" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_BUSUSERType"/>
                 <EntitySet Name="CNMA_CLAIMHEADER" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIMHEADERType">
                     <NavigationPropertyBinding Path="_ApprovalStep" Target="ZI_CNMA_APPROVAL_STEP"/>
-                    <NavigationPropertyBinding Path="_Attachment" Target="ZI_CNMA_CLAIMITEM"/>
+                    <NavigationPropertyBinding Path="_Attachment" Target="ZI_CNMA_CLAIM_ATTA"/>
                     <NavigationPropertyBinding Path="_Comment" Target="ZI_CNMA_COMMENT"/>
                     <NavigationPropertyBinding Path="_Item" Target="ZI_CNMA_CLAIMITEM"/>
                 </EntitySet>
+                <EntitySet Name="CNMA_CLAIM_ATTA" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_CLAIM_ATTAType"/>
                 <EntitySet Name="CNMA_POHEADER" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_POHEADERType">
                     <NavigationPropertyBinding Path="_ApprovalStep" Target="ZI_CNMA_APPROVAL_STEP"/>
                     <NavigationPropertyBinding Path="_Attachment" Target="ZI_CNMA_ATTACH"/>
@@ -560,54 +622,56 @@
             </EntityContainer>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/DocumentNumber">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
-                <Annotation Term="SAP__common.Label" String="Reservierung"/>
-                <Annotation Term="SAP__common.Heading" String="ReservNr"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nummer der Reservierung / des Sekundärbedarfs"/>
+                <Annotation Term="SAP__common.Label" String="Reservation"/>
+                <Annotation Term="SAP__common.Heading" String="Reserv.no."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Number of reservation/dependent requirements"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/ItemNumber">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
-                <Annotation Term="SAP__common.Label" String="Position"/>
-                <Annotation Term="SAP__common.Heading" String="Pos"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Positionsnummer der Reservierung / des Sekundärbedarfs"/>
+                <Annotation Term="SAP__common.Label" String="Item no."/>
+                <Annotation Term="SAP__common.Heading" String="Itm"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item Number of Reservation / Dependent Requirements"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/Plant">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Werk"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/StorageLocation">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lagerort"/>
-                <Annotation Term="SAP__common.Heading" String="LOrt"/>
+                <Annotation Term="SAP__common.Label" String="Storage location"/>
+                <Annotation Term="SAP__common.Heading" String="SLoc"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/Material">
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Material"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Materialnummer"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/CostPrice">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="Currency"/>
-                <Annotation Term="SAP__common.Label" String="Gleitender Preis"/>
-                <Annotation Term="SAP__common.Heading" String="GLD-Preis"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Gleitender Durchschnittspreis/Periodischer Verrechnungspreis"/>
+                <Annotation Term="SAP__common.Label" String="Moving price"/>
+                <Annotation Term="SAP__common.Heading" String="MovAvgPrice"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Moving Average Price/Periodic Unit Price"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/Price">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="Currency"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/GLAccount">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Sachkonto"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nummer des Sachkontos"/>
+                <Annotation Term="SAP__common.Label" String="G/L Account"/>
+                <Annotation Term="SAP__common.Heading" String="G/L Acct"/>
+                <Annotation Term="SAP__common.QuickInfo" String="G/L Account Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/Deleted">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Position gelöscht"/>
-                <Annotation Term="SAP__common.Heading" String="Gel"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Position ist gelöscht"/>
+                <Annotation Term="SAP__common.Label" String="Item deleted"/>
+                <Annotation Term="SAP__common.Heading" String="Del"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item is deleted"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType">
                 <Annotation Term="SAP__common.Label" String="Reservation Item"/>
@@ -689,8 +753,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_HEADER_NOTEType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_HEADER_NOTEType">
                 <Annotation Term="SAP__common.Label" String="Header Note"/>
@@ -746,8 +810,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PAIDBY_TXTType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PAIDBY_TXTType">
                 <Annotation Term="SAP__common.Label" String="PaidBy Text"/>
@@ -803,8 +867,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_BANK_TXTType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_BANK_TXTType">
                 <Annotation Term="SAP__common.Label" String="Bank Detail Text"/>
@@ -861,35 +925,33 @@
             <Annotations Target="SAP__self.CNMA_PRHEADERType/DocCategory">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/DocumentNumber">
                 <Annotation Term="SAP__core.Computed"/>
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/CompanyCode">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Buchungskreis"/>
-                <Annotation Term="SAP__common.Heading" String="BuKr"/>
+                <Annotation Term="SAP__common.Label" String="Company Code"/>
+                <Annotation Term="SAP__common.Heading" String="CoCd"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/CreatedByUser">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
-                <Annotation Term="SAP__common.Heading" String="Angel.von"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Name des Sachbearbeiters, der das Objekt hinzugefügt hat"/>
+                <Annotation Term="SAP__common.Label" String="Created by"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name of Person who Created the Object"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/DocumentType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Belegart"/>
-                <Annotation Term="SAP__common.Heading" String="BArt"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Belegart Bestellanforderung"/>
+                <Annotation Term="SAP__common.Label" String="Document Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/FundsCenter">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Finanzstelle"/>
-                <Annotation Term="SAP__common.Heading" String="Finanzst."/>
+                <Annotation Term="SAP__common.Label" String="Funds Center"/>
+                <Annotation Term="SAP__common.Heading" String="Funds Ctr"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -962,9 +1024,9 @@
             </Annotations>
             <Annotations Target="SAP__self.CNMA_BUSUSERType/SAPUserName">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Benutzer"/>
-                <Annotation Term="SAP__common.Heading" String="Benutzername"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Benutzername im Benutzerstamm"/>
+                <Annotation Term="SAP__common.Label" String="User"/>
+                <Annotation Term="SAP__common.Heading" String="User Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="User Name in User Master Record"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_BUSUSERType">
                 <Annotation Term="SAP__common.Label" String="Projection view for Get All Users"/>
@@ -1013,14 +1075,20 @@
                 </Annotation>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/DocCategory">
+                <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/DocumentNumber">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/CompanyCode">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Buchungskreis"/>
-                <Annotation Term="SAP__common.Heading" String="BuKr"/>
+                <Annotation Term="SAP__common.Label" String="Company Code"/>
+                <Annotation Term="SAP__common.Heading" String="CoCd"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/ClaimType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
@@ -1028,20 +1096,18 @@
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/Vendor">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lieferant"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Kontonummer des Lieferanten bzw. Kreditors"/>
-            </Annotations>
-            <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/PaymentAmount">
-                <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Betrag Hauswähr"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Betrag in Hauswährung"/>
-            </Annotations>
-            <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/TotalNetAmountLocalCrcy">
-                <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
+                <Annotation Term="SAP__common.Label" String="Vendor"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Account Number of Vendor or Creditor"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/CreatedByUser">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
+                <Annotation Term="SAP__common.Label" String="Created by"/>
+            </Annotations>
+            <Annotations Target="SAP__self.approve(SAP__self.CNMA_CLAIMHEADERType)/zcomment">
+                <Annotation Term="SAP__common.Label" String="Comment"/>
+            </Annotations>
+            <Annotations Target="SAP__self.reject(SAP__self.CNMA_CLAIMHEADERType)/zcomment">
+                <Annotation Term="SAP__common.Label" String="Comment"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType">
                 <Annotation Term="SAP__common.Label" String="Projection view for Claim form"/>
@@ -1089,10 +1155,6 @@
                                     <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
                                 </Record>
                                 <Record>
-                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcy"/>
-                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
-                                </Record>
-                                <Record>
                                     <PropertyValue Property="Property" PropertyPath="DocumentCurrency"/>
                                     <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
                                 </Record>
@@ -1111,8 +1173,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIM_ATTAType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIM_ATTAType">
                 <Annotation Term="SAP__common.Label" String="Claim form Attachment"/>
@@ -1158,40 +1220,38 @@
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/WorkflowTaskInternalID">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
-                <Annotation Term="SAP__common.Label" String="Workitem-ID"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Workitem-Kennung"/>
+                <Annotation Term="SAP__common.Label" String="Work Item ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Work item ID"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/WorkflowTaskType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Typ"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Workitem-Typ"/>
+                <Annotation Term="SAP__common.Label" String="Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Work item type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/TechnicalWrkflwObjectType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/NormalTask">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Wahrheitswert"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Wahrheitswert: wahr/falsch"/>
+                <Annotation Term="SAP__common.Label" String="Truth Value"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Truth Value: True/False"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/CreatedByUser">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
-                <Annotation Term="SAP__common.Heading" String="Angel.von"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Name des Sachbearbeiters, der das Objekt hinzugefügt hat"/>
+                <Annotation Term="SAP__common.Label" String="Created by"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name of Person who Created the Object"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/DocumentType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Belegart"/>
-                <Annotation Term="SAP__common.Heading" String="BArt"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Belegart Bestellanforderung"/>
+                <Annotation Term="SAP__common.Label" String="Document Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -1264,83 +1324,85 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DocumentNumber">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Einkaufsbeleg"/>
-                <Annotation Term="SAP__common.Heading" String="EinkBeleg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Belegnummer des Einkaufsbelegs"/>
+                <Annotation Term="SAP__common.Label" String="Purchasing Document"/>
+                <Annotation Term="SAP__common.Heading" String="Purch.Doc."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchasing Document Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ItemNumber">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
-                <Annotation Term="SAP__common.Label" String="Bestellposition"/>
-                <Annotation Term="SAP__common.Heading" String="Positionsnummer der Bestellung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Positionsnummer der Bestellung"/>
+                <Annotation Term="SAP__common.Label" String="PO Item"/>
+                <Annotation Term="SAP__common.Heading" String="Item Number of Purchase Order"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item Number of Purchase Order"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Plant">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Werk"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/StorageLocation">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lagerort"/>
-                <Annotation Term="SAP__common.Heading" String="LOrt"/>
+                <Annotation Term="SAP__common.Label" String="Storage Location"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Material">
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Material"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Materialnummer"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/MaterialGroup">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Warengruppe"/>
+                <Annotation Term="SAP__common.Label" String="Material Group"/>
+                <Annotation Term="SAP__common.Heading" String="Matl Group"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ValuationPrice">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Bestellnettopreis"/>
-                <Annotation Term="SAP__common.Heading" String="Nettopreis"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nettopreis im Einkaufsbeleg in Belegwährung"/>
+                <Annotation Term="SAP__common.Label" String="Net Order Price"/>
+                <Annotation Term="SAP__common.Heading" String="Net Price"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Net Price in Purchasing Document (in Document Currency)"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ValuationPricePRCD">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ReferenceDocumentNumber">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Bestellanforderung"/>
-                <Annotation Term="SAP__common.Heading" String="Banf"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bestellanforderungsnummer"/>
+                <Annotation Term="SAP__common.Label" String="Purchase Requisition"/>
+                <Annotation Term="SAP__common.Heading" String="Purch.Req."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/GLAccount">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Sachkonto"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nummer des Sachkontos"/>
+                <Annotation Term="SAP__common.Label" String="G/L Account"/>
+                <Annotation Term="SAP__common.Heading" String="G/L Acct"/>
+                <Annotation Term="SAP__common.QuickInfo" String="G/L Account Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/FundsCenter">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Finanzstelle"/>
-                <Annotation Term="SAP__common.Heading" String="Finanzst."/>
+                <Annotation Term="SAP__common.Label" String="Funds Center"/>
+                <Annotation Term="SAP__common.Heading" String="Funds Ctr"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/OrderInternalID">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Auftrag"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Auftragsnummer"/>
+                <Annotation Term="SAP__common.Label" String="Order"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Order Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountDocCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Bestellnettowert"/>
-                <Annotation Term="SAP__common.Heading" String="Nettowert"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nettobestellwert in Bestellwährung"/>
+                <Annotation Term="SAP__common.Label" String="Net Order Value"/>
+                <Annotation Term="SAP__common.Heading" String="Net Value"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Net Order Value in PO Currency"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountLocalCrcyPRCD">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Deleted">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Löschkennzeichen"/>
-                <Annotation Term="SAP__common.Heading" String="L"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Löschkennzeichen im Einkaufsbeleg"/>
+                <Annotation Term="SAP__common.Label" String="Deletion indicator"/>
+                <Annotation Term="SAP__common.Heading" String="D"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Deletion indicator in purchasing document"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -1445,60 +1507,63 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DocumentNumber">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Bestellanforderung"/>
-                <Annotation Term="SAP__common.Heading" String="Banf"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bestellanforderungsnummer"/>
+                <Annotation Term="SAP__common.Label" String="Purchase Requisition"/>
+                <Annotation Term="SAP__common.Heading" String="Purch.Reqn"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase requisition number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/ItemNumber">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
-                <Annotation Term="SAP__common.Label" String="Banf-Position"/>
-                <Annotation Term="SAP__common.Heading" String="Pos."/>
-                <Annotation Term="SAP__common.QuickInfo" String="Positionsnummer der Bestellanforderung"/>
+                <Annotation Term="SAP__common.Label" String="Requisn. item"/>
+                <Annotation Term="SAP__common.Heading" String="Item"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item number of purchase requisition"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Plant">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Werk"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/StorageLocation">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lagerort"/>
-                <Annotation Term="SAP__common.Heading" String="LOrt"/>
+                <Annotation Term="SAP__common.Label" String="Storage location"/>
+                <Annotation Term="SAP__common.Heading" String="SLoc"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Material">
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Material"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Materialnummer"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/MaterialGroup">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Warengruppe"/>
+                <Annotation Term="SAP__common.Label" String="Material Group"/>
+                <Annotation Term="SAP__common.Heading" String="Matl Group"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/ValuationPrice">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Bewertungspreis"/>
-                <Annotation Term="SAP__common.Heading" String="Bewertpreis"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Preis in der Bestellanforderung"/>
+                <Annotation Term="SAP__common.Label" String="Valuation Price"/>
+                <Annotation Term="SAP__common.Heading" String="Valn Price"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Price in Purchase Requisition"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/GLAccount">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Sachkonto"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nummer des Sachkontos"/>
+                <Annotation Term="SAP__common.Label" String="G/L Account"/>
+                <Annotation Term="SAP__common.Heading" String="G/L Acct"/>
+                <Annotation Term="SAP__common.QuickInfo" String="G/L Account Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Deleted">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Löschkennzeichen"/>
-                <Annotation Term="SAP__common.Heading" String="L"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Löschkennzeichen im Einkaufsbeleg"/>
+                <Annotation Term="SAP__common.Label" String="Deletion indicator"/>
+                <Annotation Term="SAP__common.Heading" String="D"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Deletion indicator in purchasing document"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/OrderInternalID">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Auftrag"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Auftragsnummer"/>
+                <Annotation Term="SAP__common.Label" String="Order"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Order Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/TotalNetAmountDocCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
@@ -1598,18 +1663,18 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/DocumentCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/FileExtension">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Datei Endung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Dateierweiterung einer PC-Anwendung"/>
+                <Annotation Term="SAP__common.Label" String="File extension"/>
+                <Annotation Term="SAP__common.QuickInfo" String="File extension for PC application"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/CreatedBy">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Benutzername"/>
-                <Annotation Term="SAP__common.Heading" String="Benutzer"/>
+                <Annotation Term="SAP__common.Label" String="User Name"/>
+                <Annotation Term="SAP__common.Heading" String="User"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType">
                 <Annotation Term="SAP__common.Label" String="Attachment File"/>
@@ -1693,8 +1758,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PURPOSE_TXTType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PURPOSE_TXTType">
                 <Annotation Term="SAP__common.Label" String="Purpose Text"/>
@@ -1751,44 +1816,43 @@
             <Annotations Target="SAP__self.CNMA_POHEADERType/DocCategory">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/DocumentNumber">
                 <Annotation Term="SAP__core.Computed"/>
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/DocumentType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Bestellart"/>
+                <Annotation Term="SAP__common.Label" String="Purchase Order Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/CreatedByUser">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Angelegt von"/>
-                <Annotation Term="SAP__common.Heading" String="Angel.von"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Name des Sachbearbeiters, der das Objekt hinzugefügt hat"/>
+                <Annotation Term="SAP__common.Label" String="Created by"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name of Person who Created the Object"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/CompanyCode">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Buchungskreis"/>
-                <Annotation Term="SAP__common.Heading" String="BuKr"/>
+                <Annotation Term="SAP__common.Label" String="Company Code"/>
+                <Annotation Term="SAP__common.Heading" String="CoCd"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/Vendor">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lieferant"/>
+                <Annotation Term="SAP__common.Label" String="Supplier"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/PaymentTerms">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Zahlungsbedingungen"/>
-                <Annotation Term="SAP__common.Heading" String="ZBed"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Schlüssel für Zahlungsbedingungen"/>
+                <Annotation Term="SAP__common.Label" String="Payment Terms"/>
+                <Annotation Term="SAP__common.Heading" String="PayT"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Terms of Payment Key"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/SupplyingPlant">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lieferwerk"/>
-                <Annotation Term="SAP__common.Heading" String="LWk"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Abgebendes Werk bei Transportbestellung"/>
+                <Annotation Term="SAP__common.Label" String="Supplying Plant"/>
+                <Annotation Term="SAP__common.Heading" String="SPlt"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Supplying (issuing) plant in case of stock transport order"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -1863,37 +1927,86 @@
                     </Record>
                 </Annotation>
             </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIM_ATTAType/DocCategory">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIM_ATTAType">
+                <Annotation Term="SAP__common.Label" String="Claim from Attachment"/>
+                <Annotation Term="Communication.Contact">
+                    <Record/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/CNMA_CLAIM_ATTA">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="DocCategory"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/DocCategory">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/DocumentNumber">
                 <Annotation Term="SAP__core.Computed"/>
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/CreatedByUser">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Benutzername"/>
-                <Annotation Term="SAP__common.Heading" String="Name des Benutzers"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Name des Benutzers"/>
+                <Annotation Term="SAP__common.Label" String="User Name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/Plant">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Werk"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/MovementType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Bewegungsart"/>
-                <Annotation Term="SAP__common.Heading" String="BwA"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bewegungsart (Bestandsführung)"/>
+                <Annotation Term="SAP__common.Label" String="Movement type"/>
+                <Annotation Term="SAP__common.Heading" String="MvT"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Movement type (inventory management)"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/CostCenter">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Kostenstelle"/>
-                <Annotation Term="SAP__common.Heading" String="Kostenst."/>
+                <Annotation Term="SAP__common.Label" String="Cost Center"/>
+                <Annotation Term="SAP__common.Heading" String="Cost Ctr"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -1951,16 +2064,25 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/Doccategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/NoteText">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="char255"/>
+                <Annotation Term="SAP__common.Label" String="Char255"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/UserComment">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+                <Annotation Term="SAP__common.Label" String="User Name"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/Forward">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Truth Value"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Truth Value: True/False"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/ToUser">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="User Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType">
                 <Annotation Term="SAP__common.Label" String="Comment"/>
@@ -2007,6 +2129,14 @@
                                     <PropertyValue Property="Property" PropertyPath="UserComment"/>
                                     <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
                                 </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Forward"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ToUser"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
                             </Collection>
                         </PropertyValue>
                     </Record>
@@ -2014,8 +2144,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_HEADER_TXTType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_HEADER_TXTType">
                 <Annotation Term="SAP__common.Label" String="Header Text"/>
@@ -2071,8 +2201,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/ItemNumber">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
@@ -2080,34 +2210,36 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/Reference">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Referenz"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Referenz-Belegnummer"/>
+                <Annotation Term="SAP__common.Label" String="Reference"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Reference Document Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/DocNum">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Belegnummer"/>
-                <Annotation Term="SAP__common.Heading" String="Belegnr"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Belegnummer eines Buchhaltungsbeleges"/>
+                <Annotation Term="SAP__common.Label" String="Document Number"/>
+                <Annotation Term="SAP__common.Heading" String="DocumentNo"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Accounting Document Number"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/PaymentAmount">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Betrag Hauswähr"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Betrag in Hauswährung"/>
+                <Annotation Term="SAP__common.Label" String="Amt.in loc.cur."/>
+                <Annotation Term="SAP__common.Heading" String="Loc.curr.amount"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Amount in local currency"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/InvoiceAmount">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Betrag Hauswähr"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Betrag in Hauswährung"/>
+                <Annotation Term="SAP__common.Label" String="Amt.in loc.cur."/>
+                <Annotation Term="SAP__common.Heading" String="Loc.curr.amount"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Amount in local currency"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/Vendor">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Lieferant"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Kontonummer des Lieferanten bzw. Kreditors"/>
+                <Annotation Term="SAP__common.Label" String="Vendor"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Account Number of Vendor or Creditor"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/FiscalYear">
                 <Annotation Term="SAP__common.IsDigitSequence"/>
-                <Annotation Term="SAP__common.Label" String="Geschäftsjahr"/>
-                <Annotation Term="SAP__common.Heading" String="Jahr"/>
+                <Annotation Term="SAP__common.Label" String="Fiscal Year"/>
+                <Annotation Term="SAP__common.Heading" String="Year"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType">
                 <Annotation Term="SAP__common.Label" String="Claim Item"/>
@@ -2191,8 +2323,8 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ObjectType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType">
                 <Annotation Term="SAP__common.Label" String="Approval Step"/>
@@ -2238,14 +2370,13 @@
             </Annotations>
             <Annotations Target="SAP__self.CNMA_TASKBYDOCTYPEType/DocumentType">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Belegart"/>
-                <Annotation Term="SAP__common.Heading" String="BArt"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Belegart Bestellanforderung"/>
+                <Annotation Term="SAP__common.Label" String="Document Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase Requisition Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_TASKBYDOCTYPEType/DocCategory">
                 <Annotation Term="SAP__common.IsUpperCase"/>
-                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Object Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Type of Objects in Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_TASKBYDOCTYPEType">
                 <Annotation Term="SAP__common.Label" String="Projection view for Dashboard lv2,3"/>
@@ -2330,105 +2461,104 @@
                 </Annotation>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/PlantName">
-                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+                <Annotation Term="SAP__common.Label" String="Plant Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/StorageLocationName">
-                <Annotation Term="SAP__common.Label" String="Name des Lagerorts"/>
+                <Annotation Term="SAP__common.Label" String="Storage Loc. Name"/>
+                <Annotation Term="SAP__common.Heading" String="Storage Location Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Storage Location Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/MaterialText">
-                <Annotation Term="SAP__common.Label" String="Produktbeschreibung"/>
+                <Annotation Term="SAP__common.Label" String="Product Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/Quantity">
-                <Annotation Term="SAP__common.Label" String="Bedarfsmenge"/>
+                <Annotation Term="SAP__common.Label" String="Requirement Quantity"/>
+                <Annotation Term="SAP__common.Heading" String="Reqmnt qty"/>
                 <Annotation Term="SAP__measures.Unit" Path="BaseUnit"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/BaseUnit">
-                <Annotation Term="SAP__common.Label" String="Basismengeneinheit"/>
-                <Annotation Term="SAP__common.Heading" String="BME"/>
+                <Annotation Term="SAP__common.Label" String="Base Unit of Measure"/>
+                <Annotation Term="SAP__common.Heading" String="BUn"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/Currency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/RequirementDate">
-                <Annotation Term="SAP__common.Label" String="Bedarfstermin"/>
-                <Annotation Term="SAP__common.Heading" String="BedTermin"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bedarfstermin der Komponente"/>
+                <Annotation Term="SAP__common.Label" String="Requirements date"/>
+                <Annotation Term="SAP__common.Heading" String="ReqmtsDate"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Requirements date for the component"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/GLAccountText">
-                <Annotation Term="SAP__common.Label" String="Sachkontenlangtext"/>
-                <Annotation Term="SAP__common.Heading" String="Langtext"/>
+                <Annotation Term="SAP__common.Label" String="G/L Acct Long Text"/>
+                <Annotation Term="SAP__common.Heading" String="Long Text"/>
+                <Annotation Term="SAP__common.QuickInfo" String="G/L Account Long Text"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_RESVITEMType/ItemText">
                 <Annotation Term="SAP__common.Label" String="Text"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Positionstext"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item Text"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_HEADER_NOTEType/DocNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PAIDBY_TXTType/DocNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_BANK_TXTType/DocNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/CompanyCodeName">
-                <Annotation Term="SAP__common.Label" String="Name der Firma"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Buchungskreis- oder Firmen-Bezeichnung"/>
+                <Annotation Term="SAP__common.Label" String="Company Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name of Company Code or Company"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/UserName">
-                <Annotation Term="SAP__common.Label" String="Vollständiger Name"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Vollständiger Name der Person"/>
+                <Annotation Term="SAP__common.Label" String="Full Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Full Name of Person"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/CreationDate">
-                <Annotation Term="SAP__common.Label" String="Datum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum des Änderungsbelegs"/>
+                <Annotation Term="SAP__common.Label" String="Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Creation date of the change document"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/CreationTime">
-                <Annotation Term="SAP__common.Label" String="Uhrzeit"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Uhrzeit der Änderung"/>
+                <Annotation Term="SAP__common.Label" String="Time"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Time changed"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/DocumentTypeText">
-                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+                <Annotation Term="SAP__common.Label" String="Doc. Type Descript."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/ReleaseStrategyText">
-                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Freigabestrategie"/>
+                <Annotation Term="SAP__common.Label" String="Description"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Description of release strategy"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/FundsCenterName">
-                <Annotation Term="SAP__common.Label" String="Name der Finanzstelle"/>
-                <Annotation Term="SAP__common.Heading" String="Finanzstellenname"/>
+                <Annotation Term="SAP__common.Label" String="Funds Center Name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_PRHEADERType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_BUSUSERType/FirstName">
-                <Annotation Term="SAP__common.Label" String="Vorname"/>
+                <Annotation Term="SAP__common.Label" String="First name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_BUSUSERType/LastName">
-                <Annotation Term="SAP__common.Label" String="Nachname"/>
+                <Annotation Term="SAP__common.Label" String="Last name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_BUSUSERType/FullName">
-                <Annotation Term="SAP__common.Label" String="Vollständiger Name"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Vollständiger Name der Person"/>
+                <Annotation Term="SAP__common.Label" String="Full Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Full Name of Person"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_BUSUSERType/EmailAddress">
-                <Annotation Term="SAP__common.Label" String="E-Mail-Adresse"/>
-            </Annotations>
-            <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/DocumentNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="E-Mail Address"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/CompanyCodeName">
-                <Annotation Term="SAP__common.Label" String="Name der Firma"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Buchungskreis- oder Firmen-Bezeichnung"/>
+                <Annotation Term="SAP__common.Label" String="Company Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name of Company Code or Company"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/ClaimTypeText">
                 <Annotation Term="SAP__common.Label" String="Description"/>
@@ -2447,217 +2577,239 @@
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/VendorName4">
                 <Annotation Term="SAP__common.Label" String="Name 4"/>
             </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/PaymentAmount">
+                <Annotation Term="SAP__common.Label" String="Amt.in loc.cur."/>
+                <Annotation Term="SAP__common.Heading" String="Loc.curr.amount"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Amount in local currency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/TotalNetAmountLocalCrcy">
+                <Annotation Term="SAP__common.Label" String="tienvnd"/>
+            </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/DocumentCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/UserName">
-                <Annotation Term="SAP__common.Label" String="Vollständiger Name"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Vollständiger Name der Person"/>
+                <Annotation Term="SAP__common.Label" String="Full Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Full Name of Person"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/CreationDate">
-                <Annotation Term="SAP__common.Label" String="Erstellungsdatum"/>
-                <Annotation Term="SAP__common.Heading" String="Erst.Datum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum Regelkreis"/>
+                <Annotation Term="SAP__common.Label" String="Creation Date"/>
+                <Annotation Term="SAP__common.Heading" String="Created On"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Creation Date of Control Cycle"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/CreationTime">
-                <Annotation Term="SAP__common.Label" String="Erstellungszeit"/>
-                <Annotation Term="SAP__common.Heading" String="Erst.Zeit"/>
+                <Annotation Term="SAP__common.Label" String="Created At"/>
+                <Annotation Term="SAP__common.Heading" String="Creat. at"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIMHEADERType/ClaimStatus">
                 <Annotation Term="SAP__common.Label" String="Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIM_ATTAType/DocumentNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIM_ATTAType/Docid">
                 <Annotation Term="SAP__common.Label" String="UUID"/>
-                <Annotation Term="SAP__common.QuickInfo" String="16 byte UUID in 16 bytes (raw format)"/>
+                <Annotation Term="SAP__common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIM_ATTAType/FileExtension">
-                <Annotation Term="SAP__common.Label" String="MIME-Typ"/>
+                <Annotation Term="SAP__common.Label" String="MIME Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/TechnicalWrkflwObject">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/TaskCreationDateTime">
-                <Annotation Term="SAP__common.Label" String="Angelegt"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Workflow: Erzeugungs-Timestamp"/>
+                <Annotation Term="SAP__common.Label" String="Created"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Workflow: Creation Time Stamp"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/CreationDate">
-                <Annotation Term="SAP__common.Label" String="Datum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum des Änderungsbelegs"/>
+                <Annotation Term="SAP__common.Label" String="Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Creation date of the change document"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/CreationTime">
-                <Annotation Term="SAP__common.Label" String="Uhrzeit"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Uhrzeit der Änderung"/>
+                <Annotation Term="SAP__common.Label" String="Time"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Time changed"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/DocumentTypeText">
-                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+                <Annotation Term="SAP__common.Label" String="Doc. Type Descript."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/DocumentNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_WFTASKType/PaymentAmountLocalCrcy">
+                <Annotation Term="SAP__common.Label" String="tienvnd"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_WFTASKType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/PlantName">
-                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+                <Annotation Term="SAP__common.Label" String="Plant Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/StorageLocationName">
-                <Annotation Term="SAP__common.Label" String="Name des Lagerorts"/>
+                <Annotation Term="SAP__common.Label" String="Storage Loc. Name"/>
+                <Annotation Term="SAP__common.Heading" String="Storage Location Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Storage Location Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/MaterialGroupName">
-                <Annotation Term="SAP__common.Label" String="Produktgruppenbschr."/>
-                <Annotation Term="SAP__common.QuickInfo" String="Produktgruppenbeschreibung"/>
+                <Annotation Term="SAP__common.Label" String="Product Group Desc."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Product Group Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Quantity">
-                <Annotation Term="SAP__common.Label" String="Bestellmenge"/>
+                <Annotation Term="SAP__common.Label" String="Order Quantity"/>
+                <Annotation Term="SAP__common.Heading" String="PO Quantity"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase Order Quantity"/>
                 <Annotation Term="SAP__measures.Unit" Path="Unit"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/Unit">
-                <Annotation Term="SAP__common.Label" String="Bestellmengeneinheit"/>
-                <Annotation Term="SAP__common.Heading" String="BME"/>
+                <Annotation Term="SAP__common.Label" String="Order Unit"/>
+                <Annotation Term="SAP__common.Heading" String="OUn"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase Order Unit of Measure"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DeliveryDate">
-                <Annotation Term="SAP__common.Label" String="Lieferdatum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Lieferdatum der Position"/>
+                <Annotation Term="SAP__common.Label" String="Delivery date"/>
+                <Annotation Term="SAP__common.Heading" String="Deliv. date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item delivery date"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/GLAccountText">
-                <Annotation Term="SAP__common.Label" String="Sachkontenlangtext"/>
-                <Annotation Term="SAP__common.Heading" String="Langtext"/>
+                <Annotation Term="SAP__common.Label" String="G/L Acct Long Text"/>
+                <Annotation Term="SAP__common.Heading" String="Long Text"/>
+                <Annotation Term="SAP__common.QuickInfo" String="G/L Account Long Text"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/FundsCenterName">
-                <Annotation Term="SAP__common.Label" String="Name der Finanzstelle"/>
-                <Annotation Term="SAP__common.Heading" String="Finanzstellenname"/>
+                <Annotation Term="SAP__common.Label" String="Funds Center Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/CommitmentItemDescription">
-                <Annotation Term="SAP__common.Label" String="Beschreibung der Finanzposition"/>
+                <Annotation Term="SAP__common.Label" String="Commitment Item Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/OrderInternalName">
-                <Annotation Term="SAP__common.Label" String="Auftragsbeschreibung"/>
+                <Annotation Term="SAP__common.Label" String="Order Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/DocumentCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/PlantName">
-                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+                <Annotation Term="SAP__common.Label" String="Plant Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/StorageLocationName">
-                <Annotation Term="SAP__common.Label" String="Name des Lagerorts"/>
+                <Annotation Term="SAP__common.Label" String="Storage Loc. Name"/>
+                <Annotation Term="SAP__common.Heading" String="Storage Location Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Storage Location Name"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/MaterialGroupName">
-                <Annotation Term="SAP__common.Label" String="Produktgruppenbschr."/>
-                <Annotation Term="SAP__common.QuickInfo" String="Produktgruppenbeschreibung"/>
+                <Annotation Term="SAP__common.Label" String="Product Group Desc."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Product Group Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Quantity">
-                <Annotation Term="SAP__common.Label" String="Anforderungsmenge"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bestellanforderungsmenge"/>
+                <Annotation Term="SAP__common.Label" String="Quantity requested"/>
+                <Annotation Term="SAP__common.Heading" String="Qty requested"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase requisition quantity"/>
                 <Annotation Term="SAP__measures.Unit" Path="Unit"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/Unit">
-                <Annotation Term="SAP__common.Label" String="Mengeneinheit"/>
-                <Annotation Term="SAP__common.Heading" String="ME"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Mengeneinheit der Bestellanforderung"/>
+                <Annotation Term="SAP__common.Label" String="Unit of Measure"/>
+                <Annotation Term="SAP__common.Heading" String="Un"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchase requisition unit of measure"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DeliveryDate">
-                <Annotation Term="SAP__common.Label" String="Lieferdatum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Lieferdatum der Position"/>
+                <Annotation Term="SAP__common.Label" String="Delivery date"/>
+                <Annotation Term="SAP__common.Heading" String="Deliv. date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item delivery date"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/GLAccountText">
-                <Annotation Term="SAP__common.Label" String="Sachkontenlangtext"/>
-                <Annotation Term="SAP__common.Heading" String="Langtext"/>
+                <Annotation Term="SAP__common.Label" String="G/L Acct Long Text"/>
+                <Annotation Term="SAP__common.Heading" String="Long Text"/>
+                <Annotation Term="SAP__common.QuickInfo" String="G/L Account Long Text"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/CommitmentItemDescription">
-                <Annotation Term="SAP__common.Label" String="Beschreibung der Finanzposition"/>
+                <Annotation Term="SAP__common.Label" String="Commitment Item Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/OrderInternalName">
-                <Annotation Term="SAP__common.Label" String="Auftragsbeschreibung"/>
+                <Annotation Term="SAP__common.Label" String="Order Description"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/DocumentCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PRITEMType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/DocumentNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/DocId">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/FileName">
-                <Annotation Term="SAP__common.Label" String="Dokumenttitel"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Kurze Beschreibung des Inhaltes"/>
+                <Annotation Term="SAP__common.Label" String="Document title"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short description of contents"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/CreatedOnDate">
-                <Annotation Term="SAP__common.Label" String="Datum"/>
-                <Annotation Term="SAP__common.Heading" String="Datum im Format JJJJMMDD"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Feld vom Typ DATS"/>
+                <Annotation Term="SAP__common.Label" String="Date"/>
+                <Annotation Term="SAP__common.Heading" String="Date in Format YYYYMMDD"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Field of type DATS"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_ATTACHType/CreatedOnTime">
-                <Annotation Term="SAP__common.Label" String="Feld vom Typ TIMS"/>
+                <Annotation Term="SAP__common.Label" String="Field of type TIMS"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_ATTACH_CONTENTType/Id">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_ATTACH_CONTENTType/FileName">
-                <Annotation Term="SAP__common.Label" String="Dokumenttitel"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Kurze Beschreibung des Inhaltes"/>
+                <Annotation Term="SAP__common.Label" String="Document title"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short description of contents"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_PURPOSE_TXTType/DocNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/DocumentTypeText">
-                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+                <Annotation Term="SAP__common.Label" String="Doc. Type Descript."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/UserName">
-                <Annotation Term="SAP__common.Label" String="Vollständiger Name"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Vollständiger Name der Person"/>
+                <Annotation Term="SAP__common.Label" String="Full Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Full Name of Person"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/CreationDate">
-                <Annotation Term="SAP__common.Label" String="Datum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Erstellungsdatum des Änderungsbelegs"/>
+                <Annotation Term="SAP__common.Label" String="Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Creation date of the change document"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/CreationTime">
-                <Annotation Term="SAP__common.Label" String="Uhrzeit"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Uhrzeit der Änderung"/>
+                <Annotation Term="SAP__common.Label" String="Time"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Time changed"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/ReleaseStrategyText">
-                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Freigabestrategie"/>
+                <Annotation Term="SAP__common.Label" String="Description"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Description of release strategy"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/CompanyCodeName">
-                <Annotation Term="SAP__common.Label" String="Name der Firma"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Buchungskreis- oder Firmen-Bezeichnung"/>
+                <Annotation Term="SAP__common.Label" String="Company Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name of Company Code or Company"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/VendorName1">
                 <Annotation Term="SAP__common.Label" String="Name"/>
@@ -2674,99 +2826,110 @@
                 <Annotation Term="SAP__common.Label" String="Name 4"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/PaymentTermsDescription">
-                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Zahlungsbedingung"/>
+                <Annotation Term="SAP__common.Label" String="Description"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Description of terms of payment"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/SupplyingPlantName">
-                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+                <Annotation Term="SAP__common.Label" String="Plant Name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIM_ATTAType/DocumentNumber">
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIM_ATTAType/Docid">
+                <Annotation Term="SAP__common.Label" String="UUID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+            </Annotations>
+            <Annotations Target="SAP__self.CNMA_CLAIM_ATTAType/FileExtension">
+                <Annotation Term="SAP__common.Label" String="MIME Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/UserName">
-                <Annotation Term="SAP__common.Label" String="Vollständiger Name"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Vollständiger Name der Person"/>
+                <Annotation Term="SAP__common.Label" String="Full Name"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Full Name of Person"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/CreationDate">
-                <Annotation Term="SAP__common.Label" String="aktuelles Datum"/>
-                <Annotation Term="SAP__common.Heading" String="Datum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="ABAP-Systemfeld: Aktuelles Datum des Applikationsservers"/>
+                <Annotation Term="SAP__common.Label" String="Current Date"/>
+                <Annotation Term="SAP__common.Heading" String="Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="ABAP system field: Current date of application server"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/CreationTime">
-                <Annotation Term="SAP__common.Label" String="Lokale Uhrzeit"/>
-                <Annotation Term="SAP__common.QuickInfo" String="ABAP-Systemfeld: Lokale Uhrzeit des aktuellen Benutzers"/>
+                <Annotation Term="SAP__common.Label" String="Local Time"/>
+                <Annotation Term="SAP__common.QuickInfo" String="ABAP System Field: Local Time of Current User"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/PlantName">
-                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+                <Annotation Term="SAP__common.Label" String="Plant Name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/MovementTypeName">
-                <Annotation Term="SAP__common.Label" String="Bewegungsartentext"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Text zur Bewegungsart (Bestandsführung)"/>
+                <Annotation Term="SAP__common.Label" String="Movement Type Text"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Movement Type Text (Inventory Management)"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/CostCenterName">
-                <Annotation Term="SAP__common.Label" String="Kostenstellenname"/>
+                <Annotation Term="SAP__common.Label" String="Cost Center Name"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_RESVHEADERType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/Documentnumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/PostedOn">
-                <Annotation Term="SAP__common.Label" String="Datum"/>
+                <Annotation Term="SAP__common.Label" String="Date"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_COMMENTType/PostedTime">
-                <Annotation Term="SAP__common.Label" String="Feld vom Typ TIMS"/>
+                <Annotation Term="SAP__common.Label" String="Field of type TIMS"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_HEADER_TXTType/DocNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/DocumentNumber">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/DocumentDate">
-                <Annotation Term="SAP__common.Label" String="Belegdatum"/>
-                <Annotation Term="SAP__common.Heading" String="Bel.Datum"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Belegdatum im Beleg"/>
+                <Annotation Term="SAP__common.Label" String="Document Date"/>
+                <Annotation Term="SAP__common.Heading" String="Doc. Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Document Date in Document"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/Text">
                 <Annotation Term="SAP__common.Label" String="Text"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Positionstext"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item Text"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/NetDueDate">
-                <Annotation Term="SAP__common.Label" String="Nettofälligkeit"/>
+                <Annotation Term="SAP__common.Label" String="Net Due Date"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__common.Label" String="tienvnd"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_CLAIMITEMType/DocumentCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ObjectKey">
-                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
+                <Annotation Term="SAP__common.Label" String="Instance ID"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instance Ident. in BOR Compat. Persistent Object References"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ReleaseText">
-                <Annotation Term="SAP__common.Label" String="Bezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung des Freigabecodes"/>
+                <Annotation Term="SAP__common.Label" String="Description"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Description of release code"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_TASKBYDOCTYPEType/DocumentTypeText">
-                <Annotation Term="SAP__common.Label" String="Belegartbezeichnung"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Bezeichnung der Einkaufsbelegart"/>
+                <Annotation Term="SAP__common.Label" String="Doc. Type Descript."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_TASKBYDOCTYPEType/LocalCurrency">
-                <Annotation Term="SAP__common.Label" String="Währung"/>
-                <Annotation Term="SAP__common.Heading" String="Währg"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
             </Annotations>
         </Schema>
     </edmx:DataServices>

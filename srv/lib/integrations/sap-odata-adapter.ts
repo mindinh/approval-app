@@ -1,14 +1,16 @@
 import { SapClient } from './sap-client';
-import { Detail } from './detail';
+import { Detail, ForwardOnHeaderParams, ApproveOnHeaderParams } from './detail';
 import { AddCommentOptions } from './comment.types';
 import { PrDetail } from './pr';
 import { PoDetail } from './po';
 import { ReDetail } from './re';
 import { ClaimDetail } from './claim';
-import { ODATA_SERVICES, resolveObjectTypeFromTypeId } from '../processors/odata-config';
+import { ODATA_SERVICES, resolveObjectTypeFromTypeId, resolveObjectTypeFromInstance } from '../processors/odata-config';
 import { MetadataService } from '../metadata-service';
 import { CnmaTaskByStatusEntity, CnmaTaskByDocTypeEntity } from '../types/sap-odata.types';
+import { Logger } from '../utils/logger';
 import { resolveTaskTotalAmount } from '../processors/inbox-utils';
+
 
 export function clearDetailCache(_objectType: string, _objectId: string) {
     // No-op function preserved for test suite compatibility
@@ -18,6 +20,7 @@ export class SapOdataAdapter {
     private readonly sapClient = new SapClient();
     private readonly metadataService = new MetadataService(this.sapClient);
     private readonly strategies = new Map<string, Detail>();
+    private readonly logger = new Logger('SapOdataAdapter');
 
     constructor() {
         this.strategies.set('PR', new PrDetail(this.sapClient, this.metadataService));
@@ -48,7 +51,7 @@ export class SapOdataAdapter {
 
         const params: Record<string, string> = {
             $format: 'json',
-            $orderby: 'WorkflowTaskInternalID desc',
+            $orderby: 'TaskCreationDateTime desc',
             $count: 'true',
             $top: String(pagination?.top ?? 1000)
         };
@@ -70,8 +73,8 @@ export class SapOdataAdapter {
 
         if (targetInstanceId) {
             const cleanId = String(targetInstanceId).replace(/^0+/, '');
-            const paddedId = String(cleanId).padStart(12, '0');
-            filterConditions.push(`(WorkflowTaskInternalID eq '${paddedId}' or WorkflowTaskInternalID eq '${cleanId}')`);
+            const padded10 = String(cleanId).padStart(10, '0');
+            filterConditions.push(`(DocumentNumber eq '${padded10}' or WorkflowTaskInternalID eq '${padded10}' or WorkflowTaskInternalID eq '${cleanId}')`);
         }
 
         if (filterConditions.length > 0) {
@@ -92,34 +95,47 @@ export class SapOdataAdapter {
         const rawItems = response?.value || response?.d?.results || response?.d || [];
         const totalCount = Number(response?.['@odata.count'] ?? response?.d?.__count ?? rawItems.length);
 
-        const items = rawItems.map((item: any) => ({
-            instanceID: item.WorkflowTaskInternalID,
-            status: item.WorkflowTaskStatus,
-            typeid: item.TechnicalWrkflwObjectType,
-            instid: item.DocumentNumber || item.TechnicalWrkflwObject,
-            documentNumber: item.DocumentNumber || item.TechnicalWrkflwObject,
-            doctyp: item.DocumentType,
-            doctyp_desc: item.DocumentTypeText,
-            normalTask: item.NormalTask !== false,
-            total: resolveTaskTotalAmount(item),
-            TotalOrderValue: item.TotalOrderValue !== undefined && item.TotalOrderValue !== null ? Number(item.TotalOrderValue) : undefined,
-            TotalNetAmountLocalCrcy: item.TotalNetAmountLocalCrcy !== undefined && item.TotalNetAmountLocalCrcy !== null ? Number(item.TotalNetAmountLocalCrcy) : undefined,
-            curr_vnd: item.LocalCurrency,
-            total_doc_curr: item.TotalNetAmountDocCrcy !== undefined && item.TotalNetAmountDocCrcy !== null ? Number(item.TotalNetAmountDocCrcy) : undefined,
-            doc_curr: item.DocumentCurrency,
-            taskCreationDateTime: item.TaskCreationDateTime,
-            createdByUser: item.CreatedByUser,
-            creationDate: item.CreationDate,
-            creationTime: item.CreationTime,
-            companyCode: item.CompanyCode || item.companyCode,
-            companyCodeName: item.CompanyCodeName || item.companyCodeName
-        }));
+        const items = rawItems.map((item: any) => {
+            const objectType = resolveObjectTypeFromInstance(item, 'PR');
+            const total = resolveTaskTotalAmount(item, undefined, objectType);
 
-        // Local sort fallback by instance ID descending
+            return {
+                instanceID: item.WorkflowTaskInternalID,
+                status: item.WorkflowTaskStatus,
+                typeid: item.TechnicalWrkflwObjectType,
+                instid: item.DocumentNumber || item.TechnicalWrkflwObject,
+                documentNumber: item.DocumentNumber || item.TechnicalWrkflwObject,
+                doctyp: item.DocumentType,
+                doctyp_desc: item.DocumentTypeText,
+                DocumentType: item.DocumentType,
+                DocumentTypeText: item.DocumentTypeText,
+                normalTask: item.NormalTask !== false,
+                total: total,
+                TotalOrderValue: item.TotalOrderValue !== undefined && item.TotalOrderValue !== null ? Number(item.TotalOrderValue) : undefined,
+                TotalNetAmountLocalCrcy: item.TotalNetAmountLocalCrcy !== undefined && item.TotalNetAmountLocalCrcy !== null ? Number(item.TotalNetAmountLocalCrcy) : undefined,
+                PaymentAmountLocalCrcy: item.PaymentAmountLocalCrcy !== undefined && item.PaymentAmountLocalCrcy !== null ? Number(item.PaymentAmountLocalCrcy) : undefined,
+                PaymentAmount: item.PaymentAmount !== undefined && item.PaymentAmount !== null ? Number(item.PaymentAmount) : undefined,
+                DocCategory: item.DocCategory || item.TechnicalWrkflwObjectType,
+                LocalCurrency: item.LocalCurrency,
+                DocumentCurrency: item.DocumentCurrency,
+                taskCreationDateTime: item.TaskCreationDateTime,
+                createdByUser: item.CreatedByUser,
+                CreatedByUser: item.CreatedByUser,
+                creationDate: item.CreationDate,
+                creationTime: item.CreationTime,
+                companyCode: item.CompanyCode || item.companyCode,
+                companyCodeName: item.CompanyCodeName || item.companyCodeName
+            };
+        });
+
+        // Local sort by TaskCreationDateTime descending (fallback to instance ID desc when date is missing/equal)
         items.sort((a: any, b: any) => {
-            const idA = a.instanceID || '';
-            const idB = b.instanceID || '';
-            return idB.localeCompare(idA);
+            const dateA = a.taskCreationDateTime ? new Date(a.taskCreationDateTime).getTime() : 0;
+            const dateB = b.taskCreationDateTime ? new Date(b.taskCreationDateTime).getTime() : 0;
+            if (dateB !== dateA) return dateB - dateA;
+            const idA = Number(a.instanceID) || 0;
+            const idB = Number(b.instanceID) || 0;
+            return idB - idA;
         });
 
         (items as any).totalCount = totalCount;
@@ -177,8 +193,8 @@ export class SapOdataAdapter {
         return results;
     }
 
-    private resolveObjectType(objectId: string, explicitType?: string): string {
-        let type = (explicitType || '').toUpperCase().trim();
+    private resolveObjectType(_objectId: string, explicitType?: string): string {
+        const type = (explicitType || '').toUpperCase().trim();
         if (type && this.strategies.has(type)) {
             return type;
         }
@@ -190,13 +206,7 @@ export class SapOdataAdapter {
             }
         }
 
-        const cleanId = objectId.replace(/^0+/, '');
-        if (cleanId.startsWith('4')) return 'PO';
-        if (cleanId.startsWith('1')) return 'PR';
-        if (cleanId.startsWith('5')) return 'RE';
-        if (cleanId.startsWith('9')) return 'CLAIM';
-
-        return 'CLAIM';
+        return 'PR';
     }
 
 
@@ -210,14 +220,103 @@ export class SapOdataAdapter {
         }
     }
 
-    async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string, objectType?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
+    /**
+     * Dispatches the entity-bound `forward` action to the strategy registered for the given
+     * object type. Only PR (BUS2105) and PO (BUS2012) implement forwardOnHeader per
+     * METADATA.xml — Reservation/Claim strategies intentionally omit the method.
+     */
+    async forwardOnHeader(objectType: string, objectId: string, params: ForwardOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
         const targetType = this.resolveObjectType(objectId, objectType);
-        const strategy = this.getStrategy(targetType);
-        if (strategy.fetchAttachmentContent) {
-            return await strategy.fetchAttachmentContent(objectId, attachId, sapUser, userJwt);
-        } else {
-            throw new Error(`fetchAttachmentContent not supported for strategy: ${strategy.objectType}`);
+        const normalized = targetType.toUpperCase();
+        if (normalized !== 'PR' && normalized !== 'PO') {
+            throw new Error(`Entity-bound forward action is only supported for PR and PO. Received: ${targetType}`);
         }
+
+        const strategy = this.getStrategy(targetType);
+        if (!strategy.forwardOnHeader) {
+            throw new Error(`Strategy ${strategy.objectType} does not implement forwardOnHeader`);
+        }
+
+        await strategy.forwardOnHeader(objectId, params, sapUser, userJwt);
+    }
+
+    /**
+     * Dispatches the entity-bound `approve` action to the strategy registered for the given
+     * object type. Currently only Claim (CLAIM) implements approveOnHeader per METADATA.xml —
+     * PR/PO/Re strategies intentionally omit it. SAP exposes `/SAP__self.approve` and
+     * `/SAP__self.reject` as two distinct bound actions; this dispatcher routes the
+     * `approve` action. The decision code is recorded separately via `/SAP__self.comment`.
+     */
+    async approveOnHeader(objectType: string, objectId: string, params: ApproveOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
+        const targetType = this.resolveObjectType(objectId, objectType);
+        const normalized = targetType.toUpperCase();
+        if (normalized !== 'CLAIM') {
+            throw new Error(`Entity-bound approve action is only supported for Claim. Received: ${targetType}`);
+        }
+
+        const strategy = this.getStrategy(targetType);
+        if (!strategy.approveOnHeader) {
+            throw new Error(`Strategy ${strategy.objectType} does not implement approveOnHeader`);
+        }
+
+        await strategy.approveOnHeader(objectId, params, sapUser, userJwt);
+    }
+
+    /**
+     * Dispatches the entity-bound `reject` action to the strategy registered for the given
+     * object type. Currently only Claim (CLAIM) implements rejectOnHeader per METADATA.xml —
+     * PR/PO/Re strategies intentionally omit it. Mirror of `approveOnHeader` but POSTs to
+     * `/SAP__self.reject`. The decision code is recorded separately via `/SAP__self.comment`.
+     */
+    async rejectOnHeader(objectType: string, objectId: string, params: ApproveOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
+        const targetType = this.resolveObjectType(objectId, objectType);
+        const normalized = targetType.toUpperCase();
+        if (normalized !== 'CLAIM') {
+            throw new Error(`Entity-bound reject action is only supported for Claim. Received: ${targetType}`);
+        }
+
+        const strategy = this.getStrategy(targetType);
+        if (!strategy.rejectOnHeader) {
+            throw new Error(`Strategy ${strategy.objectType} does not implement rejectOnHeader`);
+        }
+
+        await strategy.rejectOnHeader(objectId, params, sapUser, userJwt);
+    }
+
+    async fetchAttachmentContent(objectId: string, attachId: string, sapUser: string, userJwt?: string, objectType?: string): Promise<{ data: Buffer; contentType: string; fileName: string } | null> {
+        const explicitType = (objectType || '').toUpperCase().trim();
+        const resolvedType = explicitType ? (this.strategies.has(explicitType) ? explicitType : resolveObjectTypeFromTypeId(explicitType)) : undefined;
+
+        if (resolvedType && this.strategies.has(resolvedType)) {
+            const strategy = this.getStrategy(resolvedType);
+            if (strategy.fetchAttachmentContent) {
+                return await strategy.fetchAttachmentContent(objectId, attachId, sapUser, userJwt);
+            }
+        }
+
+        // When objectType is unknown/unspecified, try CLAIM strategy first (CNMA_CLAIM_ATTA), then fallback to GOS (CNMA_ATTACH_CONTENT)
+        try {
+            const claimStrategy = this.getStrategy('CLAIM');
+            if (claimStrategy.fetchAttachmentContent) {
+                const res = await claimStrategy.fetchAttachmentContent(objectId, attachId, sapUser, userJwt);
+                if (res && res.data && res.data.length > 0) {
+                    return res;
+                }
+                this.logger.debug(`CLAIM attachment endpoint returned empty for ${attachId}; trying GOS fallback.`);
+            }
+        } catch (e: any) {
+            // If CLAIM endpoint returns 400/404, fallback to GOS endpoint (CNMA_ATTACH_CONTENT)
+            this.logger.debug(`CLAIM attachment endpoint failed for ${attachId}: ${e?.message || e}. Falling back to GOS.`);
+        }
+
+        const gosStrategy = this.getStrategy('RE');
+        if (gosStrategy.fetchAttachmentContent) {
+            const fallback = await gosStrategy.fetchAttachmentContent(objectId, attachId, sapUser, userJwt);
+            if (fallback) return fallback;
+        }
+
+        this.logger.warn(`No attachment content returned for ${attachId} on ${objectId} after CLAIM+GOS fallback.`);
+        return null;
     }
 
     async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByDocTypeEntity[]> {

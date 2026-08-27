@@ -1,9 +1,10 @@
 import { SapClient } from './sap-client';
 import { MetadataService } from '../metadata-service';
-import { Detail } from './detail';
+import { Detail, ForwardOnHeaderParams } from './detail';
 import { ObjectTypeCode } from '../processors/object-config';
 import { ODATA_SERVICES } from '../processors/odata-config';
 import { AppError } from '../utils/error-handler';
+import { AddCommentOptions } from './comment.types';
 
 export interface RawDetailSource {
     objectType: ObjectTypeCode;
@@ -11,6 +12,21 @@ export interface RawDetailSource {
     entity: string;
     docCategory: string;
     navigations: readonly string[];
+}
+
+export interface CommentPayload {
+    TASKID: string;
+    NOTETEXT: string;
+    ISGENERAL: boolean;
+    DECISION: string;
+    TAGGEDUSER: Array<{ USERNAME: string; EMAIL: string }>;
+    FORWARD: boolean;
+}
+
+export interface ForwardPayload {
+    task_id: string;
+    notetext: string;
+    to_user: string;
 }
 
 export abstract class BaseRawDetail implements Detail {
@@ -24,6 +40,49 @@ export abstract class BaseRawDetail implements Detail {
         protected readonly sapClient: SapClient,
         protected readonly metadataService: MetadataService
     ) {}
+
+    /**
+     * Single source of truth for the `/SAP__self.comment` body.
+     * Used by every strategy (PR / PO / RE / CLAIM) so a payload tweak lands in one place.
+     */
+    protected buildCommentPayload(text: string, options?: AddCommentOptions): CommentPayload {
+        const cleanText = text ? text.trim().substring(0, 255) : '';
+        const isDecisionComment = Boolean(options?.decision && options.decision.trim());
+        const taskId = options?.taskId ? options.taskId.trim().substring(0, 12) : '';
+        const taggedUsers = (options?.taggedUsers || []).map((u) => ({
+            USERNAME: String(u.USERNAME || '').trim().substring(0, 12),
+            EMAIL: String(u.EMAIL || '').trim().substring(0, 241),
+        }));
+
+        return {
+            TASKID: taskId,
+            NOTETEXT: cleanText,
+            ISGENERAL: !isDecisionComment,
+            DECISION: isDecisionComment ? (options!.decision || '').trim() : '',
+            TAGGEDUSER: taggedUsers,
+            FORWARD: false,
+        };
+    }
+
+    /**
+     * Builds the body for the entity-bound `/SAP__self.forward` action.
+     */
+    protected buildForwardPayload(params: ForwardOnHeaderParams): ForwardPayload {
+        return {
+            task_id: params.taskId.trim().substring(0, 12),
+            notetext: (params.notetext || '').trim().substring(0, 255),
+            to_user: (params.toUser || '').trim().substring(0, 12),
+        };
+    }
+
+    /**
+     * Pads a numeric document id to 10 chars (SAP key width) and slices in case it overflows.
+     * Non-numeric ids pass through unchanged.
+     */
+    protected padDocumentId(objectId: string): string {
+        const rawPadded = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
+        return rawPadded.substring(0, 10);
+    }
 
     protected cleanRawEntity(entity: any): any {
         if (entity === null || typeof entity !== 'object') return entity;

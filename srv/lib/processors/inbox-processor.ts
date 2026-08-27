@@ -1,11 +1,17 @@
 import { TaskprocessingAdapter } from '../integrations/taskprocessing-adapter';
 import { SapOdataAdapter } from '../integrations/sap-odata-adapter';
+import { SapClient } from '../integrations/sap-client';
 import { AddCommentOptions } from '../integrations/comment.types';
-import { resolveObjectTypeFromTypeId, resolveObjectTypeFromInstance } from './odata-config';
+import { resolveObjectTypeFromTypeId, resolveObjectTypeFromInstance, ODATA_SERVICES } from './odata-config';
 
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
 import { ObjectTypeResolver } from './object-type-resolver';
+import {
+    ClaimDecisionStrategy,
+    DecisionStrategyRegistry,
+    TaskprocessingDecisionStrategy,
+} from './decision-strategy';
 import {
     normalizePriority,
     normalizeDate,
@@ -37,10 +43,23 @@ export const APPROVED_TASK_STATUSES = [
     'CANCELLED'
 ];
 
+interface CachedInstance {
+    normalTask: boolean;
+    cachedAt: number;
+}
+
 export class InboxProcessor {
+    private static readonly INSTANCE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+    private readonly instanceCache = new Map<string, CachedInstance>();
+
+    private readonly sapClient = new SapClient();
     private readonly taskAdapter = new TaskprocessingAdapter();
     private readonly sapOdataAdapter = new SapOdataAdapter();
     private readonly objectTypeResolver = new ObjectTypeResolver(this.sapOdataAdapter, this.taskAdapter);
+    private readonly decisionStrategies = new DecisionStrategyRegistry([
+        new ClaimDecisionStrategy(),
+        new TaskprocessingDecisionStrategy(),
+    ]);
     private readonly logger = new Logger('InboxProcessor');
 
     /**
@@ -126,7 +145,17 @@ export class InboxProcessor {
         this.logger.info(`Fetching raw task detail for ${instanceId}`);
         try {
             const resolved = await this.objectTypeResolver.resolve(instanceId, sapUser, hints, userJwt);
-            const { businessObject, taskRuntime } = resolved;
+            const { businessObject, taskRuntime, inst } = resolved;
+            const isNormalTask = resolved.normalTask ?? inst?.normalTask ?? true;
+            const isClaim = resolved.objectType === 'CLAIM';
+            const overrideStatus = inst?.status === 'COMPLETED' || hints?.status === 'COMPLETED' ? 'COMPLETED' : undefined;
+
+            if (inst?.normalTask !== undefined) {
+                this.instanceCache.set(instanceId, {
+                    normalTask: inst.normalTask !== false,
+                    cachedAt: Date.now()
+                });
+            }
 
             let task: any = null;
             let decisionOptions: any[] = [];
@@ -138,6 +167,15 @@ export class InboxProcessor {
             }
 
             return {
+                instanceId,
+                taskId: instanceId,
+                normalTask: isNormalTask !== false,
+                objectType: resolved.objectType,
+                documentId: resolved.instid,
+                supports: {
+                    forward: (isNormalTask === false || isClaim || overrideStatus === 'COMPLETED') ? false : (inst?.SupportsForward ?? true),
+                    comments: inst?.SupportsComments ?? true
+                },
                 businessObject: businessObject || {},
                 taskprocessing: {
                     task,
@@ -155,6 +193,16 @@ export class InboxProcessor {
 
     /**
      * Executes an approval or rejection decision on a task and syncs comment to SAP.
+     *
+     * Dispatches to a `DecisionStrategy` (see decision-strategy.ts) based on the
+     * normalised object type. New flows (e.g. another entity-bound dual-API
+     * pattern) plug in by registering another strategy — no edit to this method.
+     *
+     * Default flow (PR / PO / RE): TASKPROCESSING top-level `/Decision` plus a
+     * best-effort `/SAP__self.comment` audit note.
+     *
+     * Claim flow: entity-bound `/SAP__self.approve` + `/SAP__self.comment` in
+     * parallel, both best-effort; reports `PARTIAL_SUCCESS` when one leg fails.
      */
     async executeDecision(
         instanceId: string,
@@ -167,40 +215,47 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
-            const docId = context?.documentId;
             const ctxType = context?.businessObjectType || context?.objectType || context?.type;
-            const isClaim = String(ctxType || '').toUpperCase() === 'CLAIM';
+            // Normalize DocCategory (e.g. 'BUS2105') → object type ('PR') using the same
+            // resolver the adapter uses, so strategy dispatch works regardless of whether
+            // the frontend sent the human type or the DocCategory value.
+            const normalizedType = resolveObjectTypeFromTypeId(ctxType) || (ctxType || '').toUpperCase();
 
-            if (isClaim) {
-                this.logger.info(`Claim decision actions are currently disabled. Skipping all actions for Claim ${docId || instanceId}`);
-                return { status: 'SUCCESS', message: 'Claim decision action skipped.' };
-            }
-
-            const isReject = sapDecisionKey === '0002' || decisionKey === '0002' ||
-                String(sapDecisionKey).toLowerCase().includes('reject') ||
-                String(decisionKey).toLowerCase().includes('reject');
-            const decisionCode = isReject ? 'R' : 'A';
-
-
-            // 1. Post decision note via OData service (/SAP__self.comment)
-            if (docId) {
-                try {
-                    const defaultText = isReject ? `Rejected by ${sapUser || 'user'}` : `Approved by ${sapUser || 'user'}`;
-                    const noteText = comment && comment.trim() ? comment.trim() : defaultText;
-                    await this.addComment(docId, noteText, sapUser || '', { userJwt, decision: decisionCode, objectType: ctxType, taskId: instanceId });
-                    this.logger.info(`Successfully pushed OData decision comment (${decisionCode}) to ${ctxType || 'document'} ${docId}`);
-                } catch (e: any) {
-                    this.logger.warn(`Failed to push decision comment to document ${docId}: ${e.message}`);
+            const strategy = this.decisionStrategies.resolve(normalizedType);
+            const outcome = await strategy.execute(
+                {
+                    instanceId,
+                    decisionKey,
+                    sapDecisionKey,
+                    comment,
+                    sapUser,
+                    userJwt,
+                    documentId: context?.documentId,
+                    objectType: normalizedType,
+                },
+                {
+                    sapOdataAdapter: this.sapOdataAdapter,
+                    taskAdapter: this.taskAdapter,
+                    addComment: (documentId, text, user, options) => this.addComment(documentId, text, user, options),
+                    logger: this.logger,
                 }
-            } else {
-                this.logger.warn(`Audit Warning: Decision executed but could not push OData comment because documentId is unknown for task ${instanceId}`);
-            }
+            );
 
-            // 2. Execute decision via TASKPROCESSING API
-            return await this.taskAdapter.executeDecision(instanceId, sapDecisionKey, comment, sapUser, userJwt);
+            // Preserve the historical shape so the FE keeps working.
+            return outcome.adapterResult !== undefined
+                ? outcome.adapterResult
+                : {
+                    status: outcome.status,
+                    message: outcome.message,
+                    approve: outcome.approve,
+                    comment: outcome.comment,
+                    partialSuccess: outcome.partialSuccess,
+                };
         } catch (error: any) {
-
             this.logger.error(`Error in executeDecision: ${error.message}`);
+            // Preserve explicit AppError status codes (e.g., 400 for missing documentId);
+            // only wrap unknown errors as 500.
+            if (error instanceof AppError) throw error;
             throw new AppError(`Decision execution failed: ${error.message}`, 500);
         }
     }
@@ -313,22 +368,40 @@ export class InboxProcessor {
         });
 
         const items = customInstances.map((t: any) => {
-            const objectType = resolveObjectTypeFromTypeId(t.typeid || '');
-            const netAmount = t.total !== undefined && t.total !== null ? Number(t.total) : null;
-            const currency = t.curr_vnd || t.doc_curr || 'VND';
-            const docTypeDesc = t.doctyp_desc || t.doctyp || objectType;
+            const objectType = resolveObjectTypeFromInstance(t, 'PR');
+            const docCat = (t.DocCategory || t.typeid || '').toUpperCase();
+
+            let netAmount: number | null = null;
+            if (objectType === 'PO' || docCat === 'BUS2012') {
+                const val = t.TotalOrderValue ?? t.total;
+                netAmount = val !== undefined && val !== null ? Number(val) : null;
+            } else if (objectType === 'CLAIM' || docCat === 'CLAIM') {
+                const val = t.PaymentAmountLocalCrcy ?? t.PaymentAmount ?? t.total;
+                netAmount = val !== undefined && val !== null ? Number(val) : null;
+            } else {
+                // PR (BUS2105), RE / RESV (ZBUS2093 / BUS2093)
+                const val = t.TotalNetAmountLocalCrcy ?? t.total;
+                netAmount = val !== undefined && val !== null ? Number(val) : null;
+            }
+
+            const currency = t.LocalCurrency || t.curr_vnd || t.doc_curr || 'VND';
+            const docTypeDesc = t.DocumentTypeText || t.doctyp_desc || t.doctyp || objectType;
 
             return {
-                taskId: t.instanceID,
-                documentNumber: t.instid,
+                taskId: t.WorkflowTaskInternalID || t.instanceID,
+                documentNumber: t.DocumentNumber || t.instid,
                 taskType: objectType,
-                documentType: t.doctyp || objectType,
+                documentType: t.DocumentType || t.doctyp || objectType,
                 documentTypeDesc: docTypeDesc,
-                status: (t.status || 'READY').replace(/\s+/g, '_'),
+                docCategory: t.DocCategory || '',
+                status: (t.WorkflowTaskStatus || t.status || 'READY').replace(/\s+/g, '_'),
                 currency: currency,
                 totalNetAmount: netAmount,
+                TotalOrderValue: t.TotalOrderValue !== undefined && t.TotalOrderValue !== null ? Number(t.TotalOrderValue) : undefined,
+                TotalNetAmountLocalCrcy: t.TotalNetAmountLocalCrcy !== undefined && t.TotalNetAmountLocalCrcy !== null ? Number(t.TotalNetAmountLocalCrcy) : undefined,
+                PaymentAmountLocalCrcy: t.PaymentAmountLocalCrcy !== undefined && t.PaymentAmountLocalCrcy !== null ? Number(t.PaymentAmountLocalCrcy) : undefined,
                 displayCurrency: currency,
-                createdAt: t.taskCreationDateTime || t.creationDate
+                createdAt: t.TaskCreationDateTime || t.taskCreationDateTime || t.creationDate
             };
         });
 
@@ -395,25 +468,60 @@ export class InboxProcessor {
                 throw new AppError('Target user (forwardTo) is required', 400);
             }
 
-            const result = await this.taskAdapter.forwardTask(instanceId, forwardTo.trim(), comment || '', sapUser || '', userJwt);
+            const normalTask = await this.getInstanceNormalTask(instanceId, sapUser || '', userJwt);
+            if (normalTask === false) {
+                throw new AppError('Forward is not allowed for tagged/CC tasks', 403);
+            }
 
             const docId = context?.documentId;
             const ctxType = context?.businessObjectType || context?.objectType || context?.type;
+            // Normalize DocCategory (e.g. 'BUS2105') → object type ('PR') using the same
+            // resolver the adapter uses, so entity-bound forward works regardless of
+            // whether the frontend sent the object type or the DocCategory value.
+            const normalizedType = resolveObjectTypeFromTypeId(ctxType) || (ctxType || '').toUpperCase();
+            const supportsEntityForward = (normalizedType === 'PR' || normalizedType === 'PO') && Boolean(docId);
+            this.logger.info(
+                `forwardTask type=${normalizedType} docId=${docId || '(none)'} supportsEntityForward=${supportsEntityForward}`
+            );
 
+            // Kick off TASKPROCESSING /Forward and (for PR/PO only) the entity-bound
+            // CNMA_{PR|PO}HEADER/DocCategory/.../SAP__self.forward action in parallel.
+            const [taskProcResult, entityForwardResult] = await Promise.allSettled([
+                this.taskAdapter.forwardTask(instanceId, forwardTo.trim(), comment || '', sapUser || '', userJwt),
+                supportsEntityForward
+                    ? this.sapOdataAdapter.forwardOnHeader(
+                        normalizedType,
+                        docId!,
+                        { taskId: instanceId, notetext: comment || '', toUser: forwardTo.trim() },
+                        sapUser || '',
+                        userJwt
+                    )
+                    : Promise.resolve(null)
+            ]);
 
-            if (comment && comment.trim()) {
-                if (docId) {
-                    try {
-                        await this.addComment(docId, `[Forwarded to ${forwardTo}] ${comment}`, sapUser || '', { userJwt, objectType: ctxType, taskId: instanceId });
-                    } catch (e: any) {
-                        this.logger.warn(`Non-fatal: Failed to record forward comment on document ${docId}: ${e.message}`);
-                    }
-                } else {
-                    this.logger.warn(`Audit Warning: Forward comment was provided but could not record to document audit history because documentId is unknown for task ${instanceId}`);
-                }
+            // Entity-bound forward is best-effort: TASKPROCESSING already forwarded the
+            // workflow, so log a warning instead of failing the request.
+            if (entityForwardResult.status === 'rejected') {
+                this.logger.warn(
+                    `Non-fatal: Entity-bound forward failed for ${normalizedType || 'unknown'} ${docId || ''}: ${entityForwardResult.reason?.message || entityForwardResult.reason}`
+                );
             }
 
-            return result;
+            // TASKPROCESSING forward is the source of truth — failure here must surface.
+            if (taskProcResult.status === 'rejected') {
+                const reason = taskProcResult.reason;
+                if (reason instanceof AppError) throw reason;
+                throw new AppError(`Failed to forward task: ${reason?.message || String(reason)}`, 500);
+            }
+
+            // Note: the user's forward comment is already recorded by SAP itself —
+            // both TASKPROCESSING /Forward (Comments URL param) and the entity-bound
+            // /SAP__self.forward (notetext in buildForwardPayload) emit a single
+            // _Comment row with Forward: true. The previous addComment(...) call
+            // here posted a redundant duplicate with Forward: false and a
+            // "[Forwarded to X]" prefix baked into NoteText; it has been removed.
+
+            return taskProcResult.value;
         } catch (error: any) {
             this.logger.error(`Error in forwardTask: ${error.message}`);
             if (error instanceof AppError) throw error;
@@ -422,6 +530,41 @@ export class InboxProcessor {
     }
 
     // ─── Private Helper Methods ────────────────────────────────
+
+    private async getInstanceNormalTask(
+        instanceId: string,
+        sapUser: string,
+        userJwt?: string
+    ): Promise<boolean> {
+        const cached = this.instanceCache.get(instanceId);
+        if (cached && Date.now() - cached.cachedAt < InboxProcessor.INSTANCE_CACHE_TTL_MS) {
+            return cached.normalTask;
+        }
+
+        try {
+            const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+            const response: any = await this.sapClient.get(
+                path,
+                '/CNMA_WFTASK',
+                {
+                    $format: 'json',
+                    $select: 'NormalTask',
+                    $filter: `WorkflowTaskInternalID eq '${instanceId}'`,
+                    $top: '1',
+                },
+                sapUser,
+                userJwt
+            );
+            const items = response?.value || response?.d?.results || response?.d || [];
+            const item = items[0];
+            const normalTask = item ? item.NormalTask !== false : true;
+            this.instanceCache.set(instanceId, { normalTask, cachedAt: Date.now() });
+            return normalTask;
+        } catch (error: any) {
+            this.logger.warn(`Failed to fetch NormalTask for instance ${instanceId}: ${error.message}`);
+            return cached ? cached.normalTask : false;
+        }
+    }
 
     /**
      * Slice instance array according to top/skip pagination params.
@@ -438,7 +581,6 @@ export class InboxProcessor {
 
     private _buildTaskCard(inst: any, overrideStatus?: string) {
         const objectType = resolveObjectTypeFromInstance(inst, 'PR');
-
         const requesterName = inst?.CreatedByUser || inst?.CreatedByName || inst?.createdByUser || inst?.UserName || inst?.UserFullName || undefined;
         const calcTotal = resolveTaskTotalAmount(inst, undefined, objectType);
         const docTypeDisplay = inst?.doctyp_desc || inst?.DocumentTypeText || inst?.DocumentTypeDisplay || inst?.doctyp || objectType;
@@ -471,7 +613,6 @@ export class InboxProcessor {
                 forward: (inst.normalTask === false || overrideStatus === 'COMPLETED') ? false : (inst.SupportsForward ?? inst.supports?.forward ?? true),
                 comments: inst.SupportsComments ?? inst.supports?.comments ?? true
             },
-
             total: calcTotal !== undefined ? Number(calcTotal) : undefined,
             curr_vnd: currency,
             LocalCurrency: currency,
@@ -482,6 +623,7 @@ export class InboxProcessor {
 
         return cleanBusinessObjectForList(card);
     }
+
 
 }
 

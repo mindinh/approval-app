@@ -80,7 +80,7 @@ export class TaskprocessingAdapter {
 
     async searchUsers(searchPattern: string, sapUser: string, userJwt?: string): Promise<any[]> {
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
-        const safePattern = encodeURIComponent(this.escapeODataLiteral(searchPattern));
+        const safePattern = this.escapeODataLiteral(searchPattern);
         const response: any = await this.sapClient.get(
             path,
             '/SearchUsers',

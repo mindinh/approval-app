@@ -68,4 +68,43 @@ describe('ObjectTypeResolver', () => {
         expect(result.instid).toBe('45000002');
         expect(mockSapOdataAdapter.getDetail).toHaveBeenCalledWith('PO', '45000002', 'MOCK_USER', 'jwt-token');
     });
+
+    it('should populate Approve and Reject decisions for CLAIM when ActionButton is X', async () => {
+        mockSapOdataAdapter.getDetail.mockResolvedValue({
+            DocCategory: 'CLAIM',
+            DocumentNumber: '9000000001',
+            ActionButton: 'X'
+        });
+
+        const result = await resolver.resolve(
+            'task-claim-1',
+            'MOCK_USER',
+            { documentId: '9000000001', businessObjectType: 'CLAIM' },
+            'jwt-token'
+        );
+
+        expect(result.objectType).toBe('CLAIM');
+        expect(result.taskRuntime.decisions).toEqual([
+            { DecisionKey: '0001', DecisionText: 'Approve' },
+            { DecisionKey: '0002', DecisionText: 'Reject' }
+        ]);
+    });
+
+    it('should NOT populate decisions for CLAIM when ActionButton is not X', async () => {
+        mockSapOdataAdapter.getDetail.mockResolvedValue({
+            DocCategory: 'CLAIM',
+            DocumentNumber: '9000000001',
+            ActionButton: ''
+        });
+
+        const result = await resolver.resolve(
+            'task-claim-2',
+            'MOCK_USER',
+            { documentId: '9000000001', businessObjectType: 'CLAIM' },
+            'jwt-token'
+        );
+
+        expect(result.objectType).toBe('CLAIM');
+        expect(result.taskRuntime.decisions).toEqual([]);
+    });
 });

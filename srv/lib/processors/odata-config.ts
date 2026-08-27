@@ -22,7 +22,7 @@ export const SAP_TYPEID_OBJECT_MAP: Record<string, ObjectTypeCode> = {
   "CLAIM": "CLAIM"
 };
 
-export function resolveObjectTypeFromTypeId(typeid: string): ObjectTypeCode | undefined {
+export function resolveObjectTypeFromTypeId(typeid: string | undefined | null): ObjectTypeCode | undefined {
   if (!typeid) {
     return undefined;
   }

@@ -1,8 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { InboxProcessor } from '../lib/processors/inbox-processor';
 import { AppError } from '../lib/utils/error-handler';
-import { fetchReferencePrDetail } from '../lib/integrations/reference-pr';
 import { detectMimeFromBuffer } from '../lib/utils/file-helper';
+import {
+    ensureString,
+    ensureOptionalString,
+    ensureObject,
+    ensureArray,
+} from '../lib/utils/request-validator';
 import {
     resolveIdentity,
     getSapUser,
@@ -300,37 +305,6 @@ export class InboxController {
 
     /**
      * @openapi
-     * /tasks/reference-pr/{prNumber}:
-     *   get:
-     *     summary: Retrieve details for a Reference PR from SAP API_PURCHASEREQ_PROCESS_SRV
-     *     security:
-     *       - BearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: prNumber
-     *         required: true
-     *         schema:
-     *           type: string
-     *     responses:
-     *       200:
-     *         description: Reference PR Header & Item details
-     */
-    getReferencePrDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        try {
-            const prNumber = String(req.params.prNumber || '');
-            if (!prNumber) {
-                throw new AppError('PR Number parameter is required', 400);
-            }
-            const { sapUser, userJwt } = resolveIdentity(req);
-            const detail = await fetchReferencePrDetail(prNumber, sapUser, userJwt);
-            res.json(detail);
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    /**
-     * @openapi
      * /tasks/tasks/{id}:
      *   get:
      *     summary: Fetch single task details
@@ -525,22 +499,24 @@ export class InboxController {
      */
     postComment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { text, _context, objectType, taggedUsers, TAGGEDUSER, taskId } = req.body;
-            const docNum = String(_context?.documentId || req.query.documentId || '');
-            const targetType = String(objectType || _context?.objectType || _context?.businessObjectType || _context?.type || req.query.objectType || '').toUpperCase().trim();
-            const currentTaskId = String(req.params.id || taskId || req.body.instanceId || _context?.instanceId || '');
-            if (!docNum || !text) {
-                throw new AppError('Missing documentId or text', 400);
-            }
+            const body = ensureObject(req.body, 'body');
+            const _context = ensureObject(body._context, '_context');
+            const text = ensureString(body.text, 'text', { maxLength: 255 });
+            const docNum = ensureString(_context.documentId || req.query.documentId, 'documentId');
+            const targetType = String(body.objectType || _context.objectType || _context.businessObjectType || _context.type || req.query.objectType || '').toUpperCase().trim();
+            const currentTaskId = String(req.params.id || body.taskId || body.instanceId || _context.instanceId || '');
+
             const { sapUser, userJwt } = resolveIdentity(req);
 
-            const rawTags = Array.isArray(taggedUsers) ? taggedUsers : Array.isArray(TAGGEDUSER) ? TAGGEDUSER : [];
+            const taggedUsersRaw = ensureArray(body.taggedUsers, 'taggedUsers');
+            const taggedUsersUpper = ensureArray(body.TAGGEDUSER, 'TAGGEDUSER');
+            const rawTags = taggedUsersRaw.length > 0 ? taggedUsersRaw : taggedUsersUpper;
             const formattedTaggedUsers = rawTags.map((u: any) => ({
                 USERNAME: String(u?.USERNAME || u?.username || u?.SAPUserName || '').trim(),
                 EMAIL: String(u?.EMAIL || u?.email || u?.EmailAddress || '').trim(),
             }));
 
-            await this.processor.addComment(docNum, String(text), sapUser, {
+            await this.processor.addComment(docNum, text, sapUser, {
                 userJwt,
                 objectType: targetType,
                 taskId: currentTaskId,
@@ -602,19 +578,20 @@ export class InboxController {
             let docNum = req.query.documentId ? String(req.query.documentId) : '';
             const { sapUser, userJwt } = resolveIdentity(req);
 
-            if (!docNum || docNum === 'undefined') {
-                const taskId = String(req.params.id || '');
-                if (taskId && taskId !== 'undefined') {
-                    try {
-                        const detail: any = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
-                        docNum = detail.taskprocessing?.task?.businessContext?.documentId || detail.businessObject?.DocumentNumber || detail.businessObject?.PurchaseRequisition || detail.businessObject?.PurchaseOrder || '';
-                    } catch (e: any) {
-                        console.warn(`Failed to resolve documentId for task ${taskId}: ${e.message}`);
-                    }
+            let objectType = req.query.objectType ? String(req.query.objectType) : (req.query.docCategory ? String(req.query.docCategory) : (req.query.type ? String(req.query.type) : undefined));
+
+            const taskId = String(req.params.id || '');
+            if ((!docNum || docNum === 'undefined' || !objectType) && taskId && taskId !== 'undefined') {
+                try {
+                    const detail: any = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
+                    docNum = docNum || detail.taskprocessing?.task?.businessContext?.documentId || detail.businessObject?.DocumentNumber || detail.businessObject?.PurchaseRequisition || detail.businessObject?.PurchaseOrder || '';
+                    objectType = objectType || detail.objectType || detail.businessObject?.DocCategory;
+                } catch (e: any) {
+                    console.warn(`Failed to resolve task detail for task ${taskId}: ${e.message}`);
                 }
             }
 
-            const file = await this.processor.getAttachmentContent(docNum, attId, sapUser, userJwt);
+            const file = await this.processor.getAttachmentContent(docNum, attId, sapUser, userJwt, objectType);
             if (!file) {
                 res.status(404).send('Attachment not found');
                 return;
@@ -769,20 +746,25 @@ export class InboxController {
      */
     postDecision = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const instanceId = req.params.id;
-            const { decisionKey, comment, sapDecisionKey, _context } = req.body;
-            const { sapUser, userJwt } = resolveIdentity(req);
+            const instanceId = ensureString(req.params.id, 'id', { allowEmpty: false });
+            const body = ensureObject(req.body, 'body');
+            const decisionKey = ensureOptionalString(body.decisionKey, 'decisionKey');
+            const sapDecisionKey = ensureOptionalString(body.sapDecisionKey, 'sapDecisionKey');
+            const comment = ensureOptionalString(body.comment, 'comment') || '';
+            const _context = ensureObject(body._context, '_context');
 
             const decKey = decisionKey || sapDecisionKey;
             if (!decKey) {
                 throw new AppError('Missing decision details in request body', 400);
             }
 
+            const { sapUser, userJwt } = resolveIdentity(req);
+
             const result = await this.processor.executeDecision(
-                String(instanceId || ''),
-                String(decisionKey || decKey),
-                String(sapDecisionKey || decKey),
-                String(comment || ''),
+                instanceId,
+                decisionKey || decKey,
+                sapDecisionKey || decKey,
+                comment,
                 String(sapUser || ''),
                 userJwt,
                 _context
@@ -884,18 +866,18 @@ export class InboxController {
      */
     postForwardTask = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const instanceId = req.params.id;
-            const { forwardTo, comment, _context } = req.body;
+            const instanceId = ensureString(req.params.id, 'id', { allowEmpty: false });
+            const body = ensureObject(req.body, 'body');
+            const forwardTo = ensureString(body.forwardTo, 'forwardTo', { maxLength: 12 });
+            const comment = ensureOptionalString(body.comment, 'comment') || '';
+            const _context = ensureObject(body._context, '_context');
+
             const { sapUser, userJwt } = resolveIdentity(req);
 
-            if (!forwardTo || typeof forwardTo !== 'string') {
-                throw new AppError('Target user (forwardTo) is required', 400);
-            }
-
             const result = await this.processor.forwardTask(
-                String(instanceId || ''),
-                String(forwardTo).trim(),
-                comment ? String(comment) : '',
+                instanceId,
+                forwardTo.trim(),
+                comment,
                 String(sapUser || ''),
                 userJwt,
                 _context

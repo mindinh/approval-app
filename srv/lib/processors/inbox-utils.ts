@@ -6,6 +6,23 @@ export interface Comment {
     createdAt: string;
 }
 
+/**
+ * OData V2 and V4 return the same conceptual fields under different casings.
+ * This helper tries each alias in order and returns the first non-nullish value.
+ *
+ * NOTE: We use `== null` (not `=== undefined`) so explicit `null` is also skipped —
+ * OData sometimes returns `null` for missing fields, which should fall through to
+ * the next alias.
+ */
+export function pickField<T = any>(source: any, ...aliases: string[]): T | undefined {
+    if (!source || typeof source !== 'object') return undefined;
+    for (const alias of aliases) {
+        const val = source[alias];
+        if (val !== undefined && val !== null) return val as T;
+    }
+    return undefined;
+}
+
 export interface Attachment {
     id: string;
     fileName: string;
@@ -104,15 +121,26 @@ export function cleanBusinessObjectForList(obj: any): any {
     return cleaned;
 }
 
-export function formatTaskTitle(inst: any, matchingTask: any, objectType: string, overrideStatus?: string): string {
-    if (matchingTask?.TaskTitle) return matchingTask.TaskTitle;
-    if (inst?.TaskTitle) return inst.TaskTitle;
-    if (inst?.taskTitle) return inst.taskTitle;
+export function formatTaskTitle(inst: any, matchingTask?: any, objectType?: string, overrideStatus?: string): string {
     const isCompleted = overrideStatus === 'COMPLETED' || inst?.status === 'COMPLETED';
     const actionPrefix = inst?.normalTask === false 
         ? (isCompleted ? 'Reviewed' : 'Review') 
         : (isCompleted ? 'Approved' : 'Approve');
-    let typeDisplay = inst?.doctyp_desc || inst?.DocumentTypeText || inst?.DocumentTypeDisplay || inst?.doctyp || objectType;
+
+    if (inst?.normalTask === false) {
+        let typeDisplay = inst?.doctyp_desc || inst?.DocumentTypeText || inst?.DocumentTypeDisplay || inst?.doctyp || objectType || 'Task';
+        if (String(typeDisplay).toUpperCase() === 'CLAIM') {
+            typeDisplay = 'Claim';
+        }
+        const docId = inst?.DocumentNumber || inst?.TechnicalWrkflwObject || inst?.instid || inst?.instanceID || '';
+        return `${actionPrefix} ${typeDisplay} ${docId}`.trim();
+    }
+
+    if (matchingTask?.TaskTitle) return matchingTask.TaskTitle;
+    if (inst?.TaskTitle) return inst.TaskTitle;
+    if (inst?.taskTitle) return inst.taskTitle;
+
+    let typeDisplay = inst?.doctyp_desc || inst?.DocumentTypeText || inst?.DocumentTypeDisplay || inst?.doctyp || objectType || 'Task';
     if (String(typeDisplay).toUpperCase() === 'CLAIM') {
         typeDisplay = 'Claim';
     }
@@ -120,21 +148,65 @@ export function formatTaskTitle(inst: any, matchingTask: any, objectType: string
     return `${actionPrefix} ${typeDisplay} ${docId}`.trim();
 }
 
+export function resolveTaskTotalAmount(item: any, rawBusinessObject?: any, objectType?: string): number | undefined {
+    if (!item && !rawBusinessObject) return undefined;
+    const rawObj = rawBusinessObject || {};
+    const objTypeUpper = String(objectType || rawObj.DocCategory || item?.DocCategory || item?.typeid || item?.TechnicalWrkflwObjectType || '').toUpperCase();
+    const docTypeUpper = String(rawObj.DocumentType || item?.DocumentType || item?.doctyp || item?.documentType || '').toUpperCase();
+
+    const isPO = objTypeUpper === 'PO' || objTypeUpper === 'BUS2012';
+    const isZub = isPO && (docTypeUpper === 'ZUB' || docTypeUpper.includes('ZUB'));
+
+    if (isZub) {
+        const val = item?.TotalNetAmountLocalCrcy ?? item?.totalNetAmountLocalCrcy ?? rawObj.TotalNetAmountLocalCrcy;
+        if (val !== undefined && val !== null) return Number(val);
+        const fallbackVal = item?.TotalOrderValue ?? item?.totalOrderValue ?? item?.total ?? rawObj.TotalOrderValue;
+        if (fallbackVal !== undefined && fallbackVal !== null) return Number(fallbackVal);
+        return undefined;
+    }
+
+    if (isPO) {
+        const val = item?.TotalOrderValue ?? item?.totalOrderValue ?? rawObj.TotalOrderValue;
+        if (val !== undefined && val !== null) return Number(val);
+        const fallbackVal = item?.TotalNetAmountLocalCrcy ?? item?.totalNetAmountLocalCrcy ?? item?.total ?? rawObj.TotalNetAmountLocalCrcy;
+        if (fallbackVal !== undefined && fallbackVal !== null) return Number(fallbackVal);
+        return undefined;
+    }
+
+    if (objTypeUpper === 'CLAIM') {
+        const val = item?.PaymentAmountLocalCrcy ?? item?.paymentAmountLocalCrcy ?? rawObj.PaymentAmountLocalCrcy ?? item?.PaymentAmount ?? item?.paymentAmount ?? rawObj.PaymentAmount;
+        if (val !== undefined && val !== null) return Number(val);
+    }
+
+    // Standard fallback
+    if (item?.total !== undefined && item?.total !== null) return Number(item.total);
+    const rawVal = rawObj.TotalNetAmountLocalCrcy ?? rawObj.PaymentAmount ?? rawObj.TotalOrderValue ?? rawObj.TotalAmount ?? rawObj.Total;
+    if (rawVal !== undefined && rawVal !== null) return Number(rawVal);
+
+    const itemRawVal = item?.TotalNetAmountLocalCrcy ?? item?.TotalOrderValue ?? item?.PaymentAmountLocalCrcy ?? item?.PaymentAmount;
+    if (itemRawVal !== undefined && itemRawVal !== null) return Number(itemRawVal);
+
+    return undefined;
+}
+
+
+
+
 
 
 export function filterComments(raw: any[]): Comment[] {
     if (!Array.isArray(raw)) return [];
     return raw
         .map((c, i) => {
-            const text = String(c.text ?? c.noteText ?? c.NoteText ?? c.Notetext ?? '').trim();
-            const author = c.author || c.userComment || c.UserComment || c.Usercomment || c.createdBy || c.CreatedBy || 'Unknown';
-            const rawPostedOn = c.postedOn || c.PostedOn || c.Postedon || c.CommentDate;
-            const rawPostedTime = c.postedTime || c.PostedTime || c.Postedtime || c.CommentTime;
-            const postedOn = rawPostedOn && rawPostedTime ? `${rawPostedOn}T${rawPostedTime}` : (rawPostedOn || undefined);
-            const createdAt = c.createdAt ?? normalizeDate(postedOn) ?? new Date().toISOString();
-            
+            const text = String(pickField(c, 'text', 'noteText', 'NoteText', 'Notetext') ?? '').trim();
+            const author = pickField(c, 'author', 'userComment', 'UserComment', 'Usercomment', 'createdBy', 'CreatedBy') || 'Unknown';
+            const rawPostedOn = pickField(c, 'postedOn', 'PostedOn', 'Postedon', 'CommentDate');
+            const rawPostedTime = pickField(c, 'postedTime', 'PostedTime', 'Postedtime', 'CommentTime');
+            const postedOn = rawPostedOn && rawPostedTime ? `${rawPostedOn}T${rawPostedTime}` : rawPostedOn;
+            const createdAt = pickField(c, 'createdAt') ?? normalizeDate(postedOn) ?? new Date().toISOString();
+
             return {
-                id: c.id ?? `comment-${i}`,
+                id: pickField(c, 'id') ?? `comment-${i}`,
                 createdBy: author,
                 createdByName: author,
                 text,
@@ -175,7 +247,7 @@ export function decorateActions(sapDecisions: any[], config: any): UiAction[] {
 export function decorateAttachments(attachments: any[], instanceId: string, instid: string): Attachment[] {
     if (!Array.isArray(attachments)) return [];
     return attachments.map((a: any, idx: number) => {
-        const attId = a.id || a.DocId || a.ID || a.AttachId || a.attachId || `attach-${idx}`;
+        const attId = a.id || a.DocId || a.Docid || a.docId || a.ID || a.AttachId || a.attachId || `attach-${idx}`;
         let rawFileName = String(
             a.fileName || a.FileName || a.FileDisplayName || a.fileDisplayName || a.name || a.Name || a.Filename || a.filename || a.Title || a.title || a.Description || a.description || attId
         ).trim();
@@ -183,7 +255,7 @@ export function decorateAttachments(attachments: any[], instanceId: string, inst
         // Remove trailing dots (e.g. "04_Amenities_Cost_Raise_Request_Cleaning_Supplies." -> "04_Amenities_Cost_Raise_Request_Cleaning_Supplies")
         rawFileName = rawFileName.replace(/\.+$/, '').trim();
 
-        let mimeType = String(a.mimeType || a.MimeType || a.ContentType || a.contentType || a.Mimetype || a.mimetype || '').trim();
+        let mimeType = String(a.mimeType || a.MimeType || a.ContentType || a.contentType || a['Content@odata.mediaContentType'] || a.Mimetype || a.mimetype || '').trim();
         const rawType = String(
             a.FileType || a.fileType || a.FileExtension || a.fileExtension || a.DocType || a.docType || a.Ext || a.ext || a.Format || a.format || a.Type || a.type || a.DocClass || a.docClass || a.Component || a.component || ''
         ).toLowerCase().trim();
@@ -258,6 +330,12 @@ export function decorateAttachments(attachments: any[], instanceId: string, inst
         const fileDisplayName = a.fileDisplayName || a.FileDisplayName || fileName;
         const fileSize = Number(a.fileSize || a.Length || a.FileSize || a.length || 0);
 
+        const docCat = a.DocCategory || a.docCategory || a.objectType || a.ObjectType;
+        const queryParams = [`documentId=${instid}`];
+        if (docCat) {
+            queryParams.push(`objectType=${encodeURIComponent(docCat)}`);
+        }
+
         return {
             id: attId,
             fileName,
@@ -267,50 +345,12 @@ export function decorateAttachments(attachments: any[], instanceId: string, inst
             createdBy: a.createdBy || a.CreatedBy || a.CreatedByName || a.createdByName || 'SAP User',
             createdByName: a.createdByName || a.CreatedByName || a.createdBy || a.CreatedBy || 'SAP User',
             createdAt: normalizeDate(a.createdAt || a.CreatedOnDate),
-            link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content/${encodeURIComponent(fileName)}?documentId=${instid}`
+            link: `/api/cnma/APPROVAL_SRV/tasks/${instanceId}/attachments/${attId}/content/${encodeURIComponent(fileName)}?${queryParams.join('&')}`
         };
     });
 }
 
 
 
-/**
- * Centralized helper to resolve total amount for a task / business object.
- * Standardizes resolution order for ZUB Purchase Orders, standard Purchase Orders (BUS2012), and other objects.
- */
-export function resolveTaskTotalAmount(item: any, rawBusinessObject?: any, objectType?: string): number | undefined {
-    if (!item && !rawBusinessObject) return undefined;
-    const rawObj = rawBusinessObject || {};
-    const objTypeUpper = String(objectType || rawObj.DocCategory || item?.DocCategory || item?.typeid || item?.TechnicalWrkflwObjectType || '').toUpperCase();
-    const docTypeUpper = String(rawObj.DocumentType || item?.DocumentType || item?.doctyp || item?.documentType || '').toUpperCase();
 
-    const isPO = objTypeUpper === 'PO' || objTypeUpper === 'BUS2012';
-    const isZub = isPO && (docTypeUpper === 'ZUB' || docTypeUpper.includes('ZUB'));
-
-    if (isZub) {
-        const val = item?.TotalNetAmountLocalCrcy ?? item?.totalNetAmountLocalCrcy ?? rawObj.TotalNetAmountLocalCrcy;
-        if (val !== undefined && val !== null) return Number(val);
-        const fallbackVal = item?.TotalOrderValue ?? item?.totalOrderValue ?? item?.total ?? rawObj.TotalOrderValue;
-        if (fallbackVal !== undefined && fallbackVal !== null) return Number(fallbackVal);
-        return undefined;
-    }
-
-    if (isPO) {
-        const val = item?.TotalOrderValue ?? item?.totalOrderValue ?? rawObj.TotalOrderValue;
-        if (val !== undefined && val !== null) return Number(val);
-        const fallbackVal = item?.TotalNetAmountLocalCrcy ?? item?.totalNetAmountLocalCrcy ?? item?.total ?? rawObj.TotalNetAmountLocalCrcy;
-        if (fallbackVal !== undefined && fallbackVal !== null) return Number(fallbackVal);
-        return undefined;
-    }
-
-    // Standard fallback
-    if (item?.total !== undefined && item?.total !== null) return Number(item.total);
-    const rawVal = rawObj.TotalNetAmountLocalCrcy ?? rawObj.PaymentAmount ?? rawObj.TotalOrderValue ?? rawObj.TotalAmount ?? rawObj.Total;
-    if (rawVal !== undefined && rawVal !== null) return Number(rawVal);
-
-    const itemRawVal = item?.TotalNetAmountLocalCrcy ?? item?.TotalOrderValue;
-    if (itemRawVal !== undefined && itemRawVal !== null) return Number(itemRawVal);
-
-    return undefined;
-}
 

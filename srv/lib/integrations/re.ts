@@ -21,22 +21,7 @@ export class ReDetail extends BaseRawDetail {
         const paddedId = objectId.padStart(10, '0');
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const relativePath = `/CNMA_RESVHEADER(DocCategory='ZBUS2093',DocumentNumber='${paddedId}')/SAP__self.comment`;
-
-        const cleanText = text ? text.trim().substring(0, 255) : '';
-        const isDecisionComment = Boolean(options?.decision && options.decision.trim());
-        const taskId = options?.taskId ? options.taskId.trim().substring(0, 12) : '';
-        const taggedUsers = (options?.taggedUsers || []).map((u) => ({
-            USERNAME: String(u.USERNAME || '').trim().substring(0, 12),
-            EMAIL: String(u.EMAIL || '').trim().substring(0, 241),
-        }));
-
-        const payload = {
-            TASKID: taskId,
-            NOTETEXT: cleanText,
-            ISGENERAL: !isDecisionComment,
-            DECISION: isDecisionComment ? options!.decision : '',
-            TAGGEDUSER: taggedUsers,
-        };
+        const payload = this.buildCommentPayload(text, options);
 
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, options?.userJwt);
     }

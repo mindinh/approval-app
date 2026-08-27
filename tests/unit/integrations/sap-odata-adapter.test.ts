@@ -47,6 +47,34 @@ describe('SapOdataAdapter', () => {
         undefined
       );
     });
+
+    it('should filter by DocumentNumber and WorkflowTaskInternalID in targetInstanceId filter', async () => {
+      mockSapClient.get.mockResolvedValue({
+        value: [
+          {
+            WorkflowTaskInternalID: '212',
+            TechnicalWrkflwObjectType: 'CLAIM',
+            DocumentNumber: '0000000212',
+            DocCategory: 'CLAIM',
+            WorkflowTaskStatus: 'IN PROCESSING'
+          }
+        ],
+        '@odata.count': 1
+      });
+
+      const instances = await adapter.getInstances('SAP_USER', undefined, undefined, '212');
+      expect(instances).toBeDefined();
+      expect(instances.length).toBe(1);
+      expect(mockSapClient.get).toHaveBeenCalledWith(
+        expect.any(String),
+        '/CNMA_WFTASK',
+        expect.objectContaining({
+          $filter: "(DocumentNumber eq '0000000212' or WorkflowTaskInternalID eq '0000000212' or WorkflowTaskInternalID eq '212')"
+        }),
+        'SAP_USER',
+        undefined
+      );
+    });
   });
 
   describe('Direct SAP Mode (USE_MOCK_SAP === "false")', () => {
@@ -164,6 +192,240 @@ describe('SapOdataAdapter', () => {
         contentType: 'application/pdf',
         fileName: 'Invoice.pdf'
       });
+    });
+
+    it('should stream Claim attachment binary content using CNMA_CLAIM_ATTA endpoint', async () => {
+      mockSapClient.getBinary.mockResolvedValue({
+        data: Buffer.from('claim-pdf-data'),
+        contentType: 'application/pdf',
+        fileName: 'Demo_05_Welcome_Kit.pdf'
+      });
+
+      const result = await adapter.getStrategy('CLAIM').fetchAttachmentContent('0000000212', 'd34b8d79-bab2-1fe1-a7ee-ba1a8c833069', 'SAP_USER', 'jwt');
+      expect(mockSapClient.getBinary).toHaveBeenCalledWith(
+        expect.any(String),
+        "/CNMA_CLAIM_ATTA(DocCategory='CLAIM',DocumentNumber='0000000212',Docid=d34b8d79-bab2-1fe1-a7ee-ba1a8c833069)/Content",
+        'SAP_USER',
+        'jwt'
+      );
+      expect(result).toEqual({
+        data: Buffer.from('claim-pdf-data'),
+        contentType: 'application/pdf',
+        fileName: 'Demo_05_Welcome_Kit.pdf'
+      });
+    });
+
+    it('should correctly resolve GOS attachment for Reservation docNum starting with 9 to CNMA_ATTACH_CONTENT', async () => {
+      mockSapClient.getBinary.mockResolvedValue({
+        data: Buffer.from('res-pdf-data'),
+        contentType: 'application/pdf',
+        fileName: '02_Amenities_Cost_Raise.pdf'
+      });
+
+      const result = await adapter.fetchAttachmentContent('0000000911', 'FOL46000000000004EXT51000000000304', 'SAP_USER', 'jwt', 'RE');
+      expect(mockSapClient.getBinary).toHaveBeenCalledWith(
+        expect.any(String),
+        "/CNMA_ATTACH_CONTENT('FOL46000000000004EXT51000000000304')/Content",
+        'SAP_USER',
+        'jwt'
+      );
+      expect(result).toEqual({
+        data: Buffer.from('res-pdf-data'),
+        contentType: 'application/pdf',
+        fileName: '02_Amenities_Cost_Raise.pdf'
+      });
+    });
+  });
+
+  describe('forwardOnHeader dispatcher', () => {
+    it('should build BUS2105 URL and task_id/notetext/to_user payload for PR', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.forwardOnHeader(
+        'PR',
+        '1100000284',
+        { taskId: '34413', notetext: 'Task Forwarded 2608', toUser: 'CONARUM3' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        "/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='1100000284')/SAP__self.forward",
+        { task_id: '34413', notetext: 'Task Forwarded 2608', to_user: 'CONARUM3' },
+        {},
+        'SAP_USER',
+        'jwt'
+      );
+    });
+
+    it('should build BUS2012 URL for PO', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.forwardOnHeader(
+        'PO',
+        '4500000284',
+        { taskId: '34413', notetext: 'Forward note', toUser: 'CONARUM3' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        "/CNMA_POHEADER(DocCategory='BUS2012',DocumentNumber='4500000284')/SAP__self.forward",
+        expect.objectContaining({ to_user: 'CONARUM3' }),
+        expect.any(Object),
+        'SAP_USER',
+        'jwt'
+      );
+    });
+
+    it('should reject entity-bound forward for Reservation (RE)', async () => {
+      await expect(
+        adapter.forwardOnHeader('RE', '0000000911', { taskId: '34413', notetext: 'x', toUser: 'CONARUM3' }, 'SAP_USER', 'jwt')
+      ).rejects.toThrow(/only supported for PR and PO/);
+      expect(mockSapClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should reject entity-bound forward for Claim (CLAIM)', async () => {
+      await expect(
+        adapter.forwardOnHeader('CLAIM', '0000000212', { taskId: '34413', notetext: 'x', toUser: 'CONARUM3' }, 'SAP_USER', 'jwt')
+      ).rejects.toThrow(/only supported for PR and PO/);
+      expect(mockSapClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should pad numeric objectId to 10 chars', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.forwardOnHeader(
+        'PR',
+        '284',
+        { taskId: '34413', notetext: 'n', toUser: 'CONARUM3' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      const callArgs = mockSapClient.post.mock.calls[0];
+      expect(callArgs[1]).toBe("/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='0000000284')/SAP__self.forward");
+    });
+  });
+
+  describe('approveOnHeader dispatcher (Claim only)', () => {
+    it('should build CLAIM URL and zcomment payload for Approve', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.approveOnHeader(
+        'CLAIM',
+        '212',
+        { decision: 'A', comment: 'approve claim 212 26.08' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
+        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212')/SAP__self.approve",
+        { zcomment: 'approve claim 212 26.08' },
+        {},
+        'SAP_USER',
+        'jwt'
+      );
+    });
+
+    it('should pass the same `/approve` endpoint for Reject (decision="R")', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.approveOnHeader(
+        'CLAIM',
+        '0000000212',
+        { decision: 'R', comment: 'reject claim 212' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        expect.any(String),
+        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212')/SAP__self.approve",
+        { zcomment: 'reject claim 212' },
+        expect.any(Object),
+        'SAP_USER',
+        'jwt'
+      );
+    });
+
+    it('should accept empty zcomment and send it through', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.approveOnHeader(
+        'CLAIM',
+        '212',
+        { decision: 'A', comment: '' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining("/SAP__self.approve"),
+        { zcomment: '' },
+        expect.any(Object),
+        'SAP_USER',
+        'jwt'
+      );
+    });
+
+    it('should pad numeric objectId to 10 chars', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.approveOnHeader(
+        'CLAIM',
+        '212',
+        { decision: 'A', comment: 'approve' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      const callArgs = mockSapClient.post.mock.calls[0];
+      expect(callArgs[1]).toBe("/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212')/SAP__self.approve");
+    });
+
+    it('should reject entity-bound approve for PR', async () => {
+      await expect(
+        adapter.approveOnHeader(
+          'PR',
+          '1100000284',
+          { decision: 'A', comment: 'x' },
+          'SAP_USER',
+          'jwt'
+        )
+      ).rejects.toThrow(/only supported for Claim/);
+      expect(mockSapClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should reject entity-bound approve for PO', async () => {
+      await expect(
+        adapter.approveOnHeader(
+          'PO',
+          '4500000284',
+          { decision: 'A', comment: 'x' },
+          'SAP_USER',
+          'jwt'
+        )
+      ).rejects.toThrow(/only supported for Claim/);
+      expect(mockSapClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should reject entity-bound approve for Reservation (RE)', async () => {
+      await expect(
+        adapter.approveOnHeader(
+          'RE',
+          '0000000911',
+          { decision: 'A', comment: 'x' },
+          'SAP_USER',
+          'jwt'
+        )
+      ).rejects.toThrow(/only supported for Claim/);
+      expect(mockSapClient.post).not.toHaveBeenCalled();
     });
   });
 });

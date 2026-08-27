@@ -16,7 +16,7 @@ export class ObjectTypeResolver {
     async resolve(
         instanceId: string,
         sapUser: string,
-        _hints?: any,
+        hints?: any,
         userJwt?: string
     ): Promise<{
         objectType: string;
@@ -28,53 +28,47 @@ export class ObjectTypeResolver {
     }> {
         this.logger.info(`Resolving details for task ${instanceId}`);
 
-        const instancesResult = await Promise.resolve(
-            this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId)
-        ).catch(() => []);
+        // 1. Resolve objectType and documentId directly from hints or instanceId
+        let resolvedObjectType = hints?.businessObjectType
+            ? resolveObjectTypeFromTypeId(hints.businessObjectType) || (hints.businessObjectType as any)
+            : (hints?.typeid ? resolveObjectTypeFromTypeId(hints.typeid) : undefined);
 
-        const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-        const inst = instancesResult.find((i: any) => {
-            const rawId = String(
-                i.WorkflowTaskInternalID ||
-                i.instanceID ||
-                i.InstanceID ||
-                i.instanceId ||
-                ''
-            ).replace(/^0+/, '');
-            const rawDocNum = String(
-                i.DocumentNumber ||
-                i.TechnicalWrkflwObject ||
-                i.instid ||
-                ''
-            ).replace(/^0+/, '');
-            return rawId === targetId || rawDocNum === targetId;
-        });
+        let resolvedInstid = hints?.documentId || hints?.instid;
 
-        const normalTask = inst?.normalTask !== false;
-        const resolvedObjectType = resolveObjectTypeFromInstance(inst, 'PR');
+        let inst: any = undefined;
 
+        // Fallback: search task list instance ONLY if objectType or documentId was not supplied in hints
+        if (!resolvedObjectType || !resolvedInstid) {
+            const instancesResult = await Promise.resolve(
+                this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId)
+            ).catch(() => []);
 
+            const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
+            inst = instancesResult.find((i: any) => {
+                const rawId = String(i.WorkflowTaskInternalID || i.instanceID || i.InstanceID || i.instanceId || '').replace(/^0+/, '');
+                const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || i.instid || '').replace(/^0+/, '');
+                return rawId === targetId || rawDocNum === targetId;
+            });
 
-        let resolvedInstid =
-            inst?.DocumentNumber ||
-            inst?.TechnicalWrkflwObject ||
-            inst?.instid ||
-            inst?.documentId;
-
-        if (!resolvedInstid) {
-            resolvedInstid = /^\d+$/.test(instanceId) ? instanceId.padStart(10, '0') : instanceId;
+            if (inst) {
+                resolvedObjectType = resolvedObjectType || resolveObjectTypeFromInstance(inst, 'PR');
+                resolvedInstid = resolvedInstid || inst.DocumentNumber || inst.TechnicalWrkflwObject || inst.instid;
+            }
         }
 
+        resolvedObjectType = resolvedObjectType || 'PR';
+        resolvedInstid = resolvedInstid || (/^\d+$/.test(instanceId) ? instanceId.padStart(10, '0') : instanceId);
 
         if (!resolvedInstid) {
             throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
         }
 
-        // 1. Fetch S/4 Business Object details FIRST (e.g. CNMA_CLAIMHEADER for Claim)
+        // 2. Fetch S/4 Business Object details directly for this document type (CNMA_PRHEADER, CNMA_POHEADER, CNMA_RESVHEADER, CNMA_CLAIMHEADER)
         const businessObject = await this.sapOdataAdapter.getDetail(resolvedObjectType, resolvedInstid, sapUser, userJwt);
-        const finalObjectType = businessObject?.DocCategory || resolvedObjectType;
+        const finalObjectType = businessObject?.DocCategory ? (resolveObjectTypeFromTypeId(businessObject.DocCategory) || businessObject.DocCategory) : resolvedObjectType;
 
-        const isTaskCompleted = inst?.status === 'COMPLETED';
+        const normalTask = inst?.normalTask !== false;
+        const isTaskCompleted = inst?.status === 'COMPLETED' || hints?.status === 'COMPLETED';
         let taskRuntime: any = null;
 
         // 2. Fetch taskRuntime & decision options from TASKPROCESSING ONLY for non-Claim document types (PO, PR, RE...)
@@ -87,20 +81,22 @@ export class ObjectTypeResolver {
         }
 
         if (!taskRuntime) {
-            taskRuntime = {
-                InstanceID: instanceId,
-                SAP__Origin: 'LOCAL',
-                TaskTitle: inst ? `${normalTask === false ? 'Review' : 'Approve'} ${finalObjectType} ${resolvedInstid}` : '',
-                Status: inst ? inst.status : (isTaskCompleted ? 'COMPLETED' : 'READY'),
-                Priority: 'MEDIUM',
-                CreatedOn: undefined,
-                CreatedByName: undefined,
-                TaskDefinitionID: inst ? (inst.typeid || '') : '',
-                SupportsForward: (isTaskCompleted || normalTask === false || finalObjectType === 'CLAIM') ? false : true,
+            taskRuntime = buildFallbackTaskRuntime({
+                instanceId,
+                inst,
+                businessObject,
+                finalObjectType,
+                resolvedInstid,
+                isTaskCompleted,
+                normalTask,
+            });
+        }
 
-                SupportsComments: true,
-                decisions: []
-            };
+        if (finalObjectType === 'CLAIM' && String(businessObject?.ActionButton || '').trim().toUpperCase() === 'X' && !isTaskCompleted) {
+            taskRuntime.decisions = [
+                { DecisionKey: '0001', DecisionText: 'Approve' },
+                { DecisionKey: '0002', DecisionText: 'Reject' }
+            ];
         }
 
 
@@ -114,6 +110,44 @@ export class ObjectTypeResolver {
             normalTask
         };
     }
+}
+
+/**
+ * Builds a synthetic taskRuntime when TASKPROCESSING / DecisionOptions lookup fails.
+ * Centralised so the title/status template is consistent across all fallback paths.
+ */
+export function buildFallbackTaskRuntime(input: {
+    instanceId: string;
+    inst?: any;
+    businessObject?: any;
+    finalObjectType: string;
+    resolvedInstid: string;
+    isTaskCompleted: boolean;
+    normalTask: boolean;
+}): any {
+    const { instanceId, inst, businessObject, finalObjectType, resolvedInstid, isTaskCompleted, normalTask } = input;
+
+    const rawTitle = inst?.TaskTitle || inst?.taskTitle || businessObject?.TaskTitle || '';
+    const typeText = inst?.DocumentTypeText || inst?.doctyp_desc
+        || (finalObjectType === 'RE' ? 'Reservation'
+            : (finalObjectType === 'CLAIM' ? 'Claim' : finalObjectType));
+    const actionPrefix = normalTask === false
+        ? (isTaskCompleted ? 'Reviewed' : 'Review')
+        : (isTaskCompleted ? 'Approved' : 'Approve');
+
+    return {
+        InstanceID: instanceId,
+        SAP__Origin: 'LOCAL',
+        TaskTitle: rawTitle || (inst ? `${actionPrefix} ${typeText} ${resolvedInstid}` : ''),
+        Status: inst ? inst.status : (isTaskCompleted ? 'COMPLETED' : 'READY'),
+        Priority: 'MEDIUM',
+        CreatedOn: undefined,
+        CreatedByName: undefined,
+        TaskDefinitionID: inst ? (inst.typeid || '') : '',
+        SupportsForward: (isTaskCompleted || normalTask === false || finalObjectType === 'CLAIM') ? false : true,
+        SupportsComments: true,
+        decisions: [],
+    };
 }
 
 
