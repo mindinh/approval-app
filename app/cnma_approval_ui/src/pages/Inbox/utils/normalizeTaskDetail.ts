@@ -77,7 +77,9 @@ export function normalizeDetailForView(detail: any) {
         id: c.id || c.DocId || `comment-${idx}`,
         text: c.NoteText || c.noteText || c.text || '',
         createdBy: c.UserComment || c.author || c.createdBy || 'User',
-        createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || new Date().toISOString()
+        createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || new Date().toISOString(),
+        forward: c.Forward === true || c.forward === true,
+        toUser: c.ToUser || c.toUser || ''
     })) : [];
 
     const rawAttachments = bo?._Attachment || detail.attachments || [];
