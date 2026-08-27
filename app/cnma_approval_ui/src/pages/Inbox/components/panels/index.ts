@@ -32,7 +32,9 @@ export function makeTabDefinitions({
             id: c.id || c.DocId || `comment-${idx}`,
             text: c.NoteText || c.noteText || c.text || '',
             createdBy: c.UserComment || c.author || c.createdBy || 'User',
-            createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || ''
+            createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || '',
+            forward: c.Forward === true || c.forward === true,
+            toUser: c.ToUser || c.toUser || ''
         }))
         : [];
 
