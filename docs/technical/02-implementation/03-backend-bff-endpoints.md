@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-24 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-25 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -87,48 +87,18 @@ These endpoints are designed for troubleshooting token bindings, user identities
     }
     ```
 
-### 6. GET `/reference-pr/:prNumber`
-*   **Purpose**: Fetches detailed header and line item context for a Reference Purchase Requisition from SAP API `API_PURCHASEREQ_PROCESS_SRV` or local mock provider when referenced by a PO line item.
-*   **Path Parameters**: `:prNumber` (Required) — 10-digit Purchase Requisition number (e.g., `10000042`).
-*   **Response Payload Schema**:
-    ```json
-    {
-      "purchaseRequisition": "10000042",
-      "purReqType": "ZNB1",
-      "purReqTypeDisplay": "ZNB1 - Standard PR",
-      "createdByUser": "MINHDT",
-      "userFullName": "Do Tu Minh",
-      "headerText": "Quarterly IT Hardware Replenishment",
-      "totalNetAmount": 45000000,
-      "currency": "VND",
-      "items": [
-        {
-          "purchaseRequisitionItem": "00010",
-          "material": "MAT-IT-001",
-          "materialDescription": "ThinkPad Laptop Core i7",
-          "requestedQuantity": 5,
-          "baseUnit": "EA",
-          "purchaseRequisitionPrice": 9000000,
-          "purReqNetAmount": 45000000,
-          "plant": "1000",
-          "costCenter": "CC-IT-01"
-        }
-      ]
-    }
-    ```
-
 ---
 
 ## 📋 Task Details & Worklist Endpoints
 
-### 7. GET `/tasks/tasks`
+### 6. GET `/tasks/tasks`
 *   **Purpose**: Retrieve the current user's active approval queue (`IN PROCESSING` state).
 *   **Query Parameters**: `top` (Optional), `skip` (Optional).
 
-### 8. GET `/tasks/tasks/approved`
+### 7. GET `/tasks/tasks/approved`
 *   **Purpose**: Retrieve historical queue containing tasks processed by the user (`COMPLETED` state).
 
-### 9. GET `/tasks/tasks/:id`
+### 8. GET `/tasks/tasks/:id`
 *   **Purpose**: Fetch raw business object and taskprocessing details concurrently. Returns minimal envelope with unmapped SAP OData structure and workflow execution state. For `CLAIM` document types, decision runtime fetching via TASKPROCESSING is bypassed (`SupportsForward: false`).
 *   **URL Parameter**: `:id` represents the unique Task Instance ID.
 *   **Query Parameters**:
@@ -202,8 +172,8 @@ These endpoints are designed for troubleshooting token bindings, user identities
 
 ## ✍️ Collaboration & Action Endpoints
 
-### 10. POST `/tasks/tasks/:id/decision`
-*   **Purpose**: Executes an approval or rejection decision on SAP Task Gateway and updates ERP document notes when comments are provided.
+### 9. POST `/tasks/tasks/:id/decision`
+*   **Purpose**: Executes an approval or rejection decision on SAP Task Gateway and updates ERP document notes when comments are provided. Routed through [`DecisionStrategy`](file:///d:/learning/test/cnma_approval/srv/lib/processors/decision-strategy.ts) with payload validation via [`RequestValidator`](file:///d:/learning/test/cnma_approval/srv/lib/utils/request-validator.ts).
 *   **Request Payload Schema**:
     ```json
     {
@@ -229,8 +199,8 @@ These endpoints are designed for troubleshooting token bindings, user identities
     }
     ```
 
-### 11. POST `/tasks/tasks/:id/comments`
-*   **Purpose**: Add a new timeline comment note to the SAP business document, supporting user tagging (`@mention`).
+### 10. POST `/tasks/tasks/:id/comments`
+*   **Purpose**: Add a new timeline comment note to the SAP business document, supporting user tagging (`@mention`). Returns updated comment payload containing `ForwardedBy`, `ForwardedTo`, and `ToUser` metadata fields.
 *   **Request Payload Schema**:
     ```json
     {
@@ -249,10 +219,14 @@ These endpoints are designed for troubleshooting token bindings, user identities
     }
     ```
 
-### 12. GET `/tasks/tasks/:id/attachments/:attId/content/:filename`
-*   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition. Uses magic byte inspection (`detectMimeFromBuffer`) in `file-helper.ts` to identify PDF, PNG, JPEG, GIF, WebP, and ZIP streams when headers are ambiguous.
+### 11. GET `/tasks/tasks/:id/attachments/:attId/content/:filename`
+*   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition.
+*   **Query Parameters**: 
+    *   `documentId` (Required) — SAP Document Number (e.g. `90000001` or `10000042`).
+    *   `objectType` (Optional) — Business Object Type (e.g. `CLAIM`, `PR`, `PO`, `RE`).
+*   **Attachment Lookup Strategy**: Executes dual-mode strategy resolution — attempts explicit object strategy first (e.g. `CLAIM` strategy via `CNMA_CLAIM_ATTA`), and if unspecified or returning 404/400, automatically falls back to GOS attachment strategy (`CNMA_ATTACH_CONTENT`). Uses magic byte inspection (`detectMimeFromBuffer`) in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts) to identify PDF, PNG, JPEG, GIF, WebP, and ZIP streams when headers are ambiguous.
 
-### 13. GET `/tasks/search-users`
+### 12. GET `/tasks/search-users`
 *   **Purpose**: Search system users for task forwarding/delegation dialog autocompletion.
 *   **Query Parameters**: `SearchPattern` or `q` (Search text string e.g. `minh`).
 *   **Response Payload Schema**:
@@ -270,7 +244,7 @@ These endpoints are designed for troubleshooting token bindings, user identities
     }
     ```
 
-### 14. GET `/tasks/bus-users`
+### 13. GET `/tasks/bus-users`
 *   **Purpose**: Query `CNMA_BUSUSER` business users table for `@mention` user tagging and CC notification dialog autocompletion.
 *   **Query Parameters**: `q` or `SearchPattern` (Search query string e.g. `dung`).
 *   **Response Payload Schema**:
@@ -288,8 +262,8 @@ These endpoints are designed for troubleshooting token bindings, user identities
     }
     ```
 
-### 15. POST `/tasks/tasks/:id/forward`
-*   **Purpose**: Forwards a workflow task instance to another SAP user, and records a formatted audit comment `[Forwarded to ${forwardTo}] ${comment}` on the underlying document note in S/4HANA.
+### 14. POST `/tasks/tasks/:id/forward`
+*   **Purpose**: Forwards a workflow task instance to another SAP user. Validates task capability flags via [`DecisionStrategy`](file:///d:/learning/test/cnma_approval/srv/lib/processors/decision-strategy.ts). Returns HTTP 403 Forbidden if executed on a Carbon Copy (CC) task (`TaskType == 'CC'`). On success, records a formatted audit comment `[Forwarded to ${forwardTo}] ${comment}` on the underlying document note in S/4HANA.
 *   **Request Payload Schema**:
     ```json
     {

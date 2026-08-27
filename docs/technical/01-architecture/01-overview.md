@@ -1,6 +1,6 @@
 # System Architecture Overview
 
-> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-07-22 | **Status:** Active
+> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-08-27 | **Status:** Active
 
 This document provides a high-level technical overview of the **CNMA Approval** system design, integration boundaries, technology stack, and business object transformation architecture.
 
@@ -21,6 +21,12 @@ graph TD
         
         subgraph BFFService [CAP Node.js BFF Service]
             Express["Express Controllers<br/>(inbox-controller.ts)"]
+            
+            subgraph ActionPipeline [Decision & Validation Layer]
+                Val["RequestValidator<br/>(request-validator.ts)"]
+                DecStrat["DecisionStrategy Engine<br/>(decision-strategy.ts)"]
+            end
+
             Proc["Inbox Processor<br/>(inbox-processor.ts)"]
             
             subgraph MappingEngine [Config-Driven Mapping Engine]
@@ -42,7 +48,9 @@ graph TD
 
     ClientSide -->|HTTPS / REST API| AppRouter
     AppRouter -->|JWT Principal Propagation| Express
-    Express --> Proc
+    Express --> Val
+    Val --> DecStrat
+    DecStrat --> Proc
     Proc --> Reg
     Proc --> Adapters
     Adapters -->|Caching layer| Cache

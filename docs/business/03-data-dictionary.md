@@ -1,6 +1,6 @@
 # Business Data Dictionary
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-24 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-27 | **Status:** Active
 
 This data dictionary defines key procurement, financial, and inventory concepts used throughout the **CNMA Approval** portal. These fields map directly to information imported from S/4HANA ERP records.
 
@@ -65,10 +65,11 @@ A **Purchase Order** is a legally binding contract sent to a supplier, committin
 *   **Storage Location**: Internal warehouse area designated for receipt.
 *   **G/L Account**: General Ledger chart of accounts code for financial reporting.
 *   **Cost Center**: The department budget to which the expense is charged.
-*   **Reference Purchase Requisition**: Originating Purchase Requisition document number and item number that requested the procurement. Approvers can inspect the referenced PR details directly from the purchase order item.
+*   **Reference Purchase Requisition**: Originating Purchase Requisition document number and item number that requested the procurement. Approvers can click the reference link to open the requisition directly in S/4HANA Fiori Launchpad.
 
 ### Header & Timeline Notes
 *   **Document Notes & Comments**: Historical collaboration notes written by approvers during the workflow lifecycle, synchronized directly with ERP header text notes.
+*   **Forward Audit Log Entries**: Delegated task notes recorded when a user forwards a task to another user. Rendered in the Comments timeline with an inline indicator (`Forwarded by User A -> User B`).
 
 ---
 
@@ -86,17 +87,18 @@ Each procurement request follows a predefined multi-tier release strategy:
 An **Expense Claim** is an employee financial reimbursement request for business-related expenditures (e.g., travel expenses, client entertainment, training).
 
 ### Header Fields
-*   **Claim Number**: Unique identifier assigned to the reimbursement claim.
-*   **Claimant Name**: Employee requesting reimbursement.
-*   **Claim Category**: Classification of expenses (Travel, Training, Entertainment, Supplies).
-*   **Total Amount**: Aggregated sum of all requested expenses.
-*   **Currency**: Reimbursement currency.
-*   **Submission Date**: Date the claim was submitted for approval.
+*   **Claim Number**: Unique identifier assigned to the reimbursement claim (`ClaimNumber` / `DocumentNumber`).
+*   **Claimant Name**: Employee requesting reimbursement (`ClaimantName` / `CreatedByUser`).
+*   **Claim Category / Subtype**: Classification of expenses (`ClaimCategory` / `DocumentType`).
+*   **Total Payment Amount**: Aggregated sum of all requested expenses (`PaymentAmount` / `PaymentAmountLocalCrcy`).
+*   **Currency**: Reimbursement currency (`Currency` / `LocalCurrency`).
+*   **Submission Date**: Date the claim was submitted for approval (`SubmissionDate` / `CreatedOn`).
+*   **Cost Center**: Budgetary cost center responsible for the claim (`CostCenter`).
 
 ### Line Item Fields
 *   **Expense Description**: Plain text description of the individual expenditure.
 *   **Expense Date**: Date the expense occurred.
-*   **Amount**: Value of the individual receipt or invoice.
+*   **Amount**: Value of the individual receipt or invoice (`NetValue` / `Amount`).
 *   **Tax Code / VAT**: Tax applicability indicator.
 *   **Receipt Attached**: Indicator confirming whether a receipt proof was attached.
 
@@ -131,9 +133,12 @@ The collaboration sub-system references the SAP business users directory for tag
 *   **LastName**: User's surname / family name.
 *   **EmailAddress**: Primary corporate email address for workflow and CC notifications.
 
-### Task Forwarding Parameters
+### Task Forwarding & Audit Parameters
 *   **instanceId**: SAP Task Gateway workflow task instance identifier.
 *   **forwardTo**: Target SAP user ID to whom task ownership and release authorization is delegated.
 *   **comment**: Reason or instruction note recorded by the original approver when delegating the task. Automatically pushed as an ERP document note (`[Forwarded to ${forwardTo}] ${comment}`).
+*   **ForwardedBy**: Source SAP user ID who performed the task forwarding.
+*   **ForwardedTo**: Target SAP user ID who received the forwarded task.
+*   **ToUser**: Full display name / ID of the receiving user.
 
 

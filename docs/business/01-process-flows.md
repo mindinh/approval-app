@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-17 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-27 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -29,7 +29,7 @@ sequenceDiagram
     BFF->>ERP: Query document detail, line items, attachments, & workflow status
     ERP-->>BFF: Return full detail structures
     BFF-->>Portal: Deliver consolidated details, comment timeline, & file list
-    Portal-->>Approver: Render split-screen details panel
+    Portal-->>Approver: Render split-screen details panel (with Forward indicator strips)
 
     alt Read Attachment
         Approver->>Portal: Click on attachment preview
@@ -43,9 +43,9 @@ sequenceDiagram
         BFF->>ERP: Sync comment to ERP document notes
         ERP-->>BFF: Acknowledge comment persistence
         BFF-->>Portal: Refresh timeline with tagged note
-    else Forward Task
+    else Forward Task (Standard Tasks Only)
         Approver->>Portal: Select Forward, search target user, & enter justification
-        Portal->>BFF: POST /tasks/:id/forward (target user & comment)
+        Portal->>BFF: Submit forward request with target user & comment
         BFF->>ERP: Delegate task in SAP Task Gateway & write audit note
         ERP-->>BFF: Confirm delegation
         BFF-->>Portal: Deliver success confirmation
@@ -64,7 +64,7 @@ sequenceDiagram
 
 ## 2. Decision-Making & Delegation Lifecycle Flow
 
-This flowchart maps the lifecycle states of a workflow task, including forwarding and completion:
+This flowchart maps the lifecycle states of a workflow task, including CC task action restrictions, forwarding, and completion:
 
 ```mermaid
 flowchart TD
@@ -73,15 +73,20 @@ flowchart TD
     
     StateReady -->|Approver opens task| Review[Review Details, Line Items & Attachments]
     
-    Review --> ActionSelected{Decision / Delegation Action}
+    Review --> TaskCheck{Task Classification}
+
+    TaskCheck -->|CC Task / Comment-Only| CCOnly[Forward Action Disabled & Hidden]
+    CCOnly --> CCAllowed[View Details, Post Comments & Tag Users]
+
+    TaskCheck -->|Standard Approval Task| ActionSelected{Decision / Delegation Action}
     
     ActionSelected -->|Approve| ConfirmApprove[Approve Task]
     ActionSelected -->|Reject| CommentCheck{Requires Comment?}
-    ActionSelected -->|Forward| ForwardSearch[Search Target User in ForwardTaskDialog]
+    ActionSelected -->|Forward| ForwardSearch[Search Target User in Dialog]
     
     ForwardSearch --> ForwardComment[Input Optional Delegation Reason]
     ForwardComment --> ExecForward[Submit Forward Request to SAP Task Gateway]
-    ExecForward --> AuditNote[Write [Forwarded to User] Audit Note to ERP]
+    ExecForward --> AuditNote[Write Forwarded Audit Note to ERP & Display Inline]
     AuditNote --> MoveHistory
     
     CommentCheck -->|Yes| InputComment[Approver Inputs Justification]

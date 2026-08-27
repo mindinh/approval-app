@@ -1,6 +1,7 @@
 # Field Modification & Property Pipeline Guide
 
 > **Target Audience:** Developers & AI Coding Agents  
+> **Last Updated:** 2026-08-27 | **Status:** Active  
 > **Scope:** Adding, modifying, or formatting data fields across S/4HANA OData services, backend raw strategies, and React UI declarative renderers.
 
 ---

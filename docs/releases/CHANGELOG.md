@@ -2,6 +2,57 @@
 
 All notable changes to the **CNMA Approval** project will be documented in this file.
 
+## [Unreleased]
+
+## [1.0.14] - 2026-08-27
+
+### Added
+*   **Comments Forward Log Indicator (`CommentsPanel.tsx` & `normalizeTaskDetail.ts`)**:
+    *   Plumbed `ForwardedBy`, `ForwardedTo`, and `ToUser` fields through `_Comment` OData mapper into task comment detail payloads.
+    *   Rendered inline visual indicator strip with directional arrow (`User A -> User B`) in [`CommentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx) for Forward audit entries merged into the comment log.
+*   **Backend Decision Strategy Pattern (`srv/lib/processors/decision-strategy.ts`)**:
+    *   Introduced `DecisionStrategy` pattern encapsulating validation, authorization rules, and execution for task decisions (Approve, Reject, Forward, Mass Actions).
+    *   Integrated request validation via [`request-validator.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/request-validator.ts) to enforce payload parameter contracts before executing OData actions.
+
+### Refactored & Changed
+*   **Carbon Copy (CC) Task Action Restrictions (`TaskActionPanel.tsx`, `MassActionBar.tsx`, `predicates.ts`)**:
+    *   Updated `isCcTask` / `canForward` predicate checks in [`predicates.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/predicates.ts).
+    *   Disabled and hid the Forward action button for CC tasks (`TaskType == 'CC'`) in [`TaskActionPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx), [`MassActionBar.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/MassActionBar.tsx), and [`MassSelectionView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/MassSelectionView.tsx).
+    *   Enforced CC task forward action prohibition in backend `DecisionStrategy`.
+*   **Reference PR Drawer Cleanup**:
+    *   Purged legacy embedded iframe drawer [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx), [`useReferencePr.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useReferencePr.ts), and backend module [`reference-pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/reference-pr.ts).
+    *   Consolidated detail fetching into generic detail integration strategy ([`detail.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/detail.ts)) and direct Fiori Launchpad deep linking.
+*   **Mobile Sonner Toast & Modal UI Enhancements (`theme.css`)**:
+    *   Fixed Sonner toast width, margin, close button placement, and swipe actions on small screens in [`theme.css`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/styles/theme.css).
+
+---
+
+## [1.0.13] - 2026-08-25
+
+### Added
+*   **Workflow Approval Panel Rejection Visual Highlights (`WorkflowApprovalPanel.tsx`)**:
+    *   Enhanced rejection step rendering with red/destructive badges (`Rejected`), red timeline icons (X-circle icon with pulse effect), red status text (`Rejected`), "Rejected Date:" labels, and red comment highlight containers (`bg-destructive/10 border-destructive/25 text-destructive`).
+*   **Approval Status Predicate Suite (`predicates.ts` & `predicates.test.ts`)**:
+    *   Added `isRejectedApprovalStatus` and `isApprovedApprovalStatus` predicate helper functions in [`predicates.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/predicates.ts) with full Vitest test suite coverage in [`predicates.test.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/tests/pages/Inbox/utils/predicates.test.ts).
+*   **Modularized Claim Field Definitions (`claim.fields.ts`)**:
+    *   Extracted declarative claim overview fields (`CLAIM_OVERVIEW_FIELDS`) and line item table columns (`CLAIM_TABLE_COLUMNS`) into [`claim.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/claim/claim.fields.ts) for clean architecture compliance.
+*   **4-Eyes Code Review Audit Report (`Code-Review-260825.md`)**:
+    *   Added [`Code-Review-260825.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260825.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance.
+
+### Refactored & Changed
+*   **TaskCard Header Title Optimization (`TaskCard.tsx`)**:
+    *   Cleaned header title display to render pure document numbers (e.g. `4500000001` or `1000000234`) instead of prefixing with redundant document category labels, reducing visual noise.
+*   **Direct Hints-Based Task Resolution (`object-type-resolver.ts`)**:
+    *   Optimized `ObjectTypeResolver.resolve` to directly extract `objectType` and `documentId` from incoming `hints` (e.g. `hints.businessObjectType`, `hints.typeid`, `hints.documentId`, `hints.instid`), eliminating redundant OData task list queries (`getInstances`).
+    *   Dynamically injects decision options (Approve `0001`, Reject `0002`) for pending `CLAIM` tasks with `ActionButton === 'X'`.
+*   **Enhanced OData Adapter & Attachment Streaming (`sap-odata-adapter.ts` & `inbox-controller.ts`)**:
+    *   Corrected 10-digit zero-padded DocumentNumber filter queries (`DocumentNumber eq '${padded10}'`) and numeric instance ID sorting in `getInstances`.
+    *   Updated `fetchAttachmentContent` to accept `objectType` query parameter (`?documentId=...&objectType=CLAIM`) and stream files using `CLAIM` attachment strategy (`CNMA_CLAIM_ATTA`) with automatic fallback to GOS attachment strategy (`CNMA_ATTACH_CONTENT`).
+*   **Standardized Claim Payment & Total Amount Resolution (`inbox-utils.ts`)**:
+    *   Updated `resolveTaskTotalAmount` to support Expense Claim payment amounts (`PaymentAmountLocalCrcy`, `PaymentAmount`) alongside PO/ZUB total amounts.
+
+---
+
 ## [1.0.12] - 2026-08-24
 
 ### Added
