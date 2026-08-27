@@ -56,26 +56,24 @@ export function MassActionBar({
                         <>
                             <Button
                                 variant="destructive"
-                                size="sm"
                                 onClick={() =>
                                     onMassDecision(DECISION_KEYS.REJECT, '', [...selectedIds])
                                 }
                                 disabled={isExecuting}
-                                className="rounded-lg"
+                                className="h-11 sm:h-9 font-medium"
                             >
-                                <XCircle className="size-3.5 mr-1" />
+                                <XCircle className="w-4 h-4 mr-2" />
                                 Reject ({selectedCount})
                             </Button>
                             <Button
                                 variant="success"
-                                size="sm"
                                 onClick={() =>
                                     onMassDecision(DECISION_KEYS.APPROVE, '', [...selectedIds])
                                 }
                                 disabled={isExecuting}
-                                className="rounded-lg text-white"
+                                className="h-11 sm:h-9 font-medium"
                             >
-                                <CheckCircle className="size-3.5 mr-1" />
+                                <CheckCircle className="w-4 h-4 mr-2" />
                                 Approve ({selectedCount})
                             </Button>
                         </>

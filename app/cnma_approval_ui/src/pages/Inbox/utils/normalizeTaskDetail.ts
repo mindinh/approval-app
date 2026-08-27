@@ -143,9 +143,14 @@ export function normalizeDetailForView(detail: any) {
     })) : [];
 
     const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
-    const displayCategory = docCategory === 'CLAIM' ? 'Claim' : docCategory;
-    const title = tp?.task?.TaskTitle || detail.task?.title || detail.title || `Approve ${displayCategory} ${documentId}`;
     const isNormalTask = (detail.normalTask ?? detail.task?.normalTask) !== false;
+    const isCompleted = (tp?.task?.Status || detail.task?.status || detail.status) === 'COMPLETED';
+    const typeDisplay = bo?.DocumentTypeText || bo?.DocumentTypeDisplay || bo?.doctyp_desc || detail.documentTypeDisplay || detail.documentTypeText || (docCategory === 'CLAIM' ? 'Claim' : docCategory);
+
+    const title = !isNormalTask
+        ? `${isCompleted ? 'Reviewed' : 'Review'} ${typeDisplay} ${documentId}`.trim()
+        : (detail.title || tp?.task?.TaskTitle || detail.task?.title || `Approve ${typeDisplay} ${documentId}`);
+
     const isClaim = docCategory === 'CLAIM';
     const supports = {
         forward: !isClaim && isNormalTask && (tp?.task?.SupportsForward ?? detail.supports?.forward ?? detail.task?.supports?.forward) !== false,

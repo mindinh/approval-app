@@ -11,13 +11,11 @@ export function OverviewPanel({
     model,
     isMobile = false,
     isSecondaryLoading = false,
-    onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
     detail?: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
-    onSelectReferencePr?: (prNumber: string) => void;
 }) {
     const { t } = useTranslation();
 

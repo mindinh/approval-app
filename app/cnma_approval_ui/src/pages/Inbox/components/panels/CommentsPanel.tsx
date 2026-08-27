@@ -1,11 +1,10 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Send, Loader2, MessageSquare, User, AtSign, X, ArrowRight } from 'lucide-react';
 import { Button, Textarea, Badge } from '@cnma/react-ui';
 import type { TaskDetail, WorkflowApprovalComment, BusUser, TaggedUser } from '@/services/inbox/inbox.types';
 import { useAddComment } from '@/pages/Inbox/hooks/useInbox';
 import { TeamsMentionDropdown } from '@/pages/Inbox/components/TeamsMentionDropdown';
 import { RichMentionInput, type RichMentionInputRef } from '@/pages/Inbox/components/RichMentionInput';
-import { formatRelative } from '@/pages/Inbox/utils/formatters';
 import { formatDate, formatDateTime } from '@/utils/formatters/date';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -71,6 +70,7 @@ export function CommentsPanel({
     const [mentionIndex, setMentionIndex] = useState(-1);
     const [taggedUsers, setTaggedUsers] = useState<BusUser[]>([]);
     const richInputRef = useRef<RichMentionInputRef>(null);
+    const commentListRef = useRef<HTMLDivElement>(null);
     const addCommentMutation = useAddComment();
 
     const merged = useMemo(() => {
@@ -87,8 +87,8 @@ export function CommentsPanel({
             const text = (wc.noteText || (wc as any).text || '').trim();
             if (!text) continue;
             let dateStr = wc.postedOn || '';
-            if (wc.postedOn && wc.postedTime) {
-                let t = wc.postedTime;
+            if (wc.postedOn && typeof wc.postedTime === 'string' && wc.postedTime.trim()) {
+                let t = wc.postedTime.trim();
                 if (t.startsWith('PT')) {
                     t = t.replace('PT', '').replace('H', ':').replace('M', ':').replace('S', '');
                 }
@@ -117,6 +117,21 @@ export function CommentsPanel({
 
         return list;
     }, [detail.comments, workflowComments]);
+
+    // Auto-scroll to bottom when comments list updates (e.g. user adds comment or detail refetches)
+    useEffect(() => {
+        if (commentListRef.current) {
+            const timer = setTimeout(() => {
+                if (commentListRef.current) {
+                    commentListRef.current.scrollTo({
+                        top: commentListRef.current.scrollHeight,
+                        behavior: 'smooth',
+                    });
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [merged]);
 
     const handleCommentTextChange = (text: string) => {
         setCommentText(text);
@@ -200,7 +215,7 @@ export function CommentsPanel({
                         No comments yet.
                     </div>
                 )}
-                <div className="space-y-3 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
+                <div ref={commentListRef} className="space-y-3 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
                     {merged.map((comment) => (
                         <div
                             key={comment.id}
@@ -210,8 +225,8 @@ export function CommentsPanel({
                             )}
                         >
                             {comment.forward && (
-                                <div className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground/90">
-                                    <ArrowRight className="size-3.5 shrink-0 text-warning" />
+                                <div className="flex items-center gap-1.5 text-xs font-medium text-warning">
+                                    <ArrowRight aria-hidden="true" className="size-3.5 shrink-0 text-warning" />
                                     <span>
                                         Forwarded to{' '}
                                         <span className="font-semibold">{comment.toUser?.trim() || '(no recipient)'}</span>

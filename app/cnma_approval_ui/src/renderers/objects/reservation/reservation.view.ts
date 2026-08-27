@@ -10,7 +10,7 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
         stripeClass: 'before:bg-warning'
     },
     cardChips: [
-        chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalAmount|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total' }), true),
+        chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalAmount', currency: 'LocalCurrency|DocumentCurrency', label: 'Total' }), true),
         chip(text({ source: 'DocumentTypeText', label: 'Type' })),
     ],
 

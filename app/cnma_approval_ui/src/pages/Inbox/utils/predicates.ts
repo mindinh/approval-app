@@ -16,36 +16,75 @@ export function normalizeApprovalStatus(value?: string): string {
 }
 
 /**
+ * Converts a raw status string into a normalized lookup key (UPPERCASE with underscores).
+ * e.g., 'In Approving' -> 'IN_APPROVING'
+ */
+function toStatusKey(value?: string): string {
+    if (!value) return '';
+    return value.trim().toUpperCase().replace(/\s+/g, '_');
+}
+
+const PENDING_STATUS_KEYS = new Set([
+    'PENDING',
+    'PENDING_APPROVAL',
+    'PARTIALLY_APPROVED',
+    'IN_PROCESS',
+    'IN_APPROVING',
+    'CURRENT',
+    'OPEN',
+]);
+
+const IN_APPROVING_STATUS_KEYS = new Set([
+    'IN_APPROVING',
+    'IN_PROCESS',
+]);
+
+const REJECTED_STATUS_KEYS = new Set([
+    'REJECTED',
+    'REJECT',
+    'DECLINED',
+    'DECLINE',
+    'CANCELLED',
+    'CANCELED',
+    'RETURNED',
+    'RETURN',
+]);
+
+const APPROVED_STATUS_KEYS = new Set([
+    'APPROVED',
+    'APPROVE',
+    'ACCEPT',
+    'ACCEPTED',
+    'COMPLETED',
+    'COMPLETE',
+]);
+
+/**
  * Returns `true` if the approval status represents a "pending" state.
  */
 export function isPendingApprovalStatus(value?: string): boolean {
-    const status = normalizeApprovalStatus(value);
-    return (
-        status === 'PENDING' ||
-        status === 'PENDING_APPROVAL' ||
-        status === 'PENDING APPROVAL' ||
-        status === 'PARTIALLY_APPROVED' ||
-        status === 'PARTIALLY APPROVED' ||
-        status === 'IN_PROCESS' ||
-        status === 'IN PROCESS' ||
-        status === 'IN APPROVING' ||
-        status === 'IN_APPROVING' ||
-        status === 'CURRENT' ||
-        status === 'OPEN'
-    );
+    return PENDING_STATUS_KEYS.has(toStatusKey(value));
 }
 
 /**
  * Returns `true` if the approval status explicitly represents an "in approving" state.
  */
 export function isInApprovingStatus(value?: string): boolean {
-    const status = normalizeApprovalStatus(value);
-    return (
-        status === 'IN APPROVING' ||
-        status === 'IN_APPROVING' ||
-        status === 'IN_PROCESS' ||
-        status === 'IN PROCESS'
-    );
+    return IN_APPROVING_STATUS_KEYS.has(toStatusKey(value));
+}
+
+/**
+ * Returns `true` if the approval status explicitly represents a "rejected" or "declined" state.
+ */
+export function isRejectedApprovalStatus(value?: string): boolean {
+    return REJECTED_STATUS_KEYS.has(toStatusKey(value));
+}
+
+/**
+ * Returns `true` if the approval status explicitly represents an "approved" or "completed" state.
+ */
+export function isApprovedApprovalStatus(value?: string): boolean {
+    return APPROVED_STATUS_KEYS.has(toStatusKey(value));
 }
 
 /**

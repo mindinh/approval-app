@@ -64,8 +64,7 @@ export function TaskActionPanel({
     }
 
     const decisions = detail.decisions || detail.task?.decisions || [];
-    const isNormalTask = (detail as any)?.normalTask ?? (detail as any)?.task?.normalTask ?? true;
-    const supportsForward = isNormalTask && (detail as any)?.supports?.forward !== false && (detail as any)?.task?.supports?.forward !== false;
+    const supportsForward = (detail as any)?.supports?.forward !== false;
 
     if (!decisions.length && !supportsForward) return null;
 
@@ -76,7 +75,7 @@ export function TaskActionPanel({
     });
 
     const isCommentRequired = (decision: Decision): boolean => {
-        if (decision.commentMandatory === true) return true;
+        if (decision.commentMandatory === true || decision.requiresComment === true) return true;
         if (decision.nature === 'NEGATIVE') return true;
         return false;
     };
@@ -213,29 +212,35 @@ export function TaskActionPanel({
                         </div>
                     )}
 
-                    <DialogFooter className="grid grid-cols-2 gap-3 pt-3 sm:flex sm:justify-end sm:gap-2 border-t border-border/40">
+                    <DialogFooter className="grid grid-cols-2 gap-3 pt-3 border-t sm:flex sm:justify-end sm:gap-2">
                         <Button
                             variant="outline"
-                            className="h-11 sm:h-9 w-full sm:w-auto rounded-xl font-semibold"
                             onClick={() => {
                                 setActiveDecision(null);
                                 setDecisionComment('');
                             }}
+                            disabled={isExecuting}
+                            className="h-11 sm:h-9 font-medium"
                         >
-                            Cancel
+                            {t('decision.cancel', 'Cancel')}
                         </Button>
                         <Button
                             variant={activeDecision?.nature === 'NEGATIVE' ? 'destructive' : 'success'}
                             onClick={handleConfirmDecision}
                             disabled={!canSubmitDecision || isExecuting}
-                            className="h-11 sm:h-9 w-full sm:w-auto rounded-xl font-semibold gap-1.5"
+                            className="h-11 sm:h-9 font-medium"
                         >
                             {isExecuting ? (
-                                <Loader2 className="size-4 animate-spin shrink-0" />
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {t('decision.submitting', 'Submitting...')}
+                                </>
                             ) : (
-                                activeDecision && <DecisionIcon nature={activeDecision.nature} />
+                                <>
+                                    {activeDecision && <DecisionIcon nature={activeDecision.nature} />}
+                                    {activeDecision?.text}
+                                </>
                             )}
-                            {activeDecision?.text}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -180,9 +180,13 @@ export function FilterSettingsDialog({
                     })}
                 </div>
 
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleApply}>OK</Button>
+                <DialogFooter className="grid grid-cols-2 gap-3 pt-3 border-t sm:flex sm:justify-end sm:gap-2">
+                    <Button variant="outline" onClick={() => onOpenChange(false)} className="h-11 sm:h-9 font-medium">
+                        Cancel
+                    </Button>
+                    <Button variant="action" onClick={handleApply} className="h-11 sm:h-9 font-medium">
+                        OK
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

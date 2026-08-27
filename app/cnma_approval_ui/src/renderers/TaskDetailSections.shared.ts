@@ -235,11 +235,16 @@ export function buildDefaultBusinessModel(detail: TaskDetail) {
         (detail.total != null ? String(detail.total) : undefined) ||
         pickByAlias(attrIndex, 'netValue') ||
         (detail.task?.total != null ? String(detail.task.total) : undefined) ||
-        (detail.task?.total_doc_curr != null ? String(detail.task.total_doc_curr) : undefined);
+        (detail.task?.total_doc_curr != null ? String(detail.task.total_doc_curr) : undefined) ||
+        ((detail.task as any)?.TotalOrderValue != null ? String((detail.task as any).TotalOrderValue) : undefined) ||
+        ((detail.task as any)?.TotalNetAmountLocalCrcy != null ? String((detail.task as any).TotalNetAmountLocalCrcy) : undefined) ||
+        ((detail.task as any)?.PaymentAmountLocalCrcy != null ? String((detail.task as any).PaymentAmountLocalCrcy) : undefined);
 
     const currency =
         detail.currency ||
         pickByAlias(attrIndex, 'currency') ||
+        (detail.task as any)?.LocalCurrency ||
+        (detail.task as any)?.DocumentCurrency ||
         detail.task?.curr_vnd ||
         detail.task?.doc_curr;
 

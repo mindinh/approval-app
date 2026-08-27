@@ -2,7 +2,7 @@
  * WorkflowApprovalPanel — displays the PR approval tree with expandable steps.
  */
 import { useState } from 'react';
-import { CheckCircle2, MessageSquare, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge, Button } from '@cnma/react-ui';
 import type { WorkflowApprovalTreeResponse } from '@/services/inbox/inbox.types';
@@ -11,6 +11,8 @@ import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
     isInApprovingStatus,
+    isRejectedApprovalStatus,
+    isApprovedApprovalStatus,
     formatApprovalStatus,
 } from '@/pages/Inbox/utils/predicates';
 import { cn } from '@/lib/utils';
@@ -66,24 +68,31 @@ export function WorkflowApprovalPanel({
             {!isLoading && !error && steps.length > 0 && (
                 <div className="space-y-0">
                     {steps.map((step, index) => {
-                        const isCurrent = index === currentIndex;
-                        const isNext = index === nextIndex;
-                        const isCompleted = currentIndex >= 0 ? index < currentIndex : normalizeApprovalStatus(step.status) === 'APPROVED';
-                        const isPending = !isCompleted && !isCurrent;
                         const statusRaw = normalizeApprovalStatus(step.status);
+                        const isRejected = isRejectedApprovalStatus(step.status);
+                        const isApproved = isApprovedApprovalStatus(step.status);
+
+                        const isCurrent = index === currentIndex && !isRejected && !isApproved;
+                        const isNext = index === nextIndex && !isRejected && !isApproved;
+                        const isCompleted = isApproved || (currentIndex >= 0 ? index < currentIndex && !isRejected : false);
+                        const isPending = !isCompleted && !isCurrent && !isRejected;
+
                         const isExpanded = expandedStepLevels.includes(step.level);
 
                         const title = step.approver || `Level ${step.level}`;
-                        const initial = typeof title === 'string' && title.length > 0 ? title.charAt(0).toUpperCase() : 'C';
 
                         // Line color determination
                         let lineClasses = "hidden";
-                        if (isCompleted) {
-                            lineClasses = "bg-success w-0.5";
-                        } else if (isCurrent) {
-                            lineClasses = "border-l-2 border-dotted border-warning/40 w-0.5";
-                        } else {
-                            lineClasses = "border-l-2 border-dotted border-border w-0.5";
+                        if (index < steps.length - 1) {
+                            if (isRejected) {
+                                lineClasses = "border-l-2 border-dotted border-destructive/50 w-0.5";
+                            } else if (isCompleted) {
+                                lineClasses = "bg-success w-0.5";
+                            } else if (isCurrent) {
+                                lineClasses = "border-l-2 border-dotted border-warning/40 w-0.5";
+                            } else {
+                                lineClasses = "border-l-2 border-dotted border-border w-0.5";
+                            }
                         }
 
                         return (
@@ -97,7 +106,11 @@ export function WorkflowApprovalPanel({
                                 {/* Left icon & vertical line */}
                                 <div className="flex flex-col items-center mr-4 w-7 shrink-0 relative">
                                     <div className="z-10 bg-card py-1">
-                                        {isCompleted ? (
+                                        {isRejected ? (
+                                            <div className="flex items-center justify-center size-7 rounded-full bg-destructive text-destructive-foreground shadow-sm ring-4 ring-card">
+                                                <XCircle className="size-4" />
+                                            </div>
+                                        ) : isCompleted ? (
                                             <div className="flex items-center justify-center size-7 rounded-full bg-success text-white shadow-sm ring-4 ring-card">
                                                 <CheckCircle2 className="size-4" />
                                             </div>
@@ -130,10 +143,11 @@ export function WorkflowApprovalPanel({
                                     <div className="flex items-start justify-between">
                                         <h4 className={cn(
                                             "text-base flex items-center gap-2 font-semibold truncate mb-1.5",
-                                            isCurrent ? "text-foreground" : "text-foreground/80",
+                                            isRejected ? "text-destructive" : isCurrent ? "text-foreground" : "text-foreground/80",
                                             isPending && "text-muted-foreground"
                                         )}>
                                             <span>{title}</span>
+                                            {isRejected && <Badge variant="destructive" className="h-5 px-1.5 text-xs">Rejected</Badge>}
                                             {isCurrent && <Badge variant="warning" className="h-5 px-1.5 text-xs">Current</Badge>}
                                             {isNext && <Badge variant="info" className="h-5 px-1.5 text-xs">Next</Badge>}
                                         </h4>
@@ -144,7 +158,13 @@ export function WorkflowApprovalPanel({
                                             <span className="text-muted-foreground w-32 shrink-0">Status:</span>
                                             <span className={cn(
                                                 "font-medium",
-                                                isCompleted ? "text-success" : (isCurrent ? "text-warning" : "text-muted-foreground")
+                                                isRejected
+                                                    ? "text-destructive font-semibold"
+                                                    : isCompleted
+                                                    ? "text-success"
+                                                    : isCurrent
+                                                    ? "text-warning"
+                                                    : "text-muted-foreground"
                                             )}>
                                                 {isCurrent && statusRaw === 'PENDING' ? 'In Approving' : formatApprovalStatus(statusRaw)}
                                             </span>
@@ -152,8 +172,10 @@ export function WorkflowApprovalPanel({
 
                                         {step.postedOn && (
                                             <div className="flex items-center gap-1.5 truncate">
-                                                <span className="text-muted-foreground w-32 shrink-0">Approved Date:</span>
-                                                <span className={isPending ? "text-muted-foreground" : "text-foreground/80"}>
+                                                <span className="text-muted-foreground w-32 shrink-0">
+                                                    {isRejected ? "Rejected Date:" : isCompleted ? "Approved Date:" : "Date:"}
+                                                </span>
+                                                <span className={isRejected ? "text-destructive/90 font-medium" : isPending ? "text-muted-foreground" : "text-foreground/80"}>
                                                     {step.postedOn} {step.postedTime?.split('.')[0] || ''}
                                                 </span>
                                             </div>
@@ -165,7 +187,12 @@ export function WorkflowApprovalPanel({
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => toggleExpand(step.level)}
-                                                    className="text-xs text-muted-foreground hover:text-foreground font-medium shrink-0 h-auto p-0 hover:bg-transparent transition-colors"
+                                                    className={cn(
+                                                        "text-xs font-medium shrink-0 h-auto p-0 hover:bg-transparent transition-colors",
+                                                        isRejected
+                                                            ? "text-destructive/90 hover:text-destructive"
+                                                            : "text-muted-foreground hover:text-foreground"
+                                                    )}
                                                 >
                                                     {isExpanded ? "Hide comment" : "Show more"}
                                                 </Button>
@@ -181,8 +208,16 @@ export function WorkflowApprovalPanel({
                                                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                                                         className="overflow-hidden"
                                                     >
-                                                        <div className="bg-muted/30 rounded-lg p-3 text-foreground/80 border border-border/60 flex gap-2 w-full">
-                                                            <MessageSquare className="size-3.5 mt-0.5 text-muted-foreground/60 shrink-0" />
+                                                        <div className={cn(
+                                                            "rounded-lg p-3 text-sm border flex gap-2 w-full",
+                                                            isRejected
+                                                                ? "bg-destructive/10 border-destructive/25 text-destructive"
+                                                                : "bg-muted/30 border-border/60 text-foreground/80"
+                                                        )}>
+                                                            <MessageSquare className={cn(
+                                                                "size-3.5 mt-0.5 shrink-0",
+                                                                isRejected ? "text-destructive" : "text-muted-foreground/60"
+                                                            )} />
                                                             <span className="whitespace-pre-wrap">{step.noteText}</span>
                                                         </div>
                                                     </motion.div>
@@ -199,3 +234,4 @@ export function WorkflowApprovalPanel({
         </div>
     );
 }
+

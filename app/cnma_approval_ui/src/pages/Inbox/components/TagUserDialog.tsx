@@ -190,15 +190,17 @@ export function TagUserDialog({
                     )}
                 </div>
 
-                <DialogFooter className="pt-3 border-t flex items-center justify-between sm:justify-between">
-                    <Button variant="outline" onClick={handleClose} className="h-11 sm:h-9">
+                <DialogFooter className="grid grid-cols-2 gap-3 pt-3 border-t sm:flex sm:justify-end sm:gap-2">
+                    <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="h-11 sm:h-9 font-medium">
                         {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button
+                        variant="action"
                         onClick={handleConfirm}
-                        className="bg-primary hover:bg-primary-hover text-primary-foreground h-11 sm:h-9"
+                        disabled={selectedList.length === 0 || isSubmitting}
+                        className="h-11 sm:h-9 font-medium"
                     >
-                        <Check className="w-4 h-4 mr-1.5" />
+                        <Check className="w-4 h-4 mr-2" />
                         {t('comments.applyTags', `Apply Tags (${selectedList.length})`, { count: selectedList.length })}
                     </Button>
                 </DialogFooter>

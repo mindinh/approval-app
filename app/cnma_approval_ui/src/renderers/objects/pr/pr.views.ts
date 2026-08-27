@@ -9,9 +9,10 @@ const standardPrCardConfig: TaskCardStyleConfig = {
 };
 
 const standardPrCardChips = [
-    chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalNetAmount|totalNetAmount|total', currency: 'LocalCurrency|DisplayCurrency|displayCurrency|DocumentCurrency', label: 'Total' }), true),
+    chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalNetAmount|totalNetAmount|TotalOrderValue|total', currency: 'LocalCurrency|DisplayCurrency|displayCurrency|DocumentCurrency', label: 'Total' }), true),
     chip(text({ source: 'DocumentTypeText|doctyp_desc|PurchaseRequisitionTypeText|purchaseRequisitionTypeText|documentTypeDisplay|DocumentType|PurchaseRequisitionType|purchaseRequisitionType', label: 'Type' })),
 ];
+
 
 
 

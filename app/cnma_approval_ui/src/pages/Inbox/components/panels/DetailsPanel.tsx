@@ -35,13 +35,11 @@ export function DetailsPanel({
     detail,
     isMobile = false,
     isSecondaryLoading = false,
-    onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
     detail: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
-    onSelectReferencePr?: (prNumber: string) => void;
 }) {
     const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');

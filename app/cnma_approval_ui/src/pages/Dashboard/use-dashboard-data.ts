@@ -77,13 +77,14 @@ export interface DonutSegment {
 }
 
 // ─── Category Constants & Color Definitions ──────────────────
-export type CategoryType = 'PO' | 'PR' | 'RESV' | 'OTHER';
+export type CategoryType = 'PO' | 'PR' | 'RESV' | 'CLAIM' | 'OTHER';
 
 export const CATEGORY_COLORS: Record<CategoryType, { name: string; fill: string; border: string; bg: string; text: string }> = {
     PO: { name: 'PO (Purchase Order)', fill: 'var(--info, #0070f2)', border: '#80b8f9', bg: '#e1f4ff', text: '#0070f2' },         // Info Blue (matches PO task card)
     PR: { name: 'PR (Purchase Requisition)', fill: 'var(--color-brand, #cc0000)', border: '#990000', bg: '#ffebeb', text: '#cc0000' }, // Brand Red (matches PR task card)
     RESV: { name: 'Reservation (RESV)', fill: 'var(--warning, #e76500)', border: '#f3b280', bg: '#fff8d6', text: '#e76500' },      // Warning Orange (matches RE task card)
-    OTHER: { name: 'Other / Claims', fill: 'var(--success, #30914c)', border: '#98c8a6', bg: '#f5fae5', text: '#30914c' },          // Success Green (matches CLAIM task card)
+    CLAIM: { name: 'Claim', fill: 'var(--success, #30914c)', border: '#98c8a6', bg: '#f5fae5', text: '#30914c' },                     // Success Green (matches CLAIM task card)
+    OTHER: { name: 'Other', fill: 'var(--muted-foreground, #666666)', border: '#cccccc', bg: '#f0f0f0', text: '#666666' },
 };
 
 export function resolveCategory(docCategory?: string, rawDocType?: string, label?: string): CategoryType {
@@ -93,7 +94,8 @@ export function resolveCategory(docCategory?: string, rawDocType?: string, label
 
     if (cat === 'BUS2012' || type.includes('PO') || lbl.includes('PO')) return 'PO';
     if (cat === 'BUS2105' || type.includes('PR') || lbl.includes('PR')) return 'PR';
-    if (cat.includes('2093') || type === 'RESV' || lbl.includes('RESERVATION') || lbl.includes('RESV')) return 'RESV';
+    if (cat.includes('2093') || cat.includes('RESV') || type === 'RESV' || type === 'RE' || lbl.includes('RESERVATION') || lbl.includes('RESV')) return 'RESV';
+    if (cat === 'CLAIM' || type.includes('CLAIM') || lbl.includes('CLAIM')) return 'CLAIM';
     return 'OTHER';
 }
 
@@ -220,11 +222,12 @@ export function useDashboardData(
         if (docTypeCounts && docTypeCounts.length > 0) {
             const groups = new Map<string, { total: number; 'In Approving': number; rawDocType: string; docCategory: string }>();
             for (const item of docTypeCounts) {
-                const rawKey = item.DocumentType || 'Standard';
+                const docCategory = item.DocCategory || '';
+                const rawKey = item.DocumentType || (docCategory.toUpperCase() === 'CLAIM' ? 'CLAIM' : docCategory) || 'Standard';
                 const key = getDocTypeDescription(rawKey, item.DocumentTypeText);
                 let g = groups.get(key);
                 if (!g) {
-                    g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory: item.DocCategory || '' };
+                    g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory };
                     groups.set(key, g);
                 }
                 const count = Number(item.RequestCount || 0);
@@ -242,11 +245,12 @@ export function useDashboardData(
 
         const groups = new Map<string, { total: number; 'In Approving': number; rawDocType: string; docCategory: string }>();
         for (const t of tasksFilteredExcludingStatus) {
-            const rawKey = t.documentType || t.taskType || 'Standard';
+            const docCategory = (t as any).docCategory || (t.taskType === 'CLAIM' ? 'CLAIM' : '');
+            const rawKey = t.documentType || (t.taskType === 'CLAIM' ? 'CLAIM' : t.taskType) || docCategory || 'Standard';
             const key = getDocTypeDescription(rawKey, t.documentTypeDesc);
             let g = groups.get(key);
             if (!g) {
-                g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory: '' };
+                g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory };
                 groups.set(key, g);
             }
             g.total++;
@@ -282,16 +286,32 @@ export function useDashboardData(
 
     // 7. Table rows formatting (fully filtered)
     const tableRows = useMemo(() => {
-        return filteredTasks.map((t) => ({
-            taskType: t.taskType,
-            documentTypeDesc: getDocTypeDescription(t.documentType || t.taskType || 'Standard', t.documentTypeDesc),
-            docNumber: t.documentNumber,
-            currency: t.currency,
-            status: t.status,
-            totalNetAmount: t.totalNetAmount,
-            displayCurrency: t.displayCurrency || t.currency,
-            createdAt: t.createdAt,
-        }));
+        return filteredTasks.map((t: any) => {
+            const taskType = (t.taskType || t.documentType || '').toUpperCase();
+            const docCat = (t.docCategory || '').toUpperCase();
+
+            let amount: number | null = t.totalNetAmount;
+            if (amount === undefined || amount === null) {
+                if (taskType === 'PO' || docCat === 'BUS2012') {
+                    amount = t.TotalOrderValue !== undefined && t.TotalOrderValue !== null ? Number(t.TotalOrderValue) : null;
+                } else if (taskType === 'CLAIM' || docCat === 'CLAIM') {
+                    amount = t.PaymentAmountLocalCrcy !== undefined && t.PaymentAmountLocalCrcy !== null ? Number(t.PaymentAmountLocalCrcy) : null;
+                } else {
+                    amount = t.TotalNetAmountLocalCrcy !== undefined && t.TotalNetAmountLocalCrcy !== null ? Number(t.TotalNetAmountLocalCrcy) : null;
+                }
+            }
+
+            return {
+                taskType: t.taskType,
+                documentTypeDesc: getDocTypeDescription(t.documentType || t.taskType || 'Standard', t.documentTypeDesc),
+                docNumber: t.documentNumber,
+                currency: t.currency || 'VND',
+                status: t.status,
+                totalNetAmount: amount,
+                displayCurrency: t.displayCurrency || t.currency || 'VND',
+                createdAt: t.createdAt,
+            };
+        });
     }, [filteredTasks]);
 
     return {

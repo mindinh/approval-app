@@ -271,7 +271,7 @@ function CategoryLegend({
     onCategoryClick: (category: CategoryType) => void;
     categoryCounts: Record<CategoryType, number>;
 }) {
-    const categories: CategoryType[] = ['PO', 'PR', 'RESV', 'OTHER'];
+    const categories: CategoryType[] = ['PO', 'PR', 'RESV', 'CLAIM', 'OTHER'];
 
     return (
         <div className="flex items-center justify-center gap-2 md:gap-3 shrink-0 border-t border-border pt-3 mt-3 flex-wrap">
@@ -344,7 +344,7 @@ export default function DashboardPage() {
 
     // Compute category counts for the legend
     const categoryCounts = useMemo(() => {
-        const counts: Record<CategoryType, number> = { PO: 0, PR: 0, RESV: 0, OTHER: 0 };
+        const counts: Record<CategoryType, number> = { PO: 0, PR: 0, RESV: 0, CLAIM: 0, OTHER: 0 };
         for (const item of barData) {
             const cat = item.category || 'OTHER';
             counts[cat] = (counts[cat] || 0) + Number(item['In Approving'] || 0);
@@ -647,8 +647,6 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Chevron */}
-                                            <ChevronRight className="absolute right-4 w-4 h-4 text-muted-foreground/30" />
                                         </div>
                                     ))}
                                 </div>

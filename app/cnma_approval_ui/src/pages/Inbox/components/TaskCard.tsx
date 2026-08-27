@@ -41,12 +41,38 @@ export const TaskCard = memo(function TaskCard({
     }, [queryClient, task.instanceId]);
 
 
-    const contextType =
-        task.businessContext?.type && task.businessContext.type !== 'UNKNOWN'
-            ? task.businessContext.type
-            : 'Workflow';
-    const contextId = task.businessContext?.documentId || task.instanceId;
+    const rawTypeText =
+        (task as any).DocumentTypeText ||
+        (task as any).doctyp_desc ||
+        (task as any).documentTypeDisplay;
+
+    let typeText = rawTypeText;
+    if (!typeText) {
+        const cat = String(
+            task.objectType ||
+            (task as any).DocCategory ||
+            (task as any).TechnicalWrkflwObjectType ||
+            task.businessContext?.type ||
+            ''
+        ).toUpperCase();
+
+        if (cat === 'PR' || cat === 'BUS2105') typeText = 'PR';
+        else if (cat === 'PO' || cat === 'BUS2012') typeText = 'PO';
+        else if (cat === 'RE' || cat === 'RESV' || cat === 'BUS2093' || cat === 'ZBUS2093') typeText = 'Reservation';
+        else if (cat === 'CLAIM' || cat === 'ZCLAIM') typeText = 'Claim';
+        else typeText = task.objectType || 'Task';
+    }
+
+    const contextType = typeText;
+    const contextId = task.businessContext?.documentId || task.instid || task.instanceId;
     const isHighPriority = task.priority === 'HIGH' || task.priority === 'VERY_HIGH';
+
+    const isCompleted = task.status === 'COMPLETED';
+    const actionPrefix = task.normalTask === false ? (isCompleted ? 'Reviewed' : 'Review') : (isCompleted ? 'Approved' : 'Approve');
+
+    const hasBorCodeTitle = task.title && (task.title.includes('BUS2') || task.title.includes('ZBUS2'));
+    const displayTitle = (task.title && !hasBorCodeTitle) ? task.title : `${actionPrefix} ${contextType} ${contextId}`;
+    const requesterName = task.requestorName || task.createdByName || (task as any).CreatedByUser || (task as any).CreatedByName || (task as any).createdByUser || (task as any).UserName || (task as any).UserFullName || '-';
 
     const { style, chips } = useTaskCardConfig(task);
     const colorKey = style.colorKey;
@@ -110,13 +136,10 @@ export const TaskCard = memo(function TaskCard({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        {/* Type + ID + Badges */}
+                        {/* ID + Badges */}
                         <div className="flex w-full items-start justify-between gap-2">
                             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                                <span className={cn('shrink-0 text-xs', typeStyle.text)}>
-                                    {contextType}
-                                </span>
-                                <span className={cn('truncate text-xs', typeStyle.text)}>
+                                <span className={cn('truncate text-xs font-medium', typeStyle.text)}>
                                     {contextId}
                                 </span>
                             </div>
@@ -129,7 +152,7 @@ export const TaskCard = memo(function TaskCard({
 
                         {/* Title */}
                         <h3 className="mt-1 line-clamp-2 text-left text-sm font-bold leading-snug text-foreground">
-                            {task.title}
+                            {displayTitle}
                         </h3>
                     </div>
                 </div>
@@ -160,7 +183,7 @@ export const TaskCard = memo(function TaskCard({
                 <div className="mt-3 flex w-full items-center justify-between gap-3 border-t border-border/60 pt-2.5 text-xs text-muted-foreground">
                     <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                         <User className="size-3.5 shrink-0 text-muted-foreground/70" />
-                        <span className="truncate">Requestor: {task.requestorName || task.createdByName || '-'}</span>
+                        <span className="truncate">Requestor: {requesterName}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
                         <Clock className="size-3.5 text-muted-foreground/70" />
@@ -209,13 +232,10 @@ export const TaskCard = memo(function TaskCard({
                 ],
             )}
         >
-            {/* ── Header: type + id + badges ── */}
+            {/* ── Header: id + badges ── */}
             <div className="flex w-full items-center justify-between gap-2">
                 <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                    <span className={cn('shrink-0 text-xs font-normal', typeStyle.text)}>
-                        {contextType}
-                    </span>
-                    <span className={cn('truncate text-xs', typeStyle.text)}>
+                    <span className={cn('truncate text-xs font-medium', typeStyle.text)}>
                         {contextId}
                     </span>
                 </div>
@@ -228,7 +248,7 @@ export const TaskCard = memo(function TaskCard({
 
             {/* ── Title ── */}
             <h3 className="mt-1.5 w-full line-clamp-2 text-left text-sm font-bold leading-snug text-foreground">
-                {task.title}
+                {displayTitle}
             </h3>
 
             {/* ── Business detail chips ── */}
@@ -257,7 +277,7 @@ export const TaskCard = memo(function TaskCard({
             <div className="mt-3 flex w-full items-center justify-between gap-3 border-t border-border/60 pt-2.5 text-xs text-muted-foreground">
                 <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                     <User className="size-3.5 shrink-0 text-muted-foreground/70" />
-                    <span className="truncate">Requestor: {task.requestorName || task.createdByName || '-'}</span>
+                    <span className="truncate">Requestor: {requesterName}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5">
                     <Clock className="size-3.5 text-muted-foreground/70" />

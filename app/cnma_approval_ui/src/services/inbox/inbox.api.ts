@@ -11,7 +11,6 @@ import type {
     TaggedUser,
     WorkflowApprovalTreeResponse,
     DashboardResponse,
-    ReferencePrDetailResponse,
 } from './inbox.types';
 
 
@@ -300,16 +299,5 @@ export const inboxApi = {
         disposition: 'inline' | 'attachment' = 'attachment'
     ): string => {
         return inboxApi.getAttachmentContentUrl(attachId, documentNumber, sapOrigin, disposition);
-    },
-
-
-    /**
-     * Get details for a Reference PR from SAP API_PURCHASEREQ_PROCESS_SRV.
-     */
-    getReferencePrDetail: async (prNumber: string): Promise<ReferencePrDetailResponse> => {
-        const { data } = await axiosInstance.get<ReferencePrDetailResponse>(
-            `${BASE_URL}/reference-pr/${encodeURIComponent(prNumber)}`
-        );
-        return data;
     },
 };

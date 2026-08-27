@@ -158,28 +158,25 @@ export function MassSelectionView({
 
             {/* Mass Action Footer */}
             <div className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-sm px-5 py-3">
-                <div className="flex items-center justify-end">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onMassDecision(DECISION_KEYS.REJECT, '', [...selectedIds])}
-                            disabled={isExecuting || selectedTasks.length === 0}
-                        >
-                            <XCircle className="size-3.5 mr-1.5" />
-                            Reject ({selectedTasks.length})
-                        </Button>
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => onMassDecision(DECISION_KEYS.APPROVE, '', [...selectedIds])}
-                            disabled={isExecuting || selectedTasks.length === 0}
-                            className="text-white"
-                        >
-                            <CheckCircle className="size-3.5 mr-1.5" />
-                            Approve ({selectedTasks.length})
-                        </Button>
-                    </div>
+                <div className="flex items-center justify-end gap-2">
+                    <Button
+                        variant="destructive"
+                        onClick={() => onMassDecision(DECISION_KEYS.REJECT, '', [...selectedIds])}
+                        disabled={isExecuting || selectedTasks.length === 0}
+                        className="h-11 sm:h-9 font-medium"
+                    >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Reject ({selectedTasks.length})
+                    </Button>
+                    <Button
+                        variant="success"
+                        onClick={() => onMassDecision(DECISION_KEYS.APPROVE, '', [...selectedIds])}
+                        disabled={isExecuting || selectedTasks.length === 0}
+                        className="h-11 sm:h-9 font-medium"
+                    >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Approve ({selectedTasks.length})
+                    </Button>
                 </div>
             </div>
         </div>

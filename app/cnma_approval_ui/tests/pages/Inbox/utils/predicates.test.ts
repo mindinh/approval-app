@@ -3,6 +3,8 @@ import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
     isInApprovingStatus,
+    isRejectedApprovalStatus,
+    isApprovedApprovalStatus,
     formatApprovalStatus,
     isSapUserMappingMissing,
     extractErrorMessage,
@@ -85,6 +87,34 @@ describe('isInApprovingStatus', () => {
 
     it('returns false for APPROVED', () => {
         expect(isInApprovingStatus('APPROVED')).toBe(false);
+    });
+});
+
+describe('isRejectedApprovalStatus', () => {
+    it.each(['REJECTED', 'REJECT', 'DECLINED', 'DECLINE', 'CANCELLED', 'CANCELED', 'RETURNED', 'RETURN'])(
+        'returns true for %s',
+        (status) => {
+            expect(isRejectedApprovalStatus(status)).toBe(true);
+        }
+    );
+
+    it('returns false for APPROVED or PENDING', () => {
+        expect(isRejectedApprovalStatus('APPROVED')).toBe(false);
+        expect(isRejectedApprovalStatus('PENDING')).toBe(false);
+    });
+});
+
+describe('isApprovedApprovalStatus', () => {
+    it.each(['APPROVED', 'APPROVE', 'ACCEPT', 'ACCEPTED', 'COMPLETED', 'COMPLETE'])(
+        'returns true for %s',
+        (status) => {
+            expect(isApprovedApprovalStatus(status)).toBe(true);
+        }
+    );
+
+    it('returns false for REJECTED or PENDING', () => {
+        expect(isApprovedApprovalStatus('REJECTED')).toBe(false);
+        expect(isApprovedApprovalStatus('PENDING')).toBe(false);
     });
 });
 
