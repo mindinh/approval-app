@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { Send, Loader2, MessageSquare, User, AtSign, X } from 'lucide-react';
+import { Send, Loader2, MessageSquare, User, AtSign, X, ArrowRight } from 'lucide-react';
 import { Button, Textarea, Badge } from '@cnma/react-ui';
 import type { TaskDetail, WorkflowApprovalComment, BusUser, TaggedUser } from '@/services/inbox/inbox.types';
 import { useAddComment } from '@/pages/Inbox/hooks/useInbox';
@@ -204,8 +204,20 @@ export function CommentsPanel({
                     {merged.map((comment) => (
                         <div
                             key={comment.id}
-                            className="rounded-lg border border-border/60 p-3 space-y-1.5 bg-muted/10 min-w-0 max-w-full overflow-hidden"
+                            className={cn(
+                                'relative rounded-lg border p-3 space-y-1.5 bg-muted/10 min-w-0 max-w-full overflow-hidden',
+                                comment.forward && 'border-warning/40 bg-warning/5 pl-4'
+                            )}
                         >
+                            {comment.forward && (
+                                <div className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground/90">
+                                    <ArrowRight className="size-3.5 shrink-0 text-warning" />
+                                    <span>
+                                        Forwarded to{' '}
+                                        <span className="font-semibold">{comment.toUser?.trim() || '(no recipient)'}</span>
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <User className="size-3 shrink-0" />
                                 <span className="font-medium text-foreground/80 truncate">{comment.createdBy}</span>
@@ -215,6 +227,12 @@ export function CommentsPanel({
                             <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground min-w-0">
                                 {renderFormattedCommentText(comment.text)}
                             </div>
+                            {comment.forward && (
+                                <span
+                                    aria-hidden
+                                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-warning/60 rounded-l-lg"
+                                />
+                            )}
                         </div>
                     ))}
                 </div>
