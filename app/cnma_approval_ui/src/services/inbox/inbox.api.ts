@@ -6,6 +6,8 @@ import type {
     TaskAttachment,
     DecisionRequest,
     ForwardRequest,
+    MassDecisionPayload,
+    MassDecisionResponse,
     UserSearchResult,
     BusUser,
     TaggedUser,
@@ -127,6 +129,19 @@ export const inboxApi = {
         const { data } = await axiosInstance.post<TaskActionResponse>(
             `${BASE_URL}/${encodeURIComponent(instanceId)}/decision`,
             request
+        );
+        return data;
+    },
+
+    /**
+     * Execute bulk decisions across multiple tasks in a single request.
+     */
+    executeMassDecision: async (
+        payload: MassDecisionPayload
+    ): Promise<MassDecisionResponse> => {
+        const { data } = await axiosInstance.post<MassDecisionResponse>(
+            `${BASE_URL}/mass-decision`,
+            payload
         );
         return data;
     },

@@ -26,6 +26,7 @@ export {
 // Mutation hooks
 export {
     useDecision,
+    useMassDecision,
     useForward,
     useAddComment,
 } from './inboxMutations';
@@ -33,6 +34,7 @@ export {
 // Invalidation policies
 export {
     invalidateAfterDecision,
+    invalidateAfterMassDecision,
     invalidateAfterForward,
     invalidateAfterComment,
     invalidateTaskList,

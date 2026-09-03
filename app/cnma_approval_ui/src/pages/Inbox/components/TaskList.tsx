@@ -9,7 +9,7 @@
  *
  * Uses infinite scroll (IntersectionObserver) instead of pagination.
  */
-import { useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Skeleton, Button, Tabs, TabsList, TabsTrigger, Checkbox, Input, Drawer, DrawerContent } from '@cnma/react-ui';
 import { TaskCard } from './TaskCard';
 import { MassActionBar } from './MassActionBar';
@@ -60,7 +60,7 @@ interface TaskListProps {
     selectedIds?: Set<string>;
     onSelectionModeChange?: (mode: boolean) => void;
     onSelectedIdsChange?: (ids: Set<string>) => void;
-    onMassDecision?: (decisionKey: string, comment: string, taskIds: string[]) => void;
+    onMassDecision?: (decisionKey: string, taskIds: string[]) => void;
     isExecutingMass?: boolean;
     showTaskActions?: boolean;
     hasMobileScopeBar?: boolean;
@@ -103,6 +103,8 @@ export function TaskList({
         onSelectedIdsChange,
     });
 
+    const [isSelectingAllPages, setIsSelectingAllPages] = useState(false);
+
     const filters = useTaskFilters(tasks, scope);
 
     const ptr = usePullToRefresh({
@@ -113,11 +115,24 @@ export function TaskList({
 
     const handleCardClick = useCallback((task: InboxTask) => {
         if (showTaskActions && selection.selectionMode) {
+            setIsSelectingAllPages(false);
             selection.toggleSelection(task.instanceId);
         } else {
             onSelectTask(task);
         }
     }, [showTaskActions, selection.selectionMode, selection.toggleSelection, onSelectTask]);
+
+    const handleExitSelectionMode = useCallback(() => {
+        setIsSelectingAllPages(false);
+        selection.exitSelectionMode();
+    }, [selection]);
+
+    // Reset multi-page select all if selection mode is exited
+    useEffect(() => {
+        if (!selection.selectionMode) {
+            setIsSelectingAllPages(false);
+        }
+    }, [selection.selectionMode]);
 
     // ─── Infinite scroll sentinel (Callback Ref for clean unmount/remount) ─
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -151,18 +166,61 @@ export function TaskList({
         [hasNextPage, isFetchingNextPage, onLoadMore]
     );
 
-    // ─── Auto-fetch next page when filtering and local results are empty ────────
+    // ─── Auto-fetch remaining pages when filtering ────────
     useEffect(() => {
         if (
             filters.hasLocalFilter &&
-            filters.filteredTasks.length === 0 &&
             hasNextPage &&
             !isFetchingNextPage &&
             onLoadMore
         ) {
             onLoadMore();
         }
-    }, [filters.hasLocalFilter, filters.filteredTasks.length, hasNextPage, isFetchingNextPage, onLoadMore]);
+    }, [filters.hasLocalFilter, hasNextPage, isFetchingNextPage, onLoadMore]);
+
+    // ─── Auto-fetch remaining pages when Select All across pages is active ──────
+    useEffect(() => {
+        if (!isSelectingAllPages) return;
+
+        // Keep updating selected IDs to include all newly loaded actionable filtered tasks
+        const allActionableIds = new Set(
+            filters.filteredTasks
+                .filter((t) => t.normalTask !== false)
+                .map((t) => t.instanceId)
+        );
+        selection.updateSelectedIds(allActionableIds);
+
+        if (hasNextPage && !isFetchingNextPage && onLoadMore) {
+            onLoadMore();
+        } else if (!hasNextPage) {
+            setIsSelectingAllPages(false);
+        }
+    }, [isSelectingAllPages, filters.filteredTasks, hasNextPage, isFetchingNextPage, onLoadMore, selection]);
+
+    const actionableFilteredTasks = useMemo(
+        () => filters.filteredTasks.filter((t) => t.normalTask !== false),
+        [filters.filteredTasks]
+    );
+
+    const handleToggleSelectAll = useCallback(() => {
+        const allFilteredSelected =
+            actionableFilteredTasks.length > 0 &&
+            actionableFilteredTasks.every((t) => selection.selectedIds.has(t.instanceId));
+
+        if (allFilteredSelected && (!hasNextPage || isSelectingAllPages)) {
+            setIsSelectingAllPages(false);
+            selection.updateSelectedIds(new Set<string>());
+        } else {
+            const allActionableIds = new Set(actionableFilteredTasks.map((t) => t.instanceId));
+            selection.updateSelectedIds(allActionableIds);
+            if (hasNextPage) {
+                setIsSelectingAllPages(true);
+                if (!isFetchingNextPage && onLoadMore) {
+                    onLoadMore();
+                }
+            }
+        }
+    }, [actionableFilteredTasks, selection, hasNextPage, isSelectingAllPages, isFetchingNextPage, onLoadMore]);
 
     // ─── Auto-select first matching task when filters are applied (Desktop master-detail only) ─
     useEffect(() => {
@@ -183,9 +241,11 @@ export function TaskList({
     const { t } = useTranslation();
 
     const selectionSummary = showTaskActions && selection.selectionMode
-        ? t('inbox.selectedCount', { count: selection.selectedIds.size, defaultValue: `${selection.selectedIds.size} selected` })
+        ? isSelectingAllPages && isFetchingNextPage
+            ? t('inbox.selectingAllTasks', { count: selection.selectedIds.size, defaultValue: `Selecting all... (${selection.selectedIds.size} loaded)` })
+            : t('inbox.selectedCount', { count: selection.selectedIds.size, defaultValue: `${selection.selectedIds.size} selected` })
         : filters.hasLocalFilter
-            ? t('inbox.filteredSummary', { count: filters.filteredTasks.length, total: tasks.length, defaultValue: `Showing ${filters.filteredTasks.length} of ${tasks.length} on this page` })
+            ? t('inbox.filteredSummary', { count: filters.filteredTasks.length, total: tasks.length, defaultValue: `Showing ${filters.filteredTasks.length} of ${tasks.length} tasks` })
             : t('inbox.loadedSummary', { loaded: tasks.length, total: totalItems, defaultValue: `${tasks.length} of ${totalItems} tasks` });
 
     // ─── Loading skeleton ──────────────────────────────────
@@ -206,7 +266,7 @@ export function TaskList({
                     <DesktopHeader
                         totalItems={totalItems}
                         selectionMode={selection.selectionMode}
-                        exitSelectionMode={selection.exitSelectionMode}
+                        exitSelectionMode={handleExitSelectionMode}
                         enterSelectionMode={() => selection.setSelectionMode(true)}
                         showTaskActions={showTaskActions}
                         onRefresh={onRefresh}
@@ -262,7 +322,7 @@ export function TaskList({
                     mobileActiveFilterCount={filters.mobileActiveFilterCount}
                     onOpenFilters={() => filters.setMobileFiltersOpen(true)}
                     selectionMode={selection.selectionMode}
-                    exitSelectionMode={selection.exitSelectionMode}
+                    exitSelectionMode={handleExitSelectionMode}
                     enterSelectionMode={() => selection.setSelectionMode(true)}
                     showTaskActions={showTaskActions}
                 />
@@ -273,7 +333,7 @@ export function TaskList({
                 <MassActionBar
                     selectedCount={selection.selectedIds.size}
                     totalCount={filters.filteredTasks.length}
-                    onToggleSelectAll={() => selection.toggleSelectAll(filters.filteredTasks)}
+                    onToggleSelectAll={handleToggleSelectAll}
                     onMassDecision={onMassDecision}
                     selectedIds={selection.selectedIds}
                     isExecuting={isExecutingMass}
@@ -342,10 +402,20 @@ export function TaskList({
                             <div key={task.instanceId} className="flex items-start gap-2">
                                 {showTaskActions && selection.selectionMode && (
                                     <div className={cn('shrink-0 pl-1', isMobile ? 'pt-4' : 'pt-3')}>
-                                        <Checkbox
-                                            checked={selection.selectedIds.has(task.instanceId)}
-                                            onCheckedChange={() => selection.toggleSelection(task.instanceId)}
-                                        />
+                                        {task.normalTask !== false ? (
+                                            <Checkbox
+                                                checked={selection.selectedIds.has(task.instanceId)}
+                                                onCheckedChange={() => {
+                                                    setIsSelectingAllPages(false);
+                                                    selection.toggleSelection(task.instanceId);
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="size-4 rounded border border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center cursor-not-allowed opacity-40"
+                                                title={t('task.ccNotActionable', 'Review-only / CC tasks cannot be approved or rejected')}
+                                            />
+                                        )}
                                     </div>
                                 )}
                                 <div className="min-w-0 flex-1">
@@ -381,7 +451,7 @@ export function TaskList({
                 <MassActionBar
                     selectedCount={selection.selectedIds.size}
                     totalCount={filters.filteredTasks.length}
-                    onToggleSelectAll={() => selection.toggleSelectAll(filters.filteredTasks)}
+                    onToggleSelectAll={handleToggleSelectAll}
                     onMassDecision={onMassDecision}
                     selectedIds={selection.selectedIds}
                     isExecuting={isExecutingMass}

@@ -51,16 +51,12 @@ export function CommentsPanel({
     instanceId,
     onCommentAdded,
     context,
-    workflowComments,
-    isLoadingWorkflowComments,
     allowAddComment = true,
 }: {
     detail: TaskDetail;
     instanceId?: string;
     onCommentAdded?: () => void;
     context?: { sapOrigin?: string; documentId?: string; businessObjectType?: string };
-    workflowComments?: WorkflowApprovalComment[];
-    isLoadingWorkflowComments?: boolean;
     allowAddComment?: boolean;
 }) {
     const { t } = useTranslation();
@@ -73,50 +69,18 @@ export function CommentsPanel({
     const commentListRef = useRef<HTMLDivElement>(null);
     const addCommentMutation = useAddComment();
 
-    const merged = useMemo(() => {
-        const list: Array<{
-            id: string;
-            text: string;
-            createdBy: string;
-            createdAt: string;
-            forward?: boolean;
-            toUser?: string;
-        }> = [];
-
-        for (const wc of workflowComments || []) {
-            const text = (wc.noteText || (wc as any).text || '').trim();
-            if (!text) continue;
-            let dateStr = wc.postedOn || '';
-            if (wc.postedOn && typeof wc.postedTime === 'string' && wc.postedTime.trim()) {
-                let t = wc.postedTime.trim();
-                if (t.startsWith('PT')) {
-                    t = t.replace('PT', '').replace('H', ':').replace('M', ':').replace('S', '');
-                }
-                dateStr += `T${t.split('.')[0]}`;
-            }
-            list.push({
-                id: `wc-${wc.docNum}-${dateStr}-${list.length}`,
-                text,
-                createdBy: wc.userComment || (wc as any).author || 'System',
-                createdAt: dateStr,
-            });
-        }
-
-        for (const tc of detail.comments || []) {
-            const text = (tc.text || '').trim();
-            if (!text) continue;
-            list.push({
-                id: tc.id || `tc-${list.length}`,
+    const comments = useMemo(() => {
+        return (detail.comments || [])
+            .filter((tc) => Boolean((tc.text || '').trim()))
+            .map((tc, idx) => ({
+                id: tc.id || `tc-${idx}`,
                 text: tc.text,
                 createdBy: tc.createdByName || tc.createdBy || 'Unknown',
                 createdAt: tc.createdAt || '',
                 forward: tc.forward === true,
                 toUser: tc.toUser || '',
-            });
-        }
-
-        return list;
-    }, [detail.comments, workflowComments]);
+            }));
+    }, [detail.comments]);
 
     // Auto-scroll to bottom when comments list updates (e.g. user adds comment or detail refetches)
     useEffect(() => {
@@ -131,7 +95,7 @@ export function CommentsPanel({
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [merged]);
+    }, [comments]);
 
     const handleCommentTextChange = (text: string) => {
         setCommentText(text);
@@ -207,16 +171,13 @@ export function CommentsPanel({
 
             <div className="p-5 flex flex-col space-y-6">
                 {/* Comment list */}
-                {isLoadingWorkflowComments && (
-                    <div className="py-4 text-center text-sm text-muted-foreground">Loading comments...</div>
-                )}
-                {merged.length === 0 && !isLoadingWorkflowComments && (
+                {comments.length === 0 && (
                     <div className="py-8 text-center text-sm text-muted-foreground/60">
                         No comments yet.
                     </div>
                 )}
                 <div ref={commentListRef} className="space-y-3 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
-                    {merged.map((comment) => (
+                    {comments.map((comment) => (
                         <div
                             key={comment.id}
                             className={cn(

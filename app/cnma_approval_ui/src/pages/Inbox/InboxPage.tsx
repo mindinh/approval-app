@@ -3,13 +3,14 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
-import { TaskList, TaskDetailView, MassSelectionView } from '@/pages/Inbox/components';
+import { TaskList, TaskDetailView, MassSelectionView, MassDecisionDialog } from '@/pages/Inbox/components';
 import { useQueryClient } from '@tanstack/react-query';
 import {
     useInfiniteTasks,
     useInfiniteApprovedTasks,
     useTaskDetail,
     useDecision,
+    useMassDecision,
     useForward,
     invalidateTaskList,
 } from '@/pages/Inbox/hooks/useInbox';
@@ -33,6 +34,11 @@ export default function InboxPage() {
 
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [massDecisionConfig, setMassDecisionConfig] = useState<{
+        isOpen: boolean;
+        decisionKey: string;
+        tasks: InboxTask[];
+    } | null>(null);
     const isMobile = useIsMobile();
     const { setOpenMobile } = useSidebar();
 
@@ -81,6 +87,7 @@ export default function InboxPage() {
 
 
     const decisionMutation = useDecision();
+    const massDecisionMutation = useMassDecision();
     const forwardMutation = useForward();
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
@@ -241,25 +248,53 @@ export default function InboxPage() {
     );
 
 
-    const handleMassDecision = useCallback(
-        (decisionKey: string, comment: string, taskIds: string[]) => {
-            const executeNext = (index: number) => {
-                if (index >= taskIds.length) {
-                    setSelectionMode(false);
-                    setSelectedIds(new Set());
-                    return;
-                }
-                decisionMutation.mutate(
-                    { instanceId: taskIds[index], request: { decisionKey, comment, type: 'APPR' } },
-                    {
-                        onSuccess: () => executeNext(index + 1),
-                        onError: () => executeNext(index + 1),
-                    }
-                );
-            };
-            executeNext(0);
+    const handleOpenMassDecision = useCallback(
+        (decisionKey: string, taskIds: string[]) => {
+            const targetTasks = tasks.filter(
+                (t) => taskIds.includes(t.instanceId) && t.normalTask !== false
+            );
+            if (targetTasks.length === 0) {
+                toast.error(t('inbox.ccTasksCannotDecide', 'Review-only (CC) tasks cannot be approved or rejected.'));
+                return;
+            }
+            setMassDecisionConfig({
+                isOpen: true,
+                decisionKey,
+                tasks: targetTasks,
+            });
         },
-        [decisionMutation]
+        [tasks, t]
+    );
+
+    const handleConfirmMassDecision = useCallback(
+        (decisionKey: string, comment: string, selectedTasks: InboxTask[]) => {
+            // 1. Immediately close modal and reset selection — completely non-blocking!
+            setMassDecisionConfig(null);
+            setSelectionMode(false);
+            setSelectedIds(new Set());
+
+            // 2. Map items with full context (documentId, businessObjectType, sapOrigin)
+            const items = selectedTasks.map((t) => {
+                const docId = t.businessContext?.documentId || (t as any).documentNumber || t.instanceId;
+                const boType = t.businessContext?.type || (t as any).businessObjectType || (t as any).docCategory || '';
+                const origin = t.sapOrigin || 'LOCAL';
+                return {
+                    instanceId: t.instanceId,
+                    documentId: docId,
+                    documentNumber: docId,
+                    businessObjectType: boType,
+                    sapOrigin: origin,
+                };
+            });
+
+            // 3. Fire background mutation with Sonner toast orchestration
+            massDecisionMutation.mutate({
+                decisionKey,
+                comment,
+                items,
+            });
+        },
+        [massDecisionMutation]
     );
 
     const handleToggleSelection = useCallback((taskId: string) => {
@@ -273,6 +308,19 @@ export default function InboxPage() {
             return next;
         });
     }, []);
+
+    const handleToggleSelectAll = useCallback(() => {
+        const actionableTasks = tasks.filter((t) => t.normalTask !== false);
+        setSelectedIds((prev) => {
+            const allActionableSelected =
+                actionableTasks.length > 0 &&
+                actionableTasks.every((t) => prev.has(t.instanceId));
+            if (allActionableSelected) {
+                return new Set<string>();
+            }
+            return new Set(actionableTasks.map((t) => t.instanceId));
+        });
+    }, [tasks]);
 
     const isRefreshing = activeTasksQuery.isRefetching || activeTasksQuery.isFetching || (isFetchingDetail && !isLoadingDetail);
 
@@ -361,8 +409,8 @@ export default function InboxPage() {
                                     selectedIds={selectedIds}
                                     onSelectionModeChange={setSelectionMode}
                                     onSelectedIdsChange={setSelectedIds}
-                                    onMassDecision={showTaskActions && isMyScope ? handleMassDecision : undefined}
-                                    isExecutingMass={showTaskActions && isMyScope && decisionMutation.isPending}
+                                    onMassDecision={showTaskActions && isMyScope ? handleOpenMassDecision : undefined}
+                                    isExecutingMass={showTaskActions && isMyScope && massDecisionMutation.isPending}
                                     showTaskActions={showTaskActions && isMyScope}
                                     hasMobileScopeBar={false}
                                 />
@@ -370,6 +418,16 @@ export default function InboxPage() {
                         )}
                     </AnimatePresence>
                 </div>
+                {massDecisionConfig && (
+                    <MassDecisionDialog
+                        isOpen={massDecisionConfig.isOpen}
+                        onClose={() => setMassDecisionConfig(null)}
+                        onConfirm={handleConfirmMassDecision}
+                        decisionKey={massDecisionConfig.decisionKey}
+                        tasks={massDecisionConfig.tasks}
+                        isExecuting={massDecisionMutation.isPending}
+                    />
+                )}
             </div>
         );
     }
@@ -394,6 +452,8 @@ export default function InboxPage() {
                     selectedIds={selectedIds}
                     onSelectionModeChange={setSelectionMode}
                     onSelectedIdsChange={setSelectedIds}
+                    onMassDecision={showTaskActions && isMyScope ? handleOpenMassDecision : undefined}
+                    isExecutingMass={showTaskActions && isMyScope && massDecisionMutation.isPending}
                     showTaskActions={showTaskActions && isMyScope}
                     scope={scope}
                     onScopeChange={(nextScope) => {
@@ -407,8 +467,9 @@ export default function InboxPage() {
                         tasks={tasks}
                         selectedIds={selectedIds}
                         onToggleSelection={handleToggleSelection}
-                        onMassDecision={handleMassDecision}
-                        isExecuting={decisionMutation.isPending}
+                        onToggleSelectAll={handleToggleSelectAll}
+                        onMassDecision={handleOpenMassDecision}
+                        isExecuting={massDecisionMutation.isPending}
                     />
                 ) : (
                     <TaskDetailView
@@ -429,6 +490,16 @@ export default function InboxPage() {
 
                 )}
             </main>
+            {massDecisionConfig && (
+                <MassDecisionDialog
+                    isOpen={massDecisionConfig.isOpen}
+                    onClose={() => setMassDecisionConfig(null)}
+                    onConfirm={handleConfirmMassDecision}
+                    decisionKey={massDecisionConfig.decisionKey}
+                    tasks={massDecisionConfig.tasks}
+                    isExecuting={massDecisionMutation.isPending}
+                />
+            )}
         </div>
     );
 }

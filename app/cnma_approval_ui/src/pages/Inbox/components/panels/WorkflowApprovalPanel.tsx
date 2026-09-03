@@ -115,7 +115,7 @@ export function WorkflowApprovalPanel({
                                                 <CheckCircle2 className="size-4" />
                                             </div>
                                         ) : isCurrent ? (
-                                            <div className="flex items-center justify-center size-7 rounded-full bg-warning-bg text-warning ring-4 ring-card font-medium text-xs">
+                                            <div className="flex items-center justify-center size-7 rounded-full bg-warning/15 text-warning ring-4 ring-card font-medium text-xs">
                                                 <Loader2 className="size-3.5 animate-spin" />
                                             </div>
                                         ) : (

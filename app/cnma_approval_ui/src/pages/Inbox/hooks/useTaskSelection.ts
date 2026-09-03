@@ -67,7 +67,8 @@ export function useTaskSelection(options: UseTaskSelectionOptions = {}) {
     const toggleSelectAll = useCallback(
         (tasks: InboxTask[]) => {
             const prev = selectedIdsRef.current;
-            if (prev.size === tasks.length) {
+            const allSelected = tasks.length > 0 && tasks.every((t) => prev.has(t.instanceId));
+            if (allSelected) {
                 updateSelectedIds(new Set<string>());
             } else {
                 updateSelectedIds(new Set(tasks.map((t) => t.instanceId)));
@@ -85,6 +86,7 @@ export function useTaskSelection(options: UseTaskSelectionOptions = {}) {
         selectionMode,
         selectedIds,
         setSelectionMode,
+        updateSelectedIds,
         toggleSelection,
         toggleSelectAll,
         exitSelectionMode,

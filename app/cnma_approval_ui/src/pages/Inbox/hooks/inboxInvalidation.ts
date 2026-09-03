@@ -28,6 +28,24 @@ export function invalidateAfterDecision(
     }
 }
 
+// ─── Policy: After mass decision (approve / reject) ──────
+export function invalidateAfterMassDecision(
+    queryClient: QueryClient,
+    instanceIds: string[] = []
+) {
+    queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
+    for (const id of instanceIds) {
+        const cleanId = normId(id);
+        queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
+        queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
+        if (id !== cleanId) {
+            queryClient.invalidateQueries({ queryKey: ['inbox', 'task', id] });
+            queryClient.invalidateQueries({ queryKey: ['inbox', 'workflow', id] });
+        }
+    }
+}
+
 // ─── Policy: After forwarding a task ───────────────────────
 // Pending list changes; approved list is not affected.
 export function invalidateAfterForward(

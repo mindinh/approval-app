@@ -1,5 +1,4 @@
 import { LayoutDashboard, List, GitBranch, Paperclip, MessageSquare } from 'lucide-react';
-import type { WorkflowApprovalComment } from '@/services/inbox/inbox.types';
 
 export { OverviewPanel } from './OverviewPanel';
 export { DetailsPanel } from './DetailsPanel';
@@ -12,14 +11,12 @@ export { StatusHeaderBadges } from './StatusHeaderBadges';
 export function makeTabDefinitions({
     detail,
     workflowCount = 0,
-    workflowComments,
     detailsCount,
     attachmentCount,
     t,
 }: {
     detail: any;
     workflowCount?: number;
-    workflowComments?: WorkflowApprovalComment[];
     detailsCount?: number;
     attachmentCount?: number;
     t: any;
@@ -38,28 +35,7 @@ export function makeTabDefinitions({
         }))
         : [];
 
-    const seenComments = new Set<string>();
-    let mergedCommentsCount = 0;
-
-    for (const c of commentsList) {
-        const text = String(c.text || '').trim().toLowerCase();
-        const author = String(c.createdBy || '').trim().toLowerCase();
-        const key = `${text}|${author}`;
-        if (text && !seenComments.has(key)) {
-            seenComments.add(key);
-            mergedCommentsCount++;
-        }
-    }
-
-    for (const wc of workflowComments || []) {
-        const text = String(wc.noteText || (wc as any).text || '').trim().toLowerCase();
-        const author = String(wc.userComment || (wc as any).author || '').trim().toLowerCase();
-        const key = `${text}|${author}`;
-        if (text && !seenComments.has(key)) {
-            seenComments.add(key);
-            mergedCommentsCount++;
-        }
-    }
+    const mergedCommentsCount = commentsList.filter((c: any) => Boolean(String(c.text || '').trim())).length;
 
     const rawAttachments = bo?._Attachment || detail?.attachments || [];
 

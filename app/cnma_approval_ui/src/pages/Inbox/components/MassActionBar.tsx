@@ -13,7 +13,7 @@ interface MassActionBarProps {
     selectedCount: number;
     totalCount: number;
     onToggleSelectAll: () => void;
-    onMassDecision?: (decisionKey: string, comment: string, taskIds: string[]) => void;
+    onMassDecision?: (decisionKey: string, taskIds: string[]) => void;
     selectedIds: Set<string>;
     isExecuting: boolean;
     isMobile: boolean;
@@ -57,7 +57,7 @@ export function MassActionBar({
                             <Button
                                 variant="destructive"
                                 onClick={() =>
-                                    onMassDecision(DECISION_KEYS.REJECT, '', [...selectedIds])
+                                    onMassDecision(DECISION_KEYS.REJECT, [...selectedIds])
                                 }
                                 disabled={isExecuting}
                                 className="h-11 sm:h-9 font-medium"
@@ -68,7 +68,7 @@ export function MassActionBar({
                             <Button
                                 variant="success"
                                 onClick={() =>
-                                    onMassDecision(DECISION_KEYS.APPROVE, '', [...selectedIds])
+                                    onMassDecision(DECISION_KEYS.APPROVE, [...selectedIds])
                                 }
                                 disabled={isExecuting}
                                 className="h-11 sm:h-9 font-medium"

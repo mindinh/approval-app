@@ -111,13 +111,12 @@ export function TaskDetailView({
                 ? makeTabDefinitions({
                     detail: viewData,
                     workflowCount: workflowData?.steps?.length || 0,
-                    workflowComments: workflowData?.comments,
                     detailsCount,
                     attachmentCount: prAttachmentCount,
                     t,
                 }) || []
                 : [],
-        [viewData, workflowData?.steps?.length, workflowData?.comments, detailsCount, prAttachmentCount, t]
+        [viewData, workflowData?.steps?.length, detailsCount, prAttachmentCount, t]
     );
 
     const { showError } = useErrorModal();
@@ -232,8 +231,6 @@ export function TaskDetailView({
                             documentId: viewData?.task?.businessContext?.documentId,
                             businessObjectType: viewData?.task?.businessContext?.type,
                         }}
-                        workflowComments={workflowData?.comments}
-                        isLoadingWorkflowComments={false}
                     />
                 );
             case 'activity':
@@ -390,8 +387,6 @@ export function TaskDetailView({
                                             documentId: viewData?.task?.businessContext?.documentId,
                                             businessObjectType: viewData?.task?.businessContext?.type,
                                         }}
-                                        workflowComments={workflowData?.comments}
-                                        isLoadingWorkflowComments={false}
                                     />
                                 )}
                             </TabsContent>

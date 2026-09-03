@@ -480,3 +480,36 @@ export interface BusUser {
     FullName: string;
     EmailAddress: string;
 }
+
+export interface MassDecisionItemPayload {
+    instanceId: string;
+    documentId?: string;
+    documentNumber?: string;
+    businessObjectType?: string;
+    sapOrigin?: string;
+}
+
+export interface MassDecisionPayload {
+    decisionKey: string;
+    sapDecisionKey?: string;
+    comment?: string;
+    items: MassDecisionItemPayload[];
+}
+
+export interface MassDecisionItemResult {
+    instanceId: string;
+    documentNumber?: string;
+    documentId?: string;
+    status: 'SUCCESS' | 'FAILED' | 'PARTIAL_SUCCESS';
+    message?: string;
+    error?: string;
+}
+
+export interface MassDecisionResponse {
+    success: boolean;
+    total: number;
+    succeededCount: number;
+    failedCount: number;
+    results: MassDecisionItemResult[];
+}
+

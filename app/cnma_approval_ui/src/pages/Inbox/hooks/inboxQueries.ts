@@ -104,7 +104,7 @@ export function useApprovedTasks(options?: { enabled?: boolean; top?: number; sk
 }
 
 // ─── useInfiniteTasks (infinite scroll) ────────────────────
-const INFINITE_PAGE_SIZE = 10;
+const INFINITE_PAGE_SIZE = 50;
 
 export function useInfiniteTasks(options?: { enabled?: boolean }) {
     const query = useInfiniteQuery({

@@ -103,7 +103,24 @@ export default function App() {
                         } />
                     </Route>
                 </Routes>
-                <Toaster position="top-left" closeButton />
+                <Toaster
+                    position="top-left"
+                    closeButton
+                    richColors
+                    expand={true}
+                    gap={8}
+                    toastOptions={{
+                        style: {
+                            border: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            borderTop: 'none',
+                            borderBottom: 'none',
+                            outline: 'none',
+                            boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.1)',
+                        },
+                    }}
+                />
             </div>
         </HashRouter>
     );

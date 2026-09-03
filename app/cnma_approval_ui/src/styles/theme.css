@@ -384,63 +384,113 @@
 
 /* ─── Sonner Toast Overrides ────────────────────────────── */
 
+/* Override Sonner's internal CSS variables to eliminate colored border accents */
+:root,
+[data-sonner-toaster],
+[data-sonner-toaster][data-sonner-theme='light'],
+[data-sonner-toaster][data-sonner-theme='dark'] {
+   --normal-border: var(--border, #d8e0ea) !important;
+   --success-border: var(--border, #d8e0ea) !important;
+   --error-border: var(--border, #d8e0ea) !important;
+   --warning-border: var(--border, #d8e0ea) !important;
+   --info-border: var(--border, #d8e0ea) !important;
+}
+
 /* Toast container positioning & click-through behavior */
 [data-sonner-toaster] {
    pointer-events: none !important;
    z-index: 9999 !important;
 }
 
-[data-sonner-toast] {
+[data-sonner-toast],
+[data-sonner-toaster] [data-sonner-toast],
+[data-sonner-toast][data-styled='true'],
+[data-rich-colors='true'][data-sonner-toast],
+[data-sonner-toast][data-type],
+[data-sonner-toast][data-type='success'],
+[data-sonner-toast][data-type='error'],
+[data-sonner-toast][data-type='info'],
+[data-sonner-toast][data-type='warning'] {
    pointer-events: auto !important;
    position: relative !important;
-   overflow: visible !important;
+   overflow: hidden !important;
    touch-action: pan-y !important;
+   border: none !important;
+   border-color: transparent !important;
+   border-left: none !important;
+   border-left-color: transparent !important;
+   border-right: none !important;
+   border-top: none !important;
+   border-bottom: none !important;
+   border-inline-start: none !important;
+   border-inline-start-color: transparent !important;
+   border-radius: 8px !important;
+   padding: 12px 36px 12px 14px !important;
+   box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1), 0 2px 4px 0 rgba(0, 0, 0, 0.05) !important;
+   outline: none !important;
 }
 
-/* Ensure toasts are wide enough to read on desktop */
+/* Remove any left accent pseudo-elements or shadows */
+[data-sonner-toast]::before,
+[data-sonner-toast]::after {
+   display: none !important;
+}
+
+/* Ensure toasts have a comfortable width */
 [data-sonner-toaster] [data-sonner-toast] {
-   min-width: 320px;
+   min-width: 300px;
 }
 
-/* High contrast, prominent close button inside toast */
+/* Rounded, subtle close button inside toast */
 [data-sonner-toast] [data-close-button] {
    position: absolute !important;
-   top: 10px !important;
-   right: 10px !important;
+   top: 50% !important;
+   right: 8px !important;
    left: auto !important;
-   transform: none !important;
-   width: 32px !important;
-   height: 32px !important;
-   min-width: 32px !important;
-   min-height: 32px !important;
+   transform: translateY(-50%) !important;
+   width: 24px !important;
+   height: 24px !important;
+   min-width: 24px !important;
+   min-height: 24px !important;
    display: flex !important;
    align-items: center !important;
    justify-content: center !important;
    border-radius: 9999px !important;
-   background: var(--muted, #eef2f7) !important;
-   color: var(--foreground, #32363a) !important;
-   border: 1px solid var(--border, #d8e0ea) !important;
-   opacity: 1 !important;
+   background: transparent !important;
+   color: var(--muted-foreground, #64748b) !important;
+   border: none !important;
+   box-shadow: none !important;
+   opacity: 0.6 !important;
    pointer-events: auto !important;
    z-index: 20 !important;
    cursor: pointer !important;
-   transition: background-color 0.15s ease, transform 0.15s ease !important;
+   transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
 }
 
 [data-sonner-toast] [data-close-button]:hover,
 [data-sonner-toast] [data-close-button]:active {
-   background: var(--accent, #e8eff7) !important;
-   transform: scale(1.08) !important;
+   background: rgba(0, 0, 0, 0.08) !important;
+   color: var(--foreground, #0f172a) !important;
+   opacity: 1 !important;
+   transform: translateY(-50%) !important;
+}
+
+.dark [data-sonner-toast] [data-close-button]:hover,
+.dark [data-sonner-toast] [data-close-button]:active {
+   background: rgba(255, 255, 255, 0.12) !important;
+   color: var(--foreground, #f8fafc) !important;
+}
+
+/* Hide close button on behind/stacked toasts when not front */
+[data-sonner-toast][data-front='false'] [data-close-button],
+[data-sonner-toast][data-expanded='false'][data-front='false'] [data-close-button] {
+   opacity: 0 !important;
+   pointer-events: none !important;
 }
 
 [data-sonner-toast] [data-close-button] svg {
    width: 14px !important;
    height: 14px !important;
-}
-
-/* Reserve space on right side so text content never overlaps close button */
-[data-sonner-toast] {
-   padding-right: 48px !important;
 }
 
 /* Toast typography & spacing */
@@ -453,7 +503,7 @@
 }
 
 [data-sonner-toast] [data-title] {
-   font-weight: 600 !important;
+   font-weight: 500 !important;
    font-size: 14px !important;
    line-height: 1.3 !important;
    color: var(--foreground) !important;
@@ -469,7 +519,7 @@
    overflow-wrap: anywhere !important;
 }
 
-/* Mobile: spacious top-anchored toast notifications with swipe support */
+/* Mobile: clean top-anchored toast notifications with swipe support */
 @media (max-width: 640px) {
    [data-sonner-toaster] {
       position: fixed !important;
@@ -486,26 +536,58 @@
       width: 100% !important;
       max-width: 100% !important;
       min-width: 0 !important;
-      padding: 14px 16px !important;
-      padding-right: 52px !important;
+      padding: 12px 36px 12px 14px !important;
       font-size: 14px !important;
       line-height: 1.4 !important;
-      border-radius: 12px !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -4px rgba(0, 0, 0, 0.06) !important;
    }
 
-   /* 36px touch target for close button on mobile */
    [data-sonner-toast] [data-close-button] {
-      top: 10px !important;
-      right: 10px !important;
-      width: 36px !important;
-      height: 36px !important;
-      min-width: 36px !important;
-      min-height: 36px !important;
+      top: 50% !important;
+      right: 8px !important;
+      width: 24px !important;
+      height: 24px !important;
+      min-width: 24px !important;
+      min-height: 24px !important;
+      transform: translateY(-50%) !important;
    }
 }
 
-/* Custom Animations */
+/* ─── Global Animation Keyframes & Utility Classes ────────── */
+@keyframes spin {
+   from {
+      transform: rotate(0deg);
+   }
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+@keyframes ping {
+   75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+   }
+}
+
+@keyframes pulse {
+   50% {
+      opacity: 0.5;
+   }
+}
+
+@keyframes bounce {
+   0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+   }
+   50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+   }
+}
+
 @keyframes shimmer {
    0% {
       background-position: 200% center;
@@ -514,6 +596,22 @@
    100% {
       background-position: -200% center;
    }
+}
+
+.animate-spin {
+   animation: spin 1s linear infinite !important;
+}
+
+.animate-ping {
+   animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite !important;
+}
+
+.animate-pulse {
+   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+.animate-bounce {
+   animation: bounce 1s infinite !important;
 }
 
 /* Custom Layout Utilities */
