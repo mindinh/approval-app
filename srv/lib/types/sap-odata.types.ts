@@ -51,3 +51,40 @@ export interface DashboardSummaryResponse {
     total: number;
 }
 
+/** Mass Decision Item Context */
+export interface MassDecisionItemContext {
+    instanceId: string;
+    documentId?: string;
+    documentNumber?: string;
+    businessObjectType?: string;
+    objectType?: string;
+    type?: string;
+    sapOrigin?: string;
+}
+
+/** Mass Decision Request Body */
+export interface MassDecisionRequest {
+    decisionKey: string;
+    sapDecisionKey?: string;
+    comment?: string;
+    items: MassDecisionItemContext[];
+}
+
+/** Per-Item Mass Decision Result */
+export interface MassDecisionItemResult {
+    instanceId: string;
+    documentNumber?: string;
+    documentId?: string;
+    status: 'SUCCESS' | 'FAILED' | 'PARTIAL_SUCCESS';
+    message?: string;
+    error?: string;
+}
+
+/** Consolidated Mass Decision Response */
+export interface MassDecisionResponse {
+    total: number;
+    succeededCount: number;
+    failedCount: number;
+    results: MassDecisionItemResult[];
+}
+

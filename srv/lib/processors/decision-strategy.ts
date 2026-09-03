@@ -84,6 +84,16 @@ export class TaskprocessingDecisionStrategy implements DecisionStrategy {
 
         const decisionCode: 'A' | 'R' = this.detectDecisionCode(ctx);
 
+        // Sequential API call: 1. Call standard TASKPROCESSING /Decision first
+        const adapterResult = await deps.taskAdapter.executeDecision(
+            ctx.instanceId,
+            ctx.sapDecisionKey,
+            ctx.comment,
+            ctx.sapUser,
+            ctx.userJwt,
+        );
+
+        // 2. Only after standard TASKPROCESSING succeeds, call custom OData comment as audit log
         if (ctx.documentId) {
             try {
                 const defaultText = decisionCode === 'R'
@@ -103,14 +113,6 @@ export class TaskprocessingDecisionStrategy implements DecisionStrategy {
         } else {
             deps.logger.warn(`Audit Warning: Decision executed but could not push OData comment because documentId is unknown for task ${ctx.instanceId}`);
         }
-
-        const adapterResult = await deps.taskAdapter.executeDecision(
-            ctx.instanceId,
-            ctx.sapDecisionKey,
-            ctx.comment,
-            ctx.sapUser,
-            ctx.userJwt,
-        );
 
         return {
             status: 'SUCCESS',

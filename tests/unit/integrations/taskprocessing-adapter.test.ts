@@ -66,4 +66,40 @@ describe('TaskprocessingAdapter', () => {
             );
         });
     });
+
+    describe('executeDecision', () => {
+        it('should call sapClient.post with formatted Decision URL and payload', async () => {
+            mockSapClient.post.mockResolvedValue({ d: { Decision: 'Success' } });
+
+            const res = await adapter.executeDecision('12345', '0001', 'Approved', 'MOCK_USER', 'mock-jwt');
+
+            expect(res).toEqual({ d: { Decision: 'Success' } });
+            expect(mockSapClient.post).toHaveBeenCalledWith(
+                '/sap/opu/odata/IWPGW/TASKPROCESSING;v=2',
+                "/Decision?InstanceID='000000012345'&DecisionKey='0001'",
+                { Comments: 'Approved' },
+                {},
+                'MOCK_USER',
+                'mock-jwt'
+            );
+        });
+    });
+
+    describe('forwardTask', () => {
+        it('should call sapClient.post with formatted Forward URL', async () => {
+            mockSapClient.post.mockResolvedValue({ d: { Forward: 'Success' } });
+
+            const res = await adapter.forwardTask('12345', 'USER2', 'Please check', 'MOCK_USER');
+
+            expect(res).toEqual({ d: { Forward: 'Success' } });
+            expect(mockSapClient.post).toHaveBeenCalledWith(
+                '/sap/opu/odata/IWPGW/TASKPROCESSING;v=2',
+                "/Forward?InstanceID='000000012345'&ForwardTo='USER2'&Comments='Please%20check'",
+                {},
+                {},
+                'MOCK_USER',
+                undefined
+            );
+        });
+    });
 });

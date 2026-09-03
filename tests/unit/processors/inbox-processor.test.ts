@@ -671,4 +671,100 @@ describe('InboxProcessor', () => {
       expect(mockTaskAdapter.forwardTask).not.toHaveBeenCalled();
     });
   });
+
+  describe('executeMassDecision', () => {
+    it('should successfully execute mass decision across multiple items with bounded concurrency', async () => {
+      mockTaskAdapter.executeDecision.mockResolvedValue({ status: 'OK' });
+      mockSapOdataAdapter.addComment.mockResolvedValue({});
+
+      const items = [
+        { instanceId: '000000000001', documentId: '10000001', businessObjectType: 'PR' },
+        { instanceId: '000000000002', documentId: '10000002', businessObjectType: 'PO' },
+        { instanceId: '000000000003', documentId: '10000003', businessObjectType: 'RE' },
+      ];
+
+      const result = await processor.executeMassDecision(
+        items,
+        '0001',
+        '0001',
+        'Approved in mass batch',
+        'MOCK_USER',
+        'jwt-token'
+      );
+
+      expect(result.total).toBe(3);
+      expect(result.succeededCount).toBe(3);
+      expect(result.failedCount).toBe(0);
+      expect(result.results.length).toBe(3);
+      expect(result.results[0].status).toBe('SUCCESS');
+      expect(result.results[0].instanceId).toBe('000000000001');
+      expect(mockTaskAdapter.executeDecision).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle partial failures and report individual errors accurately', async () => {
+      mockTaskAdapter.executeDecision
+        .mockResolvedValueOnce({ status: 'OK' })
+        .mockRejectedValueOnce(new Error('Document locked by user'))
+        .mockResolvedValueOnce({ status: 'OK' });
+      mockSapOdataAdapter.addComment.mockResolvedValue({});
+
+      const items = [
+        { instanceId: '000000000001', documentId: '10000001', businessObjectType: 'PR' },
+        { instanceId: '000000000002', documentId: '10000002', businessObjectType: 'PR' },
+        { instanceId: '000000000003', documentId: '10000003', businessObjectType: 'PR' },
+      ];
+
+      const result = await processor.executeMassDecision(
+        items,
+        '0001',
+        '0001',
+        'Batch approve',
+        'MOCK_USER'
+      );
+
+      expect(result.total).toBe(3);
+      expect(result.succeededCount).toBe(2);
+      expect(result.failedCount).toBe(1);
+      expect(result.results[0].status).toBe('SUCCESS');
+      expect(result.results[1].status).toBe('FAILED');
+      expect(result.results[1].error).toContain('Document locked by user');
+      expect(result.results[2].status).toBe('SUCCESS');
+    });
+
+    it('should reject decision on CC tasks (NormalTask === false)', async () => {
+      mockSapClient.get.mockResolvedValueOnce({ value: [{ NormalTask: false }] });
+
+      await expect(
+        processor.executeDecision(
+          '999999999999',
+          '0001',
+          '0001',
+          'Approve CC task',
+          'MOCK_USER'
+        )
+      ).rejects.toThrow('Decisions (Approve/Reject) are not allowed for tagged/CC tasks');
+    });
+
+    it('should report FAILED when executeMassDecision encounters a CC task', async () => {
+      mockSapClient.get.mockResolvedValueOnce({ value: [{ NormalTask: false }] });
+
+      const items = [
+        { instanceId: '999999999999', documentId: 'CC_DOC', businessObjectType: 'PR' }
+      ];
+
+      const result = await processor.executeMassDecision(
+        items,
+        '0001',
+        '0001',
+        'Mass approve CC',
+        'MOCK_USER'
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.succeededCount).toBe(0);
+      expect(result.failedCount).toBe(1);
+      expect(result.results[0].status).toBe('FAILED');
+      expect(result.results[0].error).toContain('tagged/CC tasks');
+    });
+  });
 });

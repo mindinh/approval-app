@@ -29,8 +29,9 @@ export function createInboxRouter(): Router {
     router.get('/bus-users', controller.getBusUsers);
 
 
-    // 6. Root tasks list (must be before /:id)
+    // 6. Root tasks list & mass decision (must be before /:id)
     router.get('/', controller.getTasks);
+    router.post('/mass-decision', controller.postMassDecision);
 
     // 7. Single Task Details & Sub-resources
     router.get('/:id', controller.getTaskDetail);

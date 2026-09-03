@@ -6,6 +6,11 @@ import { resolveObjectTypeFromTypeId, resolveObjectTypeFromInstance, ODATA_SERVI
 
 import { Logger } from '../utils/logger';
 import { AppError } from '../utils/error-handler';
+import {
+    MassDecisionItemContext,
+    MassDecisionItemResult,
+    MassDecisionResponse,
+} from '../types/sap-odata.types';
 import { ObjectTypeResolver } from './object-type-resolver';
 import {
     ClaimDecisionStrategy,
@@ -215,6 +220,11 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
+            const normalTask = await this.getInstanceNormalTask(instanceId, sapUser || '', userJwt);
+            if (normalTask === false) {
+                throw new AppError('Decisions (Approve/Reject) are not allowed for tagged/CC tasks', 403);
+            }
+
             const ctxType = context?.businessObjectType || context?.objectType || context?.type;
             // Normalize DocCategory (e.g. 'BUS2105') → object type ('PR') using the same
             // resolver the adapter uses, so strategy dispatch works regardless of whether
@@ -258,6 +268,84 @@ export class InboxProcessor {
             if (error instanceof AppError) throw error;
             throw new AppError(`Decision execution failed: ${error.message}`, 500);
         }
+    }
+
+    /**
+     * Executes mass approval or rejection across multiple tasks with bounded concurrency.
+     */
+    async executeMassDecision(
+        items: MassDecisionItemContext[],
+        decisionKey: string,
+        sapDecisionKey: string,
+        comment: string,
+        sapUser: string,
+        userJwt?: string
+    ): Promise<MassDecisionResponse> {
+        this.logger.info(`Executing mass decision (${decisionKey}) on ${items.length} tasks for user ${sapUser}`);
+
+        const results: MassDecisionItemResult[] = [];
+        const concurrencyLimit = 4;
+
+        for (let i = 0; i < items.length; i += concurrencyLimit) {
+            const chunk = items.slice(i, i + concurrencyLimit);
+            const chunkPromises = chunk.map(async (item) => {
+                const docId = item.documentId || item.documentNumber;
+                try {
+                    const outcome = await this.executeDecision(
+                        item.instanceId,
+                        decisionKey,
+                        sapDecisionKey || decisionKey,
+                        comment,
+                        sapUser,
+                        userJwt,
+                        {
+                            documentId: docId,
+                            businessObjectType: item.businessObjectType || item.objectType || item.type,
+                            sapOrigin: item.sapOrigin,
+                        }
+                    );
+                    return {
+                        instanceId: item.instanceId,
+                        documentNumber: docId || item.documentNumber,
+                        documentId: docId,
+                        status: 'SUCCESS' as const,
+                        message: outcome?.message || 'Decision processed successfully.',
+                    };
+                } catch (error: any) {
+                    this.logger.warn(`Mass decision error on task ${item.instanceId} (${docId || 'unknown doc'}): ${error.message}`);
+                    return {
+                        instanceId: item.instanceId,
+                        documentNumber: docId || item.documentNumber,
+                        documentId: docId,
+                        status: 'FAILED' as const,
+                        error: error.message || 'Decision failed',
+                    };
+                }
+            });
+
+            const settled = await Promise.allSettled(chunkPromises);
+            for (const itemResult of settled) {
+                if (itemResult.status === 'fulfilled') {
+                    results.push(itemResult.value);
+                } else {
+                    results.push({
+                        instanceId: 'unknown',
+                        status: 'FAILED',
+                        error: (itemResult as PromiseRejectedResult).reason?.message || 'Unknown processing error',
+                    });
+                }
+            }
+        }
+
+        const succeededCount = results.filter((r) => r.status === 'SUCCESS' || r.status === 'PARTIAL_SUCCESS').length;
+        const failedCount = results.filter((r) => r.status === 'FAILED').length;
+
+        return {
+            total: items.length,
+            succeededCount,
+            failedCount,
+            results,
+        };
     }
 
 
@@ -484,44 +572,33 @@ export class InboxProcessor {
                 `forwardTask type=${normalizedType} docId=${docId || '(none)'} supportsEntityForward=${supportsEntityForward}`
             );
 
-            // Kick off TASKPROCESSING /Forward and (for PR/PO only) the entity-bound
-            // CNMA_{PR|PO}HEADER/DocCategory/.../SAP__self.forward action in parallel.
-            const [taskProcResult, entityForwardResult] = await Promise.allSettled([
-                this.taskAdapter.forwardTask(instanceId, forwardTo.trim(), comment || '', sapUser || '', userJwt),
-                supportsEntityForward
-                    ? this.sapOdataAdapter.forwardOnHeader(
+            // Sequential API call: 1. Call standard TASKPROCESSING /Forward first
+            const taskProcResult = await this.taskAdapter.forwardTask(
+                instanceId,
+                forwardTo.trim(),
+                comment || '',
+                sapUser || '',
+                userJwt
+            );
+
+            // 2. Only after TASKPROCESSING succeeds, call entity-bound forward (PR/PO only) as best-effort
+            if (supportsEntityForward) {
+                try {
+                    await this.sapOdataAdapter.forwardOnHeader(
                         normalizedType,
                         docId!,
                         { taskId: instanceId, notetext: comment || '', toUser: forwardTo.trim() },
                         sapUser || '',
                         userJwt
-                    )
-                    : Promise.resolve(null)
-            ]);
-
-            // Entity-bound forward is best-effort: TASKPROCESSING already forwarded the
-            // workflow, so log a warning instead of failing the request.
-            if (entityForwardResult.status === 'rejected') {
-                this.logger.warn(
-                    `Non-fatal: Entity-bound forward failed for ${normalizedType || 'unknown'} ${docId || ''}: ${entityForwardResult.reason?.message || entityForwardResult.reason}`
-                );
+                    );
+                } catch (entityForwardErr: any) {
+                    this.logger.warn(
+                        `Non-fatal: Entity-bound forward failed for ${normalizedType || 'unknown'} ${docId || ''}: ${entityForwardErr.message || entityForwardErr}`
+                    );
+                }
             }
 
-            // TASKPROCESSING forward is the source of truth — failure here must surface.
-            if (taskProcResult.status === 'rejected') {
-                const reason = taskProcResult.reason;
-                if (reason instanceof AppError) throw reason;
-                throw new AppError(`Failed to forward task: ${reason?.message || String(reason)}`, 500);
-            }
-
-            // Note: the user's forward comment is already recorded by SAP itself —
-            // both TASKPROCESSING /Forward (Comments URL param) and the entity-bound
-            // /SAP__self.forward (notetext in buildForwardPayload) emit a single
-            // _Comment row with Forward: true. The previous addComment(...) call
-            // here posted a redundant duplicate with Forward: false and a
-            // "[Forwarded to X]" prefix baked into NoteText; it has been removed.
-
-            return taskProcResult.value;
+            return taskProcResult;
         } catch (error: any) {
             this.logger.error(`Error in forwardTask: ${error.message}`);
             if (error instanceof AppError) throw error;

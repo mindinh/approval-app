@@ -35,8 +35,20 @@ describe('TaskprocessingDecisionStrategy (default)', () => {
         expect(strategy.supports('po')).toBe(true);
     });
 
-    it('posts audit note then calls TASKPROCESSING /Decision for approve', async () => {
-        const deps = makeDeps();
+    it('calls standard TASKPROCESSING /Decision first, then posts audit note for approve', async () => {
+        const callOrder: string[] = [];
+        const deps = makeDeps({
+            taskAdapter: {
+                executeDecision: vi.fn().mockImplementation(async () => {
+                    callOrder.push('taskAdapter.executeDecision');
+                    return { success: true };
+                })
+            },
+            addComment: vi.fn().mockImplementation(async () => {
+                callOrder.push('deps.addComment');
+            })
+        });
+
         const outcome = await strategy.execute(
             {
                 instanceId: 'task-pr-01',
@@ -50,14 +62,42 @@ describe('TaskprocessingDecisionStrategy (default)', () => {
             deps
         );
 
+        expect(callOrder).toEqual(['taskAdapter.executeDecision', 'deps.addComment']);
+        expect(deps.taskAdapter.executeDecision).toHaveBeenCalledWith('task-pr-01', '0001', 'Looks good', 'MOCK_USER', undefined);
         expect(deps.addComment).toHaveBeenCalledWith(
             '10001234',
             'Looks good',
             'MOCK_USER',
             expect.objectContaining({ decision: 'A', objectType: 'PR', taskId: 'task-pr-01' })
         );
-        expect(deps.taskAdapter.executeDecision).toHaveBeenCalledWith('task-pr-01', '0001', 'Looks good', 'MOCK_USER', undefined);
         expect(outcome.status).toBe('SUCCESS');
+    });
+
+    it('does not call addComment when TASKPROCESSING /Decision fails', async () => {
+        const deps = makeDeps({
+            taskAdapter: {
+                executeDecision: vi.fn().mockRejectedValue(new AppError('SAP Gateway timeout', 500))
+            },
+            addComment: vi.fn()
+        });
+
+        await expect(
+            strategy.execute(
+                {
+                    instanceId: 'task-pr-fail',
+                    decisionKey: '0001',
+                    sapDecisionKey: '0001',
+                    comment: 'fail',
+                    sapUser: 'MOCK_USER',
+                    documentId: '10001234',
+                    objectType: 'PR',
+                },
+                deps
+            )
+        ).rejects.toThrow('SAP Gateway timeout');
+
+        expect(deps.taskAdapter.executeDecision).toHaveBeenCalledTimes(1);
+        expect(deps.addComment).not.toHaveBeenCalled();
     });
 
     it('uses default "Rejected by <user>" text on reject when comment is empty', async () => {

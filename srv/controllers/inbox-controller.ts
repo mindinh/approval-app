@@ -777,6 +777,84 @@ export class InboxController {
 
     /**
      * @openapi
+     * /tasks/mass-decision:
+     *   post:
+     *     summary: Execute bulk approval/rejection decisions across multiple tasks
+     *     security:
+     *       - BearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - decisionKey
+     *               - items
+     *             properties:
+     *               decisionKey:
+     *                 type: string
+     *               sapDecisionKey:
+     *                 type: string
+     *               comment:
+     *                 type: string
+     *               items:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   required:
+     *                     - instanceId
+     *                   properties:
+     *                     instanceId:
+     *                       type: string
+     *                     documentId:
+     *                       type: string
+     *                     documentNumber:
+     *                       type: string
+     *                     businessObjectType:
+     *                       type: string
+     *                     sapOrigin:
+     *                       type: string
+     *     responses:
+     *       200:
+     *         description: Consolidated multi-status results
+     */
+    postMassDecision = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const body = ensureObject(req.body, 'body');
+            const decisionKey = ensureOptionalString(body.decisionKey, 'decisionKey');
+            const sapDecisionKey = ensureOptionalString(body.sapDecisionKey, 'sapDecisionKey');
+            const comment = ensureOptionalString(body.comment, 'comment') || '';
+            const items = ensureArray(body.items, 'items');
+
+            const decKey = decisionKey || sapDecisionKey;
+            if (!decKey) {
+                throw new AppError('Missing decision details in request body', 400);
+            }
+
+            if (!items || items.length === 0) {
+                throw new AppError('No task items provided for mass decision', 400);
+            }
+
+            const { sapUser, userJwt } = resolveIdentity(req);
+
+            const result = await this.processor.executeMassDecision(
+                items,
+                decisionKey || decKey,
+                sapDecisionKey || decKey,
+                comment,
+                String(sapUser || ''),
+                userJwt
+            );
+
+            res.json({ success: true, ...result });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * @openapi
      * /tasks/search-users:
      *   get:
      *     summary: Search users for task forwarding

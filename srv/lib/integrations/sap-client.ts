@@ -126,8 +126,29 @@ export class SapClient {
         return headers;
     }
 
+    private sanitizeCookies(setCookieHeader?: string | string[]): string | undefined {
+        if (!setCookieHeader) return undefined;
+        const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+        const cleaned = cookieArray
+            .map(cookie => cookie.split(';')[0].trim())
+            .filter(Boolean)
+            .join('; ');
+        return cleaned || undefined;
+    }
+
+    private getHeaderValue(headers: any, headerName: string): any {
+        if (!headers) return undefined;
+        const target = headerName.toLowerCase();
+        for (const key of Object.keys(headers)) {
+            if (key.toLowerCase() === target) {
+                return headers[key];
+            }
+        }
+        return undefined;
+    }
+
     private csrfCache = new Map<string, { token: string; cookie?: string; fetchedAt: number }>();
-    private readonly CSRF_TTL = 10 * 60 * 1000; // 10 minutes
+    private readonly CSRF_TTL = 2 * 60 * 1000; // 2 minutes (avoids using dead SAP sessions)
 
     async get<T>(servicePath: string, relativePath: string, params: any = {}, sapUser?: string, userJwt?: string): Promise<T> {
         try {
@@ -287,19 +308,32 @@ export class SapClient {
         try {
             return await executePost(finalHeaders);
         } catch (error: any) {
-            const isForbidden = error.response?.status === 403 || error.status === 403;
-            if (isForbidden) {
-                this.logger.warn(`POST request to ${servicePath}${relativePath} failed with 403 Forbidden. Invalidating CSRF cache and retrying...`);
+            const status = error.response?.status || error.status;
+            const message = (error.message || '') + ' ' + (JSON.stringify(error.response?.data) || '');
+            const isCsrfOrAuthError =
+                status === 403 ||
+                status === 401 ||
+                status === 407 ||
+                message.toLowerCase().includes('csrf') ||
+                message.toLowerCase().includes('proxy authentication');
+
+            if (isCsrfOrAuthError) {
+                this.logger.warn(`POST request to ${servicePath}${relativePath} failed (status: ${status}, error: ${error.message}). Invalidating CSRF/proxy cache and retrying with fresh token...`);
                 this.invalidateCsrf(servicePath, sapUser);
 
-                const fresh = await this.fetchCsrf(servicePath, sapUser, userJwt, true);
-                const retriedHeaders = { ...headers };
-                retriedHeaders['x-csrf-token'] = fresh.token;
-                if (fresh.cookie) {
-                    retriedHeaders.Cookie = fresh.cookie;
-                }
-
                 try {
+                    const fresh = await this.fetchCsrf(servicePath, sapUser, userJwt, true);
+                    const retriedHeaders: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(headers)) {
+                        if (k.toLowerCase() !== 'x-csrf-token' && k.toLowerCase() !== 'cookie') {
+                            retriedHeaders[k] = String(v);
+                        }
+                    }
+                    retriedHeaders['x-csrf-token'] = fresh.token;
+                    if (fresh.cookie) {
+                        retriedHeaders.Cookie = fresh.cookie;
+                    }
+
                     return await executePost(retriedHeaders);
                 } catch (retryError: any) {
                     throw handleSapError(retryError);
@@ -321,7 +355,7 @@ export class SapClient {
         try {
             const effectiveJwt = this.getEffectiveJwt(userJwt);
             let token = '';
-            let cookie: string | undefined = undefined;
+            let rawCookieHeader: any = undefined;
 
             if (this.shouldUseDestination(effectiveJwt)) {
                 try {
@@ -333,17 +367,15 @@ export class SapClient {
                             headers: this.getRequestHeaders(sapUser, { 'x-csrf-token': 'Fetch' })
                         }
                     );
-                    token = response.headers['x-csrf-token'] as string;
-                    const cookies = response.headers['set-cookie'] as string[];
-                    cookie = cookies ? cookies.join('; ') : undefined;
+                    token = this.getHeaderValue(response.headers, 'x-csrf-token') || '';
+                    rawCookieHeader = this.getHeaderValue(response.headers, 'set-cookie');
                 } catch (error: any) {
                     if (this.shouldFallbackToDirect(error)) {
                         const response = await this.http.get(servicePath, {
                             headers: this.getRequestHeaders(sapUser, { 'x-csrf-token': 'Fetch' })
                         });
-                        token = response.headers['x-csrf-token'] as string;
-                        const cookies = response.headers['set-cookie'] as string[];
-                        cookie = cookies ? cookies.join('; ') : undefined;
+                        token = this.getHeaderValue(response.headers, 'x-csrf-token') || '';
+                        rawCookieHeader = this.getHeaderValue(response.headers, 'set-cookie');
                     } else {
                         throw error;
                     }
@@ -352,11 +384,11 @@ export class SapClient {
                 const response = await this.http.get(servicePath, {
                     headers: this.getRequestHeaders(sapUser, { 'x-csrf-token': 'Fetch' })
                 });
-                token = response.headers['x-csrf-token'] as string;
-                const cookies = response.headers['set-cookie'] as string[];
-                cookie = cookies ? cookies.join('; ') : undefined;
+                token = this.getHeaderValue(response.headers, 'x-csrf-token') || '';
+                rawCookieHeader = this.getHeaderValue(response.headers, 'set-cookie');
             }
 
+            const cookie = this.sanitizeCookies(rawCookieHeader);
             const entry = { token: token || '', cookie, fetchedAt: Date.now() };
             this.csrfCache.set(cacheKey, entry);
             return entry;

@@ -114,6 +114,15 @@ vi.mock('../../srv/lib/integrations/sap-odata-adapter', () => {
     };
 });
 
+vi.mock('../../srv/lib/integrations/sap-client', () => {
+    return {
+        SapClient: class {
+            get = vi.fn().mockResolvedValue({ value: [{ NormalTask: true }] });
+            post = vi.fn();
+        },
+    };
+});
+
 describe('API Stress & Performance Benchmark Suite', () => {
     let processor: InboxProcessor;
 

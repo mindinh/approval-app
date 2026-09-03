@@ -52,25 +52,15 @@ export class TaskprocessingAdapter {
 
     async executeDecision(instanceId: string, sapDecisionKey: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
-        const { token, cookie } = await this.sapClient.fetchCsrf(path, sapUser, userJwt);
-
         const paddedId = this.padId(instanceId);
         const url = `/Decision?InstanceID='${encodeURIComponent(paddedId)}'&DecisionKey='${encodeURIComponent(sapDecisionKey)}'`;
-        
-        const headers: Record<string, string> = {
-            'x-csrf-token': token,
-            'Accept': 'application/json'
-        };
-        if (cookie) {
-            headers.Cookie = cookie;
-        }
 
         const payload: Record<string, string> = {};
         if (comment) {
             payload.Comments = comment;
         }
 
-        return await this.sapClient.post(path, url, payload, headers, sapUser, userJwt);
+        return await this.sapClient.post(path, url, payload, {}, sapUser, userJwt);
     }
 
     private escapeODataLiteral(val: string): string {
@@ -97,8 +87,6 @@ export class TaskprocessingAdapter {
 
     async forwardTask(instanceId: string, forwardTo: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
-        const { token, cookie } = await this.sapClient.fetchCsrf(path, sapUser, userJwt);
-
         const paddedId = this.padId(instanceId);
         const safeId = encodeURIComponent(this.escapeODataLiteral(paddedId));
         const safeForwardTo = encodeURIComponent(this.escapeODataLiteral(forwardTo));
@@ -108,15 +96,7 @@ export class TaskprocessingAdapter {
             url += `&Comments='${safeComment}'`;
         }
 
-        const headers: Record<string, string> = {
-            'x-csrf-token': token,
-            'Accept': 'application/json'
-        };
-        if (cookie) {
-            headers.Cookie = cookie;
-        }
-
-        return await this.sapClient.post(path, url, {}, headers, sapUser, userJwt);
+        return await this.sapClient.post(path, url, {}, {}, sapUser, userJwt);
     }
 }
 
