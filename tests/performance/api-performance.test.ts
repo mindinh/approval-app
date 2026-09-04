@@ -35,8 +35,12 @@ vi.mock('../../srv/lib/integrations/sap-odata-adapter', () => {
         SapOdataAdapter: class {
             getInstances = vi.fn().mockResolvedValue([
                 {
+                    WorkflowTaskInternalID: 'task-pr-01',
                     WorkflowTaskInstance: 'task-pr-01',
+                    DocCategory: 'PR',
+                    DocumentNumber: '10001234',
                     PurchaseRequisition: '10001234',
+                    TechnicalWrkflwObject: '10001234',
                     SAPOrigin: 'LOCAL',
                     BusinessObjectType: 'PR',
                     WorkflowTaskStatus: 'IN PROCESSING',
@@ -200,37 +204,19 @@ describe('API Stress & Performance Benchmark Suite', () => {
     // 3. GET /tasks/:id (Task Detail Retrieval)
     // ─────────────────────────────────────────────────────────────────────────────
     describe('3. GET /tasks/:id (Task Detail Performance)', () => {
-        it('Scenario 3.1: Parallel Task Detail Fetch with Performance Hints (50 Virtual Users, 200 requests)', async () => {
-            const metrics = await runLoadTest(
-                async () => {
-                    const detail = await processor.getTaskDetail('task-pr-01', 'TEST_USER', {
-                        documentId: '10001234',
-                        sapOrigin: 'LOCAL',
-                        businessObjectType: 'PR',
-                    });
-                    expect(detail.taskprocessing.task?.InstanceID).toBe('task-pr-01');
-                },
-                { concurrency: 50, totalRequests: 200 }
-            );
-
-            printMetrics('GET /tasks/:id - Parallel Detail with Hints', metrics);
-
-            expect(metrics.failedRequests).toBe(0);
-            expect(metrics.latency.p95Ms).toBeLessThan(50);
-        });
-
-        it('Scenario 3.2: Task Detail Sequential Fallback (hints missing)', async () => {
+        it('Scenario 3.1: Direct Task Detail Fetch (50 Virtual Users, 200 requests)', async () => {
             const metrics = await runLoadTest(
                 async () => {
                     const detail = await processor.getTaskDetail('task-pr-01', 'TEST_USER');
                     expect(detail.taskprocessing.task?.InstanceID).toBe('task-pr-01');
                 },
-                { concurrency: 20, totalRequests: 100 }
+                { concurrency: 50, totalRequests: 200 }
             );
 
-            printMetrics('GET /tasks/:id - Sequential Fallback', metrics);
+            printMetrics('GET /tasks/:id - Direct Detail Fetch', metrics);
 
             expect(metrics.failedRequests).toBe(0);
+            expect(metrics.latency.p95Ms).toBeLessThan(50);
         });
     });
 
@@ -337,11 +323,7 @@ describe('API Stress & Performance Benchmark Suite', () => {
                     expect(tasks.items).toBeDefined();
 
                     // Step 2: View task detail
-                    const detail = await processor.getTaskDetail('task-pr-01', 'TEST_USER', {
-                        documentId: '10001234',
-                        sapOrigin: 'LOCAL',
-                        businessObjectType: 'PR',
-                    });
+                    const detail = await processor.getTaskDetail('task-pr-01', 'TEST_USER');
                     expect(detail.taskprocessing.task?.InstanceID).toBe('task-pr-01');
 
                     // Step 3: Stream attachment content

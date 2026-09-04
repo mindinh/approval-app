@@ -11,4 +11,6 @@ export interface AddCommentOptions {
     objectType?: ObjectTypeCode | string;
     taskId?: string;
     taggedUsers?: TaggedUser[];
+    approverNumber?: string;
 }
+

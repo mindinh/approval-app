@@ -18,10 +18,17 @@ export class ClaimDetail extends BaseRawDetail {
         ]
     } as const;
 
+    protected override buildHeaderUrl(objectId: string, options?: { approverNumber?: string }): string {
+        const paddedId = this.padDocumentId(objectId);
+        const approverNumber = options?.approverNumber || '1';
+        return `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${encodeURIComponent(paddedId)}',ApproverNumber='${encodeURIComponent(approverNumber)}')`;
+    }
+
     async addComment(objectId: string, text: string, sapUser: string, options?: AddCommentOptions): Promise<void> {
         const paddedId = this.padDocumentId(objectId);
+        const approverNumber = options?.approverNumber || '1';
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const relativePath = `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${paddedId}')/SAP__self.comment`;
+        const relativePath = `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${paddedId}',ApproverNumber='${approverNumber}')/SAP__self.comment`;
         const payload = this.buildCommentPayload(text, options);
 
         await this.sapClient.post(servicePath, relativePath, payload, {}, sapUser, options?.userJwt);
@@ -30,7 +37,7 @@ export class ClaimDetail extends BaseRawDetail {
     /**
      * Posts the entity-bound `approve` action on the Claim header.
      *
-     * URL: POST /CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='<padded10>')/SAP__self.approve?sap-language=en&sap-client=300
+     * URL: POST /CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='<padded10>',ApproverNumber='<approverNumber>')/SAP__self.approve?sap-language=en&sap-client=300
      * Body: { zcomment: "<user comment>" }
      *
      * SAP exposes two distinct bound actions on `CNMA_CLAIMHEADER` —
@@ -41,8 +48,9 @@ export class ClaimDetail extends BaseRawDetail {
      */
     async approveOnHeader(objectId: string, params: ApproveOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
         const paddedId = this.padDocumentId(objectId);
+        const approverNumber = params.approverNumber || '1';
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const relativePath = `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${paddedId}')/SAP__self.approve`;
+        const relativePath = `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${paddedId}',ApproverNumber='${approverNumber}')/SAP__self.approve`;
         const cleanComment = (params.comment || '').trim().substring(0, 255);
         const payload = { zcomment: cleanComment };
 
@@ -52,7 +60,7 @@ export class ClaimDetail extends BaseRawDetail {
     /**
      * Posts the entity-bound `reject` action on the Claim header.
      *
-     * URL: POST /CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='<padded10>')/SAP__self.reject?sap-language=en&sap-client=300
+     * URL: POST /CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='<padded10>',ApproverNumber='<approverNumber>')/SAP__self.reject?sap-language=en&sap-client=300
      * Body: { zcomment: "<user comment>" }
      *
      * Mirror of `approveOnHeader` — separate SAP endpoint per METADATA.xml.
@@ -60,8 +68,9 @@ export class ClaimDetail extends BaseRawDetail {
      */
     async rejectOnHeader(objectId: string, params: ApproveOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
         const paddedId = this.padDocumentId(objectId);
+        const approverNumber = params.approverNumber || '1';
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-        const relativePath = `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${paddedId}')/SAP__self.reject`;
+        const relativePath = `/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='${paddedId}',ApproverNumber='${approverNumber}')/SAP__self.reject`;
         const cleanComment = (params.comment || '').trim().substring(0, 255);
         const payload = { zcomment: cleanComment };
 

@@ -18,6 +18,8 @@ export interface DecisionContext {
     userJwt?: string;
     documentId?: string;
     objectType?: string;
+    sapOrigin?: string;
+    approverNumber?: string;
 }
 
 /**
@@ -169,11 +171,13 @@ export class ClaimDecisionStrategy implements DecisionStrategy {
             : (objectType: string, objectId: string, p: ApproveOnHeaderParams, u: string, jwt?: string) =>
                 deps.sapOdataAdapter.approveOnHeader!(objectType, objectId, p, u, jwt);
 
+        const approverNumber = ctx.approverNumber || '1';
+
         const [actionResult, commentResult] = await Promise.allSettled([
             actionMethod(
                 ctx.objectType || 'CLAIM',
                 ctx.documentId,
-                { decision: decisionCode, comment: zcomment },
+                { decision: decisionCode, comment: zcomment, approverNumber },
                 ctx.sapUser || '',
                 ctx.userJwt,
             ),
@@ -182,6 +186,7 @@ export class ClaimDecisionStrategy implements DecisionStrategy {
                 decision: decisionCode,
                 objectType: ctx.objectType || 'CLAIM',
                 taskId: ctx.instanceId,
+                approverNumber,
             }),
         ]);
 

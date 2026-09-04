@@ -197,7 +197,7 @@ describe('ClaimDecisionStrategy', () => {
         expect(deps.sapOdataAdapter.approveOnHeader).toHaveBeenCalledWith(
             'CLAIM',
             '212',
-            { decision: 'A', comment: 'approve claim 212' },
+            { decision: 'A', comment: 'approve claim 212', approverNumber: '1' },
             'MOCK_USER',
             undefined
         );
@@ -205,7 +205,7 @@ describe('ClaimDecisionStrategy', () => {
             '212',
             '',
             'MOCK_USER',
-            expect.objectContaining({ decision: 'A', objectType: 'CLAIM', taskId: '212' })
+            expect.objectContaining({ decision: 'A', objectType: 'CLAIM', taskId: '212', approverNumber: '1' })
         );
         expect(outcome.status).toBe('SUCCESS');
         expect(outcome.partialSuccess).toBe(false);
@@ -228,7 +228,7 @@ describe('ClaimDecisionStrategy', () => {
         expect(deps.sapOdataAdapter.rejectOnHeader).toHaveBeenCalledWith(
             'CLAIM',
             '212',
-            { decision: 'R', comment: 'reject claim 212' },
+            { decision: 'R', comment: 'reject claim 212', approverNumber: '1' },
             'MOCK_USER',
             undefined
         );
@@ -252,7 +252,7 @@ describe('ClaimDecisionStrategy', () => {
         );
         expect(deps.sapOdataAdapter.rejectOnHeader).toHaveBeenCalledWith(
             'CLAIM', '212',
-            { decision: 'R', comment: 'Rejected by MOCK_USER' },
+            { decision: 'R', comment: 'Rejected by MOCK_USER', approverNumber: '1' },
             'MOCK_USER', undefined
         );
         expect(deps.sapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
@@ -274,8 +274,36 @@ describe('ClaimDecisionStrategy', () => {
         );
         expect(deps.sapOdataAdapter.approveOnHeader).toHaveBeenCalledWith(
             'CLAIM', '212',
-            { decision: 'A', comment: 'Approved by MOCK_USER' },
+            { decision: 'A', comment: 'Approved by MOCK_USER', approverNumber: '1' },
             'MOCK_USER', undefined
+        );
+    });
+
+    it('passes custom approverNumber when provided in context', async () => {
+        const deps = makeDeps();
+        await strategy.execute(
+            {
+                instanceId: '2201',
+                decisionKey: '0001',
+                sapDecisionKey: '0001',
+                comment: 'approve claim',
+                sapUser: 'MOCK_USER',
+                documentId: '0000000220',
+                objectType: 'CLAIM',
+                approverNumber: '2',
+            },
+            deps
+        );
+        expect(deps.sapOdataAdapter.approveOnHeader).toHaveBeenCalledWith(
+            'CLAIM', '0000000220',
+            { decision: 'A', comment: 'approve claim', approverNumber: '2' },
+            'MOCK_USER', undefined
+        );
+        expect(deps.addComment).toHaveBeenCalledWith(
+            '0000000220',
+            '',
+            'MOCK_USER',
+            expect.objectContaining({ approverNumber: '2' })
         );
     });
 

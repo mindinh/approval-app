@@ -107,3 +107,20 @@ describe('BaseRawDetail.padDocumentId', () => {
         expect(strategy.padDocumentId('123456789012345')).toBe('1234567890');
     });
 });
+
+describe('BaseRawDetail.buildHeaderUrl', () => {
+    const prStrategy: any = new PrDetail({} as any, {} as any);
+    const claimStrategy: any = new ClaimDetail({} as any, {} as any);
+
+    it('builds standard header URL for PR', () => {
+        expect(prStrategy.buildHeaderUrl('212')).toBe("/CNMA_PRHEADER(DocCategory='BUS2105',DocumentNumber='0000000212')");
+    });
+
+    it('builds CLAIM header URL with default ApproverNumber=1', () => {
+        expect(claimStrategy.buildHeaderUrl('216')).toBe("/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000216',ApproverNumber='1')");
+    });
+
+    it('builds CLAIM header URL with custom ApproverNumber', () => {
+        expect(claimStrategy.buildHeaderUrl('216', { approverNumber: '3' })).toBe("/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000216',ApproverNumber='3')");
+    });
+});

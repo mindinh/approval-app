@@ -157,10 +157,10 @@ describe('InboxProcessor', () => {
       };
       mockSapOdataAdapter.getDetail.mockResolvedValue(mockRawEntity);
       mockSapOdataAdapter.getInstances.mockResolvedValue([
-        { instanceID: 'task-pr-01', doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND' }
+        { WorkflowTaskInternalID: 'task-pr-01', DocCategory: 'BUS2105', DocumentNumber: '10001234', NormalTask: true, doctyp: 'ZASS', total: 150000000, curr_vnd: 'VND' }
       ]);
 
-      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', { documentId: '10001234', businessObjectType: 'PR' }, 'jwt');
+      const result = await processor.getTaskDetail('task-pr-01', 'MOCK_USER', 'jwt');
 
       expect(result.instanceId).toBe('task-pr-01');
       expect(result.normalTask).toBe(true);
@@ -228,7 +228,7 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.approveOnHeader).toHaveBeenCalledWith(
           'CLAIM',
           '212',
-          { decision: 'A', comment: 'approve claim 212 26.08' },
+          { decision: 'A', comment: 'approve claim 212 26.08', approverNumber: '1' },
           'MOCK_USER',
           'jwt'
         );
@@ -237,7 +237,7 @@ describe('InboxProcessor', () => {
           '212',
           '',
           'MOCK_USER',
-          { userJwt: 'jwt', decision: 'A', objectType: 'CLAIM', taskId: '212' }
+          { userJwt: 'jwt', decision: 'A', objectType: 'CLAIM', taskId: '212', approverNumber: '1' }
         );
         expect(mockTaskAdapter.executeDecision).not.toHaveBeenCalled();
         expect(result.status).toBe('SUCCESS');
@@ -260,7 +260,7 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.rejectOnHeader).toHaveBeenCalledWith(
           'CLAIM',
           '212',
-          { decision: 'R', comment: 'reject claim 212' },
+          { decision: 'R', comment: 'reject claim 212', approverNumber: '1' },
           'MOCK_USER',
           'jwt'
         );
@@ -270,7 +270,7 @@ describe('InboxProcessor', () => {
           '212',
           '',
           'MOCK_USER',
-          expect.objectContaining({ decision: 'R', objectType: 'CLAIM' })
+          expect.objectContaining({ decision: 'R', objectType: 'CLAIM', approverNumber: '1' })
         );
       });
 
@@ -291,7 +291,7 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.approveOnHeader).toHaveBeenCalledWith(
           'CLAIM',
           '212',
-          { decision: 'A', comment: 'Approved by MOCK_USER' },
+          { decision: 'A', comment: 'Approved by MOCK_USER', approverNumber: '1' },
           'MOCK_USER',
           'jwt'
         );
@@ -314,7 +314,7 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.rejectOnHeader).toHaveBeenCalledWith(
           'CLAIM',
           '212',
-          { decision: 'R', comment: 'Rejected by MOCK_USER' },
+          { decision: 'R', comment: 'Rejected by MOCK_USER', approverNumber: '1' },
           'MOCK_USER',
           'jwt'
         );
@@ -435,14 +435,14 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.approveOnHeader).toHaveBeenCalledWith(
           'CLAIM',
           '212',
-          { decision: 'A', comment: 'approve via docCategory' },
+          { decision: 'A', comment: 'approve via docCategory', approverNumber: '1' },
           'MOCK_USER',
           'jwt'
         );
         expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith(
           '212', '',
           'MOCK_USER',
-          { userJwt: 'jwt', decision: 'A', objectType: 'CLAIM', taskId: '212' }
+          { userJwt: 'jwt', decision: 'A', objectType: 'CLAIM', taskId: '212', approverNumber: '1' }
         );
       });
     });

@@ -138,26 +138,19 @@ export class InboxProcessor {
     async getTaskDetail(
         instanceId: string,
         sapUser: string,
-        hints?: {
-            typeid?: string;
-            instid?: string;
-            businessObjectType?: string;
-            documentId?: string;
-            status?: string;
-        },
         userJwt?: string
     ) {
         this.logger.info(`Fetching raw task detail for ${instanceId}`);
         try {
-            const resolved = await this.objectTypeResolver.resolve(instanceId, sapUser, hints, userJwt);
+            const resolved = await this.objectTypeResolver.resolve(instanceId, sapUser, userJwt);
             const { businessObject, taskRuntime, inst } = resolved;
             const isNormalTask = resolved.normalTask ?? inst?.normalTask ?? true;
             const isClaim = resolved.objectType === 'CLAIM';
-            const overrideStatus = inst?.status === 'COMPLETED' || hints?.status === 'COMPLETED' ? 'COMPLETED' : undefined;
+            const isCompleted = inst?.status === 'COMPLETED' || inst?.WorkflowTaskStatus === 'COMPLETED';
 
             if (inst?.normalTask !== undefined) {
                 this.instanceCache.set(instanceId, {
-                    normalTask: inst.normalTask !== false,
+                    normalTask: isNormalTask,
                     cachedAt: Date.now()
                 });
             }
@@ -174,17 +167,17 @@ export class InboxProcessor {
             return {
                 instanceId,
                 taskId: instanceId,
-                normalTask: isNormalTask !== false,
+                normalTask: isNormalTask,
                 objectType: resolved.objectType,
                 documentId: resolved.instid,
                 supports: {
-                    forward: (isNormalTask === false || isClaim || overrideStatus === 'COMPLETED') ? false : (inst?.SupportsForward ?? true),
+                    forward: (isNormalTask === false || isClaim || isCompleted) ? false : (inst?.SupportsForward ?? true),
                     comments: inst?.SupportsComments ?? true
                 },
                 businessObject: businessObject || {},
                 taskprocessing: {
                     task,
-                    decisionOptions
+                    decisionOptions: (isNormalTask === false || isCompleted) ? [] : decisionOptions
                 }
             };
         } catch (error: any) {
@@ -216,7 +209,7 @@ export class InboxProcessor {
         comment: string,
         sapUser: string,
         userJwt?: string,
-        context?: { documentId?: string; businessObjectType?: string; objectType?: string; type?: string }
+        context?: { documentId?: string; businessObjectType?: string; objectType?: string; type?: string; sapOrigin?: string; approverNumber?: string }
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
@@ -242,6 +235,8 @@ export class InboxProcessor {
                     userJwt,
                     documentId: context?.documentId,
                     objectType: normalizedType,
+                    sapOrigin: context?.sapOrigin,
+                    approverNumber: context?.approverNumber || (context as any)?.ApproverNumber,
                 },
                 {
                     sapOdataAdapter: this.sapOdataAdapter,

@@ -24,6 +24,8 @@ export interface ApproveOnHeaderParams {
     decision: 'A' | 'R';
     /** Free-text audit comment shown in the claim document history. */
     comment: string;
+    /** Approver number key (e.g. '1' for Claim). */
+    approverNumber?: string;
 }
 
 export interface Detail {
@@ -33,11 +35,12 @@ export interface Detail {
         objectId: string,
         sapUser: string,
         userJwt?: string,
-        headerOnly?: boolean
+        headerOnly?: boolean,
+        options?: { approverNumber?: string }
     ): Promise<any>;
 
     getDetailBatch?(
-        items: Array<{ objectType: string; objectId: string }>,
+        items: Array<{ objectType: string; objectId: string; approverNumber?: string }>,
         sapUser: string,
         userJwt?: string
     ): Promise<Record<string, any>>;

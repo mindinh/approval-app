@@ -69,7 +69,7 @@ describe('SapOdataAdapter', () => {
         expect.any(String),
         '/CNMA_WFTASK',
         expect.objectContaining({
-          $filter: "(DocumentNumber eq '0000000212' or WorkflowTaskInternalID eq '0000000212' or WorkflowTaskInternalID eq '212')"
+          $filter: "(DocumentNumber eq '0000000212' or TechnicalWrkflwObject eq '0000000212' or WorkflowTaskInternalID eq '212' or WorkflowTaskInternalID eq '0000000212' or WorkflowTaskInternalID eq '000000000212')"
         }),
         'SAP_USER',
         undefined
@@ -324,7 +324,7 @@ describe('SapOdataAdapter', () => {
 
       expect(mockSapClient.post).toHaveBeenCalledWith(
         '/sap/opu/odata4/sap/za_cnma_prorequest/srvd_a2x/sap/za_cnma_prorequest/0001',
-        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212')/SAP__self.approve",
+        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212',ApproverNumber='1')/SAP__self.approve",
         { zcomment: 'approve claim 212 26.08' },
         {},
         'SAP_USER',
@@ -345,8 +345,29 @@ describe('SapOdataAdapter', () => {
 
       expect(mockSapClient.post).toHaveBeenCalledWith(
         expect.any(String),
-        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212')/SAP__self.approve",
+        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212',ApproverNumber='1')/SAP__self.approve",
         { zcomment: 'reject claim 212' },
+        expect.any(Object),
+        'SAP_USER',
+        'jwt'
+      );
+    });
+
+    it('should accept custom approverNumber and send it in URL', async () => {
+      mockSapClient.post.mockResolvedValue({ ok: true });
+
+      await adapter.approveOnHeader(
+        'CLAIM',
+        '0000000212',
+        { decision: 'A', comment: 'approve claim 212', approverNumber: '2' },
+        'SAP_USER',
+        'jwt'
+      );
+
+      expect(mockSapClient.post).toHaveBeenCalledWith(
+        expect.any(String),
+        "/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212',ApproverNumber='2')/SAP__self.approve",
+        { zcomment: 'approve claim 212' },
         expect.any(Object),
         'SAP_USER',
         'jwt'
@@ -386,7 +407,7 @@ describe('SapOdataAdapter', () => {
       );
 
       const callArgs = mockSapClient.post.mock.calls[0];
-      expect(callArgs[1]).toBe("/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212')/SAP__self.approve");
+      expect(callArgs[1]).toBe("/CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='0000000212',ApproverNumber='1')/SAP__self.approve");
     });
 
     it('should reject entity-bound approve for PR', async () => {

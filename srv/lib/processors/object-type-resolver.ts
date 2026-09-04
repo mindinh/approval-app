@@ -16,63 +16,63 @@ export class ObjectTypeResolver {
     async resolve(
         instanceId: string,
         sapUser: string,
-        hints?: any,
         userJwt?: string
     ): Promise<{
         objectType: string;
         instid: string;
-        inst: any | undefined;
+        inst: any;
         taskRuntime: any;
         businessObject: any;
         normalTask: boolean;
     }> {
         this.logger.info(`Resolving details for task ${instanceId}`);
 
-        // 1. Resolve objectType and documentId directly from hints or instanceId
-        let resolvedObjectType = hints?.businessObjectType
-            ? resolveObjectTypeFromTypeId(hints.businessObjectType) || (hints.businessObjectType as any)
-            : (hints?.typeid ? resolveObjectTypeFromTypeId(hints.typeid) : undefined);
+        // 1. Find the task in the user's worklist (CNMA_WFTASK)
+        const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
+        const instances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId).catch(() => []);
 
-        let resolvedInstid = hints?.documentId || hints?.instid;
+        let inst = instances.find((i: any) => {
+            const rawId = String(i.WorkflowTaskInternalID || i.instanceID || '').replace(/^0+/, '');
+            const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || '').replace(/^0+/, '');
+            return rawId === targetId || rawDocNum === targetId;
+        });
 
-        let inst: any = undefined;
-
-        // Fallback: search task list instance ONLY if objectType or documentId was not supplied in hints
-        if (!resolvedObjectType || !resolvedInstid) {
-            const instancesResult = await Promise.resolve(
-                this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId)
-            ).catch(() => []);
-
-            const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-            inst = instancesResult.find((i: any) => {
-                const rawId = String(i.WorkflowTaskInternalID || i.instanceID || i.InstanceID || i.instanceId || '').replace(/^0+/, '');
-                const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || i.instid || '').replace(/^0+/, '');
+        if (!inst) {
+            // Fallback to full worklist if filtered query did not match
+            const allInstances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => []);
+            inst = allInstances.find((i: any) => {
+                const rawId = String(i.WorkflowTaskInternalID || i.instanceID || '').replace(/^0+/, '');
+                const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || '').replace(/^0+/, '');
                 return rawId === targetId || rawDocNum === targetId;
             });
-
-            if (inst) {
-                resolvedObjectType = resolvedObjectType || resolveObjectTypeFromInstance(inst, 'PR');
-                resolvedInstid = resolvedInstid || inst.DocumentNumber || inst.TechnicalWrkflwObject || inst.instid;
-            }
         }
 
-        resolvedObjectType = resolvedObjectType || 'PR';
-        resolvedInstid = resolvedInstid || (/^\d+$/.test(instanceId) ? instanceId.padStart(10, '0') : instanceId);
-
-        if (!resolvedInstid) {
-            throw new AppError(`Could not resolve business document ID for task ${instanceId}`, 400);
+        if (!inst) {
+            throw new AppError(`Task ${instanceId} not found in worklist`, 404);
         }
 
-        // 2. Fetch S/4 Business Object details directly for this document type (CNMA_PRHEADER, CNMA_POHEADER, CNMA_RESVHEADER, CNMA_CLAIMHEADER)
-        const businessObject = await this.sapOdataAdapter.getDetail(resolvedObjectType, resolvedInstid, sapUser, userJwt);
-        const finalObjectType = businessObject?.DocCategory ? (resolveObjectTypeFromTypeId(businessObject.DocCategory) || businessObject.DocCategory) : resolvedObjectType;
+        const objectType = resolveObjectTypeFromInstance(inst, 'PR');
+        const documentNumber = inst.DocumentNumber || inst.documentNumber || inst.TechnicalWrkflwObject || inst.instid;
+        if (!documentNumber) {
+            throw new AppError(`Document number not found for task ${instanceId}`, 404);
+        }
+        const approverNumber = inst.ApproverNumber || inst.approverNumber || '1';
+        const normalTask = inst.NormalTask !== false && inst.normalTask !== false;
+        const isTaskCompleted = inst.WorkflowTaskStatus === 'COMPLETED' || inst.status === 'COMPLETED';
 
-        const normalTask = inst?.normalTask !== false;
-        const isTaskCompleted = inst?.status === 'COMPLETED' || hints?.status === 'COMPLETED';
+        // 2. Fetch business object details directly (e.g. CNMA_CLAIMHEADER, CNMA_PRHEADER, etc.)
+        const businessObject = await this.sapOdataAdapter.getDetail(
+            objectType,
+            documentNumber,
+            sapUser,
+            userJwt,
+            false,
+            { approverNumber }
+        );
+
+        // 3. Build task runtime & decision options
         let taskRuntime: any = null;
-
-        // 2. Fetch taskRuntime & decision options from TASKPROCESSING ONLY for non-Claim document types (PO, PR, RE...)
-        if (finalObjectType !== 'CLAIM' && !isTaskCompleted) {
+        if (objectType !== 'CLAIM' && !isTaskCompleted) {
             try {
                 taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask);
             } catch (e: any) {
@@ -85,25 +85,23 @@ export class ObjectTypeResolver {
                 instanceId,
                 inst,
                 businessObject,
-                finalObjectType,
-                resolvedInstid,
+                finalObjectType: objectType,
+                resolvedInstid: documentNumber,
                 isTaskCompleted,
                 normalTask,
             });
         }
 
-        if (finalObjectType === 'CLAIM' && String(businessObject?.ActionButton || '').trim().toUpperCase() === 'X' && !isTaskCompleted) {
+        if (objectType === 'CLAIM' && String(businessObject?.ActionButton || '').trim().toUpperCase() === 'X' && !isTaskCompleted && normalTask !== false) {
             taskRuntime.decisions = [
                 { DecisionKey: '0001', DecisionText: 'Approve' },
                 { DecisionKey: '0002', DecisionText: 'Reject' }
             ];
         }
 
-
         return {
-            objectType: finalObjectType,
-            instid: resolvedInstid,
-
+            objectType,
+            instid: documentNumber,
             inst,
             taskRuntime,
             businessObject,

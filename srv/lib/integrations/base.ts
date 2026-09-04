@@ -112,11 +112,18 @@ export abstract class BaseRawDetail implements Detail {
         return cleaned;
     }
 
+    protected buildHeaderUrl(objectId: string, _options?: { approverNumber?: string }): string {
+        const rawPadded = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
+        const paddedId = rawPadded.substring(0, 10);
+        return `/${this.source.entity}(DocCategory='${this.source.docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
+    }
+
     async getDetail(
         objectId: string,
         sapUser: string,
         userJwt?: string,
-        headerOnly = false
+        headerOnly = false,
+        options?: { approverNumber?: string }
     ): Promise<any> {
         if (!objectId) {
             throw new Error('Document ID is required but was not provided');
@@ -125,7 +132,7 @@ export abstract class BaseRawDetail implements Detail {
         const servicePath = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const rawPadded = /^\d+$/.test(objectId) ? objectId.padStart(10, '0') : objectId;
         const paddedId = rawPadded.substring(0, 10);
-        const headerUrl = `/${this.source.entity}(DocCategory='${this.source.docCategory}',DocumentNumber='${encodeURIComponent(paddedId)}')`;
+        const headerUrl = this.buildHeaderUrl(objectId, options);
 
         const params: Record<string, string> = { $format: 'json' };
         if (!headerOnly && this.source.navigations.length > 0) {
@@ -209,7 +216,7 @@ export abstract class BaseRawDetail implements Detail {
     }
 
     async getDetailBatch(
-        itemsToFetch: Array<{ objectType: string; objectId: string }>,
+        itemsToFetch: Array<{ objectType: string; objectId: string; approverNumber?: string }>,
         sapUser: string,
         userJwt?: string
     ): Promise<Record<string, any>> {
@@ -218,7 +225,7 @@ export abstract class BaseRawDetail implements Detail {
         await Promise.all(
             itemsToFetch.map(async (item) => {
                 try {
-                    const detail = await this.getDetail(item.objectId, sapUser, userJwt);
+                    const detail = await this.getDetail(item.objectId, sapUser, userJwt, false, { approverNumber: item.approverNumber });
                     results[item.objectId] = detail;
                 } catch {
                     results[item.objectId] = null;

@@ -341,15 +341,7 @@ export class InboxController {
         try {
             const instanceId = String(req.params.id || '');
             const { sapUser, userJwt } = resolveIdentity(req);
-            const hints = {
-                typeid: req.query.typeid ? String(req.query.typeid) : undefined,
-                instid: req.query.instid ? String(req.query.instid) : undefined,
-                businessObjectType: req.query.businessObjectType ? String(req.query.businessObjectType) : undefined,
-                documentId: req.query.documentId ? String(req.query.documentId) : undefined,
-                status: req.query.status ? String(req.query.status) : undefined,
-            };
-
-            const detail = await this.processor.getTaskDetail(instanceId, sapUser, hints, userJwt);
+            const detail = await this.processor.getTaskDetail(instanceId, sapUser, userJwt);
             res.json(detail);
         } catch (error) {
             next(error);
@@ -378,15 +370,7 @@ export class InboxController {
         try {
             const instanceId = String(req.params.id || '');
             const { sapUser, userJwt } = resolveIdentity(req);
-            const hints = {
-                typeid: req.query.typeid ? String(req.query.typeid) : undefined,
-                instid: req.query.instid ? String(req.query.instid) : undefined,
-                businessObjectType: req.query.businessObjectType ? String(req.query.businessObjectType) : undefined,
-                documentId: req.query.documentId ? String(req.query.documentId) : undefined,
-                status: req.query.status ? String(req.query.status) : undefined,
-            };
-
-            const detail = await this.processor.getTaskDetail(instanceId, sapUser, hints, userJwt);
+            const detail = await this.processor.getTaskDetail(instanceId, sapUser, userJwt);
             res.json(detail);
         } catch (error) {
             next(error);
@@ -415,15 +399,7 @@ export class InboxController {
         try {
             const instanceId = String(req.params.id || '');
             const { sapUser, userJwt } = resolveIdentity(req);
-            const hints = {
-                typeid: req.query.typeid ? String(req.query.typeid) : undefined,
-                instid: req.query.instid ? String(req.query.instid) : undefined,
-                businessObjectType: req.query.businessObjectType ? String(req.query.businessObjectType) : undefined,
-                documentId: req.query.documentId ? String(req.query.documentId) : undefined,
-                status: req.query.status ? String(req.query.status) : undefined,
-            };
-
-            const detail = await this.processor.getTaskDetail(instanceId, sapUser, hints, userJwt);
+            const detail = await this.processor.getTaskDetail(instanceId, sapUser, userJwt);
             res.json(detail);
         } catch (error) {
             next(error);
@@ -505,6 +481,7 @@ export class InboxController {
             const docNum = ensureString(_context.documentId || req.query.documentId, 'documentId');
             const targetType = String(body.objectType || _context.objectType || _context.businessObjectType || _context.type || req.query.objectType || '').toUpperCase().trim();
             const currentTaskId = String(req.params.id || body.taskId || body.instanceId || _context.instanceId || '');
+            const approverNumber = body.approverNumber || _context.approverNumber || req.query.approverNumber ? String(body.approverNumber || _context.approverNumber || req.query.approverNumber) : undefined;
 
             const { sapUser, userJwt } = resolveIdentity(req);
 
@@ -521,6 +498,7 @@ export class InboxController {
                 objectType: targetType,
                 taskId: currentTaskId,
                 taggedUsers: formattedTaggedUsers,
+                approverNumber,
             });
             res.json({ success: true, message: 'Comment added successfully.' });
         } catch (error) {
@@ -583,7 +561,7 @@ export class InboxController {
             const taskId = String(req.params.id || '');
             if ((!docNum || docNum === 'undefined' || !objectType) && taskId && taskId !== 'undefined') {
                 try {
-                    const detail: any = await this.processor.getTaskDetail(taskId, sapUser, undefined, userJwt);
+                    const detail: any = await this.processor.getTaskDetail(taskId, sapUser, userJwt);
                     docNum = docNum || detail.taskprocessing?.task?.businessContext?.documentId || detail.businessObject?.DocumentNumber || detail.businessObject?.PurchaseRequisition || detail.businessObject?.PurchaseOrder || '';
                     objectType = objectType || detail.objectType || detail.businessObject?.DocCategory;
                 } catch (e: any) {
@@ -756,6 +734,11 @@ export class InboxController {
             const decKey = decisionKey || sapDecisionKey;
             if (!decKey) {
                 throw new AppError('Missing decision details in request body', 400);
+            }
+
+            const approverNumber = body.approverNumber || _context.approverNumber || (req.query.approverNumber ? String(req.query.approverNumber) : undefined);
+            if (approverNumber) {
+                _context.approverNumber = approverNumber;
             }
 
             const { sapUser, userJwt } = resolveIdentity(req);

@@ -74,7 +74,8 @@ export class SapOdataAdapter {
         if (targetInstanceId) {
             const cleanId = String(targetInstanceId).replace(/^0+/, '');
             const padded10 = String(cleanId).padStart(10, '0');
-            filterConditions.push(`(DocumentNumber eq '${padded10}' or WorkflowTaskInternalID eq '${padded10}' or WorkflowTaskInternalID eq '${cleanId}')`);
+            const padded12 = String(cleanId).padStart(12, '0');
+            filterConditions.push(`(DocumentNumber eq '${padded10}' or TechnicalWrkflwObject eq '${padded10}' or WorkflowTaskInternalID eq '${cleanId}' or WorkflowTaskInternalID eq '${padded10}' or WorkflowTaskInternalID eq '${padded12}')`);
         }
 
         if (filterConditions.length > 0) {
@@ -100,11 +101,16 @@ export class SapOdataAdapter {
             const total = resolveTaskTotalAmount(item, undefined, objectType);
 
             return {
+                WorkflowTaskInternalID: item.WorkflowTaskInternalID,
                 instanceID: item.WorkflowTaskInternalID,
+                WorkflowTaskStatus: item.WorkflowTaskStatus,
                 status: item.WorkflowTaskStatus,
+                TechnicalWrkflwObjectType: item.TechnicalWrkflwObjectType,
                 typeid: item.TechnicalWrkflwObjectType,
-                instid: item.DocumentNumber || item.TechnicalWrkflwObject,
+                TechnicalWrkflwObject: item.TechnicalWrkflwObject,
+                DocumentNumber: item.DocumentNumber || item.TechnicalWrkflwObject,
                 documentNumber: item.DocumentNumber || item.TechnicalWrkflwObject,
+                instid: item.DocumentNumber || item.TechnicalWrkflwObject,
                 doctyp: item.DocumentType,
                 doctyp_desc: item.DocumentTypeText,
                 DocumentType: item.DocumentType,
@@ -124,7 +130,9 @@ export class SapOdataAdapter {
                 creationDate: item.CreationDate,
                 creationTime: item.CreationTime,
                 companyCode: item.CompanyCode || item.companyCode,
-                companyCodeName: item.CompanyCodeName || item.companyCodeName
+                companyCodeName: item.CompanyCodeName || item.companyCodeName,
+                ApproverNumber: item.ApproverNumber || item.approverNumber || (item.DocCategory === 'CLAIM' || item.TechnicalWrkflwObjectType === 'CLAIM' ? '1' : undefined),
+                approverNumber: item.ApproverNumber || item.approverNumber || (item.DocCategory === 'CLAIM' || item.TechnicalWrkflwObjectType === 'CLAIM' ? '1' : undefined),
             };
         });
 
@@ -143,20 +151,27 @@ export class SapOdataAdapter {
         return items;
     }
 
-    async getDetail(objectType: string, objectId: string, sapUser: string, userJwt?: string, headerOnly = false): Promise<any> {
+    async getDetail(
+        objectType: string,
+        objectId: string,
+        sapUser: string,
+        userJwt?: string,
+        headerOnly = false,
+        options?: { approverNumber?: string }
+    ): Promise<any> {
         const strategy = this.getStrategy(objectType);
-        return await strategy.getDetail(objectId, sapUser, userJwt, headerOnly);
+        return await strategy.getDetail(objectId, sapUser, userJwt, headerOnly, options);
     }
 
     async getDetailBatch(
-        itemsToFetch: Array<{ objectType: string; objectId: string }>,
+        itemsToFetch: Array<{ objectType: string; objectId: string; approverNumber?: string }>,
         sapUser: string,
         userJwt?: string
     ): Promise<Record<string, any>> {
         const results: Record<string, any> = {};
 
         // Group items by strategy
-        const groupedItems = new Map<string, Array<{ objectType: string; objectId: string }>>();
+        const groupedItems = new Map<string, Array<{ objectType: string; objectId: string; approverNumber?: string }>>();
         for (const item of itemsToFetch) {
             const list = groupedItems.get(item.objectType) || [];
             list.push(item);
@@ -177,7 +192,7 @@ export class SapOdataAdapter {
                         // Fallback to sequential calls if batch not supported by strategy
                         for (const item of group) {
                             try {
-                                const single = await strategy.getDetail(item.objectId, sapUser, userJwt, true);
+                                const single = await strategy.getDetail(item.objectId, sapUser, userJwt, true, { approverNumber: item.approverNumber });
                                 results[`${objectType}:${item.objectId}`] = single;
                             } catch (singleErr) {
                                 // ignore single error
