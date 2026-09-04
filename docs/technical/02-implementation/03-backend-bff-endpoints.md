@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-08-25 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-09-04 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -99,12 +99,11 @@ These endpoints are designed for troubleshooting token bindings, user identities
 *   **Purpose**: Retrieve historical queue containing tasks processed by the user (`COMPLETED` state).
 
 ### 8. GET `/tasks/tasks/:id`
-*   **Purpose**: Fetch raw business object and taskprocessing details concurrently. Returns minimal envelope with unmapped SAP OData structure and workflow execution state. For `CLAIM` document types, decision runtime fetching via TASKPROCESSING is bypassed (`SupportsForward: false`).
+*   **Purpose**: Fetch raw business object and taskprocessing details concurrently.
+    *   **Resolution Strategy**: Deterministic 2-step lookup. First locates the task in the active worklist (`CNMA_WFTASK`) by matching `WorkflowTaskInternalID`, `DocumentNumber`, or `TechnicalWrkflwObject` (normalizing `cleanId`, `padded10`, `padded12`). Then fetches the target document header.
+    *   **Claim 3-Part Composite Key**: For `CLAIM` objects, the backend invokes `GET /CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='...',ApproverNumber='...')` using the task's resolved `ApproverNumber`.
+    *   **CC & Completed Task Guard**: If the task is a Carbon Copy / Review-Only task (`NormalTask === false`) or is completed, `decisionOptions` is strictly populated as an empty array (`[]`) and `SupportsForward` is set to `false`.
 *   **URL Parameter**: `:id` represents the unique Task Instance ID.
-*   **Query Parameters**:
-    *   `typeid` (Optional): Fallback task definition code.
-    *   `instid` (Optional): Target document ID.
-    *   `businessObjectType` (Optional): Explicit document classification (`PR`, `PO`, `CLAIM`, or `RE`).
 *   **Response Payload Schema (Raw Envelope Format)**:
     ```json
     {
@@ -158,7 +157,8 @@ These endpoints are designed for troubleshooting token bindings, user identities
           "status": "READY",
           "priority": "MEDIUM",
           "createdOn": "2026-07-27T04:54:59.000Z",
-          "requestorName": "MINHDT"
+          "requestorName": "MINHDT",
+          "normalTask": true
         },
         "decisionOptions": [
           { "decisionKey": "0001", "decisionText": "Approve", "nature": "POSITIVE" },
@@ -174,15 +174,19 @@ These endpoints are designed for troubleshooting token bindings, user identities
 
 ### 9. POST `/tasks/tasks/:id/decision`
 *   **Purpose**: Executes an approval or rejection decision on SAP Task Gateway and updates ERP document notes when comments are provided. Routed through [`DecisionStrategy`](file:///d:/learning/test/cnma_approval/srv/lib/processors/decision-strategy.ts) with payload validation via [`RequestValidator`](file:///d:/learning/test/cnma_approval/srv/lib/utils/request-validator.ts).
+*   **Security Guard**: Checks `getInstanceNormalTask(instanceId)`. If `normalTask === false` (Carbon Copy / review-only task), throws `403 Forbidden` (`Decisions (Approve/Reject) are not allowed for tagged/CC tasks`).
+*   **Claim Multi-Key Support**: Accepts `approverNumber` (in body or `_context`) to dispatch to `/CNMA_CLAIMHEADER(...)/SAP__self.approve` and `/CNMA_CLAIMHEADER(...)/SAP__self.comment`.
 *   **Request Payload Schema**:
     ```json
     {
       "decisionKey": "0001",
       "sapDecisionKey": "0001",
       "comment": "Approved upon review.",
+      "approverNumber": "1",
       "_context": {
         "documentId": "10001861",
-        "businessObjectType": "PR"
+        "businessObjectType": "PR",
+        "approverNumber": "1"
       }
     }
     ```
@@ -201,12 +205,14 @@ These endpoints are designed for troubleshooting token bindings, user identities
 
 ### 10. POST `/tasks/tasks/:id/comments`
 *   **Purpose**: Add a new timeline comment note to the SAP business document, supporting user tagging (`@mention`). Returns updated comment payload containing `ForwardedBy`, `ForwardedTo`, and `ToUser` metadata fields.
+*   **Claim Support**: Accepts `approverNumber` to bind comment directly to the 3-part composite key header (`CNMA_CLAIMHEADER(..., ApproverNumber='...')`).
 *   **Request Payload Schema**:
     ```json
     {
       "text": "Please clarify specification on line 10 @DUNGNV.",
       "objectType": "PR",
       "taskId": "198820",
+      "approverNumber": "1",
       "taggedUsers": [
         {
           "USERNAME": "DUNGNV",
@@ -214,7 +220,8 @@ These endpoints are designed for troubleshooting token bindings, user identities
         }
       ],
       "_context": {
-        "documentId": "10001861"
+        "documentId": "10001861",
+        "approverNumber": "1"
       }
     }
     ```

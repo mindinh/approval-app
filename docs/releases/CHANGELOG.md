@@ -4,6 +4,31 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ## [Unreleased]
 
+## [1.0.16] - 2026-09-04
+
+### Added
+*   **Mobile Bottom Navigation Architecture (`MobileNavContext`, `MobileBottomBar`, `MobileTopBar`)**:
+    *   Replaced the mobile drawer sidebar with a thumb-friendly 4-tab **`MobileBottomBar`** (`Home`, `My Tasks` with live badge counter, `Approved`, `Dashboard`) featuring Framer Motion spring transition indicators.
+    *   Introduced [`MobileNavContext`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/contexts/MobileNavContext.tsx) with pure `matchPath` route resolution (`isTaskDetailPath`, `resolveNavTab`) managing mutual exclusivity (bottom bar automatically hides during task detail inspection or mass selection mode).
+    *   Created [`MobileTopBar`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/layouts/MobileTopBar.tsx) supporting embedded mode (in `HomePage` gradient banner) and standalone mode (in `DashboardPage` and `InboxPage` list view) with user initials avatar, user ID, and one-tap logout.
+    *   Defined standardized layout CSS variables in `theme.css`: `--mobile-bottom-nav-height` and `--mobile-bottom-nav-clearance` to dynamically adapt container bottom padding without magic numbers.
+*   **SAP S/4HANA Claim Composite Key Support (`claim.ts`, `decision-strategy.ts`, `sap-odata-adapter.ts`)**:
+    *   Implemented full 3-part composite key integration for `CNMA_CLAIMHEADER`: `(DocCategory='CLAIM', DocumentNumber='<id>', ApproverNumber='<step>')`.
+    *   Updated `ClaimDetail` to support composite keys across GET detail queries, entity-bound actions (`approve`, `reject`), and timeline comment notes.
+    *   Extended `ClaimDecisionStrategy` to extract and propagate `approverNumber` for dual-action execution (stage decision + audit comment).
+*   **4-Eyes Code Review Report 260904 (`docs/code-review/Code-Review-260904.md`)**:
+    *   Generated a comprehensive 4-Eyes audit report scoring 100/100 across SOLID, DRY, YAGNI, and KISS principles with all follow-up action items fully resolved.
+
+### Refactored & Changed
+*   **Deterministic Worklist Resolution (`ObjectTypeResolver.ts`)**:
+    *   Eliminated speculative URL query parameter guessing (`hints`: `typeid`, `instid`, `businessObjectType`, `documentId`).
+    *   Implemented deterministic 2-step lookup: queries active worklist (`CNMA_WFTASK`) with multi-format internal task ID normalization (`cleanId`, `padded10`, `padded12`), then dispatches directly to the target document header.
+*   **Tactile Card & Action Affordances (`TaskCard.tsx`, `TaskActionPanel.tsx`)**:
+    *   Added subtle spring scaling (`active:scale-[0.98]`) on task cards and (`active:scale-[0.97]`) on action buttons for responsive touch feedback.
+    *   Added chevron drill-down indicators on task card footers and rounded left priority stripes (`before:rounded-r-full`).
+
+---
+
 ## [1.0.15] - 2026-09-03
 
 ### Added

@@ -14,14 +14,31 @@ When you first log in, you are presented with the **Dashboard**. The dashboard a
 
 ---
 
-## 📥 Inbox Worklist
+## 📱 Navigation & Viewport Experience
+
+### Desktop & Tablet Navigation
+*   **Unified Sidebar Navigation**: Desktop users can navigate between **Home**, **My Tasks**, **Approved Tasks**, and **Dashboard** using the collapsible Fiori Launchpad-inspired sidebar (`AppSidebar`).
+*   **Master-Detail Split View**: The desktop interface presents a side-by-side split screen with the scrollable task list on the left and the active document details on the right.
+
+### Smartphone Mobile Navigation
+*   **Persistent Bottom Navigation Bar**: On mobile devices, the app automatically switches to a thumb-friendly 4-tab bottom navigation bar:
+    *   🏠 **Home**: Quick glance at pending counts and quick access actions.
+    *   📥 **My Tasks**: Real-time approval inbox with a live notification counter badge (e.g. `5` or `99+`).
+    *   ✅ **Approved**: Historical queue of tasks previously approved or rejected.
+    *   📊 **Dashboard**: Real-time procurement spending metrics, status charts, and document distribution.
+*   **Mutual Exclusivity & Full-Screen Immersive View**: When tapping any task card to drill down, the bottom navigation bar smoothly slides away to maximize screen space for document inspection and floating decision controls. It also hides during Mass Selection mode.
+*   **Mobile Top Bar**: Features user initials avatar, authenticated email address, and a one-tap **Log Out** button directly in the mobile header.
+*   **Pull to Refresh**: Swipe down from the top of the task list or detail view to instantly refresh pending queues and document data.
+*   **Tactile Touch Feedback**: Cards and buttons include subtle spring scaling (`active:scale`) and directional chevrons for intuitive touch operation.
+
+---
+
+## 📥 Managing Your Task List (Inbox)
+
 The **Inbox** holds your structured task list:
-*   **Tabs**: 
-    *   `Active`: Current pending items requiring decision.
-    *   `History`: Previously approved or processed tasks.
-*   **Task Cards**: Each card displays key metadata summarizing the task at first glance:
-    *   **Document Header Title**: Displays pure document numbers directly (e.g., `4500000001` or `1000000234`) for high scannability, paired with visual document category badges (`PR`, `PO`, `Claim`, `Reservation`).
-    *   **Task Type Badge**: Displays a clear `"CC"` badge on Carbon Copy tasks to distinguish tagged comment-only tasks from standard approval tasks.
+*   **Informative Task Cards**: Each card displays:
+    *   Document Number and Category (e.g. `PR 10001861`, `PO 4500000001`, `Claim 0000000220`).
+    *   Document Type badge with semantic color codes (e.g., *Expense PR*, *Asset PR*, *Subcontracting PO*).
     *   Creator / Requester name.
     *   Creation date and age of the task.
     *   Total net amount (with display currency e.g., VND) and VND equivalency.
@@ -33,7 +50,7 @@ The **Inbox** holds your structured task list:
     *   **Mass Task Summary View**: On desktop, selecting multiple tasks opens the summary screen showing your selected queue alongside an **Excluded Tasks — Review Only (CC)** section explaining skipped items.
     *   **Non-Blocking Mass Decision Dialog**: Approving or rejecting prompts a confirmation dialog (rejection reason mandatory, approval note optional). Once confirmed, the dialog closes immediately and decisions process in the background.
     *   **Smart Toast Progress**: A single aggregated toast summarizes successful completions (e.g. `10/10 tasks approved successfully`), while individual toasts alert you to any specific document failures.
-*   **Mobile Pull to Refresh**: On touch mobile devices, swipe down from top of the task list or detail view to instantly refresh your pending approval queue and latest document details.
+*   **Reviewer (CC) Privileges**: While Carbon Copy tasks omit approval and rejection buttons to prevent erroneous releases, reviewers retain full access to post timeline notes, tag colleagues (`@mention`), and download all document attachments.
 
 ---
 

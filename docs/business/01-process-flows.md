@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-03 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-04 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -183,5 +183,47 @@ sequenceDiagram
     end
     Portal->>Portal: Invalidate active worklist & update dashboard counters
 ```
+
+---
+
+## 5. Expense Claim Multi-Level Approval Process Flow
+
+Expense Claims follow a designated multi-tier approval strategy where each approver step is strictly identified by an Approver Sequence Number (e.g. Level 1 Manager, Level 2 Finance Controller). The workflow below illustrates how claim instances are retrieved, verified against the specific approval tier, and resolved in SAP ERP:
+
+```mermaid
+sequenceDiagram
+    actor Approver as Claim Approver
+    participant Portal as CNMA Approval Portal
+    participant BFF as Backend BFF (BTP)
+    participant ERP as SAP S/4HANA ERP
+
+    Approver->>Portal: Open Claim Task
+    Portal->>BFF: Request claim detail for task
+    BFF->>ERP: Look up workflow task to resolve Document Number and Approver Level
+    ERP-->>BFF: Return task context with Document Number & Approver Number
+    BFF->>ERP: Fetch claim header, items, comments, and approval steps for this specific level
+    ERP-->>BFF: Return full claim details
+    BFF-->>Portal: Deliver formatted claim view
+    Portal-->>Approver: Display claim header, expense lines, and receipt attachments
+
+    Approver->>Portal: Click Approve or Reject (with note)
+    Portal->>BFF: Submit decision with Claim Document Number and Approver Number
+    
+    par Dual ERP Execution
+        BFF->>ERP: Record decision action for this specific approver level
+        BFF->>ERP: Append audit comment to claim history
+    end
+    
+    ERP-->>BFF: Confirm stage completion
+    BFF-->>Portal: Deliver success notification
+    Portal-->>Approver: Remove task from queue and refresh dashboard
+```
+
+| Step Attribute | Business Meaning |
+| :--- | :--- |
+| **Document Number** | The unique accounting claim reference (e.g. `0000000220`). |
+| **Approver Number** | The sequential tier indicator (e.g. `1`, `2`) corresponding to the active authorization stage. |
+| **Action Button Flag** | System indicator determining whether the current viewer holds sign-off rights or informational review rights. |
+
 
 

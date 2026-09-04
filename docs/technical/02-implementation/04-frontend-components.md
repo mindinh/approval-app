@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Declarative Renderer Engine
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-09-04 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, raw OData consumption, and the **Declarative Raw OData Renderer Engine** of the **CNMA Approval** frontend.
 
@@ -8,31 +8,76 @@ This document details the React component hierarchy, state synchronization patte
 
 ## 🏗️ React Component Hierarchy & Workspace Layout
 
-The frontend application uses a master-detail layout for the inbox workspace:
+The application employs a unified layout wrapper [`MainLayout.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/layouts/MainLayout.tsx) providing desktop sidebar navigation alongside responsive mobile navigation:
 
 ```
-App.tsx (Main App Shell with ErrorBoundary & ToastProvider)
-└── Inbox/index.tsx (Composition Root & Master-Detail Layout Engine)
-    ├── FilterBar (FilterBarField.tsx, MobileMultiSelectFilter.tsx)
-    │     ├── MobileDateRangeFilter (Inline touch calendar range picker)
-    │     └── FilterSettingsDialog.tsx (Adapt filter order & visibility)
-    ├── Left Pane: TaskList.tsx (with touch pull-to-refresh hook: usePullToRefresh.ts)
-    │     ├── TaskCard.tsx (Pure document number header title, badges, total amounts via taskCardView.ts)
-    │     └── TaskPagination.tsx
-    └── Right Pane: TaskDetailView.tsx (with TaskDetailSkeletons.tsx loading indicators & PTR container ref)
-          ├── Header & Status Badges (StatusHeaderBadges.tsx)
-          ├── Tabs Bar: Overview | Details | Attachments | Comments | Workflow
-          ├── Sub-Panels:
-          │     ├── OverviewPanel.tsx (Renders header cards dynamically via declarative BusinessSectionModel)
-          │     ├── DetailsPanel.tsx (Renders item tables with Table/Grid View Mode Switcher, Item Deletion Flags & Fiori Launchpad deep links)
-          │     ├── CommentsPanel.tsx (Timeline notes, rich mention input, and inline Forward audit log strips)
-          │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
-          │     └── WorkflowApprovalPanel.tsx (Approval release tree timeline with red rejection badges & highlight containers)
-          ├── Dialog Modals:
-          │     ├── ForwardTaskDialog.tsx (Task forwarding/delegation user search driven by useSearchUsers.ts)
-          │     └── TagUserDialog.tsx (CC user tagging modal driven by useBusUsers.ts)
-          └── Action Panel: TaskActionPanel.tsx (Approve, Reject, Forward, Tag User actions with CC task forward button restriction)
+App.tsx (Main App Shell with ErrorBoundary & Toaster)
+└── MainLayout.tsx (SidebarProvider & MobileNavProvider)
+    ├── Desktop: AppSidebar.tsx (Collapsible Fiori Launchpad Sidebar)
+    ├── Mobile: MobileBottomBar.tsx (Persistent 4-tab bar with Framer Motion spring animations & badge counters)
+    └── Main Routing Container (<Outlet />)
+        ├── HomePage.tsx (Landing portal with MobileTopBar embedded, metrics cards, quick access)
+        ├── DashboardPage.tsx (Analytics & charts with MobileTopBar standalone & dynamic bottom clearance)
+        └── Inbox/InboxPage.tsx (Master-Detail Layout Engine)
+            ├── Mobile: MobileTopBar.tsx (User identity, initials avatar, one-tap logout)
+            ├── FilterBar (FilterBarField.tsx, MobileMultiSelectFilter.tsx)
+            │     ├── MobileDateRangeFilter (Inline touch calendar range picker)
+            │     └── FilterSettingsDialog.tsx (Adapt filter order & visibility)
+            ├── Left Pane: TaskList.tsx (Touch pull-to-refresh hook: usePullToRefresh.ts)
+            │     ├── TaskCard.tsx (Priority stripe, badges, amount chips, chevron drill-down affordance)
+            │     └── TaskPagination.tsx
+            ├── Right Pane: TaskDetailView.tsx (Full responsive task detail view with PTR container)
+            │     ├── Header & Status Badges (StatusHeaderBadges.tsx)
+            │     ├── Tabs Bar: Overview | Details | Attachments | Comments | Workflow
+            │     ├── Sub-Panels:
+            │     │     ├── OverviewPanel.tsx (Declarative BusinessSectionModel cards)
+            │     │     ├── DetailsPanel.tsx (Item tables with View Switcher, Deletion Flags & FLP deep links)
+            │     │     ├── CommentsPanel.tsx (Timeline notes, rich mention input, inline Forward strips)
+            │     │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
+            │     │     └── WorkflowApprovalPanel.tsx (Approval release tree timeline with rejection badges)
+            │     ├── Dialog Modals:
+            │     │     ├── ForwardTaskDialog.tsx (Task forwarding/delegation user search)
+            │     │     └── TagUserDialog.tsx (CC user tagging modal)
+            │     └── Action Panel: TaskActionPanel.tsx (Docked desktop / floating mobile bar; CC-task protected)
+            └── Mass Selection Mode:
+                  ├── MassSelectionView.tsx (Bulk review queue with Excluded CC Tasks breakdown)
+                  └── MassDecisionDialog.tsx (Non-blocking bulk decision confirmation modal)
 ```
+
+---
+
+## 📱 Mobile Navigation & Viewport Architecture
+
+To provide an optimal native mobile experience on smartphones and tablets, the navigation architecture separates desktop drawer patterns from mobile bottom navigation:
+
+### 1. `MobileNavContext` & State Lifecycle ([`src/contexts/MobileNavContext.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/contexts/MobileNavContext.tsx))
+*   **Active Tab Tracking**: Categorizes routes into `home`, `my`, `approved`, `dashboard`, or `other` using pure route resolver `resolveNavTab`.
+*   **Route Drill-Down Detection**: Pure helper `isTaskDetailPath` uses React Router `matchPath` patterns (`/inbox/:taskId`, `/approved/:taskId`, `/tasks/:taskId`) to detect when a user is inspecting a specific task.
+*   **Mutual Exclusivity**:
+    *   The `MobileBottomBar` automatically unmounts / slides out (`exit={{ y: '100%', opacity: 0 }}`) when drilling into a task detail view, leaving the viewport dedicated to content and the floating action panel.
+    *   When the user activates Mass Selection Mode in `InboxPage.tsx`, `setHideBottomBar(true)` coordinates hiding the bottom bar to make room for mass selection controls.
+
+### 2. Standardized Layout Tokens ([`src/styles/theme.css`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/styles/theme.css))
+Arbitrary padding values have been eliminated in favor of CSS variables defined in `:root`:
+*   `--mobile-bottom-nav-height`: `calc(3.75rem + env(safe-area-inset-bottom, 0px))`
+*   `--mobile-bottom-nav-clearance`: `calc(var(--mobile-bottom-nav-height) + 1.5rem)`
+Both `HomePage.tsx` and `DashboardPage.tsx` use `pb-[var(--mobile-bottom-nav-clearance)] md:pb-8` to ensure touch scrolling never obscures content behind the navigation bar regardless of hardware safe-area insets.
+
+### 3. Identity Top Bar ([`src/components/layouts/MobileTopBar.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/layouts/MobileTopBar.tsx))
+*   Provides user initials avatar, full user email/ID, and one-tap logout (`/do/logout`).
+*   Operates in two modes:
+    *   **Embedded**: Placed inside the gradient header on `HomePage.tsx` without outer borders or background.
+    *   **Standalone**: Renders with full gradient header and safe-area top padding on `DashboardPage.tsx` and list-view on `InboxPage.tsx`.
+
+---
+
+## 🛡️ Carbon Copy (CC / Review-Only) UI Guardrails
+
+Tasks flagged with `normalTask === false` (Carbon Copy / tagged tasks) receive full-stack UI protection:
+1. **Decision Stripping**: [`normalizeDetailForView`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts) strips decision options (`decisions: []`) and disables forwarding (`supports.forward = false`).
+2. **Action Panel Suppression**: [`TaskActionPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx) immediately returns `null` when `isNormalTask === false`.
+3. **Collaboration Preservation**: In [`TaskDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx), `allowAddComment` checks `!isApprovedScope && viewData?.supports?.comments !== false`, allowing CC reviewers to post comments, mention peers, and preview attachments without approval rights.
+4. **Mass Action Exclusion**: Selection checkboxes on CC task cards are rendered as disabled placeholders with explanatory tooltips, and the "Select All" button strictly filters for actionable tasks (`task.normalTask !== false`).
 
 ---
 

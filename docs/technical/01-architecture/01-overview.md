@@ -1,6 +1,6 @@
 # System Architecture Overview
 
-> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-09-04 | **Status:** Active
 
 This document provides a high-level technical overview of the **CNMA Approval** system design, integration boundaries, technology stack, and business object transformation architecture.
 
@@ -109,7 +109,7 @@ sequenceDiagram
     participant Proj as CanonicalProjector
 
     Client->>Ctrl: GET /tasks/tasks/:id
-    Ctrl->>Proc: getTaskDetail(id, sapUser, hints, userJwt)
+    Ctrl->>Proc: getTaskDetail(id, sapUser, userJwt)
     
     activate Proc
     Proc->>Reg: get(objectType)
