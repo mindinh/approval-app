@@ -30,6 +30,8 @@ import {
     DialogTitle
 } from '@cnma/react-ui';
 import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
+import { MobileNavProvider } from '@/contexts/MobileNavContext';
+import { MobileBottomBar } from './MobileBottomBar';
 
 // ── Reconstructed primitive Sidebar container with Style Bug Fix ───────────────────
 interface SidebarWrapperProps extends React.ComponentProps<"div"> {
@@ -70,18 +72,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarWrapperProps>(
         }
 
         if (isMobile) {
-            return (
-                <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-                    <SheetContent
-                        data-sidebar="sidebar"
-                        data-mobile="true"
-                        className="w-[var(--sidebar-width)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden border-r border-sidebar-border h-[100dvh] pt-safe pb-safe"
-                        side={side}
-                    >
-                        <div className="flex h-full w-full flex-col">{children}</div>
-                    </SheetContent>
-                </Sheet>
-            );
+            return null;
         }
 
         return (
@@ -392,19 +383,23 @@ function AppSidebar() {
 export function MainLayout() {
     return (
         <SidebarProvider defaultOpen={false}>
-            <div className="h-[100dvh] w-screen overflow-hidden flex bg-background">
-                {/* Global Unified App Sidebar */}
-                <AppSidebar />
+            <MobileNavProvider>
+                <div className="h-[100dvh] w-screen overflow-hidden flex bg-background">
+                    {/* Global Unified App Sidebar */}
+                    <AppSidebar />
 
-                {/* Main Routing Container */}
-                <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                    <main className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col w-full">
-                        <div className="flex-1 min-h-0 w-full">
-                            <Outlet />
-                        </div>
-                    </main>
+                    {/* Main Routing Container */}
+                    <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                        <main className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col w-full">
+                            <div className="flex-1 min-h-0 w-full">
+                                <Outlet />
+                            </div>
+                        </main>
+                        {/* Mobile Persistent Bottom Navigation Bar */}
+                        <MobileBottomBar />
+                    </div>
                 </div>
-            </div>
+            </MobileNavProvider>
         </SidebarProvider>
     );
 }

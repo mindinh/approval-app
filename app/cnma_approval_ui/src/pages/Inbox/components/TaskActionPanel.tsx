@@ -53,7 +53,7 @@ export function TaskActionPanel({
                     disabled={isExecuting || !onUndo}
                     className={cn(
                         "h-9 min-w-28 font-semibold text-foreground/80",
-                        isMobile && "h-10 flex-1 min-w-0"
+                        isMobile && "h-12 flex-1 min-w-0 text-sm font-bold rounded-xl active:scale-[0.97] transition-transform"
                     )}
                 >
                     <Undo2 className="size-4 mr-1.5" />
@@ -62,6 +62,9 @@ export function TaskActionPanel({
             </div>
         );
     }
+
+    const isNormalTask = (detail.normalTask ?? detail.task?.normalTask) !== false;
+    if (!isNormalTask) return null;
 
     const decisions = detail.decisions || detail.task?.decisions || [];
     const supportsForward = (detail as any)?.supports?.forward !== false;
@@ -99,7 +102,7 @@ export function TaskActionPanel({
     // Compact uniform button styling
     const actionBtnClass = cn(
         "h-9 min-w-24 px-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-xs rounded-md",
-        isMobile && "h-11 flex-1 min-w-0 text-sm font-semibold rounded-xl"
+        isMobile && "h-12 flex-1 min-w-0 text-sm font-bold rounded-xl active:scale-[0.97] transition-transform shadow-sm"
     );
 
     return (

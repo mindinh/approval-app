@@ -215,7 +215,7 @@ export function TaskDetailView({
                 if (isPrAttachmentsLoading || (isSecondaryLoading && (viewData?.attachments?.length || 0) === 0)) {
                     return <SecondaryTabSkeleton message={t('task.loadingAttachments', 'Loading attachments...')} />;
                 }
-                return <AttachmentsPanel detail={viewData} isMobile={mobile} allowUpload={showActionPanel} />;
+                return <AttachmentsPanel detail={viewData} isMobile={mobile} allowUpload={!isApprovedScope} />;
             case 'comments':
                 if (isSecondaryLoading && (viewData?.comments?.length || 0) === 0) {
                     return <SecondaryTabSkeleton message={t('task.loadingComments', 'Loading comments...')} />;
@@ -225,11 +225,11 @@ export function TaskDetailView({
                         detail={viewData}
                         instanceId={viewData?.instanceId}
                         onCommentAdded={handleCommentAdded}
-                        allowAddComment={showActionPanel}
+                        allowAddComment={!isApprovedScope && viewData?.supports?.comments !== false}
                         context={{
                             sapOrigin: viewData?.task?.sapOrigin,
-                            documentId: viewData?.task?.businessContext?.documentId,
-                            businessObjectType: viewData?.task?.businessContext?.type,
+                            documentId: viewData?.task?.businessContext?.documentId || viewData?.documentId,
+                            businessObjectType: viewData?.task?.businessContext?.type || viewData?.docCategory,
                         }}
                     />
                 );
@@ -265,22 +265,28 @@ export function TaskDetailView({
             )}
             {/* ── Header ── */}
             {isMobile ? (
-                <div className="px-4 pt-4 pb-0 bg-muted/30 shrink-0">
-                    <div className="rounded-t-xl bg-white border border-x-border/40 border-t-border/40 border-b-border/40 px-4 py-4 space-y-2 relative z-10">
-                        <div className="flex items-start gap-1.5">
-                            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 mt-0.5 size-8 p-0 rounded-md hover:bg-muted transition-colors">
-                                <ArrowLeft className="size-5 text-foreground" />
-                            </Button>
+                <div className="bg-card border-b border-border/70 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 shadow-xs shrink-0">
+                    <div className="flex items-start gap-2.5">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onBack}
+                            className="shrink-0 size-9 p-0 rounded-xl hover:bg-muted active:scale-90 transition-all text-foreground"
+                            aria-label="Back to task list"
+                        >
+                            <ArrowLeft className="size-5" />
+                        </Button>
+                        <div className="flex-1 min-w-0 space-y-1 pt-0.5">
                             {isSecondaryLoading ? (
-                                <Skeleton className="h-6 w-3/4 my-0.5 rounded-md animate-pulse bg-muted/60" />
+                                <Skeleton className="h-6 w-3/4 rounded-md animate-pulse bg-muted/60" />
                             ) : (
-                                <h2 className="text-lg font-bold text-foreground leading-snug line-clamp-2 flex-1">
+                                <h2 className="text-base font-bold text-foreground leading-tight line-clamp-2">
                                     {viewData?.title || 'Task Details'}
                                 </h2>
                             )}
-                        </div>
-                        <div className="pl-7">
-                            <StatusHeaderBadges detail={viewData} />
+                            <div className="pt-0.5">
+                                <StatusHeaderBadges detail={viewData} />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -381,11 +387,11 @@ export function TaskDetailView({
                                         detail={viewData}
                                         instanceId={viewData?.instanceId}
                                         onCommentAdded={handleCommentAdded}
-                                        allowAddComment={showActionPanel}
+                                        allowAddComment={!isApprovedScope && viewData?.supports?.comments !== false}
                                         context={{
                                             sapOrigin: viewData?.task?.sapOrigin,
-                                            documentId: viewData?.task?.businessContext?.documentId,
-                                            businessObjectType: viewData?.task?.businessContext?.type,
+                                            documentId: viewData?.task?.businessContext?.documentId || viewData?.documentId,
+                                            businessObjectType: viewData?.task?.businessContext?.type || viewData?.docCategory,
                                         }}
                                     />
                                 )}
@@ -405,7 +411,7 @@ export function TaskDetailView({
                     <TabsContent value="attachments" className="mt-0 w-full flex-1 min-h-0 px-5 py-4 data-[state=active]:flex data-[state=active]:flex-col">
                         <AttachmentsPanel
                             detail={viewData}
-                            allowUpload={showActionPanel}
+                            allowUpload={!isApprovedScope}
                             isPrLoading={isPrAttachmentsLoading}
                             isSecLoading={isSecondaryLoading}
                         />
@@ -416,9 +422,8 @@ export function TaskDetailView({
             {/* ── Mobile Tabs ── */}
             {isMobile && (
                 <>
-                    <div className="px-4 pb-2 bg-muted/30 shrink-0">
-                        <div className="rounded-b-xl border border-x-border/40 border-b-border/40 border-t-0 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
-                            <div className="flex overflow-x-auto no-scrollbar">
+                    <div className="bg-card border-b border-border/60 px-3 py-1.5 shrink-0 shadow-2xs">
+                        <div className="flex overflow-x-auto no-scrollbar gap-1">
                                 {tabs.map((tab) => {
                                     const isActive = activeTab === tab.value;
                                     return (
@@ -458,7 +463,6 @@ export function TaskDetailView({
                                 })}
                             </div>
                         </div>
-                    </div>
 
                     <div
                         ref={ptr.containerRef}
@@ -516,7 +520,7 @@ export function TaskDetailView({
             )}
 
             {/* ── Desktop: docked action footer ── */}
-            {!isMobile && showActionPanel && (
+            {!isMobile && showActionPanel && (viewData?.normalTask ?? viewData?.task?.normalTask) !== false && (
                 <div className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-sm px-5 py-3 empty:hidden">
                     <TaskActionPanel
                         detail={viewData}
@@ -532,9 +536,9 @@ export function TaskDetailView({
             )}
 
             {/* ── Mobile: floating action bar ── */}
-            {isMobile && showActionPanel && (
-                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-                    <div className="pointer-events-auto rounded-2xl border border-border bg-white/98 p-3 shadow-[0_12px_28px_rgba(15,23,42,0.14)] empty:hidden">
+            {isMobile && showActionPanel && (viewData?.normalTask ?? viewData?.task?.normalTask) !== false && (
+                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                    <div className="pointer-events-auto rounded-2xl border border-border/80 bg-card/95 backdrop-blur-xl p-3 shadow-[0_12px_32px_rgba(15,23,42,0.18)] empty:hidden">
                         <TaskActionPanel
                             detail={viewData}
                             onDecision={onDecision}

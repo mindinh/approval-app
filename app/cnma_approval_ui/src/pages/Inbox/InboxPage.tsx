@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Menu } from 'lucide-react';
 import { TaskList, TaskDetailView, MassSelectionView, MassDecisionDialog } from '@/pages/Inbox/components';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,8 +16,10 @@ import {
 
 
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import { useIsMobile, useSidebar, Button } from '@cnma/react-ui';
+import { useIsMobile, Button } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
+import { useMobileNav } from '@/contexts/MobileNavContext';
+import { MobileTopBar } from '@/components/layouts/MobileTopBar';
 
 type TaskScope = 'my' | 'approved';
 
@@ -40,7 +41,19 @@ export default function InboxPage() {
         tasks: InboxTask[];
     } | null>(null);
     const isMobile = useIsMobile();
-    const { setOpenMobile } = useSidebar();
+    const { setHideBottomBar } = useMobileNav();
+
+    // Mutual exclusivity: hide mobile bottom navigation when selection mode is active
+    useEffect(() => {
+        if (isMobile) {
+            setHideBottomBar(selectionMode);
+        }
+        return () => {
+            if (isMobile) {
+                setHideBottomBar(false);
+            }
+        };
+    }, [isMobile, selectionMode, setHideBottomBar]);
 
     const queryClient = useQueryClient();
 
@@ -337,24 +350,10 @@ export default function InboxPage() {
     if (isMobile) {
         return (
             <div className="relative h-full flex flex-col min-h-0 overflow-hidden bg-background">
-                {/* Mobile App Header — always visible gradient bar */}
-                <div
-                    className="px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex items-center justify-between shadow-sm relative z-20 shrink-0 min-h-[52px]"
-                    style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' }}
-                >
-                    <Button
-                        variant="ghost"
-                        onClick={() => setOpenMobile(true)}
-                        className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-white/10 active:bg-white/20 p-0 relative z-10"
-                        aria-label={t('nav.openMenu', 'Open navigation menu')}
-                    >
-                        <Menu size={22} className="text-white" />
-                    </Button>
-                    <h1 className="absolute left-1/2 top-[calc(50%+env(safe-area-inset-top)/2)] -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-white tracking-wide text-center pointer-events-none whitespace-nowrap">
-                        {scope === 'approved' ? t('nav.approvedTasks', 'Approved Tasks') : t('nav.myTasks', 'My Tasks')}
-                    </h1>
-                    <div className="w-9 h-9" />
-                </div>
+                {/* Mobile App Header — only visible in list view; task detail has its own immersive header */}
+                {!selectedTaskId && (
+                    <MobileTopBar title={scope === 'approved' ? t('nav.approvedTasks', 'Approved Tasks') : t('nav.myTasks', 'My Tasks')} />
+                )}
                 <div className="relative flex-1 min-h-0 w-full min-w-0">
                     <AnimatePresence mode="wait">
                         {selectedTaskId ? (

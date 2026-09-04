@@ -53,6 +53,12 @@
    --radius: 0.5rem;
 
    /* ─────────────────────────────────────────
+     MOBILE LAYOUT & NAVIGATION
+     ───────────────────────────────────────── */
+   --mobile-bottom-nav-height: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+   --mobile-bottom-nav-clearance: calc(var(--mobile-bottom-nav-height) + 1.5rem);
+
+   /* ─────────────────────────────────────────
      BUTTON VARIANTS (SAP UI5)
      ───────────────────────────────────────── */
    --btn-create: var(--color-brand);

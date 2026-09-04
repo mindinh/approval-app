@@ -5,14 +5,14 @@ import { motion } from 'framer-motion';
 import {
     Clock,
     CheckCircle2,
-    Menu,
     BarChart3,
     Inbox,
     CheckCheck,
     ChevronRight,
     Layers,
 } from 'lucide-react';
-import { useIsMobile, useSidebar, Button, Skeleton } from '@cnma/react-ui';
+import { useIsMobile, Button, Skeleton } from '@cnma/react-ui';
+import { MobileTopBar } from '@/components/layouts/MobileTopBar';
 import { useDashboardQuery, normalizeDashboardStatus } from '@/pages/Dashboard/use-dashboard-data';
 import type { DashboardTask, InboxTask } from '@/services/inbox/inbox.types';
 import { TaskCard } from '@/pages/Inbox/components/TaskCard';
@@ -27,7 +27,6 @@ export default function HomePage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const isMobile = useIsMobile();
-    const { setOpenMobile } = useSidebar();
     const { data: userInfo } = useCurrentUser();
 
     const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -100,18 +99,8 @@ export default function HomePage() {
                 <div
                     className="relative px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-16 bg-gradient-to-br from-primary to-primary-hover"
                 >
-                    {/* Hamburger */}
-                    <div className="flex items-center justify-between mb-3">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setOpenMobile(true)}
-                            className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-white/10 active:bg-white/20 p-0"
-                            aria-label="Open navigation menu"
-                        >
-                            <Menu size={22} className="text-white" />
-                        </Button>
-                    </div>
+                    {/* Top Bar: User Email + Logout */}
+                    <MobileTopBar embedded />
 
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -274,7 +263,7 @@ export default function HomePage() {
                 </div>
 
                 {/* ── Quick Access ───────────────────────────── */}
-                <div className="px-4 mt-6 pb-8">
+                <div className="px-4 mt-6 pb-[var(--mobile-bottom-nav-clearance)] md:pb-8">
                     <h2 className="text-lg font-bold mb-4 text-foreground">
                         {t('home.quickAccess', 'Quick Access')}
                     </h2>

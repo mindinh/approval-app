@@ -1,13 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useIsMobile, useSidebar, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@cnma/react-ui';
+import { useIsMobile, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@cnma/react-ui';
+import { MobileTopBar } from '@/components/layouts/MobileTopBar';
 import {
     ListFilter,
     X,
     Loader2,
     AlertCircle,
-    Menu,
     ChevronRight,
     RefreshCw,
     BarChart3,
@@ -319,7 +319,6 @@ function CategoryLegend({
 export default function DashboardPage() {
     const { t } = useTranslation();
     const isMobile = useIsMobile();
-    const { setOpenMobile } = useSidebar();
 
     // ── Filter & View States ──
     const [appliedFilters, setAppliedFilters] = useState<FilterValues>(() => ({
@@ -398,22 +397,7 @@ export default function DashboardPage() {
     const dashboardContent = (
         <div className="flex flex-col min-h-screen bg-background">
             {/* Mobile App Header */}
-            {isMobile && (
-                <div className="px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex items-center shadow-sm relative z-20 shrink-0 w-full bg-gradient-to-r from-primary to-primary-hover">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setOpenMobile(true)}
-                        className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-white/10 active:bg-white/20 relative z-10 p-0"
-                        aria-label={t('nav.openMenu', 'Open navigation menu')}
-                    >
-                        <Menu size={22} className="text-white" />
-                    </Button>
-                    <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-white tracking-wide pointer-events-none">
-                        {t('nav.dashboard', 'Dashboard')}
-                    </h1>
-                </div>
-            )}
+            {isMobile && <MobileTopBar title={t('nav.dashboard', 'Dashboard')} />}
 
             {/* ── Header ─────────────────────────────────── */}
             <div className="px-4 pt-5 pb-3 md:px-8 md:pt-8 md:pb-5">
@@ -471,7 +455,7 @@ export default function DashboardPage() {
                 </div>
             ) : (
                 /* ── Content ────────────────────────────────── */
-                <div className="px-4 pb-8 md:px-8 space-y-6">
+                <div className="px-4 pb-[var(--mobile-bottom-nav-clearance)] md:px-8 md:pb-8 space-y-6">
 
                     {/* ── Active filter pills ────────────────── */}
                     {hasFilters && (

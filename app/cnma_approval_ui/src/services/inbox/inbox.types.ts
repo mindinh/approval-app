@@ -278,6 +278,8 @@ export interface InboxTask {
     doc_curr?: string;
     businessChips?: BusinessChipConfig[];
     normalTask?: boolean;
+    approverNumber?: string;
+    ApproverNumber?: string;
 }
 
 export interface TaskComment {
@@ -438,6 +440,7 @@ export interface DecisionRequestContext {
     sapOrigin?: string;
     documentId?: string;
     businessObjectType?: string;
+    approverNumber?: string;
 }
 
 export interface AddCommentPayload {
@@ -487,6 +490,7 @@ export interface MassDecisionItemPayload {
     documentNumber?: string;
     businessObjectType?: string;
     sapOrigin?: string;
+    approverNumber?: string;
 }
 
 export interface MassDecisionPayload {

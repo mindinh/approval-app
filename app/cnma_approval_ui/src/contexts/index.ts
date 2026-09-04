@@ -2,3 +2,4 @@ export { ErrorContext, type ErrorContextType, type ShowErrorOptions } from './Er
 export { ErrorProvider } from './ErrorProvider';
 export { useErrorModal } from './useErrorModal';
 export { FioriThemeContext, FioriThemeProvider, useFioriTheme } from './FioriThemeContext';
+export { MobileNavProvider, useMobileNav } from './MobileNavContext';

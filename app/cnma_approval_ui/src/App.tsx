@@ -108,7 +108,7 @@ export default function App() {
                     closeButton
                     richColors
                     expand={true}
-                    gap={8}
+                    gap={1}
                     toastOptions={{
                         style: {
                             border: 'none',

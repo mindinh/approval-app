@@ -134,16 +134,15 @@ export function normalizeDetailForView(detail: any) {
 
 
 
-    const rawDecisions = tp?.decisionOptions || detail.decisions || detail.task?.decisions || [];
+    const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
+    const isNormalTask = (detail.normalTask ?? detail.task?.normalTask) !== false;
+    const rawDecisions = !isNormalTask ? [] : (tp?.decisionOptions || detail.decisions || detail.task?.decisions || []);
     const decisions = Array.isArray(rawDecisions) ? rawDecisions.map((d: any) => ({
         key: String(d.DecisionKey || d.key || ''),
         text: String(d.DecisionText || d.text || ''),
         nature: (d.Nature || (String(d.DecisionKey || d.key) === '0001' ? 'POSITIVE' : String(d.DecisionKey || d.key) === '0002' ? 'NEGATIVE' : 'NEUTRAL')) as any,
         commentMandatory: d.CommentMandatory === true
     })) : [];
-
-    const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
-    const isNormalTask = (detail.normalTask ?? detail.task?.normalTask) !== false;
     const isCompleted = (tp?.task?.Status || detail.task?.status || detail.status) === 'COMPLETED';
     const typeDisplay = bo?.DocumentTypeText || bo?.DocumentTypeDisplay || bo?.doctyp_desc || detail.documentTypeDisplay || detail.documentTypeText || (docCategory === 'CLAIM' ? 'Claim' : docCategory);
 
@@ -190,7 +189,7 @@ export function normalizeDetailForView(detail: any) {
             steps,
             comments: []
         },
-        decisions,
+        decisions: isNormalTask ? decisions : [],
         attachments,
         comments,
         processingLogs: detail.processingLogs || [],

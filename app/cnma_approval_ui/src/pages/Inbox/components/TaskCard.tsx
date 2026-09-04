@@ -94,17 +94,17 @@ export const TaskCard = memo(function TaskCard({
                 onFocus={handlePrefetch}
                 className={cn(
                     // Layout
-                    'relative w-full h-auto overflow-hidden rounded-2xl border cursor-pointer select-none',
+                    'group relative w-full h-auto overflow-hidden rounded-2xl border cursor-pointer select-none',
                     'flex flex-col items-stretch justify-start gap-0',
-                    'px-4 py-4',
+                    'px-4 py-3.5',
                     // Text
                     'text-left whitespace-normal',
-                    // Transitions / focus
-                    'transition-all duration-200 active:scale-[0.99] active:bg-muted/40',
+                    // Transitions / focus / tactile feel
+                    'transition-all duration-150 active:scale-[0.98] active:bg-muted/30',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     // Colour — base
-                    'bg-card border-border',
-                    'shadow-sm',
+                    'bg-card border-border/80',
+                    'shadow-xs hover:shadow-sm',
                     // Colour — selected
                     isSelected && {
                         'border-info/35 ring-1 ring-info/10 shadow-sm bg-info/5': colorKey === 'info',
@@ -114,14 +114,14 @@ export const TaskCard = memo(function TaskCard({
                     },
                     // Priority accent stripe (left edge)
                     !isSelected && stripeClass !== 'before:bg-transparent' &&
-                    cn('before:absolute before:inset-y-0 before:left-0 before:w-1', stripeClass),
+                    cn('before:absolute before:inset-y-0 before:left-0 before:w-1 before:rounded-r-full', stripeClass),
                 )}
             >
                 {/* ── Icon + header row ── */}
                 <div className="flex w-full items-start gap-3">
                     <div
                         className={cn(
-                            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl',
+                            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
                             isSelected
                                 ? {
                                     'bg-info/10 text-info': colorKey === 'info',
@@ -129,7 +129,7 @@ export const TaskCard = memo(function TaskCard({
                                     'bg-success/10 text-success': colorKey === 'success',
                                     'bg-primary/10 text-primary': colorKey === 'primary',
                                 }
-                                : 'bg-muted text-muted-foreground',
+                                : 'bg-muted/70 text-muted-foreground',
                         )}
                     >
                         <FileText className="size-4" />
@@ -137,9 +137,9 @@ export const TaskCard = memo(function TaskCard({
 
                     <div className="min-w-0 flex-1">
                         {/* ID + Badges */}
-                        <div className="flex w-full items-start justify-between gap-2">
+                        <div className="flex w-full items-start justify-between gap-1.5">
                             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                                <span className={cn('truncate text-xs font-medium', typeStyle.text)}>
+                                <span className={cn('truncate text-xs font-semibold tracking-wide', typeStyle.text)}>
                                     {contextId}
                                 </span>
                             </div>
@@ -159,38 +159,41 @@ export const TaskCard = memo(function TaskCard({
 
                 {/* ── Business detail chips ── */}
                 {chips.length > 0 && (
-                    <div className="mt-3 flex w-full flex-wrap gap-1.5 text-xs">
+                    <div className="mt-2.5 flex w-full flex-wrap gap-1.5 text-xs">
                         {chips.map((chip: BusinessChip, i: number) => (
                             <span
                                 key={i}
                                 className={cn(
                                     'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
                                     chip.isPrimary
-                                        ? 'bg-primary/10 text-primary border-primary/20'
-                                        : 'bg-muted/70 text-muted-foreground border-border/80'
+                                        ? 'bg-primary/10 text-primary border-primary/25 font-semibold'
+                                        : 'bg-muted/60 text-muted-foreground border-border/70'
                                 )}
                             >
                                 {chip.label && (
-                                    <span className={cn('shrink-0 opacity-85', chip.isPrimary ? 'text-primary' : 'text-muted-foreground')}>{chip.label}:</span>
+                                    <span className={cn('shrink-0 opacity-80', chip.isPrimary ? 'text-primary' : 'text-muted-foreground')}>{chip.label}:</span>
                                 )}
-                                <span className={cn('truncate', chip.isPrimary ? 'font-semibold' : 'text-foreground')}>{chip.value}</span>
+                                <span className={cn('truncate', chip.isPrimary ? 'font-bold' : 'text-foreground')}>{chip.value}</span>
                             </span>
                         ))}
                     </div>
                 )}
 
                 {/* ── Footer ── */}
-                <div className="mt-3 flex w-full items-center justify-between gap-3 border-t border-border/60 pt-2.5 text-xs text-muted-foreground">
+                <div className="mt-3 flex w-full items-center justify-between gap-3 border-t border-border/50 pt-2.5 text-xs text-muted-foreground">
                     <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                         <User className="size-3.5 shrink-0 text-muted-foreground/70" />
                         <span className="truncate">Requestor: {requesterName}</span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-1.5">
-                        <Clock className="size-3.5 text-muted-foreground/70" />
-                        {task.createdOn
-                            ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
-                            : '-'}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <span className="flex items-center gap-1">
+                            <Clock className="size-3 text-muted-foreground/70" />
+                            {task.createdOn
+                                ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
+                                : '-'}
+                        </span>
+                        <ChevronRight className="size-3.5 text-muted-foreground/40 group-active:translate-x-0.5 transition-transform" />
+                    </div>
                 </div>
             </div>
         );
