@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-03 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -143,4 +143,45 @@ flowchart LR
     Notes -->|Sync Acknowledged| UI
     GOS -->|Sync Acknowledged| UI
 ```
+
+---
+
+## 4. Mass Decision Process Flow
+
+This workflow illustrates how bulk approvals and rejections operate across multiple selected documents with automatic exclusion of review-only (CC) tasks:
+
+```mermaid
+sequenceDiagram
+    actor Approver as Business Approver
+    participant Portal as CNMA Approval UI
+    participant BFF as Backend BFF (BTP)
+    participant ERP as SAP S/4HANA Core
+
+    Approver->>Portal: Enable Multi-Select Mode
+    Approver->>Portal: Click "Select All" or choose multiple items
+    Portal->>Portal: Filter out CC / Review-only tasks (NormalTask = false)
+    Portal-->>Approver: Render Mass Summary table (Selected items + Excluded CC items breakdown)
+
+    Approver->>Portal: Click Mass Approve or Mass Reject
+    Portal-->>Approver: Display Mass Decision Confirmation Dialog
+    Approver->>Portal: Enter comment (mandatory for reject, optional for approve) & Confirm
+
+    Note over Portal: Immediate non-blocking dialog dismissal
+    Portal->>Portal: Show background progress toast ("Processing N tasks in background...")
+    Portal->>BFF: Dispatch bulk decision payload
+
+    loop Process chunks of 4 tasks concurrently
+        BFF->>BFF: Guard check: verify NormalTask is not false
+        BFF->>ERP: Execute decision and audit note in SAP
+        ERP-->>BFF: Return individual task execution status
+    end
+
+    BFF-->>Portal: Deliver batch response (total, succeeded, failed)
+    Portal-->>Approver: Display single summary toast for successes (e.g. "10/10 approved successfully")
+    opt When any individual tasks fail
+        Portal-->>Approver: Display separate error toast for each failed document
+    end
+    Portal->>Portal: Invalidate active worklist & update dashboard counters
+```
+
 

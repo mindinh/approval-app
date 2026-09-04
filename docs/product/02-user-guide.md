@@ -1,6 +1,6 @@
 # User Manual & Operations Guide
 
-> **Owner:** Product Manager | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Product Manager | **Last Updated:** 2026-09-03 | **Status:** Active
 
 This guide describes how to operate the **CNMA Approval** portal to manage, review, and decide on procurement workflows.
 
@@ -27,7 +27,12 @@ The **Inbox** holds your structured task list:
     *   Total net amount (with display currency e.g., VND) and VND equivalency.
     *   Priority badges (Low, Medium, High, Very High) to help prioritize.
 *   **Mobile Multi-Select Filter Sheets & Date Pickers**: On smartphone and tablet viewports, tapping multi-select filter fields opens an interactive bottom-sheet drawer with option search, "Select All" / Clear action buttons, and touch-friendly date range selection.
-*   **Mass Action Mode**: Check the checkboxes on multiple task cards to activate the mass action bar at the bottom, allowing you to approve several documents at once.
+*   **Mass Action Mode & Bulk Decisions**:
+    *   Activate selection mode to check multiple tasks.
+    *   **CC Task Exclusion**: Carbon Copy (CC) review-only tasks cannot be approved or rejected. Their checkboxes appear disabled with an explanatory tooltip, and the **Select All** button automatically selects only actionable tasks.
+    *   **Mass Task Summary View**: On desktop, selecting multiple tasks opens the summary screen showing your selected queue alongside an **Excluded Tasks — Review Only (CC)** section explaining skipped items.
+    *   **Non-Blocking Mass Decision Dialog**: Approving or rejecting prompts a confirmation dialog (rejection reason mandatory, approval note optional). Once confirmed, the dialog closes immediately and decisions process in the background.
+    *   **Smart Toast Progress**: A single aggregated toast summarizes successful completions (e.g. `10/10 tasks approved successfully`), while individual toasts alert you to any specific document failures.
 *   **Mobile Pull to Refresh**: On touch mobile devices, swipe down from top of the task list or detail view to instantly refresh your pending approval queue and latest document details.
 
 ---

@@ -1,6 +1,6 @@
 # Roles & Permissions
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-03 | **Status:** Active
 
 This document outlines the user roles, business capabilities, and security matrix governing access to the **CNMA Approval** portal.
 
@@ -14,7 +14,7 @@ The application defines two principal user roles that control the capabilities a
 *   **Target Audience**: Managers, Department Heads, Executives, Procurement Officers.
 *   **Core Purpose**: Reviewing pending items, reading detail grids, viewing attachments, posting comments, tagging business users, executing approval/rejection decisions, and forwarding tasks.
 *   **Restrictions**: Cannot access developer utility screens or raw security tokens.
-*   **CC Task Restrictions**: When viewing Carbon Copy (CC) tasks, business approvers can view document details and add comments/tags, but cannot perform Forward actions (button is disabled and hidden).
+*   **CC Task Restrictions**: When viewing Carbon Copy (CC) tasks, business approvers can view document details and add comments/tags, but cannot perform Approve, Reject, Mass Decision, or Forward actions (prohibited and excluded at both UI and backend levels).
 
 ### 2. Solution Administrator (Admin User)
 *   **Target Audience**: IT Support, System Administrators, DevOps Engineers.
@@ -34,7 +34,8 @@ The table below maps business functions to the respective user roles, task class
 | **View Task Details & Items** | ✅ | ✅ | ✅ | `.user` or `.admin` |
 | **Post Comments & Tag Users** | ✅ | ✅ | ✅ | `.user` or `.admin` |
 | **Stream & Preview Attachments** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **Approve / Reject Tasks** | ✅ | ❌ | ✅ | `.user` or `.admin` |
+| **Approve / Reject Single Task** | ✅ | ❌ | ✅ | `.user` or `.admin` |
+| **Mass Approve / Reject Tasks** | ✅ | ❌ | ✅ | `.user` or `.admin` |
 | **Forward / Delegate Task** | ✅ | ❌ | ✅ | `.user` or `.admin` |
 | **View Historical Approvals** | ✅ | ✅ | ✅ | `.user` or `.admin` |
 | **View Debugger Dashboard** | ❌ | ❌ | ✅ | `.admin` |

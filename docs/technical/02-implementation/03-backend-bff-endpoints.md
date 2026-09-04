@@ -286,3 +286,57 @@ These endpoints are designed for troubleshooting token bindings, user identities
       }
     }
     ```
+
+### 15. POST `/tasks/mass-decision`
+*   **Purpose**: Executes mass approval or rejection across multiple task instances with bounded chunk concurrency (pool limit = 4) to protect SAP Gateway connection limits and avoid UI blocking.
+*   **Security Guards**: Automatically checks `getInstanceNormalTask` for each task. If a task is a Carbon Copy / Review-only task (`NormalTask === false`), the task is rejected with HTTP 403 Forbidden without calling SAP decision endpoints.
+*   **Request Payload Schema**:
+    ```json
+    {
+      "decisionKey": "0001",
+      "sapDecisionKey": "0001",
+      "comment": "Approved in bulk review.",
+      "items": [
+        {
+          "instanceId": "000000000001",
+          "documentId": "10000001",
+          "documentNumber": "10000001",
+          "businessObjectType": "PR",
+          "sapOrigin": "LOCAL"
+        },
+        {
+          "instanceId": "000000000002",
+          "documentId": "10000002",
+          "documentNumber": "10000002",
+          "businessObjectType": "PR",
+          "sapOrigin": "LOCAL"
+        }
+      ]
+    }
+    ```
+*   **Response Payload Schema**:
+    ```json
+    {
+      "decisionKey": "0001",
+      "total": 2,
+      "succeededCount": 2,
+      "failedCount": 0,
+      "results": [
+        {
+          "instanceId": "000000000001",
+          "documentNumber": "10000001",
+          "documentId": "10000001",
+          "status": "SUCCESS",
+          "message": "Decision processed successfully."
+        },
+        {
+          "instanceId": "000000000002",
+          "documentNumber": "10000002",
+          "documentId": "10000002",
+          "status": "SUCCESS",
+          "message": "Decision processed successfully."
+        }
+      ]
+    }
+    ```
+

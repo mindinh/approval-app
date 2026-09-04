@@ -4,6 +4,33 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ## [Unreleased]
 
+## [1.0.15] - 2026-09-03
+
+### Added
+*   **Mass Approve & Reject Engine (`POST /tasks/mass-decision`)**:
+    *   Added dedicated backend BFF endpoint [`POST /tasks/mass-decision`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts#L271-L325) supporting bulk decisions with bounded concurrency (pool limit = 4) via `Promise.allSettled`.
+    *   Introduced `MassDecisionDialog` component with non-blocking UX: modal dismisses immediately upon confirmation while task processing continues in the background.
+    *   Implemented Sonner toast orchestration: single aggregated summary toast for successful tasks (e.g. `18/18 tasks approved successfully`) plus individual error toasts for each failed document ID.
+*   **Mass Selection Excluded Tasks Breakdown (`MassSelectionView.tsx`)**:
+    *   Added a secondary summary table displaying review-only / CC tasks excluded from mass decision actions, including task titles, requestor, document numbers, and `CC / Tagged` indicator badges.
+*   **4-Eyes Code Review Report (`docs/code-review/Code-Review-260903.md`)**:
+    *   Generated a comprehensive 4-Eyes audit report scoring 98/100 across SOLID, DRY, YAGNI, and KISS principles.
+
+### Refactored & Changed
+*   **Carbon Copy (CC) Task Full-Stack Protection (`inbox-processor.ts`, `TaskList.tsx`, `InboxPage.tsx`)**:
+    *   **Backend Guard**: `executeDecision` checks `getInstanceNormalTask(instanceId)` and throws `403 Forbidden` if `normalTask === false` (`Decisions (Approve/Reject) are not allowed for tagged/CC tasks`).
+    *   **Task List Selection**: Replaced selection checkboxes with disabled dashed placeholders and tooltips for `normalTask === false` tasks.
+    *   **Select-All & Infinite-Scroll**: `handleToggleSelectAll` and automatic page loading strictly filter for `task.normalTask !== false`, skipping CC tasks.
+    *   **Mass Action Trigger**: Blocks modal trigger and alerts user if all selected items are review-only CC tasks.
+*   **Comments Pipeline Single-Source-of-Truth (`CommentsPanel.tsx`, `TaskDetailView.tsx`, `panels/index.ts`)**:
+    *   Eliminated deprecated `workflowData.comments` parsing and heuristic `${text}|${author}` deduplication.
+    *   Unified comments rendering and tab header count badges to read directly from `detail.comments`.
+*   **Sonner Toast Styling & UX Refinement (`App.tsx`, `theme.css`)**:
+    *   Set `gap={8}`, `expand={true}`, `richColors`, and inline `border: none` on `<Toaster />`.
+    *   Removed left border accent stroke and hid close buttons on non-front stacked toasts.
+
+---
+
 ## [1.0.14] - 2026-08-27
 
 ### Added
