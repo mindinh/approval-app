@@ -111,6 +111,31 @@
             "status": "Trạng thái",
             "type": "Loại chứng từ",
             "dateRange": "Ngày tạo"
+        },
+        "categories": {
+            "title": "Tổng quan theo nhóm",
+            "pr": "Đề nghị mua hàng",
+            "po": "Đơn đặt hàng",
+            "resv": "Phiếu đặt giữ",
+            "claim": "Đề nghị thanh toán",
+            "pending": "Chờ duyệt",
+            "total": "Tổng",
+            "showDetail": "Xem chi tiết",
+            "hideDetail": "Ẩn chi tiết",
+            "breakdown": "Chi tiết theo loại chứng từ",
+            "noTypes": "Không có loại chứng từ nào trong nhóm này.",
+            "nTotal": "{{count}} tổng",
+            "showingStatus": "Đang xem {{status}}",
+            "nStatus": "{{count}} {{status}}",
+            "barTitle": "{{count}} {{status}} trên tổng {{total}}"
+        },
+        "truncatedNotice": "Số liệu theo nhóm và loại chứng từ tính trên 1000 yêu cầu gần nhất.",
+        "status": {
+            "reset": "Bỏ lọc trạng thái",
+            "showAll": "Xem tất cả trạng thái",
+            "arcTitle": "{{status}}: {{count}} yêu cầu",
+            "inApproving": "Đang duyệt",
+            "completed": "Đã hoàn tất"
         }
     },
     "inbox": {
