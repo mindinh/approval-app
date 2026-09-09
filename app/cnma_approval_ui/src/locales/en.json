@@ -124,6 +124,31 @@
             "status": "Status",
             "type": "Document Type",
             "dateRange": "Created Date"
+        },
+        "categories": {
+            "title": "Categories Overview",
+            "pr": "Purchase Requisition",
+            "po": "Purchase Order",
+            "resv": "Reservation",
+            "claim": "Claim Form",
+            "pending": "Pending",
+            "total": "Total",
+            "showDetail": "Show detail",
+            "hideDetail": "Hide detail",
+            "breakdown": "Document Types Breakdown",
+            "noTypes": "No document types in this category.",
+            "nTotal": "{{count}} total",
+            "showingStatus": "Showing {{status}}",
+            "nStatus": "{{count}} {{status}}",
+            "barTitle": "{{count}} {{status}} out of {{total}} total"
+        },
+        "truncatedNotice": "Category and type breakdowns cover the 1000 most recent tasks.",
+        "status": {
+            "reset": "Reset status",
+            "showAll": "Show all statuses",
+            "arcTitle": "{{status}}: {{count}} requests",
+            "inApproving": "In Approving",
+            "completed": "Completed"
         }
     },
     "inbox": {

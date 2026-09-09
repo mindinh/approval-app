@@ -384,6 +384,7 @@ export interface DashboardTask {
     taskType: string;
     documentType: string;
     documentTypeDesc: string;
+    docCategory?: string;
     status: string;
     currency: string;
     totalNetAmount: number | null;

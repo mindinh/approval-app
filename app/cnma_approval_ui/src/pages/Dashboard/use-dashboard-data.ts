@@ -99,15 +99,29 @@ export function resolveCategory(docCategory?: string, rawDocType?: string, label
     return 'OTHER';
 }
 
-// ─── Bar Data ─────────────────────────────────────────────
-export interface BarDataItem {
-    label: string;
+/** Per document-type breakdown with the status split resolved from the task list. */
+export interface TaskTypeCount {
+    /** Human readable document type label, e.g. "Expense PR (ZEXP)". */
+    type: string;
+    /** Raw S/4 document type code the label was derived from. */
     rawDocType: string;
-    docCategory: string;
     category: CategoryType;
-    total: number;
-    'In Approving': number;
-    'Completed'?: number;
+    count: number;
+    inApprovingCount: number;
+    completedCount: number;
+}
+
+/** Counts keyed by category, plus an ALL total. */
+export type CategoryCounts = Record<CategoryType, number> & { ALL: number };
+
+const EMPTY_CATEGORY_COUNTS = (): CategoryCounts => ({
+    PO: 0, PR: 0, RESV: 0, CLAIM: 0, OTHER: 0, ALL: 0
+});
+
+/** A task after status normalization, with category and display label resolved once. */
+interface NormalizedTask extends DashboardTask {
+    category: CategoryType;
+    typeLabel: string;
 }
 
 // ─── Table Row ────────────────────────────────────────────
@@ -144,58 +158,54 @@ export function useDashboardData(
     statusCounts?: StatusCountItem[],
     docTypeCounts?: DocTypeCountItem[]
 ) {
-    // 1. Normalize statuses and filter data for the main table (fully filtered)
+    // 0. Normalize status, category and display label once for every task
+    const normalizedTasks: NormalizedTask[] = useMemo(() => {
+        return tasks.map((t) => ({
+            ...t,
+            status: normalizeDashboardStatus(t.status),
+            category: resolveCategory(t.docCategory, t.documentType || t.taskType, t.documentTypeDesc),
+            typeLabel: getDocTypeDescription(t.documentType || t.taskType || 'Standard', t.documentTypeDesc),
+        }));
+    }, [tasks]);
+
+    const { status: statusFilter, documentType: typeFilter, category: categoryFilter } = appliedFilters;
+
+    // 1. Fully filtered set — drives the detail table
     const filteredTasks = useMemo(() => {
-        return tasks.map((t) => {
-            const status = normalizeDashboardStatus(t.status);
-            return { ...t, status };
-        }).filter((t) => {
-            // Apply status filter (multiselect status: array of canonical statuses, e.g. ['In Approving'])
-            if (Array.isArray(appliedFilters.status) && appliedFilters.status.length > 0) {
-                if (!appliedFilters.status.includes(t.status)) return false;
+        return normalizedTasks.filter((t) => {
+            // Status filter (multiselect: array of canonical statuses, e.g. ['In Approving'])
+            if (Array.isArray(statusFilter) && statusFilter.length > 0) {
+                if (!statusFilter.includes(t.status)) return false;
             }
+            // Category filter (PO / PR / RESV / CLAIM)
+            if (categoryFilter && t.category !== categoryFilter) return false;
+            // Document type filter (raw S/4 code, e.g. 'ZEXP')
+            if (typeFilter && t.documentType !== typeFilter) return false;
 
-            // Apply documentType filter (select type, e.g. 'PR')
-            if (appliedFilters.documentType) {
-                if (t.documentType !== appliedFilters.documentType) return false;
-            }
             return true;
         });
-    }, [tasks, appliedFilters]);
+    }, [normalizedTasks, statusFilter, categoryFilter, typeFilter]);
 
-    // 2. Compute visual datasets excluding the Status filter
-    const tasksFilteredExcludingStatus = useMemo(() => {
-        return tasks.map((t) => {
-            const status = normalizeDashboardStatus(t.status);
-            return { ...t, status };
-        }).filter((t) => {
-            if (appliedFilters.documentType) {
-                const docType = t.documentType || t.taskType || '';
-                if (docType !== appliedFilters.documentType) return false;
-            }
-            return true;
-        });
-    }, [tasks, appliedFilters.documentType]);
-
-    // 3. Compute dynamic KPI metrics (counts only)
+    // 2. Status totals for the donut.
+    //
+    //    Deliberately independent of every other filter: status is the top of the
+    //    drill-down, so the donut always reports the full picture and the category,
+    //    type and search selections below it narrow the levels underneath — never
+    //    the donut itself. Clicking a slice sets the status filter, which is why
+    //    the status filter is not applied here either.
     const kpiMetrics = useMemo(() => {
-        let totalCount = 0;
         const counts: Record<string, number> = { 'In Approving': 0, 'Completed': 0 };
+        let totalCount = 0;
 
-        // When a document type filter is active, derive status counts specifically for that document type
-        if (appliedFilters.documentType) {
-            for (const t of tasksFilteredExcludingStatus) {
-                totalCount++;
-                counts[t.status] = (counts[t.status] || 0) + 1;
-            }
-        } else if (statusCounts && statusCounts.length > 0) {
+        if (statusCounts && statusCounts.length > 0) {
+            // Server-side aggregate — authoritative and not subject to the 1000-row cap
             for (const s of statusCounts) {
                 const label = s.statusLabel || normalizeDashboardStatus(s.WorkflowTaskStatus);
                 counts[label] = (counts[label] || 0) + Number(s.RequestCount || 0);
                 totalCount += Number(s.RequestCount || 0);
             }
         } else {
-            for (const t of tasksFilteredExcludingStatus) {
+            for (const t of normalizedTasks) {
                 totalCount++;
                 counts[t.status] = (counts[t.status] || 0) + 1;
             }
@@ -206,7 +216,7 @@ export function useDashboardData(
             'In Approving': counts['In Approving'] || 0,
             Completed: counts['Completed'] || 0,
         };
-    }, [statusCounts, tasksFilteredExcludingStatus, appliedFilters.documentType]);
+    }, [statusCounts, normalizedTasks]);
 
     // 4. Compute Chart 1: Donut segments (Count only)
     const donutSegments = useMemo(() => {
@@ -217,53 +227,68 @@ export function useDashboardData(
         }));
     }, [kpiMetrics]);
 
-    // 5. Compute Chart 2: Stacked Bar Chart (Count only)
-    const barData = useMemo(() => {
-        if (docTypeCounts && docTypeCounts.length > 0) {
-            const groups = new Map<string, { total: number; 'In Approving': number; rawDocType: string; docCategory: string }>();
-            for (const item of docTypeCounts) {
-                const docCategory = item.DocCategory || '';
-                const rawKey = item.DocumentType || (docCategory.toUpperCase() === 'CLAIM' ? 'CLAIM' : docCategory) || 'Standard';
-                const key = getDocTypeDescription(rawKey, item.DocumentTypeText);
-                let g = groups.get(key);
-                if (!g) {
-                    g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory };
-                    groups.set(key, g);
-                }
-                const count = Number(item.RequestCount || 0);
-                g.total += count;
-                g['In Approving'] += count;
+    // 5a. The set the category level is computed over: status (and search) applied,
+    //     but not the category/type selections. Status sits above the category cards
+    //     in the drill-down, so picking a donut slice narrows them; leaving out the
+    //     category and type filters is what keeps all four cards on screen and lets
+    //     the user switch between them.
+    const tasksForCategoryLevel = useMemo(() => {
+        return normalizedTasks.filter((t) => {
+            if (Array.isArray(statusFilter) && statusFilter.length > 0) {
+                if (!statusFilter.includes(t.status)) return false;
             }
-            return Array.from(groups.entries())
-                .map(([label, data]) => ({
-                    label,
-                    ...data,
-                    category: resolveCategory(data.docCategory, data.rawDocType, label)
-                }))
-                .sort((a, b) => b.total - a.total);
+            return true;
+        });
+    }, [normalizedTasks, statusFilter]);
+
+    // 5b. Per document-type breakdown feeding the category drill-down cards.
+    const typesData: TaskTypeCount[] = useMemo(() => {
+        const groups = new Map<string, TaskTypeCount>();
+
+        for (const t of tasksForCategoryLevel) {
+            const rawDocType = t.documentType || t.taskType || 'Standard';
+            let g = groups.get(t.typeLabel);
+            if (!g) {
+                g = { type: t.typeLabel, rawDocType, category: t.category, count: 0, inApprovingCount: 0, completedCount: 0 };
+                groups.set(t.typeLabel, g);
+            }
+            g.count++;
+            if (t.status === 'Completed') g.completedCount++;
+            else g.inApprovingCount++;
         }
 
-        const groups = new Map<string, { total: number; 'In Approving': number; rawDocType: string; docCategory: string }>();
-        for (const t of tasksFilteredExcludingStatus) {
-            const docCategory = (t as any).docCategory || (t.taskType === 'CLAIM' ? 'CLAIM' : '');
-            const rawKey = t.documentType || (t.taskType === 'CLAIM' ? 'CLAIM' : t.taskType) || docCategory || 'Standard';
-            const key = getDocTypeDescription(rawKey, t.documentTypeDesc);
-            let g = groups.get(key);
-            if (!g) {
-                g = { total: 0, 'In Approving': 0, rawDocType: rawKey, docCategory };
-                groups.set(key, g);
+        return Array.from(groups.values()).sort((a, b) => b.count - a.count);
+    }, [tasksForCategoryLevel]);
+
+    // 5c. Category roll-ups for the 4 overview cards (total / pending / completed).
+    const { categoryCounts, pendingCounts, completedCounts } = useMemo(() => {
+        const total = EMPTY_CATEGORY_COUNTS();
+        const pending = EMPTY_CATEGORY_COUNTS();
+        const completed = EMPTY_CATEGORY_COUNTS();
+
+        for (const t of tasksForCategoryLevel) {
+            total[t.category]++;
+            total.ALL++;
+            if (t.status === 'Completed') {
+                completed[t.category]++;
+                completed.ALL++;
+            } else {
+                pending[t.category]++;
+                pending.ALL++;
             }
-            g.total++;
-            g['In Approving']++;
         }
-        return Array.from(groups.entries())
-            .map(([label, data]) => ({
-                label,
-                ...data,
-                category: resolveCategory(data.docCategory, data.rawDocType, label)
-            }))
-            .sort((a, b) => b.total - a.total);
-    }, [docTypeCounts, tasksFilteredExcludingStatus]);
+
+        return { categoryCounts: total, pendingCounts: pending, completedCounts: completed };
+    }, [tasksForCategoryLevel]);
+
+    // 5d. The task list is capped at 1000 rows server-side. When the status aggregate
+    //     reports more than we received, the per-type and per-category splits above are
+    //     computed over a subset — surface that so the UI can say so.
+    const isTruncated = useMemo(() => {
+        if (!statusCounts || statusCounts.length === 0) return false;
+        const aggregateTotal = statusCounts.reduce((sum, s) => sum + Number(s.RequestCount || 0), 0);
+        return aggregateTotal > normalizedTasks.length;
+    }, [statusCounts, normalizedTasks.length]);
 
     // 6. Dynamic document type filter dropdown options (distinct values)
     const documentTypeOptions = useMemo(() => {
@@ -303,7 +328,7 @@ export function useDashboardData(
 
             return {
                 taskType: t.taskType,
-                documentTypeDesc: getDocTypeDescription(t.documentType || t.taskType || 'Standard', t.documentTypeDesc),
+                documentTypeDesc: t.typeLabel,
                 docNumber: t.documentNumber,
                 currency: t.currency || 'VND',
                 status: t.status,
@@ -317,10 +342,14 @@ export function useDashboardData(
     return {
         filteredTasks,
         donutSegments,
-        barData,
+        typesData,
+        categoryCounts,
+        pendingCounts,
+        completedCounts,
         documentTypeOptions,
         tableRows,
         kpiMetrics,
+        isTruncated,
     };
 }
 
