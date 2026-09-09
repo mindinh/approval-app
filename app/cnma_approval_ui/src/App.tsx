@@ -1,5 +1,5 @@
-import { Routes, Route, HashRouter, useNavigate } from 'react-router-dom';
-import { useFLPSyncDirect, getInitialFLPRoute } from './hooks/useFLPSync';
+import { Routes, Route, HashRouter, useNavigate, useLocation } from 'react-router-dom';
+import { useFLPSyncDirect, getInitialFLPRoute, subscribeFLPRoute } from './hooks/useFLPSync';
 import { useRef, useEffect, lazy, Suspense } from 'react';
 import { MainLayout } from './components/layouts/MainLayout';
 import { Toaster } from '@cnma/react-ui';
@@ -21,22 +21,29 @@ function ShellSync() {
     return null;
 }
 
-// Component to navigate to initial route from FLP hash on app load
+// Component to navigate to initial route from FLP hash on app load and sync external address bar changes
 function InitialRouteNavigator() {
     const navigate = useNavigate();
-    const hasNavigated = useRef(false);
+    const location = useLocation();
+    const currentPathRef = useRef(location.pathname);
+    currentPathRef.current = location.pathname;
 
     useEffect(() => {
-        if (hasNavigated.current) return;
-        hasNavigated.current = true;
-
+        // 1. Immediate sync if available on startup (direct parent access or standalone)
         const initialRoute = getInitialFLPRoute();
-        console.log("[App] Initial FLP route:", initialRoute);
-
-        if (initialRoute && initialRoute !== "/") {
-            console.log("[App] Navigating to initial route:", initialRoute);
+        console.log('[App] Initial FLP route on mount:', initialRoute);
+        if (initialRoute && initialRoute !== '/' && initialRoute !== currentPathRef.current) {
             navigate(initialRoute, { replace: true });
         }
+
+        // 2. Subscribe to external FLP route updates (e.g. user edits browser address bar and hits Enter)
+        const unsubscribe = subscribeFLPRoute((route) => {
+            if (!route || route === '/' || route === currentPathRef.current) return;
+            console.log('[App] External address bar or FLP route changed to:', route);
+            navigate(route);
+        });
+
+        return unsubscribe;
     }, [navigate]);
 
     return null;

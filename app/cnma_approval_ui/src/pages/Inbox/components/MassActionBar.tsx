@@ -49,7 +49,7 @@ export function MassActionBar({
 
     // ─── Mobile: fixed bottom sheet ────────────────────
     return (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(1.75rem+env(safe-area-inset-bottom,0px))]">
             <div className="pointer-events-auto rounded-2xl border border-border bg-background/98 p-3 shadow-[0_12px_28px_rgba(15,23,42,0.14)]">
                 <div className="flex justify-end items-center gap-2">
                     {selectedCount > 0 && onMassDecision && (

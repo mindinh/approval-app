@@ -39,10 +39,6 @@ export const RESERVATION_OVERVIEW_FIELDS = {
         code: 'CostCenter',
         text: 'CostCenterName',
         label: 'Cost center'
-    }),
-    releaseStrategyName: text({
-        source: 'ReleaseStrategyText|ReleaseStrategyName',
-        label: 'Release Strategy Name'
     })
 };
 
@@ -71,14 +67,14 @@ export const RESERVATION_TABLE_COLUMNS = {
     }),
     cost: tableCol({
         key: 'cost',
-        header: 'Cost',
+        header: 'Unit Price',
         value: 'CostPrice',
         currency: 'Currency|LocalCurrency',
         align: 'right'
     }),
     value: tableCol({
         key: 'value',
-        header: 'Value',
+        header: 'Total Value',
         value: 'Price',
         currency: 'Currency|LocalCurrency',
         align: 'right'

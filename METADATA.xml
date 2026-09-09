@@ -234,8 +234,8 @@
                 <Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
                 <Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/>
                 <Property Name="DeliveryDate" Type="Edm.Date"/>
-                <Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="11" Scale="variable"/>
-                <Property Name="ValuationPricePRCD" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="20" Scale="2"/>
+                <Property Name="ValuationPricePRCD" Type="Edm.Decimal" Nullable="false" Precision="20" Scale="2"/>
                 <Property Name="ReferenceDocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="GLAccountText" Type="Edm.String" Nullable="false" MaxLength="50"/>
@@ -245,8 +245,8 @@
                 <Property Name="CommitmentItemDescription" Type="Edm.String" Nullable="false" MaxLength="50"/>
                 <Property Name="OrderInternalID" Type="Edm.String" Nullable="false" MaxLength="12"/>
                 <Property Name="OrderInternalName" Type="Edm.String" Nullable="false" MaxLength="40"/>
-                <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="variable"/>
-                <Property Name="TotalNetAmountLocalCrcyPRCD" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="20" Scale="2"/>
+                <Property Name="TotalNetAmountLocalCrcyPRCD" Type="Edm.Decimal" Nullable="false" Precision="28" Scale="2"/>
                 <Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="Deleted" Type="Edm.String" Nullable="false" MaxLength="1"/>
                 <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
@@ -349,6 +349,8 @@
                 <Property Name="PaymentTermsDescription" Type="Edm.String" Nullable="false" MaxLength="30"/>
                 <Property Name="SupplyingPlant" Type="Edm.String" Nullable="false" MaxLength="4"/>
                 <Property Name="SupplyingPlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
                 <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
@@ -361,6 +363,27 @@
                 <NavigationProperty Name="_HeaderNote" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_HEADER_NOTEType)"/>
                 <NavigationProperty Name="_HeaderText" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_HEADER_TXTType)"/>
                 <NavigationProperty Name="_Item" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_POITEMType)"/>
+            </EntityType>
+            <EntityType Name="ZI_CNMA_APPROVAL_STEP_COMMENTType">
+                <Key>
+                    <PropertyRef Name="ObjectType"/>
+                    <PropertyRef Name="ObjectKey"/>
+                    <PropertyRef Name="ApprovalLevel"/>
+                    <PropertyRef Name="Approver"/>
+                    <PropertyRef Name="Sequence"/>
+                </Key>
+                <Property Name="ObjectType" Type="Edm.String" Nullable="false" MaxLength="32"/>
+                <Property Name="ObjectKey" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="ApprovalLevel" Type="Edm.Byte" Nullable="false"/>
+                <Property Name="Approver" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="Sequence" Type="Edm.Int16" Nullable="false"/>
+                <Property Name="UserId" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="FromUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="ToUser" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="CommentText" Type="Edm.String" Nullable="false" MaxLength="255"/>
+                <Property Name="CommentDate" Type="Edm.Date"/>
+                <Property Name="CommentTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <Property Name="IsForward" Type="Edm.Boolean" Nullable="false"/>
             </EntityType>
             <EntityType Name="CNMA_CLAIM_ATTAType" HasStream="true">
                 <Key>
@@ -472,12 +495,13 @@
                 <Property Name="ApprovalLevel" Type="Edm.Byte" Nullable="false"/>
                 <Property Name="ReleaseCode" Type="Edm.String" Nullable="false" MaxLength="2"/>
                 <Property Name="ReleaseText" Type="Edm.String" Nullable="false" MaxLength="20"/>
-                <Property Name="ApproverName" Type="Edm.String" Nullable="false" MaxLength="30"/>
-                <Property Name="ApproverUserId" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="ApproverName" Type="Edm.String" Nullable="false" MaxLength="80"/>
+                <Property Name="ApproverUserId" Type="Edm.String" Nullable="false" MaxLength="12"/>
                 <Property Name="ApprovalStatus" Type="Edm.String" Nullable="false" MaxLength="30"/>
                 <Property Name="CommentText" Type="Edm.String" Nullable="false" MaxLength="255"/>
                 <Property Name="CommentDate" Type="Edm.Date"/>
                 <Property Name="CommentTime" Type="Edm.TimeOfDay" Nullable="false"/>
+                <NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEP_COMMENTType)"/>
             </EntityType>
             <EntityType Name="CNMA_TASKBYDOCTYPEType">
                 <Key>
@@ -613,7 +637,10 @@
                 <EntitySet Name="CNMA_TASKBYDOCTYPE" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_TASKBYDOCTYPEType"/>
                 <EntitySet Name="CNMA_TASKBYSTATUS" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_TASKBYSTATUSType"/>
                 <EntitySet Name="CNMA_WFTASK" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.CNMA_WFTASKType"/>
-                <EntitySet Name="ZI_CNMA_APPROVAL_STEP" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType"/>
+                <EntitySet Name="ZI_CNMA_APPROVAL_STEP" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType">
+                    <NavigationPropertyBinding Path="_Comment" Target="ZI_CNMA_APPROVAL_STEP_COMMENT"/>
+                </EntitySet>
+                <EntitySet Name="ZI_CNMA_APPROVAL_STEP_COMMENT" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEP_COMMENTType"/>
                 <EntitySet Name="ZI_CNMA_ATTACH" EntityType="com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_ATTACHType">
                     <NavigationPropertyBinding Path="_Content" Target="CNMA_ATTACH_CONTENT"/>
                 </EntitySet>
@@ -1389,9 +1416,6 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ValuationPrice">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Bestellnettopreis"/>
-                <Annotation Term="SAP__common.Heading" String="Nettopreis"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nettopreis im Einkaufsbeleg in Belegwährung"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/ValuationPricePRCD">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -1419,9 +1443,6 @@
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountDocCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="DocumentCurrency"/>
-                <Annotation Term="SAP__common.Label" String="Bestellnettowert"/>
-                <Annotation Term="SAP__common.Heading" String="Nettowert"/>
-                <Annotation Term="SAP__common.QuickInfo" String="Nettobestellwert in Bestellwährung"/>
             </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_POITEMType/TotalNetAmountLocalCrcyPRCD">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
@@ -1497,19 +1518,7 @@
                                     <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
                                 </Record>
                                 <Record>
-                                    <PropertyValue Property="Property" PropertyPath="ValuationPrice"/>
-                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
-                                </Record>
-                                <Record>
                                     <PropertyValue Property="Property" PropertyPath="FundsCenter"/>
-                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
-                                </Record>
-                                <Record>
-                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountDocCrcy"/>
-                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
-                                </Record>
-                                <Record>
-                                    <PropertyValue Property="Property" PropertyPath="TotalNetAmountLocalCrcyPRCD"/>
                                     <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
                                 </Record>
                                 <Record>
@@ -1889,6 +1898,10 @@
                 <Annotation Term="SAP__common.Heading" String="LWk"/>
                 <Annotation Term="SAP__common.QuickInfo" String="Abgebendes Werk bei Transportbestellung"/>
             </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/Plant">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Werk"/>
+            </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/TotalNetAmountLocalCrcy">
                 <Annotation Term="SAP__measures.ISOCurrency" Path="LocalCurrency"/>
             </Annotations>
@@ -1958,6 +1971,94 @@
                             <Record>
                                 <PropertyValue Property="SelectSupported" Bool="true"/>
                             </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/ObjectType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Objekttyp"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/Approver">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/UserId">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/FromUser">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/ToUser">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/IsForward">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Wahrheitswert"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Wahrheitswert: wahr/falsch"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType">
+                <Annotation Term="SAP__common.Label" String="Approval step comment"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/ZI_CNMA_APPROVAL_STEP_COMMENT">
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="FilterExpressionRestrictions">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ObjectType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="Approver"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="UserId"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="FromUser"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ToUser"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="IsForward"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                            </Collection>
                         </PropertyValue>
                     </Record>
                 </Annotation>
@@ -2368,6 +2469,10 @@
                 <Annotation Term="SAP__common.Label" String="Objekttyp"/>
                 <Annotation Term="SAP__common.QuickInfo" String="Typ von Objekten in Persistenten Objektreferenzen"/>
             </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType/ApproverUserId">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Benutzername"/>
+            </Annotations>
             <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEPType">
                 <Annotation Term="SAP__common.Label" String="Approval Step"/>
             </Annotations>
@@ -2403,6 +2508,10 @@
                             <Collection>
                                 <Record>
                                     <PropertyValue Property="Property" PropertyPath="ObjectType"/>
+                                    <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
+                                </Record>
+                                <Record>
+                                    <PropertyValue Property="Property" PropertyPath="ApproverUserId"/>
                                     <PropertyValue Property="AllowedExpressions" String="MultiValue"/>
                                 </Record>
                             </Collection>
@@ -2868,10 +2977,17 @@
             <Annotations Target="SAP__self.CNMA_POHEADERType/SupplyingPlantName">
                 <Annotation Term="SAP__common.Label" String="Name des Werks"/>
             </Annotations>
+            <Annotations Target="SAP__self.CNMA_POHEADERType/PlantName">
+                <Annotation Term="SAP__common.Label" String="Name des Werks"/>
+            </Annotations>
             <Annotations Target="SAP__self.CNMA_POHEADERType/LocalCurrency">
                 <Annotation Term="SAP__common.Label" String="Währung"/>
                 <Annotation Term="SAP__common.Heading" String="Währg"/>
                 <Annotation Term="SAP__common.QuickInfo" String="Währungsschlüssel"/>
+            </Annotations>
+            <Annotations Target="SAP__self.ZI_CNMA_APPROVAL_STEP_COMMENTType/ObjectKey">
+                <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Instanzident. in BOR kompat. Persistenten Objektreferenzen"/>
             </Annotations>
             <Annotations Target="SAP__self.CNMA_CLAIM_ATTAType/DocumentNumber">
                 <Annotation Term="SAP__common.Label" String="Instanzidentifikator"/>

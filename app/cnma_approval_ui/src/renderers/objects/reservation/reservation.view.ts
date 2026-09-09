@@ -30,8 +30,7 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
             RESERVATION_OVERVIEW_FIELDS.totalAmount,
             RESERVATION_OVERVIEW_FIELDS.plant,
             RESERVATION_OVERVIEW_FIELDS.movementType,
-            RESERVATION_OVERVIEW_FIELDS.costCenter,
-            RESERVATION_OVERVIEW_FIELDS.releaseStrategyName
+            RESERVATION_OVERVIEW_FIELDS.costCenter
         ]
     },
     lineItemTable: {

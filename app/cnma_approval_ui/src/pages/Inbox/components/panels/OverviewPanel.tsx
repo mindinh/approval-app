@@ -112,7 +112,7 @@ export function OverviewPanel({
                                         </div>
                                     ) : (
                                         <div key={item.key} className="flex flex-col gap-1 min-h-[3rem]">
-                                            <span className="text-muted-foreground text-[10px] uppercase tracking-wider font-semibold opacity-80">
+                                            <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
                                                 {item.label}
                                             </span>
                                             <div className="flex items-start min-h-[1.5rem]">
@@ -149,7 +149,7 @@ export function OverviewPanel({
 
                                     return (
                                         <div key={item.key} className="flex flex-col gap-1.5 min-h-[4.5rem]">
-                                            <label className="text-muted-foreground text-[10px] uppercase tracking-wider font-semibold opacity-80">
+                                            <label className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
                                                 {item.label}
                                             </label>
                                             {isPendingLongText ? (

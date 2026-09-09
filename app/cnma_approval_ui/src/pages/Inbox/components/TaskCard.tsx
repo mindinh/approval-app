@@ -2,14 +2,16 @@ import { useMemo, memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@cnma/react-ui';
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import { Clock, User, ChevronRight, FileText } from 'lucide-react';
+import { Clock, User, ChevronRight, FileText, Angry, Smile } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { PriorityBadge, StatusBadge, TaskTypeBadge } from './TaskBadges';
+import { StatusBadge, TaskTypeBadge } from './TaskBadges';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { inboxKeys } from '../hooks/inboxKeys';
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { resolveTaskCardConfigForTask, type BusinessChip } from '@/renderers/ObjectView.registry';
+
+import { isApprovedApprovalStatus } from '../utils/predicates';
 
 interface TaskCardProps {
     task: InboxTask;
@@ -65,14 +67,25 @@ export const TaskCard = memo(function TaskCard({
 
     const contextType = typeText;
     const contextId = task.businessContext?.documentId || task.instid || task.instanceId;
-    const isHighPriority = task.priority === 'HIGH' || task.priority === 'VERY_HIGH';
 
-    const isCompleted = task.status === 'COMPLETED';
+    const isCompleted = isApprovedApprovalStatus(task.status) || task.status === 'COMPLETED' || task.status === 'APPROVED';
     const actionPrefix = task.normalTask === false ? (isCompleted ? 'Reviewed' : 'Review') : (isCompleted ? 'Approved' : 'Approve');
 
     const hasBorCodeTitle = task.title && (task.title.includes('BUS2') || task.title.includes('ZBUS2'));
     const displayTitle = (task.title && !hasBorCodeTitle) ? task.title : `${actionPrefix} ${contextType} ${contextId}`;
     const requesterName = task.requestorName || task.createdByName || (task as any).CreatedByUser || (task as any).CreatedByName || (task as any).createdByUser || (task as any).UserName || (task as any).UserFullName || '-';
+
+    const aging = useMemo(() => {
+        if (isCompleted) return null;
+        if (!task.createdOn) return null;
+        const createdTime = new Date(task.createdOn).getTime();
+        if (isNaN(createdTime)) return null;
+        const diffDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
+        return {
+            isOverdue: diffDays > 5,
+            days: Math.floor(diffDays),
+        };
+    }, [task.createdOn, isCompleted]);
 
     const { style, chips } = useTaskCardConfig(task);
     const colorKey = style.colorKey;
@@ -80,7 +93,7 @@ export const TaskCard = memo(function TaskCard({
         text: style.textClass || 'text-muted-foreground',
         stripe: style.stripeClass || 'before:bg-transparent',
     };
-    const stripeClass = isHighPriority ? 'before:bg-destructive' : typeStyle.stripe;
+    const stripeClass = typeStyle.stripe;
 
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
@@ -119,21 +132,32 @@ export const TaskCard = memo(function TaskCard({
             >
                 {/* ── Icon + header row ── */}
                 <div className="flex w-full items-start gap-3">
-                    <div
-                        className={cn(
-                            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
-                            isSelected
-                                ? {
-                                    'bg-info/10 text-info': colorKey === 'info',
-                                    'bg-warning/10 text-warning': colorKey === 'warning',
-                                    'bg-success/10 text-success': colorKey === 'success',
-                                    'bg-primary/10 text-primary': colorKey === 'primary',
-                                }
-                                : 'bg-muted/70 text-muted-foreground',
-                        )}
-                    >
-                        <FileText className="size-4" />
-                    </div>
+                    {!isCompleted && (
+                        <div
+                            className={cn(
+                                'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
+                                aging
+                                    ? aging.isOverdue
+                                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40'
+                                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40'
+                                    : (isSelected
+                                        ? {
+                                            'bg-info/10 text-info': colorKey === 'info',
+                                            'bg-warning/10 text-warning': colorKey === 'warning',
+                                            'bg-success/10 text-success': colorKey === 'success',
+                                            'bg-primary/10 text-primary': colorKey === 'primary',
+                                        }
+                                        : 'bg-muted/70 text-muted-foreground'),
+                            )}
+                            title={aging ? (aging.isOverdue ? 'Pending > 5 days' : 'New task (< 5 days)') : undefined}
+                        >
+                            {aging ? (
+                                aging.isOverdue ? <Angry className="size-4.5" /> : <Smile className="size-4.5" />
+                            ) : (
+                                <FileText className="size-4" />
+                            )}
+                        </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
                         {/* ID + Badges */}
@@ -145,7 +169,6 @@ export const TaskCard = memo(function TaskCard({
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
                                 <TaskTypeBadge normalTask={task.normalTask} />
-                                <PriorityBadge priority={task.priority} />
                                 <StatusBadge status={task.status} />
                             </div>
                         </div>
@@ -186,12 +209,35 @@ export const TaskCard = memo(function TaskCard({
                         <span className="truncate">Requestor: {requesterName}</span>
                     </span>
                     <div className="flex shrink-0 items-center gap-2">
-                        <span className="flex items-center gap-1">
-                            <Clock className="size-3 text-muted-foreground/70" />
-                            {task.createdOn
-                                ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
-                                : '-'}
-                        </span>
+                        {isCompleted ? (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/80">
+                                <Clock className="size-3 text-muted-foreground/60 shrink-0" />
+                                <span>
+                                    {task.createdOn
+                                        ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
+                                        : '-'}
+                                </span>
+                            </span>
+                        ) : (
+                            <span
+                                title={aging?.isOverdue ? 'Pending > 5 days' : 'New task (< 5 days)'}
+                                className={cn(
+                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
+                                    aging
+                                        ? aging.isOverdue
+                                            ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200/60 dark:border-rose-800/40'
+                                            : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/40'
+                                        : 'text-muted-foreground bg-muted/40 border-border/50'
+                                )}
+                            >
+                                <Clock className="size-3 shrink-0" />
+                                <span>
+                                    {task.createdOn
+                                        ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
+                                        : '-'}
+                                </span>
+                            </span>
+                        )}
                         <ChevronRight className="size-3.5 text-muted-foreground/40 group-active:translate-x-0.5 transition-transform" />
                     </div>
                 </div>
@@ -244,7 +290,6 @@ export const TaskCard = memo(function TaskCard({
                 </div>
                 <div className="flex shrink-0 flex-nowrap items-center gap-1">
                     <TaskTypeBadge normalTask={task.normalTask} />
-                    <PriorityBadge priority={task.priority} />
                     <StatusBadge status={task.status} />
                 </div>
             </div>
@@ -282,12 +327,35 @@ export const TaskCard = memo(function TaskCard({
                     <User className="size-3.5 shrink-0 text-muted-foreground/70" />
                     <span className="truncate">Requestor: {requesterName}</span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                    <Clock className="size-3.5 text-muted-foreground/70" />
-                    {task.createdOn
-                        ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
-                        : '-'}
-                </span>
+                {isCompleted ? (
+                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground/80 shrink-0">
+                        <Clock className="size-3 text-muted-foreground/60 shrink-0" />
+                        <span>
+                            {task.createdOn
+                                ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
+                                : '-'}
+                        </span>
+                    </span>
+                ) : (
+                    <span
+                        title={aging?.isOverdue ? 'Pending > 5 days' : 'New task (< 5 days)'}
+                        className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors shrink-0',
+                            aging
+                                ? aging.isOverdue
+                                    ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200/60 dark:border-rose-800/40'
+                                    : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/40'
+                                : 'text-muted-foreground bg-muted/40 border-border/50'
+                        )}
+                    >
+                        <Clock className="size-3 shrink-0" />
+                        <span>
+                            {task.createdOn
+                                ? formatDistanceToNow(new Date(task.createdOn), { addSuffix: true })
+                                : '-'}
+                        </span>
+                    </span>
+                )}
             </div>
 
             {/* ── Hover chevron indicator ── */}

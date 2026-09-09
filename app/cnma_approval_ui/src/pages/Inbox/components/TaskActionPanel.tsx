@@ -102,7 +102,7 @@ export function TaskActionPanel({
     // Compact uniform button styling
     const actionBtnClass = cn(
         "h-9 min-w-24 px-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-xs rounded-md",
-        isMobile && "h-12 flex-1 min-w-0 text-sm font-bold rounded-xl active:scale-[0.97] transition-transform shadow-sm"
+        isMobile && "h-9 flex-1 min-w-0 px-2 text-xs font-semibold rounded-lg active:scale-[0.97] transition-transform shadow-2xs"
     );
 
     return (

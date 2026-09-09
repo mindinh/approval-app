@@ -17,6 +17,7 @@ import { useDashboardQuery, normalizeDashboardStatus } from '@/pages/Dashboard/u
 import type { DashboardTask, InboxTask } from '@/services/inbox/inbox.types';
 import { TaskCard } from '@/pages/Inbox/components/TaskCard';
 import { useTasks, useApprovedTasks, useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
+import { getInitialFLPRoute } from '@/hooks/useFLPSync';
 
 /**
  * HomePage — Mobile-only landing page.
@@ -31,10 +32,15 @@ export default function HomePage() {
 
     const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
 
-    // Redirect desktop users to inbox — home page is mobile-only
+    // Redirect desktop users to inbox or initial deep link — home page is mobile-only
     useEffect(() => {
         if (!isMobileViewport) {
-            navigate('/inbox', { replace: true });
+            const initialRoute = getInitialFLPRoute();
+            if (initialRoute && initialRoute !== '/' && initialRoute !== '/home') {
+                navigate(initialRoute, { replace: true });
+            } else {
+                navigate('/inbox', { replace: true });
+            }
         }
     }, [navigate, isMobileViewport]);
 

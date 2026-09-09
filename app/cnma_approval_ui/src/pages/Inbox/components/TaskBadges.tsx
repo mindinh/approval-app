@@ -1,43 +1,6 @@
 import { Badge } from '@cnma/react-ui';
-import { PRIORITY_CONFIG, PRIORITY_FALLBACK, STATUS_CONFIG, STATUS_FALLBACK } from '@/pages/Inbox/utils/constants';
+import { STATUS_CONFIG, STATUS_FALLBACK } from '@/pages/Inbox/utils/constants';
 import { useTranslation } from 'react-i18next';
-
-export function PriorityBadge({ priority }: { priority?: string }) {
-    const { t } = useTranslation();
-    if (!priority) return null;
-
-    // Handle SAP OData NOT_VALID unmapped values
-    const cleanPriority = (priority.toUpperCase().includes('NOT_VALID') || priority.toUpperCase().includes('NOT VALID'))
-        ? 'MEDIUM'
-        : priority;
-
-    const normalizedPriority = cleanPriority.toUpperCase().replace(/\s+/g, '_');
-
-    const priorityKeyMap: Record<string, string> = {
-        VERY_HIGH: 'veryHigh',
-        HIGH: 'high',
-        MEDIUM: 'medium',
-        LOW: 'low'
-    };
-
-    const config = PRIORITY_CONFIG[normalizedPriority] || {
-        ...PRIORITY_FALLBACK,
-        label: 'Medium',
-    };
-    const { variant, label: defaultLabel } = config;
-
-    const mappedKey = priorityKeyMap[normalizedPriority];
-    const rawTranslation = mappedKey ? (t(`priority.${mappedKey}`, { defaultValue: defaultLabel }) as string) : defaultLabel;
-    const finalLabel = !rawTranslation || rawTranslation === `priority.${mappedKey}` || rawTranslation.toUpperCase().includes('NOT_VALID')
-        ? defaultLabel || 'Medium'
-        : rawTranslation;
-
-    return (
-        <Badge variant={variant as any} className="px-2.5 py-0.5 text-xs font-normal">
-            {finalLabel}
-        </Badge>
-    );
-}
 
 export function StatusBadge({ status }: { status?: string }) {
     const { t } = useTranslation();

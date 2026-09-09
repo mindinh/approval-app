@@ -85,7 +85,7 @@ export function ForwardTaskDialog({
     };
 
     const handleConfirm = () => {
-        if (!selectedUser) return;
+        if (!selectedUser || !comment.trim()) return;
         onForward(selectedUser.userId || selectedUser.uniqueName || '', comment.trim());
     };
 
@@ -207,14 +207,16 @@ export function ForwardTaskDialog({
                         </div>
                     )}
 
-                    {/* Optional Note Field */}
+                    {/* Required Comment Field */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="forward-note">
-                            {t('forward.noteLabel', 'Optional Note')}
+                        <Label htmlFor="forward-note" className="flex items-center gap-1">
+                            <span>{t('forward.noteLabel', 'Comment')}</span>
+                            <span className="text-destructive font-bold">*</span>
                         </Label>
                         <Textarea
                             id="forward-note"
-                            placeholder={t('forward.notePlaceholder', 'Add an optional comment for the recipient...')}
+                            required
+                            placeholder={t('forward.notePlaceholder', 'Add a comment for the recipient...')}
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
                             rows={3}
@@ -230,7 +232,7 @@ export function ForwardTaskDialog({
                     <Button
                         variant="action"
                         onClick={handleConfirm}
-                        disabled={!selectedUser || isSubmitting}
+                        disabled={!selectedUser || !comment.trim() || isSubmitting}
                         className="h-11 sm:h-9 font-medium"
                     >
                         {isSubmitting ? (

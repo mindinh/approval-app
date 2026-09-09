@@ -33,7 +33,7 @@ export function InfoItem({
 }) {
     return (
         <div className="rounded-md border border-border/60 p-3">
-            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground uppercase tracking-wider font-medium">
                 <Icon className="size-3.5" />
                 {label}
             </div>

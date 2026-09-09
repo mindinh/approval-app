@@ -16,7 +16,27 @@ sap.ui.define([
 
         createContent: function () {
             var sAppPath = sap.ui.require.toUrl("cnma_prorequest_s4h");
-            var sIndexUrl = sAppPath + "/index.html";
+            var targetWindow = window.top || window;
+            var parentHash = '';
+
+            try {
+                parentHash = targetWindow.location.hash || '';
+            } catch (e) {
+                // Ignore cross-origin access error if restricted
+            }
+
+            // Extract inner route from parent FLP hash if present (e.g. ...&/inbox/99999 -> #/inbox/99999)
+            var initialInnerHash = '';
+            if (parentHash.indexOf('&/') !== -1) {
+                var innerRoute = parentHash.split('&/').pop();
+                if (innerRoute) {
+                    initialInnerHash = '#/' + innerRoute.replace(/^\//, '');
+                }
+            } else if (parentHash.indexOf('#/') === 0) {
+                initialInnerHash = parentHash;
+            }
+
+            var sIndexUrl = sAppPath + "/index.html" + initialInnerHash;
 
             var that = this;
             var sIframeId = "reactAppIframe-" + Date.now();
@@ -47,6 +67,17 @@ sap.ui.define([
                     that._updateFLPHash(event.data.route);
                 }
             });
+
+            // Forward browser address bar hash changes into the iframe
+            try {
+                var targetWindow = window.top || window;
+                targetWindow.addEventListener('hashchange', function () {
+                    console.log('[UI5-Component] Top window hashchange detected, forwarding to iframe');
+                    that._sendInitialStateToIframe();
+                });
+            } catch (e) {
+                console.warn('[UI5-Component] Cannot attach hashchange listener to top window:', e);
+            }
         },
 
         _sendInitialStateToIframe: function () {

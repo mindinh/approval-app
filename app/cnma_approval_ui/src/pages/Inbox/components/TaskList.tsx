@@ -25,9 +25,13 @@ import {
     Loader2,
     AlertTriangle,
     ArrowDown,
+    ArrowLeft,
+    ChevronsUp,
 } from 'lucide-react';
+import { CategoryAccordionGroup } from './CategoryAccordionGroup';
 import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
+import { CATEGORY_CONFIG, type ObjectCategory } from '../utils/categoryUtils';
 import { useTaskSelection } from '@/pages/Inbox/hooks/useTaskSelection';
 import { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -64,6 +68,10 @@ interface TaskListProps {
     isExecutingMass?: boolean;
     showTaskActions?: boolean;
     hasMobileScopeBar?: boolean;
+    activeCategory?: ObjectCategory | null;
+    onCategoryChange?: (category: ObjectCategory | null) => void;
+    onBackToCategories?: () => void;
+    categoryTotals?: Record<ObjectCategory, { pending: number; completed: number; total: number }>;
 }
 
 export function TaskList({
@@ -94,6 +102,10 @@ export function TaskList({
     isExecutingMass = false,
     showTaskActions = true,
     hasMobileScopeBar = false,
+    activeCategory,
+    onCategoryChange,
+    onBackToCategories,
+    categoryTotals,
 }: TaskListProps) {
     // ─── Hooks ─────────────────────────────────────────────
     const selection = useTaskSelection({
@@ -105,7 +117,7 @@ export function TaskList({
 
     const [isSelectingAllPages, setIsSelectingAllPages] = useState(false);
 
-    const filters = useTaskFilters(tasks, scope);
+    const filters = useTaskFilters(tasks, scope, activeCategory);
 
     const ptr = usePullToRefresh({
         onRefresh,
@@ -133,6 +145,39 @@ export function TaskList({
             setIsSelectingAllPages(false);
         }
     }, [selection.selectionMode]);
+
+    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
+
+    // ─── 4-Section Category Accordion state ───────────────────
+    const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(new Set());
+
+    // If activeCategory is explicitly selected (e.g. from desktop CategoryPillsBar), expand it
+    useEffect(() => {
+        if (activeCategory && activeCategory !== 'ALL') {
+            setExpandedCategories((prev) => {
+                const next = new Set(prev);
+                next.add(activeCategory);
+                return next;
+            });
+        }
+    }, [activeCategory]);
+
+    const handleToggleCategory = useCallback((cat: ObjectCategory) => {
+        setExpandedCategories((prev) => {
+            const next = new Set(prev);
+            if (next.has(cat)) {
+                next.delete(cat);
+            } else {
+                next.add(cat);
+            }
+            return next;
+        });
+    }, []);
+
+    const handleScrollToTopAndCollapse = useCallback(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        setExpandedCategories(new Set());
+    }, []);
 
     // ─── Infinite scroll sentinel (Callback Ref for clean unmount/remount) ─
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -284,6 +329,7 @@ export function TaskList({
                         />
                     )}
 
+
                     <div className="px-3 pb-3">
                         <FilterBar
                             config={filters.filterConfig}
@@ -325,6 +371,10 @@ export function TaskList({
                     exitSelectionMode={handleExitSelectionMode}
                     enterSelectionMode={() => selection.setSelectionMode(true)}
                     showTaskActions={showTaskActions}
+                    activeCategory={activeCategory}
+                    onCategoryChange={onCategoryChange}
+                    onBackToCategories={onBackToCategories}
+                    categoryCounts={filters.categoryCounts}
                 />
             )}
 
@@ -394,43 +444,68 @@ export function TaskList({
                 ) : (
                     <div
                         className={cn(
-                            'space-y-2 p-2.5',
-                            isMobile && 'space-y-3 px-4 pb-24 pt-1'
+                            'p-2.5 space-y-3',
+                            isMobile && 'px-3.5 pb-28 pt-2'
                         )}
                     >
-                        {filters.filteredTasks.map((task) => (
-                            <div key={task.instanceId} className="flex items-start gap-2">
-                                {showTaskActions && selection.selectionMode && (
-                                    <div className={cn('shrink-0 pl-1', isMobile ? 'pt-4' : 'pt-3')}>
-                                        {task.normalTask !== false ? (
-                                            <Checkbox
-                                                checked={selection.selectedIds.has(task.instanceId)}
-                                                onCheckedChange={() => {
-                                                    setIsSelectingAllPages(false);
-                                                    selection.toggleSelection(task.instanceId);
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                className="size-4 rounded border border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center cursor-not-allowed opacity-40"
-                                                title={t('task.ccNotActionable', 'Review-only / CC tasks cannot be approved or rejected')}
-                                            />
-                                        )}
+                        {isMobile ? (
+                            <CategoryAccordionGroup
+                                tasks={filters.filteredTasks}
+                                selectedTaskId={selectedTaskId}
+                                normSelectedId={normSelectedId}
+                                onSelectTask={onSelectTask}
+                                handleCardClick={handleCardClick}
+                                isMobile={isMobile}
+                                scope={scope}
+                                showTaskActions={showTaskActions}
+                                selectionMode={selection.selectionMode}
+                                selectedIds={selection.selectedIds}
+                                onToggleSelection={(id) => {
+                                    setIsSelectingAllPages(false);
+                                    selection.toggleSelection(id);
+                                }}
+                                expandedCategories={expandedCategories}
+                                onToggleCategory={handleToggleCategory}
+                                hasNextPage={hasNextPage}
+                                isFetchingNextPage={isFetchingNextPage}
+                                onLoadMore={onLoadMore}
+                                categoryTotals={categoryTotals}
+                            />
+                        ) : (
+                            filters.filteredTasks.map((task) => (
+                                <div key={task.instanceId} className="flex items-start gap-2">
+                                    {showTaskActions && selection.selectionMode && (
+                                        <div className="shrink-0 pl-1 pt-3">
+                                            {task.normalTask !== false ? (
+                                                <Checkbox
+                                                    checked={selection.selectedIds.has(task.instanceId)}
+                                                    onCheckedChange={() => {
+                                                        setIsSelectingAllPages(false);
+                                                        selection.toggleSelection(task.instanceId);
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="size-4 rounded border border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center cursor-not-allowed opacity-40"
+                                                    title={t('task.ccNotActionable', 'Review-only / CC tasks cannot be approved or rejected')}
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <TaskCard
+                                            task={task}
+                                            isSelected={task.instanceId === selectedTaskId}
+                                            onClick={handleCardClick}
+                                            variant="desktop"
+                                        />
                                     </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                    <TaskCard
-                                        task={task}
-                                        isSelected={task.instanceId === selectedTaskId}
-                                        onClick={handleCardClick}
-                                        variant={isMobile ? 'mobile' : 'desktop'}
-                                    />
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
 
-                        {/* ── Infinite Scroll Sentinel ── */}
-                        <div ref={sentinelCallbackRef} className="h-4" />
+                        {/* ── Infinite Scroll Sentinel (overall fallback) ── */}
+                        <div ref={sentinelCallbackRef} className="h-2" />
                         {isFetchingNextPage && (
                             <div className="flex items-center justify-center py-4 gap-2">
                                 <Loader2 className="size-4 animate-spin text-primary" />
@@ -457,6 +532,30 @@ export function TaskList({
                     isExecuting={isExecutingMass}
                     isMobile={true}
                 />
+            )}
+
+            {/* ── Floating Action Button (Mobile only): Scroll to Top & Collapse All ── */}
+            {isMobile && (
+                <div
+                    className={cn(
+                        "pointer-events-none transition-all duration-300 z-40 fixed right-4",
+                        showTaskActions && selection.selectionMode && selection.selectedIds.size > 0 ? "bottom-28" : "bottom-20"
+                    )}
+                >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleScrollToTopAndCollapse}
+                        className={cn(
+                            "pointer-events-auto size-11 sm:size-12 rounded-full shadow-lg border border-border/80 bg-card/95 hover:bg-card text-foreground backdrop-blur-md active:scale-95 transition-all group cursor-pointer",
+                            "hover:shadow-xl hover:border-primary/50"
+                        )}
+                        title={t('inbox.scrollToTopAndCollapse', 'Scroll to top & Collapse all')}
+                    >
+                        <ChevronsUp className="size-5.5 text-primary group-hover:-translate-y-0.5 transition-transform" />
+                    </Button>
+                </div>
             )}
 
             {/* ── Mobile Filter Drawer ── */}
@@ -632,6 +731,10 @@ function MobileHeader({
     exitSelectionMode,
     enterSelectionMode,
     showTaskActions,
+    activeCategory,
+    onCategoryChange,
+    onBackToCategories,
+    categoryCounts,
 }: {
     totalItems: number;
     showScopeTabs: boolean;
@@ -651,8 +754,21 @@ function MobileHeader({
     exitSelectionMode: () => void;
     enterSelectionMode: () => void;
     showTaskActions: boolean;
+    activeCategory?: ObjectCategory | null;
+    onCategoryChange?: (category: ObjectCategory | null) => void;
+    onBackToCategories?: () => void;
+    categoryCounts?: Record<ObjectCategory, number>;
 }) {
     const { t } = useTranslation();
+
+    const categoryTitle = activeCategory && activeCategory !== 'ALL'
+        ? t(`category.${activeCategory.toLowerCase()}`, CATEGORY_CONFIG[activeCategory]?.title)
+        : t('dashboard.charts.allTasks', 'All Tasks');
+
+    const displayCount = activeCategory && categoryCounts
+        ? (categoryCounts[activeCategory] ?? totalItems)
+        : totalItems;
+
     return (
         <div className="border-b-0 bg-transparent backdrop-blur-none">
             <div className="flex items-center justify-between px-4 py-3">

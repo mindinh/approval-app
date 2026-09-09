@@ -30,7 +30,6 @@ const standardPoOverviewCard = {
         PO_OVERVIEW_FIELDS.documentType,
         PO_OVERVIEW_FIELDS.requester,
         PO_OVERVIEW_FIELDS.vendor,
-        PO_OVERVIEW_FIELDS.releaseStrategy,
         PO_OVERVIEW_FIELDS.companyCode,
         PO_OVERVIEW_FIELDS.creationDate,
         PO_OVERVIEW_FIELDS.paymentTerms,
@@ -51,7 +50,7 @@ const zubPoOverviewCard = {
         PO_OVERVIEW_FIELDS.documentType,
         PO_OVERVIEW_FIELDS.zubRequester,
         PO_OVERVIEW_FIELDS.supplyingPlant,
-        PO_OVERVIEW_FIELDS.releaseStrategy,
+        PO_OVERVIEW_FIELDS.plant,
         PO_OVERVIEW_FIELDS.companyCode,
         PO_OVERVIEW_FIELDS.creationDate,
         PO_OVERVIEW_FIELDS.zubTotalAmount,
@@ -136,8 +135,6 @@ export const PO_VIEWS: Record<string, ObjectViewDefinition> = {
                 PO_TABLE_COLUMNS.materialGroup,
                 PO_TABLE_COLUMNS.plant,
                 PO_TABLE_COLUMNS.storageLocation,
-                PO_TABLE_COLUMNS.referencePr,
-                PO_TABLE_COLUMNS.glAccount,
                 PO_TABLE_COLUMNS.fundsCenter,
                 PO_TABLE_COLUMNS.commitmentItem
             ]

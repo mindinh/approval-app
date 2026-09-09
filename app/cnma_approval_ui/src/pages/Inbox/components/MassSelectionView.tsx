@@ -5,7 +5,7 @@ import { CheckCircle, XCircle, ListChecks, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatShortDate } from '@/pages/Inbox/utils/formatters';
 import { DECISION_KEYS } from '@/pages/Inbox/utils/constants';
-import { PriorityBadge, StatusBadge } from './TaskBadges';
+import { StatusBadge } from './TaskBadges';
 
 interface MassSelectionViewProps {
     tasks: InboxTask[];
@@ -110,9 +110,6 @@ export function MassSelectionView({
                                         Type
                                     </th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                        Priority
-                                    </th>
-                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                         Status
                                     </th>
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -164,9 +161,6 @@ export function MassSelectionView({
                                                 >
                                                     {typeText}
                                                 </Badge>
-                                            </td>
-                                            <td className="px-3 py-2.5">
-                                                <PriorityBadge priority={task.priority} />
                                             </td>
                                             <td className="px-3 py-2.5">
                                                 <StatusBadge status={task.status} />

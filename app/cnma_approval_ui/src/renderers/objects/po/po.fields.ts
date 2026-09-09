@@ -9,17 +9,15 @@ export const PO_OVERVIEW_FIELDS = {
         source: 'Vendor',
         label: 'Vendor',
         formatter: (_val, record) => {
-            if (!record) return '-\n-\n-\n-\n-';
-            const s1 = (record.Vendor || record.Supplier || record.VendorCode || '').trim() || '-';
-            const s2 = (record.VendorName1 || record.VendorName || record.SupplierName || record.Name1 || record.VendorText || '').trim() || '-';
+            if (!record) return '-';
+            const code = (record.Vendor || record.Supplier || record.VendorCode || '').trim() || '-';
             const s3 = (record.VendorName2 || record.Name2 || '').trim() || '-';
             const s4 = (record.VendorName3 || record.Name3 || '').trim() || '-';
             const s5 = (record.VendorName4 || record.Name4 || '').trim() || '-';
 
-            return [s1, s2, s3, s4, s5].join('\n');
+            return [code, s3, s4, s5].join('\n');
         }
     }),
-    releaseStrategy: text({ source: 'ReleaseStrategyText|ReleaseStrategyName', label: 'Release Strategy' }),
     companyCode: codeText({ code: 'CompanyCode', text: 'CompanyCodeName', label: 'Company Code' }),
     creationDate: date({ source: 'CreationDate', label: 'Created On', timeSource: 'CreationTime' }),
     paymentTerms: codeText({ code: 'PaymentTerms', text: 'PaymentTermsDescription', label: 'Payment Terms' }),
@@ -31,8 +29,20 @@ export const PO_OVERVIEW_FIELDS = {
     headerNote: text({ source: 'HeaderNote', label: 'Header Note', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderNote') }),
 
     // ZUB specific
-    zubRequester: codeText({ code: 'CreatedByUser', text: 'ReceivingPlantName', label: 'Requester' }),
+    zubRequester: codeText({ code: 'CreatedByUser', text: 'UserName', label: 'Requester' }),
     supplyingPlant: codeText({ code: 'SupplyingPlant', text: 'SupplyingPlantName', label: 'Supplying Plant' }),
+    plant: {
+        key: 'Plant_PlantName',
+        label: 'Plant',
+        code: 'Plant|ReceivingPlant',
+        text: 'PlantName|ReceivingPlantName',
+        formatter: (_val: unknown, record: any) => {
+            const c = (record?.Plant || record?.ReceivingPlant || record?._Item?.[0]?.Plant || record?._Item?.results?.[0]?.Plant || '').trim();
+            const t = (record?.PlantName || record?.ReceivingPlantName || record?._Item?.[0]?.PlantName || record?._Item?.results?.[0]?.PlantName || '').trim();
+            if (c && t && c !== t) return `${c} (${t})`;
+            return c || t || '-';
+        }
+    },
     zubTotalAmount: amount({ value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', label: 'Total Amount' }),
     zubHeaderText: text({ source: 'HeaderText', label: 'Header Text', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') })
 };

@@ -7,7 +7,7 @@ export const PR_OVERVIEW_FIELDS = {
     createdByUser: text({ source: 'UserName', label: 'Requester' }),
     fundsCenter: codeText({ code: 'FundsCenter', text: 'FundsCenterName', label: 'Funds Center' }),
     creationDate: date({ source: 'CreationDate', label: 'Created On', timeSource: 'CreationTime' }),
-    releaseStrategyName: text({ source: 'ReleaseStrategyName|ReleaseStrategyText', label: 'Release Strategy Name' }),
+    // releaseStrategyName: text({ source: 'ReleaseStrategyName|ReleaseStrategyText', label: 'Release Strategy Name' }),
     totalAmount: amount({ value: 'TotalNetAmountLocalCrcy|Total', currency: 'LocalCurrency|Currency', label: 'Total Amount' }),
     companyCode: codeText({ code: 'CompanyCode', text: 'CompanyCodeName', label: 'Company Code' }),
     headerNote: text({ source: 'HeaderNote', label: 'Header Note', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') }),

@@ -18,6 +18,7 @@ import { isSapUserMappingMissing } from '@/pages/Inbox/utils/predicates';
 import { inboxKeys } from './inboxKeys';
 import type { TaskDetailResponse, InboxTask } from '@/services/inbox/inbox.types';
 import { useErrorModal } from '@/contexts/useErrorModal';
+import { parseError } from '@/utils/parseError';
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -34,12 +35,16 @@ function listRefetchInterval(error: unknown): number | false {
 /**
  * Automatically triggers the global ErrorModal dialog on query failures.
  */
-function useErrorModalOnQueryError(error: unknown, fallback: string) {
+function useErrorModalOnQueryError(error: unknown, _fallback: string) {
     const lastRef = useRef<unknown>(null);
     const { showError } = useErrorModal();
     useEffect(() => {
         if (!error || lastRef.current === error) return;
         lastRef.current = error;
+        // Do NOT trigger intrusive ErrorModal on 404 (not found) or 403 (access denied) errors;
+        // let the inline Not Found / Access Denied view handle it cleanly.
+        const parsed = parseError(error);
+        if (parsed.category === 'notFound' || parsed.category === 'auth' || parsed.details?.statusCode === 403 || parsed.details?.statusCode === 404) return;
         showError(error);
     }, [error, showError]);
 }
@@ -167,9 +172,13 @@ export function useTaskDetail(
         queryFn: () => inboxApi.getTaskDetail(instanceId!),
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
-
-
-
+        retry: (failureCount, error: any) => {
+            const status = error?.response?.status || error?.statusCode || error?.status;
+            if (status === 404 || status === 403 || status === 401) {
+                return false;
+            }
+            return failureCount < 1;
+        },
         placeholderData: (previousData) => {
             if (previousData) {
                 const prevId = (previousData as any)?.taskprocessing?.task?.InstanceID ||

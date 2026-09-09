@@ -16,20 +16,6 @@ export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
         visible: true,
     },
     {
-        key: 'priority',
-        label: 'Priority',
-        type: 'multiselect',
-        placeholder: 'All Priority',
-        visible: true,
-        options: [
-            { value: 'VERY_HIGH', label: 'Very High' },
-            { value: 'HIGH', label: 'High' },
-            { value: 'MEDIUM', label: 'Medium' },
-            { value: 'LOW', label: 'Low' },
-        ],
-        showSelectAll: true,
-    },
-    {
         key: 'documentType',
         label: 'Document Type',
         type: 'multiselect',

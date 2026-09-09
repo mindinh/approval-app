@@ -276,7 +276,7 @@ export function DetailsPanel({
                                                         key={`${row.id}-${column.key}`}
                                                         className="flex items-start justify-between gap-3 border-b border-border/20 last:border-b-0 pb-1.5 last:pb-0"
                                                     >
-                                                        <span className="text-xs font-medium text-muted-foreground pt-px w-4/12 shrink-0">
+                                                        <span className="text-xs font-medium text-muted-foreground pt-px w-4/12 shrink-0 uppercase tracking-wider">
                                                             {column.label}
                                                         </span>
                                                         <span className="text-xs font-semibold text-foreground text-right break-words max-w-[66%] flex-1">
@@ -346,7 +346,7 @@ export function DetailsPanel({
                                                             key={`${row.id}-${column.key}`}
                                                             className="flex items-center justify-between gap-3 border-b border-border/30 pb-2"
                                                         >
-                                                            <span className="text-xs font-medium text-muted-foreground shrink-0 w-5/12 truncate" title={column.label}>
+                                                            <span className="text-xs font-medium text-muted-foreground shrink-0 w-5/12 truncate uppercase tracking-wider" title={column.label}>
                                                                 {column.label}
                                                             </span>
                                                             <span className="text-sm font-semibold text-foreground text-right break-words max-w-[58%]">
@@ -455,7 +455,7 @@ export function DetailsPanel({
                                     <TableBody>
                                         {(selectedRow?.fields || []).map((item, idx) => (
                                             <TableRow key={`${item.key || item.label}-${idx}`}>
-                                                <TableCell className="w-[42%] bg-muted/30 px-4 py-3 text-muted-foreground whitespace-normal">
+                                                <TableCell className="w-[42%] bg-muted/30 px-4 py-3 text-muted-foreground whitespace-normal text-xs font-medium uppercase tracking-wider">
                                                     {item.label}
                                                 </TableCell>
                                                 <TableCell className="px-4 py-3 font-medium break-all whitespace-normal">

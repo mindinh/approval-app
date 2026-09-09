@@ -37,7 +37,8 @@
         "items": "mục",
         "of": "trong",
         "total": "Tổng",
-        "clearFilters": "Xóa bộ lọc"
+        "clearFilters": "Xóa bộ lọc",
+        "backToList": "Về danh sách công việc"
     },
     "nav": {
         "home": "Trang chủ",
@@ -57,14 +58,25 @@
     "home": {
         "welcomeBack": "Xin chào",
         "pendingApprovals": "{{count}} yêu cầu cần duyệt",
-        "allCaughtUp": "Đã hoàn tất! Không có yêu cầu nào đang chờ",
-        "totalTasks": "Tổng",
-        "inApproval": "Chờ duyệt",
-        "rejected": "Từ chối",
-        "newestTasks": "Mới nhất",
+        "tasksToReview": "Công việc cần xử lý",
+        "quickAccess": "Truy cập nhanh",
         "viewAll": "Xem tất cả",
-        "noTasks": "Không có yêu cầu nào. Bạn đã hoàn tất!",
-        "quickAccess": "Truy cập nhanh"
+        "systemStatus": "Hệ thống hoạt động bình thường",
+        "statTotal": "Tổng công việc",
+        "statNew": "Cần duyệt",
+        "statApproved": "Đã duyệt"
+    },
+    "category": {
+        "all": "Tất cả",
+        "pr": "Yêu cầu mua sắm (PR)",
+        "po": "Đơn đặt hàng (PO)",
+        "reservation": "Phiếu bảo lưu (Reservation)",
+        "claim": "Phiếu thanh toán (Claim)",
+        "hubPendingTitle": "Yêu cầu cần duyệt",
+        "hubApprovedTitle": "Công việc đã duyệt",
+        "hubSubtitle": "Chọn loại chứng từ để xem và xử lý",
+        "viewAll": "Xem tất cả công việc",
+        "viewAllDesc": "Xem danh sách tổng hợp tất cả loại chứng từ"
     },
     "dashboard": {
         "title": "Thống kê",
@@ -124,9 +136,20 @@
         "taskDetails": "Chi tiết công việc",
         "massActions": "Thao tác hàng loạt",
         "selectAll": "Chọn tất cả",
-        "deselectAll": "Bỏ chọn tất cả"
+        "deselectAll": "Bỏ chọn tất cả",
+        "taskNotFound": "Không tìm thấy tác vụ",
+        "taskNotFoundDesc": "Tác vụ được yêu cầu không tồn tại trong danh sách công việc của bạn hoặc đã được xử lý.",
+        "accessDenied": "Từ chối truy cập",
+        "taskForbiddenDesc": "Bạn không có quyền xem tác vụ này hoặc tác vụ thuộc về người dùng khác.",
+        "loadFirstTask": "Tải lại",
+        "scrollToTopAndCollapse": "Lên đầu & Thu gọn tất cả",
+        "view": "Xem",
+        "hide": "Thu gọn",
+        "noTasksInCategory": "Không có tác vụ nào trong danh mục này"
     },
     "task": {
+        "overdue5Days": "Tồn tại trên 5 ngày",
+        "freshTask": "Tác vụ mới (dưới 5 ngày)",
         "information": "Thông tin",
         "approvalTree": "Cây phê duyệt",
         "comments": "Bình luận",
@@ -213,8 +236,8 @@
         "typeToSearch": "Nhập để tìm kiếm người nhận...",
         "selectedUser": "Đã chọn: {{name}} ({{id}})",
         "changeUser": "Thay đổi",
-        "noteLabel": "Ghi chú (Không bắt buộc)",
-        "notePlaceholder": "Thêm ghi chú cho người nhận...",
+        "noteLabel": "Ghi chú",
+        "notePlaceholder": "Nhập ghi chú cho người nhận...",
         "cancel": "Hủy",
         "submit": "Chuyển tiếp",
         "submitting": "Đang chuyển tiếp..."

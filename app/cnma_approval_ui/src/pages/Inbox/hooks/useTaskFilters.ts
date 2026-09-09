@@ -16,6 +16,11 @@ import type { InboxTask } from '@/services/inbox/inbox.types';
 import type { FilterFieldConfig, FilterValues, FilterSettingItem } from '@/components/filterbar/types';
 import { initializeFilterValues } from '@/components/filterbar';
 import { INBOX_FILTER_CONFIG } from '@/pages/Inbox/components/inboxFilterConfig';
+import {
+    getTaskObjectCategory,
+    computeCategoryCounts,
+    type ObjectCategory,
+} from '../utils/categoryUtils';
 
 const TEXT_TO_DOC_TYPE_MAP: Record<string, { code: string; isPR?: boolean; isPO?: boolean }> = {
     'ASSET PR': { code: 'ZASS', isPR: true },
@@ -140,7 +145,7 @@ export function matchTaskDocumentType(task: InboxTask, target: string): boolean 
     return false;
 }
 
-export function useTaskFilters(tasks: InboxTask[], scope?: string) {
+export function useTaskFilters(tasks: InboxTask[], scope?: string, activeCategory?: ObjectCategory | null) {
     // ── Filter configuration ─────────────────────────────
     const [filterConfig, setFilterConfig] = useState<FilterFieldConfig[]>(
         () => INBOX_FILTER_CONFIG.filter((f) => f.visible !== false)
@@ -152,6 +157,9 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string) {
     const [appliedValues, setAppliedValues] = useState<FilterValues>(
         () => initializeFilterValues(INBOX_FILTER_CONFIG)
     );
+
+    // Live counts for 4 categories
+    const categoryCounts = useMemo(() => computeCategoryCounts(tasks), [tasks]);
 
     // Auto-clear filters whenever scope changes (e.g., My Tasks <-> Approved Tasks)
     const prevScopeRef = useRef(scope);
@@ -197,6 +205,12 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string) {
     // ── Client-side filtering ────────────────────────────
     const filteredTasks = useMemo(() => {
         let result = tasks;
+
+        // 1. Filter by 4 Object Categories if selected
+        if (activeCategory && activeCategory !== 'ALL') {
+            result = result.filter((task) => getTaskObjectCategory(task) === activeCategory);
+        }
+
         const v = appliedValues;
 
         if (v.search?.trim()) {
@@ -213,11 +227,6 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string) {
         if (Array.isArray(v.status) && v.status.length > 0) {
             const statusSet = new Set(v.status as string[]);
             result = result.filter((task) => statusSet.has(task.status));
-        }
-
-        if (Array.isArray(v.priority) && v.priority.length > 0) {
-            const prioritySet = new Set(v.priority as string[]);
-            result = result.filter((task) => !!task.priority && prioritySet.has(task.priority));
         }
 
         const selectedDocTypes = Array.isArray(v.documentType)
@@ -271,10 +280,11 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string) {
         }
 
         return result;
-    }, [tasks, appliedValues]);
+    }, [tasks, appliedValues, activeCategory]);
 
     // ── Derived: has active filter ───────────────────────
     const hasLocalFilter =
+        (!!activeCategory && activeCategory !== 'ALL') ||
         !!appliedValues.search?.trim() ||
         Object.entries(appliedValues).some(([key, value]) => {
             if (key === 'search') return false;
@@ -306,6 +316,7 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string) {
         // Filtered data
         filteredTasks,
         hasLocalFilter,
+        categoryCounts,
         // Mobile
         mobileFiltersOpen,
         setMobileFiltersOpen,

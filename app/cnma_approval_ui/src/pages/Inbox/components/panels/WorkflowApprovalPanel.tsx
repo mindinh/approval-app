@@ -147,15 +147,15 @@ export function WorkflowApprovalPanel({
                                             isPending && "text-muted-foreground"
                                         )}>
                                             <span>{title}</span>
-                                            {isRejected && <Badge variant="destructive" className="h-5 px-1.5 text-xs">Rejected</Badge>}
-                                            {isCurrent && <Badge variant="warning" className="h-5 px-1.5 text-xs">Current</Badge>}
-                                            {isNext && <Badge variant="info" className="h-5 px-1.5 text-xs">Next</Badge>}
+                                            {isRejected && <Badge variant="destructive" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Rejected</Badge>}
+                                            {isCurrent && <Badge variant="warning" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Current</Badge>}
+                                            {isNext && <Badge variant="info" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Next</Badge>}
                                         </h4>
                                     </div>
 
                                     <div className="space-y-1.5 text-sm">
                                         <div className="flex items-center gap-1.5 truncate">
-                                            <span className="text-muted-foreground w-32 shrink-0">Status:</span>
+                                            <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium w-32 shrink-0">Status:</span>
                                             <span className={cn(
                                                 "font-medium",
                                                 isRejected
@@ -172,7 +172,7 @@ export function WorkflowApprovalPanel({
 
                                         {step.postedOn && (
                                             <div className="flex items-center gap-1.5 truncate">
-                                                <span className="text-muted-foreground w-32 shrink-0">
+                                                <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium w-32 shrink-0">
                                                     {isRejected ? "Rejected Date:" : isCompleted ? "Approved Date:" : "Date:"}
                                                 </span>
                                                 <span className={isRejected ? "text-destructive/90 font-medium" : isPending ? "text-muted-foreground" : "text-foreground/80"}>

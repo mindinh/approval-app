@@ -37,7 +37,8 @@
         "items": "items",
         "of": "of",
         "total": "Total",
-        "clearFilters": "Clear Filters"
+        "clearFilters": "Clear Filters",
+        "backToList": "Back to Task List"
     },
     "nav": {
         "home": "Home",
@@ -58,14 +59,25 @@
     "home": {
         "welcomeBack": "Welcome back",
         "pendingApprovals": "{{count}} pending approvals",
-        "allCaughtUp": "All caught up! No pending approvals",
-        "totalTasks": "Total Tasks",
-        "inApproval": "In Approval",
-        "rejected": "Rejected",
-        "newestTasks": "Newest Tasks",
+        "tasksToReview": "Tasks to Review",
+        "quickAccess": "Quick Access",
         "viewAll": "View All",
-        "noTasks": "No pending tasks. You're all caught up!",
-        "quickAccess": "Quick Access"
+        "systemStatus": "All systems operational",
+        "statTotal": "Total Tasks",
+        "statNew": "New Tasks",
+        "statApproved": "Approved"
+    },
+    "category": {
+        "all": "All Tasks",
+        "pr": "Purchase Requisition (PR)",
+        "po": "Purchase Order (PO)",
+        "reservation": "Reservation",
+        "claim": "Claim",
+        "hubPendingTitle": "Pending Tasks",
+        "hubApprovedTitle": "Approved Tasks",
+        "hubSubtitle": "Select a document category to view and process tasks",
+        "viewAll": "View All Tasks",
+        "viewAllDesc": "Browse all document types in a single worklist"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -125,9 +137,20 @@
         "taskDetails": "Task Details",
         "massActions": "Mass Actions",
         "selectAll": "Select All",
-        "deselectAll": "Deselect All"
+        "deselectAll": "Deselect All",
+        "taskNotFound": "Task Not Found",
+        "taskNotFoundDesc": "The requested task does not exist in your worklist or has already been processed.",
+        "accessDenied": "Access Denied",
+        "taskForbiddenDesc": "You do not have permission to view this task, or it belongs to another user.",
+        "loadFirstTask": "Reload",
+        "scrollToTopAndCollapse": "Scroll to top & Collapse all",
+        "view": "View",
+        "hide": "Hide",
+        "noTasksInCategory": "No tasks in this category"
     },
     "task": {
+        "overdue5Days": "Pending > 5 days (Overdue)",
+        "freshTask": "New task (<= 5 days)",
         "information": "Information",
         "approvalTree": "Workflow",
         "comments": "Comments",
@@ -214,8 +237,8 @@
         "typeToSearch": "Type to search recipient users...",
         "selectedUser": "Selected: {{name}} ({{id}})",
         "changeUser": "Change",
-        "noteLabel": "Optional Note",
-        "notePlaceholder": "Add an optional comment for the recipient...",
+        "noteLabel": "Comment",
+        "notePlaceholder": "Add a comment for the recipient...",
         "cancel": "Cancel",
         "submit": "Forward Task",
         "submitting": "Forwarding..."

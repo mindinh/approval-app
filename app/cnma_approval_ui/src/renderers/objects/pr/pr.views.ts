@@ -30,7 +30,7 @@ const defaultPrOverviewCard = {
         PR_OVERVIEW_FIELDS.createdByUser,
         PR_OVERVIEW_FIELDS.fundsCenter,
         PR_OVERVIEW_FIELDS.creationDate,
-        PR_OVERVIEW_FIELDS.releaseStrategyName,
+        // PR_OVERVIEW_FIELDS.releaseStrategyName,
         PR_OVERVIEW_FIELDS.totalAmount,
         PR_OVERVIEW_FIELDS.companyCode,
         PR_OVERVIEW_FIELDS.headerNote,

@@ -7,9 +7,9 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const ppJwt = env.VITE_PP_JWT?.trim();
-    const inboxAuthHeaders = ppJwt
+    const inboxAuthHeaders: Record<string, string> = ppJwt
         ? { Authorization: `Bearer ${ppJwt}` }
-        : { Authorization: 'Basic YWRtaW46' };
+        : {};
 
     return {
         base: './',
@@ -36,23 +36,23 @@ export default defineConfig(({ mode }) => {
                 '/api/cnma': {
                     target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
-                    headers: { Authorization: 'Basic YWRtaW46' },
+                    headers: inboxAuthHeaders,
                 },
                 '/browse': {
                     target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
-                    headers: { Authorization: 'Basic YWRtaW46' },
+                    headers: inboxAuthHeaders,
                 },
                 '/admin': {
                     target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
-                    headers: { Authorization: 'Basic YWRtaW46' },
+                    headers: inboxAuthHeaders,
                 },
                 '/odata': {
                     target: 'http://127.0.0.1:4005',
                     changeOrigin: true,
                     secure: false,
-                    headers: { Authorization: 'Basic YWRtaW46' },
+                    headers: inboxAuthHeaders,
                 }
             }
         },

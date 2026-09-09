@@ -6,7 +6,7 @@ describe('INBOX_FILTER_CONFIG', () => {
         const keys = INBOX_FILTER_CONFIG.map(f => f.key);
         expect(keys).toContain('search');
         expect(keys).not.toContain('status');
-        expect(keys).toContain('priority');
+        expect(keys).not.toContain('priority');
         expect(keys).toContain('documentType');
         expect(keys).not.toContain('createdBy');
         expect(keys).not.toContain('documentId');
@@ -19,15 +19,6 @@ describe('INBOX_FILTER_CONFIG', () => {
 
         const createdDate = INBOX_FILTER_CONFIG.find(f => f.key === 'createdDate');
         expect(createdDate?.visible).toBe(true);
-    });
-
-    it('defines correct priority options', () => {
-        const statusField = INBOX_FILTER_CONFIG.find(f => f.key === 'status');
-        expect(statusField).toBeUndefined();
-
-        const priorityField = INBOX_FILTER_CONFIG.find(f => f.key === 'priority');
-        expect(priorityField?.type).toBe('multiselect');
-        expect(priorityField?.options).toContainEqual({ value: 'HIGH', label: 'High' });
     });
 
     it('defines documentType multiselect options (18 object types)', () => {

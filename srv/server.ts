@@ -8,6 +8,19 @@ import { createInboxRouter } from './handlers/inbox-handler';
 import { AppError } from './lib/utils/error-handler';
 
 cds.on('bootstrap', (app: express.Application) => {
+    // In local development / hybrid mode, if incoming Authorization is not a Bearer token (e.g. Basic auth),
+    // strip it so @sap/xssec IAS validator does not attempt to parse Basic credentials as a JWT and crash the server.
+    const isLocalOrHybrid = process.env.NODE_ENV !== 'production' || (Array.isArray(cds.env?.profiles) && cds.env.profiles.includes('hybrid'));
+    if (isLocalOrHybrid) {
+        app.use((req: express.Request, _res: express.Response, next: express.NextFunction) => {
+            const auth = req.headers.authorization;
+            if (typeof auth === 'string' && !auth.startsWith('Bearer ')) {
+                delete req.headers.authorization;
+            }
+            next();
+        });
+    }
+
     // Health check
     app.get('/api/cnma/APPROVAL_SRV/health', (_req: express.Request, res: express.Response) => {
         res.json({

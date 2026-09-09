@@ -20,6 +20,7 @@ import { useIsMobile, Button } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
 import { useMobileNav } from '@/contexts/MobileNavContext';
 import { MobileTopBar } from '@/components/layouts/MobileTopBar';
+import { computeCategoryCounts, getTaskObjectCategory, type ObjectCategory } from './utils/categoryUtils';
 
 type TaskScope = 'my' | 'approved';
 
@@ -35,6 +36,7 @@ export default function InboxPage() {
 
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [selectedCategory, setSelectedCategory] = useState<ObjectCategory | null>(null);
     const [massDecisionConfig, setMassDecisionConfig] = useState<{
         isOpen: boolean;
         decisionKey: string;
@@ -55,6 +57,13 @@ export default function InboxPage() {
         };
     }, [isMobile, selectionMode, setHideBottomBar]);
 
+    // Reset selected category when switching between My Tasks and Approved Tasks on mobile
+    useEffect(() => {
+        if (isMobile) {
+            setSelectedCategory(null);
+        }
+    }, [scope, isMobile]);
+
     const queryClient = useQueryClient();
 
     // Reset selection state & invalidate query cache whenever scope changes
@@ -73,19 +82,59 @@ export default function InboxPage() {
     const isMyScope = scope === 'my';
     const showTaskActions = true;
 
-    const myTasksQuery = useInfiniteTasks({ enabled: isMyScope });
-    const approvedTasksQuery = useInfiniteApprovedTasks({ enabled: !isMyScope });
+    const myTasksQuery = useInfiniteTasks();
+    const approvedTasksQuery = useInfiniteApprovedTasks();
     const activeTasksQuery = isMyScope ? myTasksQuery : approvedTasksQuery;
 
-    // Derive performance hints from the task list item so the backend can
-    // skip redundant SAP lookups and enrich in parallel.
-    const tasks = useMemo(
-        () => activeTasksQuery.data?.pages.flatMap((p) => p.items) ?? [],
-        [activeTasksQuery.data]
+    const myTasks = useMemo(
+        () => myTasksQuery.data?.pages.flatMap((p) => p.items) ?? [],
+        [myTasksQuery.data]
     );
-    const totalTasks = activeTasksQuery.data?.pages[0]?.total ?? 0;
-    const selectedTask = selectedTaskId
-        ? tasks.find((t) => t.instanceId === selectedTaskId)
+    const approvedTasks = useMemo(
+        () => approvedTasksQuery.data?.pages.flatMap((p) => p.items) ?? [],
+        [approvedTasksQuery.data]
+    );
+    const tasks = isMyScope ? myTasks : approvedTasks;
+
+    const categoryTotals = useMemo(() => {
+        const counts: Record<ObjectCategory, { pending: number; completed: number; total: number }> = {
+            ALL: { pending: 0, completed: 0, total: 0 },
+            PR: { pending: 0, completed: 0, total: 0 },
+            PO: { pending: 0, completed: 0, total: 0 },
+            RESERVATION: { pending: 0, completed: 0, total: 0 },
+            CLAIM: { pending: 0, completed: 0, total: 0 },
+        };
+
+        for (const t of myTasks) {
+            const cat = getTaskObjectCategory(t);
+            if (cat !== 'OTHER') {
+                counts[cat].pending += 1;
+                counts[cat].total += 1;
+            }
+        }
+
+        for (const t of approvedTasks) {
+            const cat = getTaskObjectCategory(t);
+            if (cat !== 'OTHER') {
+                counts[cat].completed += 1;
+                counts[cat].total += 1;
+            }
+        }
+
+        // Use server-reported total for ALL category to prevent pagination undercounting
+        const totalPending = myTasksQuery.data?.pages[0]?.total ?? myTasks.length;
+        const totalCompleted = approvedTasksQuery.data?.pages[0]?.total ?? approvedTasks.length;
+        counts.ALL.pending = totalPending;
+        counts.ALL.completed = totalCompleted;
+        counts.ALL.total = totalPending + totalCompleted;
+
+        return counts;
+    }, [myTasks, approvedTasks, myTasksQuery.data?.pages, approvedTasksQuery.data?.pages]);
+
+    const totalTasks = activeTasksQuery.data?.pages[0]?.total ?? tasks.length;
+    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
+    const selectedTask = normSelectedId
+        ? tasks.find((t) => t.instanceId === selectedTaskId || String(t.instanceId).replace(/^0+/, '') === normSelectedId)
         : undefined;
     const {
         data: detailResponse,
@@ -112,7 +161,6 @@ export default function InboxPage() {
                          rawDetail?.taskId ||
                          rawDetail?.task?.instanceId;
     const normDetailId = detailTaskId ? String(detailTaskId).replace(/^0+/, '') : '';
-    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
 
     const isDetailMatchingSelected = !!rawDetail && (
         !selectedTaskId ||
@@ -123,21 +171,24 @@ export default function InboxPage() {
     const activeDetail = isDetailMatchingSelected ? rawDetail : undefined;
 
     const isDetailLoading =
-        (isLoadingDetail && !activeDetail) ||
-        (isLoadingList && tasks.length === 0) ||
-        (!!selectedTaskId && !activeDetail);
+        !isErrorDetail && (
+            (isLoadingDetail && !activeDetail) ||
+            (isLoadingList && tasks.length === 0 && !selectedTaskId) ||
+            (!!selectedTaskId && !activeDetail)
+        );
 
     const isSecondaryLoading = isFetchingDetail && !!activeDetail;
 
-    // Auto-select first task on desktop when list loads and no task is selected or selected task is stale
+    // Auto-select first task on desktop when list loads and no task is selected
     useEffect(() => {
         const isMobileViewport = window.innerWidth < 768;
         if (isMobileViewport) return;
         if (isLoadingList) return;
         if (tasks.length === 0) return;
 
-        const isSelectedTaskInList = selectedTaskId && tasks.some((t) => t.instanceId === selectedTaskId);
-        if (!selectedTaskId || !isSelectedTaskInList) {
+        // Only auto-select when the user navigated to the list root without a specific taskId.
+        // If selectedTaskId is present (e.g. direct deep link), do NOT overwrite it!
+        if (!selectedTaskId) {
             hasAutoSelected.current = true;
             const basePath = scope === 'approved' ? '/approved' : '/inbox';
             navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
@@ -344,7 +395,16 @@ export default function InboxPage() {
         }
     }, [queryClient, selectedTaskId, refetchDetail]);
 
+    const handleLoadFirstTask = useCallback(() => {
+        const basePath = scope === 'approved' ? '/approved' : '/inbox';
+        if (tasks.length > 0) {
+            navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
+        } else {
+            navigate(basePath, { replace: true });
+        }
+    }, [navigate, scope, tasks]);
 
+    const categoryCounts = useMemo(() => computeCategoryCounts(tasks), [tasks]);
     const showMassSelection = showTaskActions && isMyScope && selectionMode && selectedIds.size > 0;
 
     if (isMobile) {
@@ -371,6 +431,8 @@ export default function InboxPage() {
                                     isError={isErrorDetail}
                                     error={errorDetail}
                                     onRetry={handleRefreshTasks}
+                                    onLoadFirstTask={handleLoadFirstTask}
+                                    hasTasks={tasks.length > 0}
                                     isSecondaryLoading={isSecondaryLoading}
                                     onBack={handleBack}
                                     onDecision={handleDecision}
@@ -381,13 +443,14 @@ export default function InboxPage() {
                                     isApprovedScope={!isMyScope}
                                     showActionPanel={showTaskActions && isMyScope}
                                 />
-
                             </motion.div>
                         ) : (
+                            /* Grouped 4-Section Task List */
                             <motion.div
-                                key="list"
+                                key="task-list"
                                 initial={{ opacity: 0.8 }}
                                 animate={{ opacity: 1 }}
+                                exit={{ opacity: 0.8 }}
                                 className="h-full"
                             >
                                 <TaskList
@@ -412,6 +475,11 @@ export default function InboxPage() {
                                     isExecutingMass={showTaskActions && isMyScope && massDecisionMutation.isPending}
                                     showTaskActions={showTaskActions && isMyScope}
                                     hasMobileScopeBar={false}
+                                    activeCategory={selectedCategory}
+                                    onCategoryChange={setSelectedCategory}
+                                    onBackToCategories={() => setSelectedCategory(null)}
+                                    scope={scope}
+                                    categoryTotals={categoryTotals}
                                 />
                             </motion.div>
                         )}
@@ -458,6 +526,9 @@ export default function InboxPage() {
                     onScopeChange={(nextScope) => {
                         navigate(nextScope === 'approved' ? '/approved' : '/inbox');
                     }}
+                    activeCategory={selectedCategory || 'ALL'}
+                    onCategoryChange={(cat) => setSelectedCategory(cat)}
+                    categoryTotals={categoryTotals}
                 />
             </aside>
             <main className="relative min-w-0 flex-1 overflow-hidden bg-muted/30">
@@ -477,6 +548,8 @@ export default function InboxPage() {
                         isError={isErrorDetail}
                         error={errorDetail}
                         onRetry={handleRefreshTasks}
+                        onLoadFirstTask={handleLoadFirstTask}
+                        hasTasks={tasks.length > 0}
                         isSecondaryLoading={isSecondaryLoading}
                         onBack={handleBack}
                         onDecision={handleDecision}
