@@ -101,3 +101,23 @@ export function formatRawMultilineText(value: unknown, record?: any, navPropName
 
     return '-';
 }
+
+export function formatVendorCodeAndName(record?: any): string {
+    if (!record) return '-';
+    const rawCode = (record.Vendor || record.Supplier || record.VendorCode || record.vendor || record.supplier || record.vendorCode || '').trim();
+    const code = rawCode === '-' ? '' : rawCode;
+    const nameParts = [
+        record.VendorName || record.VendorName1 || record.Name1 || record.SupplierName || '',
+        record.VendorName2 || record.Name2 || '',
+        record.VendorName3 || record.Name3 || '',
+        record.VendorName4 || record.Name4 || ''
+    ]
+        .map((p) => String(p).trim())
+        .filter((part) => Boolean(part) && part !== '-');
+
+    const names = nameParts.join(' ');
+    if (code && names) {
+        return `${code} - ${names}`;
+    }
+    return code || names || '-';
+}

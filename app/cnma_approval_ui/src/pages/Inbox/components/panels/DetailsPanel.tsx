@@ -28,18 +28,19 @@ import { cn } from '@/lib/utils';
 import { safe, prettifyFieldLabel } from '@/pages/Inbox/utils/formatters';
 import { normalizeAndOrderTableColumns } from '@/renderers/shared/formatters';
 import { useTranslation } from 'react-i18next';
-import { buildSapPrLaunchpadUrl } from '@/utils/launchpad';
 
 export function DetailsPanel({
     model,
     detail,
     isMobile = false,
     isSecondaryLoading = false,
+    onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
     detail: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
+    onSelectReferencePr?: (prNumber: string) => void;
 }) {
     const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -99,20 +100,21 @@ export function DetailsPanel({
     const renderCellValue = (key: string, label: string, rawVal: any) => {
         const displayVal = safe(rawVal);
         if (isReferencePrField(key, label) && displayVal !== '-' && displayVal.trim() !== '') {
-            const launchpadUrl = buildSapPrLaunchpadUrl(displayVal);
-            if (launchpadUrl) {
+            if (onSelectReferencePr) {
                 return (
-                    <a
-                        href={launchpadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline text-sm"
-                        title={t('task.openInS4Hana', 'Open in S/4HANA Fiori Launchpad')}
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRow(null);
+                            onSelectReferencePr(displayVal);
+                        }}
+                        className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline text-sm text-left cursor-pointer"
+                        title={t('task.viewReferencePr', 'View Reference PR')}
                     >
                         <span>{displayVal}</span>
                         <ExternalLink className="size-3.5 shrink-0" />
-                    </a>
+                    </button>
                 );
             }
             return <span className="font-bold text-primary text-sm">{displayVal}</span>;

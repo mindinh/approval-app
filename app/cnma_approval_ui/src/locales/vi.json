@@ -323,12 +323,5 @@
         "downloadFailed": "Tải xuống thất bại",
         "uploadComplete": "Tải lên hoàn tất",
         "uploadFailed": "Tải lên thất bại"
-    },
-    "pwa": {
-        "installTitle": "Cài đặt prorequest",
-        "installDescAndroid": "Cài đặt ứng dụng này vào màn hình chính để truy cập nhanh chóng và dễ dàng.",
-        "installDescIos": "Để thêm ứng dụng vào Màn hình chính: chạm vào nút Chia sẻ và chọn 'Thêm vào MH chính'.",
-        "btnInstall": "Cài đặt",
-        "btnDismiss": "Bỏ qua"
     }
 }

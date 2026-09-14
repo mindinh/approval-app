@@ -32,6 +32,7 @@ import {
 import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
 import { MobileNavProvider } from '@/contexts/MobileNavContext';
 import { MobileBottomBar } from './MobileBottomBar';
+import { isWorkZone } from '@/utils/launchpad';
 
 // ── Reconstructed primitive Sidebar container with Style Bug Fix ───────────────────
 interface SidebarWrapperProps extends React.ComponentProps<"div"> {
@@ -131,7 +132,7 @@ function AppSidebar() {
     const { t, i18n } = useTranslation();
     const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
     const { data: userInfo } = useCurrentUser();
-    const isInWorkZone = typeof window !== 'undefined' && window.parent !== window;
+    const isInWorkZone = isWorkZone();
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
     const currentLang = i18n.language || 'en';

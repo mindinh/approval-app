@@ -324,12 +324,5 @@
         "downloadFailed": "Download failed",
         "uploadComplete": "Upload complete",
         "uploadFailed": "Upload failed"
-    },
-    "pwa": {
-        "installTitle": "Install prorequest",
-        "installDescAndroid": "Install this app on your home screen for quick and easy access.",
-        "installDescIos": "To add this app to your Home Screen: tap the Share button and select 'Add to Home Screen'.",
-        "btnInstall": "Install",
-        "btnDismiss": "Dismiss"
     }
 }

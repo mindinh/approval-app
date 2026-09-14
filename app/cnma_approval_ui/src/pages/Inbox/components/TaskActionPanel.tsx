@@ -67,7 +67,8 @@ export function TaskActionPanel({
     if (!isNormalTask) return null;
 
     const decisions = detail.decisions || detail.task?.decisions || [];
-    const supportsForward = (detail as any)?.supports?.forward !== false;
+    // Task forwarding disabled per business requirements
+    const supportsForward = false;
 
     if (!decisions.length && !supportsForward) return null;
 

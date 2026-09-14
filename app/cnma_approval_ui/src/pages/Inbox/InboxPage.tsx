@@ -10,7 +10,7 @@ import {
     useTaskDetail,
     useDecision,
     useMassDecision,
-    useForward,
+    // useForward,
     invalidateTaskList,
 } from '@/pages/Inbox/hooks/useInbox';
 
@@ -101,8 +101,8 @@ export default function InboxPage() {
             ALL: { pending: 0, completed: 0, total: 0 },
             PR: { pending: 0, completed: 0, total: 0 },
             PO: { pending: 0, completed: 0, total: 0 },
-            RESERVATION: { pending: 0, completed: 0, total: 0 },
             CLAIM: { pending: 0, completed: 0, total: 0 },
+            RESERVATION: { pending: 0, completed: 0, total: 0 },
         };
 
         for (const t of myTasks) {
@@ -150,7 +150,7 @@ export default function InboxPage() {
 
     const decisionMutation = useDecision();
     const massDecisionMutation = useMassDecision();
-    const forwardMutation = useForward();
+    // const forwardMutation = useForward();
     const isLoadingList = activeTasksQuery.isLoading;
     const isRefetchingList = activeTasksQuery.isRefetching;
 
@@ -181,8 +181,7 @@ export default function InboxPage() {
 
     // Auto-select first task on desktop when list loads and no task is selected
     useEffect(() => {
-        const isMobileViewport = window.innerWidth < 768;
-        if (isMobileViewport) return;
+        if (isMobile || window.innerWidth < 768) return;
         if (isLoadingList) return;
         if (tasks.length === 0) return;
 
@@ -193,7 +192,7 @@ export default function InboxPage() {
             const basePath = scope === 'approved' ? '/approved' : '/inbox';
             navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
         }
-    }, [selectedTaskId, isLoadingList, tasks, navigate, scope]);
+    }, [selectedTaskId, isLoadingList, tasks, navigate, scope, isMobile]);
 
 
 
@@ -231,6 +230,13 @@ export default function InboxPage() {
                 },
                 {
                     onSuccess: () => {
+                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
+                        // On mobile, always return to the task list view instead of loading the next task detail
+                        if (isMobile) {
+                            navigate(basePath);
+                            return;
+                        }
+
                         const currentIndex = tasks.findIndex((t) => t.instanceId === selectedTaskId);
                         let nextTaskId = null;
                         if (currentIndex !== -1 && tasks.length > 1) {
@@ -241,7 +247,6 @@ export default function InboxPage() {
                             }
                         }
 
-                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
                         if (nextTaskId) {
                             navigate(`${basePath}/${encodeURIComponent(nextTaskId)}`);
                         } else {
@@ -256,9 +261,11 @@ export default function InboxPage() {
                 }
             );
         },
-        [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, scope, showError]
+        [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, scope, showError, isMobile]
     );
 
+    /*
+    // [TEMPORARILY DISABLED FORWARD]
     const handleForward = useCallback(
         (forwardTo: string, comment?: string) => {
             if (!selectedTaskId) return;
@@ -283,6 +290,13 @@ export default function InboxPage() {
 
                 {
                     onSuccess: () => {
+                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
+                        // On mobile, always return to the task list view instead of loading the next task detail
+                        if (isMobile) {
+                            navigate(basePath);
+                            return;
+                        }
+
                         const currentIndex = tasks.findIndex((t) => t.instanceId === selectedTaskId);
                         let nextTaskId = null;
                         if (currentIndex !== -1 && tasks.length > 1) {
@@ -293,7 +307,6 @@ export default function InboxPage() {
                             }
                         }
 
-                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
                         if (nextTaskId) {
                             navigate(`${basePath}/${encodeURIComponent(nextTaskId)}`);
                         } else {
@@ -308,8 +321,9 @@ export default function InboxPage() {
                 }
             );
         },
-        [selectedTaskId, activeDetail, forwardMutation, navigate, tasks, scope, showError]
+        [selectedTaskId, activeDetail, forwardMutation, navigate, tasks, scope, showError, isMobile]
     );
+    */
 
 
     const handleOpenMassDecision = useCallback(
@@ -436,9 +450,9 @@ export default function InboxPage() {
                                     isSecondaryLoading={isSecondaryLoading}
                                     onBack={handleBack}
                                     onDecision={handleDecision}
-                                    onForward={handleForward}
+                                    // onForward={handleForward}
                                     isExecuting={decisionMutation.isPending}
-                                    isForwarding={forwardMutation.isPending}
+                                    // isForwarding={forwardMutation.isPending}
                                     isMobile
                                     isApprovedScope={!isMyScope}
                                     showActionPanel={showTaskActions && isMyScope}
@@ -553,9 +567,9 @@ export default function InboxPage() {
                         isSecondaryLoading={isSecondaryLoading}
                         onBack={handleBack}
                         onDecision={handleDecision}
-                        onForward={handleForward}
+                        // onForward={handleForward}
                         isExecuting={decisionMutation.isPending}
-                        isForwarding={forwardMutation.isPending}
+                        // isForwarding={forwardMutation.isPending}
                         isApprovedScope={!isMyScope}
                         showActionPanel={showTaskActions && isMyScope}
                     />

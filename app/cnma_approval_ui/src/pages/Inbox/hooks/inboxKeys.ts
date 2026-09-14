@@ -40,6 +40,9 @@ export const inboxKeys = {
     prAttachments: (documentNumber: string) =>
         [...inboxKeys.all, 'pr-attachments', documentNumber] as const,
 
+    // ─── Reference PR Detail ───────────────────────────────
+    referencePr: (prNumber: string) => [...inboxKeys.all, 'reference-pr', normId(prNumber)] as const,
+
     // ─── Search Users ──────────────────────────────────────
     searchUsers: (pattern: string) => [...inboxKeys.all, 'searchUsers', pattern] as const,
 

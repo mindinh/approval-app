@@ -2,7 +2,7 @@ import { useMemo, memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@cnma/react-ui';
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import { Clock, User, ChevronRight, FileText, Angry, Smile } from 'lucide-react';
+import { Clock, User, ChevronRight, FileText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { StatusBadge, TaskTypeBadge } from './TaskBadges';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,8 @@ import { inboxApi } from '@/services/inbox/inbox.api';
 import { resolveTaskCardConfigForTask, type BusinessChip } from '@/renderers/ObjectView.registry';
 
 import { isApprovedApprovalStatus } from '../utils/predicates';
+
+import { SlaIcon } from './SlaIcons';
 
 interface TaskCardProps {
     task: InboxTask;
@@ -135,26 +137,26 @@ export const TaskCard = memo(function TaskCard({
                     {!isCompleted && (
                         <div
                             className={cn(
-                                'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
+                                'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl transition-all',
                                 aging
                                     ? aging.isOverdue
-                                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40'
-                                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40'
+                                        ? 'bg-rose-100/70 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/50 shadow-xs'
+                                        : 'bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/50 shadow-xs'
                                     : (isSelected
                                         ? {
-                                            'bg-info/10 text-info': colorKey === 'info',
-                                            'bg-warning/10 text-warning': colorKey === 'warning',
-                                            'bg-success/10 text-success': colorKey === 'success',
-                                            'bg-primary/10 text-primary': colorKey === 'primary',
+                                            'bg-info/15 text-info border border-info/30': colorKey === 'info',
+                                            'bg-warning/15 text-warning border border-warning/30': colorKey === 'warning',
+                                            'bg-success/15 text-success border border-success/30': colorKey === 'success',
+                                            'bg-primary/15 text-primary border border-primary/30': colorKey === 'primary',
                                         }
-                                        : 'bg-muted/70 text-muted-foreground'),
+                                        : 'bg-muted/80 text-muted-foreground border border-border/70'),
                             )}
-                            title={aging ? (aging.isOverdue ? 'Pending > 5 days' : 'New task (< 5 days)') : undefined}
+                            title={aging ? (aging.isOverdue ? 'Pending > 5 days (Overdue)' : 'New task (< 5 days)') : undefined}
                         >
                             {aging ? (
-                                aging.isOverdue ? <Angry className="size-4.5" /> : <Smile className="size-4.5" />
+                                <SlaIcon isOverdue={aging.isOverdue} className="size-6" />
                             ) : (
-                                <FileText className="size-4" />
+                                <FileText className="size-4 text-muted-foreground" />
                             )}
                         </div>
                     )}
@@ -281,23 +283,55 @@ export const TaskCard = memo(function TaskCard({
                 ],
             )}
         >
-            {/* ── Header: id + badges ── */}
-            <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                    <span className={cn('truncate text-xs font-medium', typeStyle.text)}>
-                        {contextId}
-                    </span>
-                </div>
-                <div className="flex shrink-0 flex-nowrap items-center gap-1">
-                    <TaskTypeBadge normalTask={task.normalTask} />
-                    <StatusBadge status={task.status} />
+            {/* ── Icon + header row ── */}
+            <div className="flex w-full items-start gap-3">
+                {!isCompleted && (
+                    <div
+                        className={cn(
+                            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl transition-all',
+                            aging
+                                ? aging.isOverdue
+                                    ? 'bg-rose-100/70 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/50 shadow-xs'
+                                    : 'bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/50 shadow-xs'
+                                : (isSelected
+                                    ? {
+                                        'bg-info/15 text-info border border-info/30': colorKey === 'info',
+                                        'bg-warning/15 text-warning border border-warning/30': colorKey === 'warning',
+                                        'bg-success/15 text-success border border-success/30': colorKey === 'success',
+                                        'bg-primary/15 text-primary border border-primary/30': colorKey === 'primary',
+                                    }
+                                    : 'bg-muted/80 text-muted-foreground border border-border/70'),
+                        )}
+                        title={aging ? (aging.isOverdue ? 'Pending > 5 days (Overdue)' : 'New task (< 5 days)') : undefined}
+                    >
+                        {aging ? (
+                            <SlaIcon isOverdue={aging.isOverdue} className="size-6" />
+                        ) : (
+                            <FileText className="size-4 text-muted-foreground" />
+                        )}
+                    </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                    {/* ── Header: id + badges ── */}
+                    <div className="flex w-full items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                            <span className={cn('truncate text-xs font-medium', typeStyle.text)}>
+                                {contextId}
+                            </span>
+                        </div>
+                        <div className="flex shrink-0 flex-nowrap items-center gap-1">
+                            <TaskTypeBadge normalTask={task.normalTask} />
+                            <StatusBadge status={task.status} />
+                        </div>
+                    </div>
+
+                    {/* ── Title ── */}
+                    <h3 className="mt-1.5 w-full line-clamp-2 text-left text-sm font-bold leading-snug text-foreground">
+                        {displayTitle}
+                    </h3>
                 </div>
             </div>
-
-            {/* ── Title ── */}
-            <h3 className="mt-1.5 w-full line-clamp-2 text-left text-sm font-bold leading-snug text-foreground">
-                {displayTitle}
-            </h3>
 
             {/* ── Business detail chips ── */}
             {chips.length > 0 && (

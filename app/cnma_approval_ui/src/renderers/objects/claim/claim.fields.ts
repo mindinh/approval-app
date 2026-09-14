@@ -1,5 +1,5 @@
 import { text, codeText, amount, date, tableCol } from '../../core/fields';
-import { formatRawDate } from '../../core/formatters';
+import { formatRawDate, formatVendorCodeAndName } from '../../core/formatters';
 
 export const CLAIM_OVERVIEW_FIELDS = {
     claimNumber: text({ source: 'DocumentNumber|ClaimNumber', label: 'Claim Form Number' }),
@@ -11,16 +11,7 @@ export const CLAIM_OVERVIEW_FIELDS = {
     vendor: text({
         source: 'Vendor',
         label: 'Vendor',
-        formatter: (_val, record) => {
-            if (!record) return '-\n-\n-\n-\n-';
-            const s1 = (record.Vendor || record.Supplier || record.VendorCode || '').trim() || '-';
-            const s2 = (record.VendorName1 || record.VendorName || record.SupplierName || record.Name1 || record.VendorText || '').trim() || '-';
-            const s3 = (record.VendorName2 || record.Name2 || '').trim() || '-';
-            const s4 = (record.VendorName3 || record.Name3 || '').trim() || '-';
-            const s5 = (record.VendorName4 || record.Name4 || '').trim() || '-';
-
-            return [s1, s2, s3, s4, s5].join('\n');
-        }
+        formatter: (_val, record) => formatVendorCodeAndName(record)
     }),
     paymentAmount: amount({ value: 'PaymentAmount', currency: 'LocalCurrency', label: 'Payment Amount' }),
     totalAmount: amount({ value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', label: 'Total Amount' }),

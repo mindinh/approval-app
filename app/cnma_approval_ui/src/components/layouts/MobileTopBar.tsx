@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@cnma/react-ui';
 import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
 import { cn } from '@/lib/utils';
+import { isWorkZone } from '@/utils/launchpad';
 
 interface MobileTopBarProps {
     title?: string;
@@ -13,6 +14,12 @@ interface MobileTopBarProps {
 }
 
 export function MobileTopBar({ title, className, embedded = false }: MobileTopBarProps) {
+    const isInWorkZone = React.useMemo(() => isWorkZone(), []);
+
+    if (isInWorkZone) {
+        return null;
+    }
+
     const { t } = useTranslation();
     const { data: userInfo } = useCurrentUser();
 

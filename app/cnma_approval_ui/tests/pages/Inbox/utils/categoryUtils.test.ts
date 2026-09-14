@@ -3,6 +3,8 @@ import {
     getTaskObjectCategory,
     filterTasksByCategory,
     computeCategoryCounts,
+    CATEGORY_ACCORDION_SECTIONS,
+    MAIN_CATEGORIES,
 } from '@/pages/Inbox/utils/categoryUtils';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 
@@ -99,6 +101,18 @@ describe('categoryUtils', () => {
             const claimTasks = filterTasksByCategory(mockTasks, 'CLAIM');
             expect(claimTasks).toHaveLength(1);
             expect(claimTasks[0].instanceId).toBe('4');
+        });
+    });
+
+    describe('Category ordering', () => {
+        it('defines sections in order: PR, PO, CLAIM, RESERVATION', () => {
+            expect(CATEGORY_ACCORDION_SECTIONS.map((s) => s.key)).toEqual([
+                'PR',
+                'PO',
+                'CLAIM',
+                'RESERVATION',
+            ]);
+            expect(MAIN_CATEGORIES).toEqual(['PR', 'PO', 'CLAIM', 'RESERVATION']);
         });
     });
 });

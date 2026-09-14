@@ -3,7 +3,6 @@ import { ExternalLink } from 'lucide-react';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
 import type { BusinessSectionModel, DetailField } from '@/renderers/TaskDetailSections.types';
 import { useTranslation } from 'react-i18next';
-import { buildSapPrLaunchpadUrl } from '@/utils/launchpad';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,11 +10,13 @@ export function OverviewPanel({
     model,
     isMobile = false,
     isSecondaryLoading = false,
+    onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
     detail?: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
+    onSelectReferencePr?: (prNumber: string) => void;
 }) {
     const { t } = useTranslation();
 
@@ -41,20 +42,20 @@ export function OverviewPanel({
 
     const renderFieldValue = (key: string, label: string, val: string) => {
         if (isReferencePrField(key, label) && val !== '-' && val.trim() !== '') {
-            const launchpadUrl = buildSapPrLaunchpadUrl(val);
-            if (launchpadUrl) {
+            if (onSelectReferencePr) {
                 return (
-                    <a
-                        href={launchpadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline text-sm"
-                        title={t('task.openInS4Hana', 'Open in S/4HANA Fiori Launchpad')}
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectReferencePr(val);
+                        }}
+                        className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline text-sm text-left cursor-pointer"
+                        title={t('task.viewReferencePr', 'View Reference PR')}
                     >
                         <span>{val}</span>
                         <ExternalLink className="size-3.5 shrink-0" />
-                    </a>
+                    </button>
                 );
             }
             return <span className="font-bold text-primary text-sm">{val}</span>;

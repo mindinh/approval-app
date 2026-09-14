@@ -227,25 +227,11 @@ export function useDashboardData(
         }));
     }, [kpiMetrics]);
 
-    // 5a. The set the category level is computed over: status (and search) applied,
-    //     but not the category/type selections. Status sits above the category cards
-    //     in the drill-down, so picking a donut slice narrows them; leaving out the
-    //     category and type filters is what keeps all four cards on screen and lets
-    //     the user switch between them.
-    const tasksForCategoryLevel = useMemo(() => {
-        return normalizedTasks.filter((t) => {
-            if (Array.isArray(statusFilter) && statusFilter.length > 0) {
-                if (!statusFilter.includes(t.status)) return false;
-            }
-            return true;
-        });
-    }, [normalizedTasks, statusFilter]);
-
-    // 5b. Per document-type breakdown feeding the category drill-down cards.
+    // 5a. Per document-type breakdown feeding the category drill-down cards.
     const typesData: TaskTypeCount[] = useMemo(() => {
         const groups = new Map<string, TaskTypeCount>();
 
-        for (const t of tasksForCategoryLevel) {
+        for (const t of normalizedTasks) {
             const rawDocType = t.documentType || t.taskType || 'Standard';
             let g = groups.get(t.typeLabel);
             if (!g) {
@@ -258,15 +244,16 @@ export function useDashboardData(
         }
 
         return Array.from(groups.values()).sort((a, b) => b.count - a.count);
-    }, [tasksForCategoryLevel]);
+    }, [normalizedTasks]);
 
-    // 5c. Category roll-ups for the 4 overview cards (total / pending / completed).
+    // 5b. Category roll-ups for the 4 overview cards (total / pending / completed).
+    // Total always represents the grand total across all statuses (In Approving + Completed).
     const { categoryCounts, pendingCounts, completedCounts } = useMemo(() => {
         const total = EMPTY_CATEGORY_COUNTS();
         const pending = EMPTY_CATEGORY_COUNTS();
         const completed = EMPTY_CATEGORY_COUNTS();
 
-        for (const t of tasksForCategoryLevel) {
+        for (const t of normalizedTasks) {
             total[t.category]++;
             total.ALL++;
             if (t.status === 'Completed') {
@@ -279,7 +266,7 @@ export function useDashboardData(
         }
 
         return { categoryCounts: total, pendingCounts: pending, completedCounts: completed };
-    }, [tasksForCategoryLevel]);
+    }, [normalizedTasks]);
 
     // 5d. The task list is capped at 1000 rows server-side. When the status aggregate
     //     reports more than we received, the per-type and per-category splits above are

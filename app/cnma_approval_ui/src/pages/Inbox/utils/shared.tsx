@@ -106,14 +106,17 @@ export function ActivityTimeline({
 
 // ─── Attachment Filename Helpers ───────────────────────────
 
-/** Remove duplicate extensions: "report.xlsx.xlsx" → "report.xlsx" */
+/** Remove duplicate extensions: "report.xlsx.xlsx" → "report.xlsx", "doc.xls.xls" → "doc.xls" */
 export function cleanFileName(name?: string): string | undefined {
     if (!name) return undefined;
-    const match = name.match(/^(.+)\.([^.]+)\.([^.]+)$/);
-    if (match && match[2].toLowerCase() === match[3].toLowerCase()) {
-        return `${match[1]}.${match[3]}`;
-    }
-    return name;
+    let clean = name.trim();
+    // Strip duplicate consecutive extensions (e.g. .xls.xls -> .xls, .PDF.pdf -> .pdf)
+    clean = clean.replace(/\.([a-zA-Z0-9]+)(?:\.\1)+$/i, (_match, ext) => `.${ext.toLowerCase()}`);
+    // Handle cross-duplicate extensions (e.g. .xlsx.xls -> .xlsx)
+    clean = clean.replace(/\.(xlsx|docx|pptx)\.(xls|doc|ppt)$/i, '.$1');
+    // Remove trailing dots
+    clean = clean.replace(/\.+$/, '').trim();
+    return clean;
 }
 
 const EXT_LABEL_MAP: Record<string, string> = {

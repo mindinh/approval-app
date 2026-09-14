@@ -1,5 +1,5 @@
 import { text, codeText, amount, date, tableCol } from '../../core/fields';
-import { formatRawDate, formatRawMultilineText } from '../../core/formatters';
+import { formatRawDate, formatRawMultilineText, formatVendorCodeAndName } from '../../core/formatters';
 
 export const PO_OVERVIEW_FIELDS = {
     poNumber: text({ source: 'DocumentNumber|PurchaseOrder', label: 'PO Number' }),
@@ -8,15 +8,7 @@ export const PO_OVERVIEW_FIELDS = {
     vendor: text({
         source: 'Vendor',
         label: 'Vendor',
-        formatter: (_val, record) => {
-            if (!record) return '-';
-            const code = (record.Vendor || record.Supplier || record.VendorCode || '').trim() || '-';
-            const s3 = (record.VendorName2 || record.Name2 || '').trim() || '-';
-            const s4 = (record.VendorName3 || record.Name3 || '').trim() || '-';
-            const s5 = (record.VendorName4 || record.Name4 || '').trim() || '-';
-
-            return [code, s3, s4, s5].join('\n');
-        }
+        formatter: (_val, record) => formatVendorCodeAndName(record)
     }),
     companyCode: codeText({ code: 'CompanyCode', text: 'CompanyCodeName', label: 'Company Code' }),
     creationDate: date({ source: 'CreationDate', label: 'Created On', timeSource: 'CreationTime' }),
@@ -33,7 +25,7 @@ export const PO_OVERVIEW_FIELDS = {
     supplyingPlant: codeText({ code: 'SupplyingPlant', text: 'SupplyingPlantName', label: 'Supplying Plant' }),
     plant: {
         key: 'Plant_PlantName',
-        label: 'Plant',
+        label: 'Receiving Plant',
         code: 'Plant|ReceivingPlant',
         text: 'PlantName|ReceivingPlantName',
         formatter: (_val: unknown, record: any) => {

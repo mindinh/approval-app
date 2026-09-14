@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { normalizeDetailForView } from '../utils/normalizeTaskDetail';
 import { TaskActionPanel } from './TaskActionPanel';
 import { TaskDetailSkeleton, SecondaryTabSkeleton } from './TaskDetailSkeletons';
+import { ReferencePrDetailView } from './ReferencePrDetailView';
 
 interface TaskDetailViewProps {
     detail: any;
@@ -76,6 +77,7 @@ export function TaskDetailView({
         taskId: '',
         tab: 'overview',
     });
+    const [activeSubView, setActiveSubView] = useState<{ type: 'reference-pr'; prNumber: string } | null>(null);
 
     const prevTabIndexRef = useRef(0);
     const { t } = useTranslation();
@@ -94,6 +96,14 @@ export function TaskDetailView({
 
     const activeTaskId = viewData?.instanceId || '';
     const activeTab = viewData && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
+
+    useEffect(() => {
+        setActiveSubView(null);
+    }, [activeTaskId]);
+
+    const handleSelectReferencePr = useCallback((prNumber: string) => {
+        setActiveSubView({ type: 'reference-pr', prNumber });
+    }, []);
 
     const documentId = viewData?.documentId || '';
     const workflowData = viewData?.workflowData;
@@ -267,6 +277,17 @@ export function TaskDetailView({
         );
     }
 
+    if (activeSubView?.type === 'reference-pr') {
+        return (
+            <ReferencePrDetailView
+                prNumber={activeSubView.prNumber}
+                parentDocumentId={documentId}
+                onBack={() => setActiveSubView(null)}
+                isMobile={isMobile}
+            />
+        );
+    }
+
 
     // Render tab content (shared between mobile & desktop)
     const renderTabContent = (tabValue: string, mobile: boolean) => {
@@ -278,6 +299,7 @@ export function TaskDetailView({
                         detail={viewData}
                         isMobile={mobile}
                         isSecondaryLoading={isSecondaryLoading}
+                        onSelectReferencePr={handleSelectReferencePr}
                     />
                 ) : null;
             case 'details':
@@ -290,6 +312,7 @@ export function TaskDetailView({
                         detail={viewData}
                         isMobile={mobile}
                         isSecondaryLoading={isSecondaryLoading}
+                        onSelectReferencePr={handleSelectReferencePr}
                     />
                 ) : null;
             case 'workflow':
@@ -444,6 +467,7 @@ export function TaskDetailView({
                                         detail={viewData}
                                         isMobile={false}
                                         isSecondaryLoading={isSecondaryLoading}
+                                        onSelectReferencePr={handleSelectReferencePr}
                                     />
                                 )}
                             </TabsContent>
@@ -457,6 +481,7 @@ export function TaskDetailView({
                                             detail={viewData}
                                             isMobile={false}
                                             isSecondaryLoading={isSecondaryLoading}
+                                            onSelectReferencePr={handleSelectReferencePr}
                                         />
                                     )
                                 )}

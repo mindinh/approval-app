@@ -3,7 +3,6 @@ import { useFLPSyncDirect, getInitialFLPRoute, subscribeFLPRoute } from './hooks
 import { useRef, useEffect, lazy, Suspense } from 'react';
 import { MainLayout } from './components/layouts/MainLayout';
 import { Toaster } from '@cnma/react-ui';
-import { PwaInstallBanner } from './components/PwaInstallBanner';
 
 // Lazy load pages for code-splitting
 const HomePage = lazy(() => import('./pages/Home/HomePage'));
@@ -57,7 +56,6 @@ export default function App() {
             <ShellSync />
             <InitialRouteNavigator />
             <div className="min-h-screen bg-background">
-                <PwaInstallBanner />
                 <Routes>
                     <Route element={<MainLayout />}>
                         {/* Home is the main landing page */}

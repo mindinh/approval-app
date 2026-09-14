@@ -227,3 +227,27 @@ export function useTaskDetail(
     useErrorModalOnQueryError(query.error, 'Failed to load task detail');
     return query;
 }
+
+// ─── useReferencePrDetail ──────────────────────────────────
+export function useReferencePrDetail(
+    prNumber: string | null,
+    options?: { enabled?: boolean }
+) {
+    const query = useQuery<TaskDetailResponse, Error>({
+        queryKey: inboxKeys.referencePr(prNumber || ''),
+        queryFn: () => inboxApi.getPrDetail(prNumber!),
+        enabled: !!prNumber && options?.enabled !== false,
+        staleTime: STALE.DETAIL,
+        retry: (failureCount, error: any) => {
+            const status = error?.response?.status || error?.statusCode || error?.status;
+            if (status === 404 || status === 403 || status === 401) {
+                return false;
+            }
+            return failureCount < 1;
+        },
+    });
+
+    useErrorModalOnQueryError(query.error, 'Failed to load reference PR detail');
+    return query;
+}
+

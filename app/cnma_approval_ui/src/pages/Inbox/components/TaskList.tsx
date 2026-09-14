@@ -27,11 +27,13 @@ import {
     ArrowDown,
     ArrowLeft,
     ChevronsUp,
+    ChevronsDownUp,
+    ChevronsUpDown,
 } from 'lucide-react';
 import { CategoryAccordionGroup } from './CategoryAccordionGroup';
 import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
-import { CATEGORY_CONFIG, type ObjectCategory } from '../utils/categoryUtils';
+import { CATEGORY_CONFIG, getTaskObjectCategory, type ObjectCategory } from '../utils/categoryUtils';
 import { useTaskSelection } from '@/pages/Inbox/hooks/useTaskSelection';
 import { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -149,7 +151,12 @@ export function TaskList({
     const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
 
     // ─── 4-Section Category Accordion state ───────────────────
-    const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(new Set());
+    const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(() => {
+        if (!isMobile) {
+            return new Set<ObjectCategory>(['PR', 'PO', 'CLAIM', 'RESERVATION']);
+        }
+        return new Set<ObjectCategory>();
+    });
 
     // If activeCategory is explicitly selected (e.g. from desktop CategoryPillsBar), expand it
     useEffect(() => {
@@ -161,6 +168,81 @@ export function TaskList({
             });
         }
     }, [activeCategory]);
+
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const lastScrolledTaskIdRef = useRef<string | null>(null);
+
+    // Ensure selected task's category is expanded and automatically scroll to the card
+    useEffect(() => {
+        if (!selectedTaskId) {
+            lastScrolledTaskIdRef.current = null;
+            return;
+        }
+
+        if (tasks.length === 0) return;
+
+        const currentTask = tasks.find(
+            (t) =>
+                t.instanceId === selectedTaskId ||
+                String(t.instanceId).replace(/^0+/, '') === normSelectedId
+        );
+        if (!currentTask) return;
+
+        const cat = getTaskObjectCategory(currentTask);
+        if (cat && cat !== 'OTHER') {
+            setExpandedCategories((prev) => {
+                if (prev.has(cat as ObjectCategory)) return prev;
+                const next = new Set(prev);
+                next.add(cat as ObjectCategory);
+                return next;
+            });
+        }
+
+        if (lastScrolledTaskIdRef.current === currentTask.instanceId) {
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 12;
+        let timeoutId: ReturnType<typeof setTimeout>;
+
+        const attemptScroll = () => {
+            const el =
+                document.getElementById(`task-card-${currentTask.instanceId}`) ||
+                (selectedTaskId ? document.getElementById(`task-card-${selectedTaskId}`) : null);
+            const container = scrollContainerRef.current;
+
+            if (el && container) {
+                const containerRect = container.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+
+                // If card is not already comfortably visible inside the scroll container, scroll to center it
+                const isFullyVisible =
+                    elRect.top >= containerRect.top + 30 &&
+                    elRect.bottom <= containerRect.bottom - 30;
+
+                if (!isFullyVisible) {
+                    const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+                    const targetScrollTop = relativeTop - (container.clientHeight / 2) + (elRect.height / 2);
+                    container.scrollTo({
+                        top: Math.max(0, targetScrollTop),
+                        behavior: 'smooth',
+                    });
+                }
+                lastScrolledTaskIdRef.current = currentTask.instanceId;
+            } else if (attempts < maxAttempts) {
+                attempts++;
+                timeoutId = setTimeout(attemptScroll, 80);
+            }
+        };
+
+        // Delay 250ms to allow category accordion expand animation to settle
+        timeoutId = setTimeout(attemptScroll, 250);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [selectedTaskId, tasks, normSelectedId]);
 
     const handleToggleCategory = useCallback((cat: ObjectCategory) => {
         setExpandedCategories((prev) => {
@@ -179,9 +261,19 @@ export function TaskList({
         setExpandedCategories(new Set());
     }, []);
 
+    const handleToggleCollapseAll = useCallback(() => {
+        setExpandedCategories((prev) => {
+            if (prev.size > 0) {
+                return new Set<ObjectCategory>();
+            }
+            return new Set<ObjectCategory>(['PR', 'PO', 'CLAIM', 'RESERVATION']);
+        });
+    }, []);
+
+    const isAllCollapsed = expandedCategories.size === 0;
+
     // ─── Infinite scroll sentinel (Callback Ref for clean unmount/remount) ─
     const observerRef = useRef<IntersectionObserver | null>(null);
-    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
     const sentinelCallbackRef = useCallback(
         (node: HTMLDivElement | null) => {
@@ -318,6 +410,8 @@ export function TaskList({
                         isRefreshing={isRefreshing}
                         onToggleCollapse={onToggleCollapse}
                         scope={scope}
+                        onToggleCollapseAll={handleToggleCollapseAll}
+                        isAllCollapsed={isAllCollapsed}
                     />
 
                     {showScopeTabs && (
@@ -448,61 +542,28 @@ export function TaskList({
                             isMobile && 'px-3.5 pb-28 pt-2'
                         )}
                     >
-                        {isMobile ? (
-                            <CategoryAccordionGroup
-                                tasks={filters.filteredTasks}
-                                selectedTaskId={selectedTaskId}
-                                normSelectedId={normSelectedId}
-                                onSelectTask={onSelectTask}
-                                handleCardClick={handleCardClick}
-                                isMobile={isMobile}
-                                scope={scope}
-                                showTaskActions={showTaskActions}
-                                selectionMode={selection.selectionMode}
-                                selectedIds={selection.selectedIds}
-                                onToggleSelection={(id) => {
-                                    setIsSelectingAllPages(false);
-                                    selection.toggleSelection(id);
-                                }}
-                                expandedCategories={expandedCategories}
-                                onToggleCategory={handleToggleCategory}
-                                hasNextPage={hasNextPage}
-                                isFetchingNextPage={isFetchingNextPage}
-                                onLoadMore={onLoadMore}
-                                categoryTotals={categoryTotals}
-                            />
-                        ) : (
-                            filters.filteredTasks.map((task) => (
-                                <div key={task.instanceId} className="flex items-start gap-2">
-                                    {showTaskActions && selection.selectionMode && (
-                                        <div className="shrink-0 pl-1 pt-3">
-                                            {task.normalTask !== false ? (
-                                                <Checkbox
-                                                    checked={selection.selectedIds.has(task.instanceId)}
-                                                    onCheckedChange={() => {
-                                                        setIsSelectingAllPages(false);
-                                                        selection.toggleSelection(task.instanceId);
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="size-4 rounded border border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center cursor-not-allowed opacity-40"
-                                                    title={t('task.ccNotActionable', 'Review-only / CC tasks cannot be approved or rejected')}
-                                                />
-                                            )}
-                                        </div>
-                                    )}
-                                    <div className="min-w-0 flex-1">
-                                        <TaskCard
-                                            task={task}
-                                            isSelected={task.instanceId === selectedTaskId}
-                                            onClick={handleCardClick}
-                                            variant="desktop"
-                                        />
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                        <CategoryAccordionGroup
+                            tasks={filters.filteredTasks}
+                            selectedTaskId={selectedTaskId}
+                            normSelectedId={normSelectedId}
+                            onSelectTask={onSelectTask}
+                            handleCardClick={handleCardClick}
+                            isMobile={isMobile}
+                            scope={scope}
+                            showTaskActions={showTaskActions}
+                            selectionMode={selection.selectionMode}
+                            selectedIds={selection.selectedIds}
+                            onToggleSelection={(id) => {
+                                setIsSelectingAllPages(false);
+                                selection.toggleSelection(id);
+                            }}
+                            expandedCategories={expandedCategories}
+                            onToggleCategory={handleToggleCategory}
+                            hasNextPage={hasNextPage}
+                            isFetchingNextPage={isFetchingNextPage}
+                            onLoadMore={onLoadMore}
+                            categoryTotals={categoryTotals}
+                        />
 
                         {/* ── Infinite Scroll Sentinel (overall fallback) ── */}
                         <div ref={sentinelCallbackRef} className="h-2" />
@@ -597,6 +658,8 @@ function DesktopHeader({
     isRefreshing,
     onToggleCollapse,
     scope,
+    onToggleCollapseAll,
+    isAllCollapsed,
 }: {
     totalItems: number;
     selectionMode: boolean;
@@ -607,6 +670,8 @@ function DesktopHeader({
     isRefreshing: boolean;
     onToggleCollapse?: () => void;
     scope?: 'my' | 'approved';
+    onToggleCollapseAll?: () => void;
+    isAllCollapsed?: boolean;
 }) {
     const { t } = useTranslation();
     const title = scope === 'approved'
@@ -630,6 +695,17 @@ function DesktopHeader({
                         title={selectionMode ? t('common.cancel', 'Exit selection') : t('inbox.select', 'Select tasks')}
                     >
                         {selectionMode ? <X className="size-4" /> : <ListChecks className="size-4" />}
+                    </Button>
+                )}
+                {onToggleCollapseAll && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleCollapseAll}
+                        className="h-8 w-8 rounded-lg hover:bg-muted"
+                        title={isAllCollapsed ? t('inbox.expandAll', 'Expand all') : t('inbox.collapseAll', 'Collapse all')}
+                    >
+                        {isAllCollapsed ? <ChevronsUpDown className="size-4" /> : <ChevronsDownUp className="size-4" />}
                     </Button>
                 )}
                 <Button
@@ -761,26 +837,9 @@ function MobileHeader({
 }) {
     const { t } = useTranslation();
 
-    const categoryTitle = activeCategory && activeCategory !== 'ALL'
-        ? t(`category.${activeCategory.toLowerCase()}`, CATEGORY_CONFIG[activeCategory]?.title)
-        : t('dashboard.charts.allTasks', 'All Tasks');
-
-    const displayCount = activeCategory && categoryCounts
-        ? (categoryCounts[activeCategory] ?? totalItems)
-        : totalItems;
-
     return (
         <div className="border-b-0 bg-transparent backdrop-blur-none">
-            <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-foreground">{t('dashboard.charts.allTasks', 'All Tasks')}</h2>
-                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                        {totalItems}
-                    </span>
-                </div>
-            </div>
-
-            <div className="space-y-3 px-4 pb-4">
+            <div className="space-y-3 px-4 pt-3 pb-4">
                 {showScopeTabs && (
                     <Tabs
                         value={scope}
@@ -833,32 +892,21 @@ function MobileHeader({
                     />
                 </div>
 
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="text-xs font-medium text-muted-foreground">
-                            {selectionSummary}
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onRefresh?.()}
-                            disabled={isRefreshing}
-                            className="h-9 w-9 rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted/30"
-                        >
-                            <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        </Button>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-medium text-muted-foreground truncate min-w-0 flex-1">
+                        {selectionSummary}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 shrink-0">
                         <Button
                             variant="outline"
                             onClick={onOpenFilters}
                             disabled={showTaskActions && selectionMode}
-                            className="h-10 rounded-xl border-border bg-card px-3 text-sm font-medium text-muted-foreground shadow-sm"
+                            className="h-8 rounded-lg border-border bg-card px-2.5 text-xs font-medium text-muted-foreground shadow-2xs hover:bg-muted/30"
                         >
-                            <Filter className="mr-2 size-4" />
+                            <Filter className="mr-1.5 size-3.5" />
                             {t('common.filter', 'Filter')}
                             {mobileActiveFilterCount > 0 && (
-                                <span className="ml-2 rounded-full bg-primary px-1.5 py-0 text-xs font-semibold text-white">
+                                <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0 text-[10px] font-semibold text-white">
                                     {mobileActiveFilterCount}
                                 </span>
                             )}
@@ -868,7 +916,7 @@ function MobileHeader({
                                 variant="outline"
                                 onClick={() => (selectionMode ? exitSelectionMode() : enterSelectionMode())}
                                 className={cn(
-                                    'h-10 rounded-xl border bg-card px-3 text-sm font-medium shadow-sm',
+                                    'h-8 rounded-lg border bg-card px-2.5 text-xs font-medium shadow-2xs',
                                     selectionMode
                                         ? 'border-destructive/30 text-destructive hover:bg-error-bg'
                                         : 'border-border text-muted-foreground hover:bg-muted/30'
@@ -876,17 +924,27 @@ function MobileHeader({
                             >
                                 {selectionMode ? (
                                     <>
-                                        <X className="mr-2 size-4" />
+                                        <X className="mr-1.5 size-3.5" />
                                         {t('common.cancel', 'Cancel')}
                                     </>
                                 ) : (
                                     <>
-                                        <ListChecks className="mr-2 size-4" />
+                                        <ListChecks className="mr-1.5 size-3.5" />
                                         {t('inbox.select', 'Select')}
                                     </>
                                 )}
                             </Button>
                         )}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onRefresh?.()}
+                            disabled={isRefreshing}
+                            className="h-8 w-8 rounded-lg border border-border bg-card text-muted-foreground shadow-2xs hover:bg-muted/30"
+                            title={t('common.refresh', 'Refresh')}
+                        >
+                            <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
+                        </Button>
                     </div>
                 </div>
             </div>

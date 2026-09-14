@@ -1,4 +1,5 @@
 import axiosInstance from '../core/axiosInstance';
+import { cleanFileName } from '@/pages/Inbox/utils/shared';
 import type {
     TaskListResponse,
     TaskDetailResponse,
@@ -90,6 +91,16 @@ export const inboxApi = {
     getTaskDetail: async (instanceId: string): Promise<TaskDetailResponse> => {
         const { data } = await axiosInstance.get<TaskDetailResponse>(
             `${BASE_URL}/${encodeURIComponent(instanceId)}`
+        );
+        return data;
+    },
+
+    /**
+     * Get reference PR detail directly by PR document number (CNMA_PRHEADER with expands).
+     */
+    getPrDetail: async (prNumber: string): Promise<TaskDetailResponse> => {
+        const { data } = await axiosInstance.get<TaskDetailResponse>(
+            `${BASE_URL}/pr/${encodeURIComponent(prNumber)}`
         );
         return data;
     },
@@ -273,9 +284,10 @@ export const inboxApi = {
         let fileName = '';
         const disposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];
         if (disposition) {
-            const match = disposition.match(/filename="?([^";]+)"?/i);
-            if (match) {
-                fileName = decodeURIComponent(match[1]);
+            const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+            const raw = match ? (match[1] ? decodeURIComponent(match[1]) : match[2]) : '';
+            if (raw) {
+                fileName = cleanFileName(raw) || raw;
             }
         }
 

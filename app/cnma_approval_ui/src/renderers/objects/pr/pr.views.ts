@@ -55,6 +55,17 @@ const standardPrTableColumns = [
     PR_TABLE_COLUMNS.commitmentItem
 ];
 
+/** Helper to exclude specific columns from the standard set declaratively */
+function excludeColumns(base: typeof standardPrTableColumns, ...keysToExclude: string[]) {
+    return base.filter((col) => !keysToExclude.includes(col.key));
+}
+
+// ZASS, ZEXP: Matnr (material) removed per requirements
+const prColumnsNoMaterial = excludeColumns(standardPrTableColumns, 'material');
+
+// ZNB1, ZNB2: G/L account removed per requirements
+const prColumnsNoGlAccount = excludeColumns(standardPrTableColumns, 'glAccount');
+
 export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
     ZASS: {
         docCategory: 'BUS2105',
@@ -66,7 +77,7 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
             id: 'pr-items-zass',
             title: 'Line Items',
             sourcePath: '_Item',
-            columns: standardPrTableColumns
+            columns: prColumnsNoMaterial
         }
     },
     ZEXP: {
@@ -79,7 +90,7 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
             id: 'pr-items-zexp',
             title: 'Line Items',
             sourcePath: '_Item',
-            columns: standardPrTableColumns
+            columns: prColumnsNoMaterial
         }
     },
     ZMAK: {
@@ -93,17 +104,7 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
             title: 'Line Items',
             sourcePath: '_Item',
             columns: [
-                PR_TABLE_COLUMNS.item,
-                PR_TABLE_COLUMNS.material,
-                PR_TABLE_COLUMNS.shortText,
-                PR_TABLE_COLUMNS.quantity,
-                PR_TABLE_COLUMNS.valuationPrice,
-                PR_TABLE_COLUMNS.totalValue,
-                PR_TABLE_COLUMNS.deliveryDate,
-                PR_TABLE_COLUMNS.materialGroup,
-                PR_TABLE_COLUMNS.plant,
-                PR_TABLE_COLUMNS.storageLocation,
-                PR_TABLE_COLUMNS.glAccount,
+                ...excludeColumns(standardPrTableColumns, 'material').filter(c => c.key !== 'commitmentItem'),
                 PR_TABLE_COLUMNS.internalOrder,
                 PR_TABLE_COLUMNS.commitmentItem
             ]
@@ -119,7 +120,7 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
             id: 'pr-items-znb1',
             title: 'Line Items',
             sourcePath: '_Item',
-            columns: standardPrTableColumns
+            columns: prColumnsNoGlAccount
         }
     },
     ZNB2: {
@@ -132,7 +133,7 @@ export const PR_VIEWS: Record<string, ObjectViewDefinition> = {
             id: 'pr-items-znb2',
             title: 'Line Items',
             sourcePath: '_Item',
-            columns: standardPrTableColumns
+            columns: prColumnsNoGlAccount
         }
     },
     ZTOL: {

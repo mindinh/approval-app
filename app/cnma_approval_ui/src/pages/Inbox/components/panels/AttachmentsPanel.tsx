@@ -80,7 +80,8 @@ export function AttachmentsPanel({
                 sapOrigin
             );
 
-            const fileName = returnedFileName || defaultFileName || 'download';
+            const rawName = returnedFileName || defaultFileName || 'download';
+            const fileName = cleanFileName(rawName) || rawName;
             const url = URL.createObjectURL(data);
             const link = document.createElement('a');
             link.href = url;

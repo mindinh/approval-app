@@ -106,22 +106,22 @@ export const CATEGORY_ACCORDION_SECTIONS: CategorySectionDef[] = [
         iconBgClass: 'bg-info/10 text-info border-info/20',
     },
     {
+        key: 'CLAIM',
+        title: 'Claim',
+        icon: Receipt,
+        stripeClass: 'before:bg-success',
+        iconBgClass: 'bg-success/10 text-success border-success/20',
+    },
+    {
         key: 'RESERVATION',
         title: 'Reservation',
         icon: CalendarCheck,
         stripeClass: 'before:bg-warning',
         iconBgClass: 'bg-warning/10 text-warning border-warning/20',
     },
-    {
-        key: 'CLAIM',
-        title: 'Claim form',
-        icon: Receipt,
-        stripeClass: 'before:bg-success',
-        iconBgClass: 'bg-success/10 text-success border-success/20',
-    },
 ];
 
-export const MAIN_CATEGORIES: ObjectCategory[] = ['PR', 'PO', 'RESERVATION', 'CLAIM'];
+export const MAIN_CATEGORIES: ObjectCategory[] = ['PR', 'PO', 'CLAIM', 'RESERVATION'];
 
 /**
  * Normalizes an InboxTask to one of the 4 main object categories.
@@ -234,4 +234,47 @@ export function computeCategoryCounts(tasks: InboxTask[]): Record<ObjectCategory
     }
 
     return counts;
+}
+
+/**
+ * Resolves the display subtype of a task.
+ */
+export function getTaskSubtype(task: InboxTask): string {
+    const raw =
+        task.documentTypeDisplay ||
+        (task as any).DocumentTypeText ||
+        (task as any).doctyp_desc ||
+        (task as any).documentTypeDesc ||
+        (task as any).DocumentTypeDisplay ||
+        (task as any).documentType ||
+        '';
+    const trimmed = String(raw).trim();
+    if (trimmed) return trimmed;
+
+    // Fallback based on category
+    const cat = getTaskObjectCategory(task);
+    if (cat === 'PR') return 'Standard PR';
+    if (cat === 'PO') return 'Standard PO';
+    if (cat === 'RESERVATION') return 'Reservation';
+    if (cat === 'CLAIM') return 'Claim';
+    return 'Other';
+}
+
+/**
+ * Extracts distinct subtypes and their task counts for a given list of tasks.
+ */
+export function extractSubtypeCounts(tasks: InboxTask[]): { name: string; count: number }[] {
+    const countMap = new Map<string, number>();
+
+    for (const task of tasks) {
+        const subtype = getTaskSubtype(task);
+        if (subtype) {
+            countMap.set(subtype, (countMap.get(subtype) || 0) + 1);
+        }
+    }
+
+    return Array.from(countMap.entries()).map(([name, count]) => ({
+        name,
+        count,
+    }));
 }
