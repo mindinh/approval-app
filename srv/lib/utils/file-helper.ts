@@ -58,10 +58,51 @@ export function detectMimeFromBuffer(buffer: Buffer): { mimeType: string; extens
 
     // ZIP / Office XML: PK\x03\x04 (0x50 0x4B 0x03 0x04)
     if (buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04) {
+        const scanSlice = buffer.subarray(0, Math.min(buffer.length, 4096)).toString('binary');
+        if (scanSlice.includes('xl/') || scanSlice.includes('xl\\')) {
+            return { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', extension: 'xlsx' };
+        }
+        if (scanSlice.includes('word/') || scanSlice.includes('word\\')) {
+            return { mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', extension: 'docx' };
+        }
+        if (scanSlice.includes('ppt/') || scanSlice.includes('ppt\\')) {
+            return { mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', extension: 'pptx' };
+        }
         return { mimeType: 'application/zip', extension: 'zip' };
     }
 
     return null;
+}
+
+/**
+ * Sanitizes attachment filename:
+ * 1. Strips duplicate consecutive extensions (e.g. "phuluc...xls.xls" -> "phuluc...xls")
+ * 2. Removes trailing dots
+ * 3. Upgrades legacy extensions (.xls -> .xlsx) if detected as OpenXML
+ */
+export function cleanFileName(name?: string, detectedExtension?: string): string {
+    if (!name) return 'attachment';
+    let clean = name.trim();
+
+    // Strip duplicate extensions: e.g. .xls.xls -> .xls, .PDF.pdf -> .pdf
+    clean = clean.replace(/\.([a-zA-Z0-9]+)(?:\.\1)+$/i, (_match, ext) => `.${ext.toLowerCase()}`);
+
+    // Handle cross-duplicate extensions: e.g. .xlsx.xls -> .xlsx
+    clean = clean.replace(/\.(xlsx|docx|pptx)\.(xls|doc|ppt)$/i, '.$1');
+
+    // Remove trailing dots
+    clean = clean.replace(/\.+$/, '').trim();
+
+    // If buffer magic inspection confirms modern OpenXML, align extension to prevent Excel mismatch error
+    if (detectedExtension === 'xlsx' && /\.xls$/i.test(clean)) {
+        clean = clean.replace(/\.xls$/i, '.xlsx');
+    } else if (detectedExtension === 'docx' && /\.doc$/i.test(clean)) {
+        clean = clean.replace(/\.doc$/i, '.docx');
+    } else if (detectedExtension === 'pptx' && /\.ppt$/i.test(clean)) {
+        clean = clean.replace(/\.ppt$/i, '.pptx');
+    }
+
+    return clean;
 }
 
 export const MIME_TYPE_MAP: Record<string, string> = {

@@ -4,6 +4,7 @@ import http from 'http';
 import https from 'https';
 import { Logger } from '../utils/logger';
 import { handleSapError } from '../utils/error-handler';
+import { cleanFileName } from '../utils/file-helper';
 
 export class SapClient {
     private http: AxiosInstance;
@@ -219,8 +220,9 @@ export class SapClient {
                     const contentDisposition = (response.headers['content-disposition'] || response.headers['Content-Disposition']) as string;
                     let fileName: string | undefined = undefined;
                     if (contentDisposition) {
-                        const match = contentDisposition.match(/filename="?([^";]+)"?/i);
-                        if (match) fileName = match[1];
+                        const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+                        const raw = match ? (match[1] ? decodeURIComponent(match[1]) : match[2]) : undefined;
+                        if (raw) fileName = cleanFileName(raw);
                     }
                     return { data: Buffer.from(response.data as any), contentType, fileName };
                 } catch (error: any) {
@@ -233,8 +235,9 @@ export class SapClient {
                         const contentDisposition = (response.headers['content-disposition'] || response.headers['Content-Disposition']) as string;
                         let fileName: string | undefined = undefined;
                         if (contentDisposition) {
-                            const match = contentDisposition.match(/filename="?([^";]+)"?/i);
-                            if (match) fileName = match[1];
+                            const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+                            const raw = match ? (match[1] ? decodeURIComponent(match[1]) : match[2]) : undefined;
+                            if (raw) fileName = cleanFileName(raw);
                         }
                         return { data: Buffer.from(response.data), contentType, fileName };
                     }
@@ -249,8 +252,9 @@ export class SapClient {
                 const contentDisposition = (response.headers['content-disposition'] || response.headers['Content-Disposition']) as string;
                 let fileName: string | undefined = undefined;
                 if (contentDisposition) {
-                    const match = contentDisposition.match(/filename="?([^";]+)"?/i);
-                    if (match) fileName = match[1];
+                    const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+                    const raw = match ? (match[1] ? decodeURIComponent(match[1]) : match[2]) : undefined;
+                    if (raw) fileName = cleanFileName(raw);
                 }
                 return { data: Buffer.from(response.data), contentType, fileName };
             }

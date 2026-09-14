@@ -416,6 +416,40 @@ export class InboxProcessor {
         }
     }
 
+    /**
+     * Fetches detailed CNMA_PRHEADER entity with expands for a specific PR document number.
+     */
+    async getPrDetail(documentId: string, sapUser: string, userJwt?: string) {
+        this.logger.info(`Fetching PR detail for document ${documentId}`);
+        try {
+            if (!documentId) {
+                throw new AppError('Document ID is required', 400);
+            }
+            const cleanDocId = String(documentId).trim();
+            const businessObject = await this.sapOdataAdapter.getDetail('PR', cleanDocId, sapUser, userJwt);
+            return {
+                instanceId: cleanDocId,
+                taskId: cleanDocId,
+                normalTask: false,
+                objectType: 'PR',
+                documentId: cleanDocId,
+                supports: {
+                    forward: false,
+                    comments: false
+                },
+                businessObject: businessObject || {},
+                taskprocessing: {
+                    task: null,
+                    decisionOptions: []
+                }
+            };
+        } catch (error: any) {
+            this.logger.error(`Error in getPrDetail: ${error.message}`);
+            if (error instanceof AppError) throw error;
+            throw new AppError(`Failed to load PR detail for ${documentId}: ${error.message}`, error.statusCode || 500);
+        }
+    }
+
     async getPrAttachments(documentId: string, sapUser: string, userJwt?: string) {
         this.logger.info(`Fetching PR attachments for document ${documentId}`);
         try {

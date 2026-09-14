@@ -18,6 +18,7 @@ export function createInboxRouter(): Router {
 
     // 4. Worklists & Reference Details
     router.get('/approved', controller.getApprovedTasks);
+    router.get('/pr/:docNum', controller.getPrDetail);
     router.get('/pr/:docNum/attachments', controller.getPrAttachments);
     router.get('/pr/:docNum/attachments/:attachId/content/:fileName?', controller.streamPrAttachment);
     router.get('/attachments/:attachId/content/:fileName?', controller.streamAttachment);

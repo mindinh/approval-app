@@ -767,4 +767,41 @@ describe('InboxProcessor', () => {
       expect(result.results[0].error).toContain('tagged/CC tasks');
     });
   });
+
+  describe('getPrDetail', () => {
+    it('should throw an error if documentId is empty', async () => {
+      await expect(processor.getPrDetail('', 'MOCK_USER')).rejects.toThrow('Document ID is required');
+    });
+
+    it('should fetch PR detail via SapOdataAdapter getDetail and format response', async () => {
+      const mockBusinessObject = {
+        DocCategory: 'BUS2105',
+        DocumentNumber: '0010000001',
+        DocumentType: 'NB',
+        _Item: [{ ItemNumber: '00010', Material: 'MAT01' }]
+      };
+      mockSapOdataAdapter.getDetail.mockResolvedValue(mockBusinessObject);
+
+      const result = await processor.getPrDetail('10000001', 'MOCK_USER', 'mock-jwt');
+
+      expect(mockSapOdataAdapter.getDetail).toHaveBeenCalledWith('PR', '10000001', 'MOCK_USER', 'mock-jwt');
+      expect(result).toEqual({
+        instanceId: '10000001',
+        taskId: '10000001',
+        normalTask: false,
+        objectType: 'PR',
+        documentId: '10000001',
+        supports: {
+          forward: false,
+          comments: false
+        },
+        businessObject: mockBusinessObject,
+        taskprocessing: {
+          task: null,
+          decisionOptions: []
+        }
+      });
+    });
+  });
 });
+

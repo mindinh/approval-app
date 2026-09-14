@@ -31,17 +31,8 @@ export class ReDetail extends BaseRawDetail {
         const relativePath = `/CNMA_ATTACH_CONTENT('${encodeURIComponent(attachId)}')/Content`;
         const res = await this.sapClient.getBinary(servicePath, relativePath, sapUser, userJwt);
 
-        let data = res.data;
-        if (data && data.length > 0) {
-            let lastNonNull = data.length - 1;
-            while (lastNonNull >= 0 && data[lastNonNull] === 0) {
-                lastNonNull--;
-            }
-            data = data.subarray(0, lastNonNull + 1);
-        }
-
         return {
-            data,
+            data: res.data,
             contentType: res.contentType,
             fileName: res.fileName || `attachment_${attachId}`
         };

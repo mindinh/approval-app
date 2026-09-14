@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { InboxProcessor } from '../lib/processors/inbox-processor';
 import { AppError } from '../lib/utils/error-handler';
-import { detectMimeFromBuffer } from '../lib/utils/file-helper';
+import { detectMimeFromBuffer, cleanFileName } from '../lib/utils/file-helper';
 import {
     ensureString,
     ensureOptionalString,
@@ -578,29 +578,60 @@ export class InboxController {
             const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
             let contentType = file.contentType || 'application/octet-stream';
             const rawParamFileName = Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName;
-            const fileNameLower = String(file.fileName || rawParamFileName || '').toLowerCase();
+            let finalFileName = String(file.fileName || rawParamFileName || `attachment_${attId}`);
 
-            // Infer PDF content-type if binary starts with %PDF- or filename ends with .pdf
-            if (contentType === 'application/octet-stream' || contentType === 'application/x-forcedownload' || !contentType) {
-                if (fileNameLower.endsWith('.pdf') || (file.data && file.data.length >= 4 && file.data[0] === 0x25 && file.data[1] === 0x50 && file.data[2] === 0x44 && file.data[3] === 0x46)) {
-                    contentType = 'application/pdf';
-                } else if (fileNameLower.endsWith('.png')) {
-                    contentType = 'image/png';
-                } else if (fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg')) {
-                    contentType = 'image/jpeg';
-                } else if (fileNameLower.endsWith('.gif')) {
-                    contentType = 'image/gif';
-                } else if (fileNameLower.endsWith('.txt')) {
-                    contentType = 'text/plain; charset=utf-8';
-                } else if (fileNameLower.endsWith('.csv')) {
-                    contentType = 'text/csv; charset=utf-8';
+            // Inspect binary buffer magic bytes
+            let detectedExt: string | undefined = undefined;
+            if (file.data && Buffer.isBuffer(file.data)) {
+                const detected = detectMimeFromBuffer(file.data);
+                if (detected) {
+                    detectedExt = detected.extension;
+                    // Upgrade generic/octet-stream or legacy xls content type when buffer is modern xlsx/docx
+                    if (
+                        !contentType ||
+                        contentType === 'application/octet-stream' ||
+                        contentType === 'application/x-forcedownload' ||
+                        (contentType === 'application/vnd.ms-excel' && detected.extension === 'xlsx')
+                    ) {
+                        contentType = detected.mimeType;
+                    }
                 }
             }
 
-            const encodedFileName = encodeURIComponent(file.fileName);
+            finalFileName = cleanFileName(finalFileName, detectedExt);
+            const encodedFileName = encodeURIComponent(finalFileName);
             res.setHeader('Content-Type', contentType);
-            res.setHeader('Content-Disposition', `${disposition}; filename="${file.fileName}"; filename*=UTF-8''${encodedFileName}`);
+            res.setHeader('Content-Disposition', `${disposition}; filename="${finalFileName}"; filename*=UTF-8''${encodedFileName}`);
             res.send(file.data);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * @openapi
+     * /tasks/pr/{docNum}:
+     *   get:
+     *     summary: Fetch Purchase Requisition detail by document number
+     *     description: Retrieves CNMA_PRHEADER entity with all standard navigation expands.
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: docNum
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Full PR detail model with businessObject
+     */
+    getPrDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const docNum = String(req.params.docNum || '');
+            const { sapUser, userJwt } = resolveIdentity(req);
+            const detail = await this.processor.getPrDetail(docNum, sapUser, userJwt);
+            res.json(detail);
         } catch (error) {
             next(error);
         }
@@ -674,17 +705,27 @@ export class InboxController {
 
             let contentType = file.contentType || 'application/octet-stream';
             let fileName = file.fileName || `attachment_${attachId}`;
+            let detectedExt: string | undefined = undefined;
 
-            if ((!contentType || contentType === 'application/octet-stream' || contentType === 'application/x-forcedownload') && file.data) {
+            if (file.data && Buffer.isBuffer(file.data)) {
                 const detected = detectMimeFromBuffer(file.data);
                 if (detected) {
-                    contentType = detected.mimeType;
+                    detectedExt = detected.extension;
+                    if (
+                        !contentType ||
+                        contentType === 'application/octet-stream' ||
+                        contentType === 'application/x-forcedownload' ||
+                        (contentType === 'application/vnd.ms-excel' && detected.extension === 'xlsx')
+                    ) {
+                        contentType = detected.mimeType;
+                    }
                     if (!fileName.includes('.') || fileName.endsWith('.')) {
                         fileName = `${fileName.replace(/\.+$/, '')}.${detected.extension}`;
                     }
                 }
             }
 
+            fileName = cleanFileName(fileName, detectedExt);
             const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
             const encodedFileName = encodeURIComponent(fileName);
             res.setHeader('Content-Type', contentType);
