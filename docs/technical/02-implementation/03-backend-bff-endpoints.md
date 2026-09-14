@@ -1,6 +1,6 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-09-04 | **Status:** Active
+> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-09-14 | **Status:** Active
 
 The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
 
@@ -231,7 +231,11 @@ These endpoints are designed for troubleshooting token bindings, user identities
 *   **Query Parameters**: 
     *   `documentId` (Required) — SAP Document Number (e.g. `90000001` or `10000042`).
     *   `objectType` (Optional) — Business Object Type (e.g. `CLAIM`, `PR`, `PO`, `RE`).
-*   **Attachment Lookup Strategy**: Executes dual-mode strategy resolution — attempts explicit object strategy first (e.g. `CLAIM` strategy via `CNMA_CLAIM_ATTA`), and if unspecified or returning 404/400, automatically falls back to GOS attachment strategy (`CNMA_ATTACH_CONTENT`). Uses magic byte inspection (`detectMimeFromBuffer`) in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts) to identify PDF, PNG, JPEG, GIF, WebP, and ZIP streams when headers are ambiguous.
+*   **Attachment Lookup Strategy**: Executes dual-mode strategy resolution — attempts explicit object strategy first (e.g. `CLAIM` strategy via `CNMA_CLAIM_ATTA`), and if unspecified or returning 404/400, automatically falls back to GOS attachment strategy (`CNMA_ATTACH_CONTENT`).
+*   **Sanitization & Decoding**:
+    *   **RFC 5987 UTF-8 Decoding**: Decodes `filename*=UTF-8''` headers from S/4HANA OData responses.
+    *   **Case-Insensitive Deduplication (`cleanFileName`)**: Cleans duplicate extensions (e.g. `file.PDF.pdf` $\rightarrow$ `file.pdf`, `report.xls.xls` $\rightarrow$ `report.xls`) using case-insensitive regex in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts).
+    *   **Buffer Magic Bytes & OpenXML Inspection**: Uses `detectMimeFromBuffer` to identify PDF, PNG, JPEG, GIF, WebP, ZIP, and inspects binary slices for Microsoft Office OpenXML signatures (`xl/` -> `xlsx`, `word/` -> `docx`, `ppt/` -> `pptx`), ensuring correct MIME type and preventing file corruption warnings in Microsoft Office.
 
 ### 12. GET `/tasks/search-users`
 *   **Purpose**: Search system users for task forwarding/delegation dialog autocompletion.
@@ -346,4 +350,73 @@ These endpoints are designed for troubleshooting token bindings, user identities
       ]
     }
     ```
+
+---
+
+## 🔍 Purchase Requisition Reference Endpoints
+
+### 16. GET `/tasks/pr/:docNum`
+*   **Purpose**: Fetch comprehensive Purchase Requisition details by document number for native in-app inspection (`ReferencePrDetailView`).
+*   **Route**: `GET /api/cnma/APPROVAL_SRV/pr/:docNum`
+*   **Path Parameter**: `:docNum` (Required) — Purchase Requisition document number (e.g. `10001861`).
+*   **Resolution**: Invokes `InboxProcessor.getPrDetail` which queries `SapOdataAdapter.getDetail('PR', cleanDocId, sapUser, userJwt)`. Resolves `CNMA_PRHEADER` with full `$expand=_Item,_ApprovalStep,_HeaderText`.
+*   **Response Payload Schema**:
+    ```json
+    {
+      "instanceId": "10001861",
+      "taskId": "10001861",
+      "normalTask": false,
+      "objectType": "PR",
+      "documentId": "10001861",
+      "supports": {
+        "forward": false,
+        "comments": false
+      },
+      "businessObject": {
+        "DocumentNumber": "0010001861",
+        "DocCategory": "BUS2105",
+        "DocumentType": "ZNB1",
+        "DocumentTypeText": "Standard PR",
+        "CreatedByUser": "MINHDT",
+        "UserName": "Do Tu Minh",
+        "CompanyCode": "1710",
+        "TotalNetAmountLocalCrcy": 25000000,
+        "LocalCurrency": "VND",
+        "_Item": [ ... ],
+        "_ApprovalStep": [ ... ],
+        "_Comment": [ ... ]
+      },
+      "taskprocessing": {
+        "task": null,
+        "decisionOptions": []
+      }
+    }
+    ```
+
+### 17. GET `/tasks/pr/:docNum/attachments`
+*   **Purpose**: Query attachment metadata list for a referenced Purchase Requisition document.
+*   **Route**: `GET /api/cnma/APPROVAL_SRV/pr/:docNum/attachments`
+*   **Path Parameter**: `:docNum` (Required) — Purchase Requisition document number.
+*   **Response Payload Schema**: Returns array of attachment metadata objects:
+    ```json
+    [
+      {
+        "id": "FOL30000000000004",
+        "name": "requisition_quote.pdf",
+        "mimeType": "application/pdf",
+        "fileSize": 1048576,
+        "createdAt": "2026-07-27T04:54:59.000Z"
+      }
+    ]
+    ```
+
+### 18. GET `/tasks/pr/:docNum/attachments/:attachId/content/:fileName?`
+*   **Purpose**: Stream binary file content for a Purchase Requisition attachment with MIME type auto-detection and filename deduplication.
+*   **Route**: `GET /api/cnma/APPROVAL_SRV/pr/:docNum/attachments/:attachId/content/:fileName?`
+*   **Path Parameters**:
+    *   `:docNum` (Required) — Purchase Requisition document number.
+    *   `:attachId` (Required) — Attachment GUID / ID.
+    *   `:fileName` (Optional) — Preferred filename override.
+*   **Sanitization**: Applies `cleanFileName(fileName, detectedExt)` and `detectMimeFromBuffer` for accurate binary streaming. Sets `Content-Disposition` with RFC 5987 UTF-8 encoded filename header.
+
 

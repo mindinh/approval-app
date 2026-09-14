@@ -70,17 +70,11 @@ Task Detail panels use the **Declarative Raw OData Object Renderer**:
 1. Open `[type].fields.ts` (e.g. [`po.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.fields.ts) or [`pr.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/pr/pr.fields.ts)).
 2. Add or update field primitive definitions:
    ```typescript
-   // Example 1: Single line or multiline formatted text field
+   // Example 1: Standardized vendor code + name formatting (using shared helper)
    vendor: text({
        source: 'Supplier',
        label: 'Vendor',
-       formatter: (_val, record) => {
-           if (!record) return '-';
-           const code = (record.Supplier || record.Vendor || '').trim();
-           const name = (record.SupplierName || record.VendorName1 || '').trim();
-           if (code && name) return `${code} - ${name}`;
-           return code || name || '-';
-       }
+       formatter: (_val, record) => formatVendorCodeAndName(record)
    }),
 
    // Example 2: Short date or datetime formatting
@@ -124,6 +118,7 @@ Task Detail panels use the **Declarative Raw OData Object Renderer**:
    };
    ```
 3. **Table Columns Order**: Rearrange columns array in table definitions (e.g. `standardPoTable` or subtype table variants). The order in the `columns` array dictates left-to-right table column order.
+   > 💡 **DRY Column Derivation**: Use `excludeColumns(standardColumns, 'key1', 'key2')` helper to derive subtype-specific column variations dynamically without repeating full column definitions.
 4. **Multiline vs Full-Width Card vs Top Grid**:
    - Fields in grid display **3 columns per row** on desktop.
    - Setting `isLongText: true` on a `FieldDefinition` moves it out of the 3-column top grid into a separate full-width section card below the grid (e.g., `HeaderNote`, `Purpose`, `PaidBy`, `BankDetails`).

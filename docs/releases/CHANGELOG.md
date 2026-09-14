@@ -4,6 +4,43 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ## [Unreleased]
 
+## [1.0.17] - 2026-09-14
+
+### Added
+*   **In-App Reference Purchase Requisition Navigation (`ReferencePrDetailView.tsx`, `inbox-controller.ts`, `inbox-processor.ts`, `useReferencePrDetail`)**:
+    *   Created dedicated native component [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx) enabling in-app inspection of referenced PR details directly from PO line item tables and Overview cards without navigating out to external SAP Fiori Launchpad.
+    *   Added backend BFF endpoint `GET /tasks/pr/:docNum` to fetch full `CNMA_PRHEADER` entities with `$expand=_Item,_ApprovalStep,_HeaderText` and attachment streaming endpoints (`GET /tasks/pr/:docNum/attachments`, `GET /tasks/pr/:docNum/attachments/:attachId/content/:fileName?`).
+    *   Implemented nested PR navigation history stack (`prHistory`) with breadcrumbs for recursive PR cross-references and error/retry states.
+*   **Friendly SLA Status Indicators & Modernized Avatars (`SlaIcons.tsx`, `TaskCard.tsx`, `sla-happy.svg`, `sla-overdue.svg`)**:
+    *   Replaced aggressive Lucide icons with friendly, custom SVG avatars (`sla-happy.svg` for pending < 5 days and `sla-overdue.svg` for pending > 5 days).
+    *   Redesigned [`TaskCard.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskCard.tsx) layout with an icon avatar box, softer background shades (`bg-emerald-100/70`, `bg-rose-100/70`), and helpful aging tooltips.
+*   **Category Accordion Grouping & Subtype Multi-Select Filtering (`CategoryAccordionGroup.tsx`, `TaskList.tsx`, `categoryUtils.ts`)**:
+    *   Grouped inbox tasks into collapsible category accordions (`PR`, `PO`, `CLAIM`, `RESERVATION`) displaying item count badges.
+    *   Added desktop "Expand all" / "Collapse all" toggle button (`ChevronsUpDown`, `ChevronsDownUp`) in [`TaskList.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskList.tsx).
+    *   Integrated interactive `CategorySubtypeFilter` popover supporting multi-select checkbox filtering for document subtypes (e.g., `ZNB1`, `ZMAK`, `ZASS`), "Select All", and "Clear" actions.
+    *   Added `extractSubtypeCounts` and `getTaskSubtype` helpers in [`categoryUtils.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/categoryUtils.ts).
+*   **4-Eyes Code Review Report 260914 (`docs/code-review/Code-Review-260914.md`)**:
+    *   Completed 4-Eyes audit report scoring 96/100 across SOLID, DRY, YAGNI, and KISS principles with all actionable findings resolved.
+
+### Refactored & Changed
+*   **Case-Insensitive Filename Deduplication & OpenXML Magic Inspection (`file-helper.ts`, `sap-client.ts`, `inbox-controller.ts`)**:
+    *   Updated `cleanFileName` in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts) with case-insensitive regex `/\.([a-zA-Z0-9]+)(?:\.\1)+$/i` ensuring mixed-case extensions (e.g. `report.PDF.pdf`) are properly deduplicated to lowercase `.pdf`.
+    *   Enhanced `detectMimeFromBuffer` to scan binary slices for OpenXML signatures (`xl/` -> `.xlsx`, `word/` -> `.docx`, `ppt/` -> `.pptx`), aligning extensions and preventing Excel corrupt file alerts.
+    *   Added RFC 5987 UTF-8 `filename*=UTF-8''...` decoding in [`sap-client.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-client.ts).
+    *   Cleaned up redundant null-byte buffer trimming loops across integration strategies ([`po.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts), [`pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts), [`claim.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/claim.ts), [`re.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/re.ts)).
+*   **Clean Architecture & DRY Refactoring (Report 260914)**:
+    *   Extracted shared `formatVendorCodeAndName` in [`formatters.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/formatters.ts) and reused across `po.fields.ts` and `claim.fields.ts`.
+    *   Introduced declarative `excludeColumns(base, ...keys)` helper in `po.views.ts` and `pr.views.ts`, eliminating >60 lines of duplicate column definitions.
+    *   Reused `cleanFileName` from `utils/shared` in `inbox.api.ts` for attachment downloads.
+    *   Declaratively gated task forwarding in `TaskActionPanel.tsx` via `supportsForward = false`.
+*   **PWA Cleanup & MTA Parameter Simplification**:
+    *   Purged legacy PWA installation banner (`PwaInstallBanner.tsx`), utilities (`pwa.ts`), and unused locale keys.
+    *   Removed obsolete launchpad navigation environment variables (`SAP_LAUNCHPAD_BASE_URL`, `SAP_PR_APP_ID_HINT`, `SAP_PR_INTENT_PATTERN`) from [`mta.yaml`](file:///d:/learning/test/cnma_approval/mta.yaml) and simplified [`launchpad.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/launchpad.ts) to `isWorkZone()`.
+*   **Dashboard Category Drill-Down**:
+    *   Updated [`use-dashboard-data.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Dashboard/use-dashboard-data.ts) to support category drill-downs and aligned donut chart data.
+
+---
+
 ## [1.0.16] - 2026-09-04
 
 ### Added

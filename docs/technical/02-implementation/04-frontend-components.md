@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Declarative Renderer Engine
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-09-04 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-09-14 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, raw OData consumption, and the **Declarative Raw OData Renderer Engine** of the **CNMA Approval** frontend.
 
@@ -23,22 +23,26 @@ App.tsx (Main App Shell with ErrorBoundary & Toaster)
             ├── FilterBar (FilterBarField.tsx, MobileMultiSelectFilter.tsx)
             │     ├── MobileDateRangeFilter (Inline touch calendar range picker)
             │     └── FilterSettingsDialog.tsx (Adapt filter order & visibility)
-            ├── Left Pane: TaskList.tsx (Touch pull-to-refresh hook: usePullToRefresh.ts)
-            │     ├── TaskCard.tsx (Priority stripe, badges, amount chips, chevron drill-down affordance)
+            ├── Left Pane: TaskList.tsx (Desktop Expand/Collapse All toggle, touch PTR)
+            │     ├── CategoryAccordionGroup.tsx (Collapsible PR/PO/Claim/Reservation accordions)
+            │     │     └── CategorySubtypeFilter (Multi-select subtype popover with checkboxes)
+            │     ├── TaskCard.tsx (Priority stripe, badges, amount chips, chevron affordance)
+            │     │     └── SlaIcons.tsx (Friendly SLA aging avatars: green < 5d vs red > 5d)
             │     └── TaskPagination.tsx
             ├── Right Pane: TaskDetailView.tsx (Full responsive task detail view with PTR container)
             │     ├── Header & Status Badges (StatusHeaderBadges.tsx)
             │     ├── Tabs Bar: Overview | Details | Attachments | Comments | Workflow
             │     ├── Sub-Panels:
-            │     │     ├── OverviewPanel.tsx (Declarative BusinessSectionModel cards)
-            │     │     ├── DetailsPanel.tsx (Item tables with View Switcher, Deletion Flags & FLP deep links)
+            │     │     ├── OverviewPanel.tsx (Declarative BusinessSectionModel cards & in-app Reference PR link)
+            │     │     ├── DetailsPanel.tsx (Item tables with View Switcher, Deletion Flags & in-app Reference PR link)
             │     │     ├── CommentsPanel.tsx (Timeline notes, rich mention input, inline Forward strips)
             │     │     ├── AttachmentsPanel.tsx (File grid & AttachmentPreviewModal.tsx)
             │     │     └── WorkflowApprovalPanel.tsx (Approval release tree timeline with rejection badges)
+            │     ├── In-App Drill-Down: ReferencePrDetailView.tsx (Native tabbed PR inspector with nested history)
             │     ├── Dialog Modals:
             │     │     ├── ForwardTaskDialog.tsx (Task forwarding/delegation user search)
             │     │     └── TagUserDialog.tsx (CC user tagging modal)
-            │     └── Action Panel: TaskActionPanel.tsx (Docked desktop / floating mobile bar; CC-task protected)
+            │     └── Action Panel: TaskActionPanel.tsx (Docked desktop / floating mobile bar; CC protected; supportsForward toggle)
             └── Mass Selection Mode:
                   ├── MassSelectionView.tsx (Bulk review queue with Excluded CC Tasks breakdown)
                   └── MassDecisionDialog.tsx (Non-blocking bulk decision confirmation modal)
@@ -89,9 +93,66 @@ The frontend relies on **React Query (TanStack Query v5)** for managing asynchro
     *   `['tasks', 'active', pagination]`: Cache key for active inbox approval items.
     *   `['tasks', 'history', pagination]`: Cache key for completed approval items.
     *   `['tasks', 'detail', instanceId]`: Cache key for single task detail raw payload (`RawTaskDetailResponse`).
+    *   `['prDetail', docNum]`: Cache key for standalone referenced Purchase Requisition details (`useReferencePrDetail.ts`).
     *   `['searchUsers', query]`: Cache key for user search results (`useSearchUsers.ts`).
     *   `['busUsers', query]`: Cache key for CNMA business user search results (`useBusUsers.ts`).
 *   **Mutations**:
+    *   `decisionMutation`: Executes single-task approval/rejection (`executeDecision`).
+    *   `massDecisionMutation`: Executes bulk multi-task approval/rejection (`executeMassDecision`).
+    *   `commentMutation`: Posts timeline notes and syncs ERP document notes (`addComment`).
+
+---
+
+## 🗂️ Category Accordion Grouping & Subtype Multi-Select Filtering
+
+The left-pane worklist organizes incoming tasks into hierarchical, collapsible category groups defined in [`src/pages/Inbox/components/CategoryAccordionGroup.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/CategoryAccordionGroup.tsx):
+
+*   **Category Partitioning (`categoryUtils.ts`)**:
+    *   Normalizes heterogeneous SAP workflow instances into 4 primary categories: `PR`, `PO`, `CLAIM`, `RESERVATION` via `getTaskObjectCategory`.
+    *   Computes category aggregations via `computeCategoryCounts(tasks)` and distinct document subtypes via `extractSubtypeCounts(tasks)` and `getTaskSubtype(task)`.
+*   **Expand / Collapse State Management**:
+    *   Maintains an expanded category set `expandedCategories: Set<ObjectCategory>`.
+    *   List header provides an `onToggleCollapseAll` action (`ChevronsUpDown` / `ChevronsDownUp`) allowing one-click global expansion or collapse.
+*   **Integrated Subtype Popover (`CategorySubtypeFilter`)**:
+    *   Each category header houses a trigger button showing active subtype selection count.
+    *   Opens a Radix `Popover` displaying checkboxes for each subtype found in the current worklist (e.g. `ZNB1 (12)`, `ZMAK (4)`, `ZASS (2)`).
+    *   Provides "Select All" and "Clear" batch toggles, filtering category tasks in-memory without resetting other categories.
+
+---
+
+## 📑 In-App Reference Purchase Requisition Navigation Engine
+
+Inspecting linked requisitions is handled natively by [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx):
+
+*   **Trigger Mechanism**:
+    *   Line item tables in `DetailsPanel.tsx` and header cards in `OverviewPanel.tsx` identify reference PR fields via `isReferencePrField(key, label)`.
+    *   Clicking passes the PR number to `onSelectReferencePr(displayVal)`, activating `{ type: 'reference-pr', prNumber }` sub-view in `TaskDetailView.tsx`.
+*   **Integrated Panels**:
+    *   Queries `useReferencePrDetail(currentPr)` which calls BFF endpoint `GET /tasks/pr/:docNum`.
+    *   Normalizes data with `normalizeDetailForView` and resolves layouts via `resolveBusinessSectionModel`.
+    *   Renders full tabbed interface (`Overview`, `Details`, `Workflow`, `Attachments`, `Comments`) using shared sub-panels.
+*   **Navigation Stack & History Breadcrumbs**:
+    *   Maintains internal history array `prHistory: string[]`.
+    *   Supports clicking nested reference PRs from within an active reference PR, pushing new IDs onto the stack.
+    *   Clicking **Back** pops the latest PR from `prHistory` or returns to the parent Purchase Order view when at the root.
+
+---
+
+## 🛠️ Declarative Column Filtering & Shared Formatters
+
+*   **Declarative Subtype Column Exclusion (`excludeColumns`)**:
+    *   Introduced in [`po.views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.views.ts) and [`pr.views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/pr/pr.views.ts):
+        ```typescript
+        function excludeColumns(base: typeof standardColumns, ...keysToExclude: string[]) {
+            return base.filter((col) => !keysToExclude.includes(col.key));
+        }
+        ```
+    *   Dynamically derives subtype-specific column arrays (e.g., omitting `plant` or `storageLocation` for specific document types) from the standard base definition without duplicating column specifications.
+*   **Centralized Vendor Formatter (`formatVendorCodeAndName`)**:
+    *   Extracted to [`renderers/core/formatters.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/formatters.ts) to unify code-and-name resolution across PO and Claim objects, concatenating vendor codes and multiline name fields (`Name1`, `Name2`, `Name3`, `Name4`) into `CODE - FULL NAME`.
+
+---
+
 ## 🏛️ Declarative Raw OData Renderer Architecture (`src/renderers/`)
 
 The application renders header overview cards and line item tables for all document types (`PR`, `PO`, `RE`, `CLAIM`) and document subtypes (`ZASS`, `ZCON`, `ZCOR`, `ZEXP`, `ZMAK`, `ZNB1`, `ZNB2`, `ZNBR`, `ZTOL`, `ZUB`) using a declarative, rule-based renderer architecture located at [`src/renderers/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/):

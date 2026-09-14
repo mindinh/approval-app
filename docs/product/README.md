@@ -2,7 +2,7 @@
 
 This directory contains end-user-facing documentation explaining the capabilities and usability aspects of the **CNMA Approval** application.
 
-> **Last Updated:** 2026-07-07
+> **Last Updated:** 2026-09-14
 
 ## 📖 Contents
 

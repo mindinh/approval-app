@@ -1,6 +1,6 @@
 # Business Data Dictionary
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-14 | **Status:** Active
 
 This data dictionary defines key procurement, financial, and inventory concepts used throughout the **CNMA Approval** portal. These fields map directly to information imported from S/4HANA ERP records.
 
@@ -65,7 +65,7 @@ A **Purchase Order** is a legally binding contract sent to a supplier, committin
 *   **Storage Location**: Internal warehouse area designated for receipt.
 *   **G/L Account**: General Ledger chart of accounts code for financial reporting.
 *   **Cost Center**: The department budget to which the expense is charged.
-*   **Reference Purchase Requisition**: Originating Purchase Requisition document number and item number that requested the procurement. Approvers can click the reference link to open the requisition directly in S/4HANA Fiori Launchpad.
+*   **Reference Purchase Requisition**: Originating Purchase Requisition document number and item number that authorized the procurement. Approvers can click the reference number link to inspect the complete requisition directly inside the portal (including overview cards, line items, workflow approval steps, attachments, and historical comments) with nested reference history support.
 
 ### Header & Timeline Notes
 *   **Document Notes & Comments**: Historical collaboration notes written by approvers during the workflow lifecycle, synchronized directly with ERP header text notes.

@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-04 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-14 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -224,6 +224,52 @@ sequenceDiagram
 | **Document Number** | The unique accounting claim reference (e.g. `0000000220`). |
 | **Approver Number** | The sequential tier indicator (e.g. `1`, `2`) corresponding to the active authorization stage. |
 | **Action Button Flag** | System indicator determining whether the current viewer holds sign-off rights or informational review rights. |
+
+---
+
+## 6. Reference Purchase Requisition In-App Inspection Flow
+
+When reviewing Purchase Orders, approvers often need to verify the originating business need, approved quotes, specifications, and previous approval sign-offs documented in the original Purchase Requisition. Instead of redirecting to an external ERP screen, the portal provides seamless, integrated inspection:
+
+```mermaid
+sequenceDiagram
+    actor Approver as Purchase Order Approver
+    participant Portal as CNMA Approval Portal
+    participant BFF as Backend BFF (BTP)
+    participant ERP as SAP S/4HANA ERP
+
+    Approver->>Portal: Inspect Purchase Order details
+    Note over Portal: Approver identifies linked Purchase Requisition number in line items or overview
+    Approver->>Portal: Click Reference PR number link
+    Portal->>BFF: Request complete Reference PR data
+    BFF->>ERP: Query PR header, line items, release strategy, attachments, and notes
+    ERP-->>BFF: Return requisition business data
+    BFF-->>Portal: Deliver consolidated PR model
+    Portal-->>Approver: Display in-app Reference PR view (Overview, Items, Workflow, Files, Notes)
+
+    opt Inspect Nested Reference PR
+        Approver->>Portal: Click another referenced PR inside the current PR
+        Portal->>Portal: Push current PR to navigation history stack
+        Portal->>BFF: Request nested PR data
+        BFF->>ERP: Query nested PR details
+        ERP-->>BFF: Return nested PR data
+        BFF-->>Portal: Deliver nested PR model
+        Portal-->>Approver: Display nested PR with navigation breadcrumbs
+        Approver->>Portal: Click Back to return to previous PR
+        Portal-->>Approver: Restore previous PR view from history
+    end
+
+    Approver->>Portal: Click "Back to PO"
+    Portal-->>Approver: Return smoothly to original Purchase Order inspection
+```
+
+| Feature Capability | Business Benefit |
+| :--- | :--- |
+| **Embedded In-App View** | Eliminates external context switching and separate ERP logins for streamlined audit verification. |
+| **Full Entity Integrity** | Displays complete requisition data including item pricing, deletion indicators, release strategy history, file attachments, and historical comments. |
+| **Nested Navigation Stack** | Preserves navigation breadcrumbs and history when navigating multi-tiered reference chains. |
+| **One-Tap Return** | Returns the approver directly to their exact position in the parent Purchase Order review. |
+
 
 
 

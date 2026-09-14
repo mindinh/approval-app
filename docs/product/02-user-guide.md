@@ -1,6 +1,6 @@
 # User Manual & Operations Guide
 
-> **Owner:** Product Manager | **Last Updated:** 2026-09-03 | **Status:** Active
+> **Owner:** Product Manager | **Last Updated:** 2026-09-14 | **Status:** Active
 
 This guide describes how to operate the **CNMA Approval** portal to manage, review, and decide on procurement workflows.
 
@@ -9,7 +9,7 @@ This guide describes how to operate the **CNMA Approval** portal to manage, revi
 ## 📊 Dashboard Overview
 When you first log in, you are presented with the **Dashboard**. The dashboard acts as your landing page and command center:
 *   **Approval Queue Status**: Quick counter panels displaying the total number of pending items.
-*   **Object Type Breakdown**: Distribution of tasks between Purchase Requisitions (PR), Purchase Orders (PO), Expense Claims (CLAIM), and Material Reservations (RE).
+*   **Object Type Breakdown**: Distribution of tasks between Purchase Requisitions (PR), Purchase Orders (PO), Expense Claims (CLAIM), and Material Reservations (RE), with interactive category drill-down navigation into your task queue.
 *   **Quick Search**: Start typing to filter tasks instantly.
 
 ---
@@ -36,7 +36,14 @@ When you first log in, you are presented with the **Dashboard**. The dashboard a
 ## 📥 Managing Your Task List (Inbox)
 
 The **Inbox** holds your structured task list:
-*   **Informative Task Cards**: Each card displays:
+*   **Category Accordion Grouping**: Tasks are automatically grouped into clean, collapsible category sections: **Purchase Requisition (PR)**, **Purchase Order (PO)**, **Claim**, and **Material Reservation**. Each header displays the total task count badge.
+    *   **Expand / Collapse All**: Desktop users can toggle all category accordions simultaneously using the double-chevron button in the list header.
+    *   **Category Subtype Multi-Select Popover**: Each category header features an integrated subtype filter button. Clicking opens a dropdown with checkboxes to isolate specific document subtypes (e.g., *Asset PR*, *Expense PR*, *Standard PO*, *Consignment PO*), complete with item count counters, **Select All**, and **Clear** actions.
+*   **Informative Task Cards with Friendly SLA Avatars**: Each card provides comprehensive context at a glance:
+    *   **SLA Aging Indicator**: Tasks feature soft, friendly visual avatars reflecting review timeliness:
+        *   🟢 **Green Friendly Avatar**: Tasks received within the last 5 days (< 5 days).
+        *   🔴 **Red Alert Avatar**: Tasks pending for over 5 days (> 5 days overdue).
+        *   Hovering over the avatar reveals an explanatory tooltip.
     *   Document Number and Category (e.g. `PR 10001861`, `PO 4500000001`, `Claim 0000000220`).
     *   Document Type badge with semantic color codes (e.g., *Expense PR*, *Asset PR*, *Subcontracting PO*).
     *   Creator / Requester name.
@@ -64,7 +71,7 @@ Displays header data (Company Code, Purchasing Organization, Supplier, total net
 *   Item Number and description.
 *   Quantity, Unit of Measure, Net Price, and Net Value.
 *   Material Group.
-*   **Reference Purchase Requisition Link**: If a Purchase Order line item references an original Purchase Requisition, clicking the reference link opens the original requisition directly in SAP S/4HANA Fiori Launchpad in a new browser tab.
+*   **Native In-App Reference Purchase Requisition Navigation**: If a Purchase Order references an originating Purchase Requisition, clicking the highlighted PR number opens the requisition directly within the portal in an integrated **Reference PR View** (`ReferencePrDetailView`). Approvers can inspect the requisition's overview cards, line items, workflow approval steps, attachments, and discussion notes without leaving the application. Includes breadcrumb navigation for nested references and one-tap return back to the parent Purchase Order.
 *   **Account Assignments** (available on expansion): Cost Center, Profit Center, Asset Number, and G/L Account.
 
 ### 2. Workflow Approval Tree

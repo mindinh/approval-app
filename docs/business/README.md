@@ -2,7 +2,7 @@
 
 This directory contains business-focused documentation explaining the conceptual workflows, roles, permissions, and data dictionary of the **CNMA Approval** application.
 
-> **Last Updated:** 2026-07-07
+> **Last Updated:** 2026-09-14
 
 ## ⚠️ Standards Requirement
 All documentation within this category must remain purely business-oriented. **Do not include code snippets** in these files.
