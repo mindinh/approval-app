@@ -47,7 +47,7 @@
     "test": "vitest run",
     "test:perf": "vitest run tests/performance",
     "test:coverage": "vitest run --coverage",
-    "login-qas": "cf login -a https://api.cf.ap11.hana.ondemand.com/"
+    "login:cf": "cf login -a https://api.cf.ap11.hana.ondemand.com/"
   },
   "cds": {
     "odata": {

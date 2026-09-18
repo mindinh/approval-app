@@ -59,8 +59,7 @@
     "redirect-uris": [
       "https://*.cfapps.*.hana.ondemand.com/**",
       "https://*.dt.hana.ondemand.com/**",
-      "https://*.launchpad.cfapps.*.hana.ondemand.com/**",
-      "vjapp://auth"
+      "https://*.launchpad.cfapps.*.hana.ondemand.com/**"
     ]
   }
 }
