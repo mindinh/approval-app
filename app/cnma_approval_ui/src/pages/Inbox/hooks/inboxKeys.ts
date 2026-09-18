@@ -48,6 +48,9 @@ export const inboxKeys = {
 
     // ─── CNMA Business Users (CC Tagging) ──────────────────
     busUsers: (pattern: string) => [...inboxKeys.all, 'busUsers', pattern] as const,
+
+    // ─── Notification Service Testing ──────────────────────
+    notificationTypes: () => [...inboxKeys.all, 'notificationTypes'] as const,
 };
 
 

@@ -1,14 +1,23 @@
 import { Router } from 'express';
 import { InboxController } from '../controllers/inbox-controller';
+import { NotificationController } from '../controllers/notification-controller';
 
 export function createInboxRouter(): Router {
     const router = Router();
     const controller = new InboxController();
+    const notificationController = new NotificationController();
 
     // 1. Diagnostics / Debug routes
     router.get('/debug/current-user', controller.getDebugCurrentUser);
     router.get('/debug/jwt', controller.getDebugJwt);
     router.get('/debug/auth-summary', controller.getDebugAuthSummary);
+
+    // 1b. Notification Destination & BTP Notification Service Testing (must be before /:id)
+    router.post('/notification/test-destination', notificationController.testDestination);
+    router.get('/notification/types', notificationController.getNotificationTypes);
+    router.post('/notification/create-type', notificationController.createNotificationType);
+    router.delete('/notification/type', notificationController.deleteNotificationType);
+    router.post('/notification/send-test', notificationController.sendTestNotification);
 
     // 2. Identity profile
     router.get('/me', controller.getMe);

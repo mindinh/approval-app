@@ -8,6 +8,7 @@ import { Toaster } from '@cnma/react-ui';
 const HomePage = lazy(() => import('./pages/Home/HomePage'));
 const InboxPage = lazy(() => import('./pages/Inbox'));
 const DashboardPage = lazy(() => import('./pages/Dashboard/DashboardPage'));
+const NotificationTesterPage = lazy(() => import('./pages/NotificationTester/NotificationTesterPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
 import HomeSkeleton from './components/skeletons/HomeSkeleton';
@@ -98,6 +99,11 @@ export default function App() {
                         <Route path="/dashboard" element={
                             <Suspense fallback={<DashboardSkeleton />}>
                                 <DashboardPage />
+                            </Suspense>
+                        } />
+                        <Route path="/notification-tester" element={
+                            <Suspense fallback={<DashboardSkeleton />}>
+                                <NotificationTesterPage />
                             </Suspense>
                         } />
                         {/* Fallback 404 Not Found route */}

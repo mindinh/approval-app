@@ -8,8 +8,10 @@ import {
     Inbox,
     LayoutDashboard,
     LogOut,
-    Home
+    Home,
+    Bell,
 } from 'lucide-react';
+import { NotificationTestModal } from '@/components/modals/NotificationTestModal';
 import { cn } from '@/utils/cn';
 import {
     Button,
@@ -134,6 +136,7 @@ function AppSidebar() {
     const { data: userInfo } = useCurrentUser();
     const isInWorkZone = isWorkZone();
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
 
     const currentLang = i18n.language || 'en';
     const handleLanguageChange = (lang: string) => {
@@ -145,6 +148,7 @@ function AppSidebar() {
         : (userInfo?.displayName || 'User');
     const fullName = import.meta.env.DEV ? 'Local Development' : rawFullName;
     const roleName = userInfo?.role || 'Approver';
+    const isAdmin = userInfo?.role === 'Admin' || import.meta.env.DEV;
 
     const initials = React.useMemo(() => {
         if (import.meta.env.DEV) {
@@ -177,6 +181,7 @@ function AppSidebar() {
     const isHome = location.pathname === '/' || location.pathname === '/home';
     const isInbox = location.pathname.startsWith('/inbox') || location.pathname.startsWith('/tasks');
     const isApproved = location.pathname.startsWith('/approved');
+    const isNotificationTester = location.pathname.startsWith('/notification-tester');
 
     // Determine active navigation state
     let activeValue = localActiveTab || 'my';
@@ -189,6 +194,8 @@ function AppSidebar() {
             activeValue = 'approved';
         } else if (isInbox) {
             activeValue = 'my';
+        } else if (isNotificationTester) {
+            activeValue = 'notification-tester';
         }
     }
 
@@ -258,6 +265,45 @@ function AppSidebar() {
                             </SidebarMenuItem>
                         );
                     })}
+
+                    {/* Notification Console - Admin on Web only */}
+                    {!isMobile && isAdmin && (
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                isActive={activeValue === 'notification-tester'}
+                                onClick={() => {
+                                    setLocalActiveTab('notification-tester');
+                                    navigate('/notification-tester');
+                                }}
+                                className={cn(
+                                    "w-full flex items-center rounded-lg py-2 text-sm transition-all duration-200 h-auto cursor-pointer",
+                                    (state === "collapsed" && !isMobile) ? "justify-center p-2" : "gap-2.5 px-3",
+                                    activeValue === 'notification-tester'
+                                        ? "data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground shadow-sm data-[active=true]:hover:bg-sidebar-primary data-[active=true]:hover:text-sidebar-primary-foreground"
+                                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                )}
+                                title={(state === "collapsed" && !isMobile) ? 'Notification Console' : undefined}
+                            >
+                                <Bell className={cn(
+                                    "size-4 shrink-0",
+                                    activeValue === 'notification-tester' ? "text-sidebar-primary-foreground" : "text-primary"
+                                )} />
+                                {(state === "expanded" || isMobile) && (
+                                    <span className="truncate font-medium flex items-center justify-between w-full">
+                                        <span>Notification Console</span>
+                                        <span className={cn(
+                                            "text-xs font-mono px-1.5 py-0.5 rounded font-semibold ml-2",
+                                            activeValue === 'notification-tester'
+                                                ? "bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground"
+                                                : "bg-primary/15 text-primary"
+                                        )}>
+                                            Admin
+                                        </span>
+                                    </span>
+                                )}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    )}
                 </SidebarMenu>
             </SidebarContent>
 
@@ -338,6 +384,22 @@ function AppSidebar() {
                                         </Button>
                                     </div>
                                 </div> */}
+                                {!isMobile && isAdmin && (
+                                    <div className="pt-2 border-t border-sidebar-border/50">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                 setIsProfileOpen(false);
+                                                 navigate('/notification-tester');
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 text-xs font-medium cursor-pointer"
+                                        >
+                                            <Bell className="size-3.5 text-primary" />
+                                            <span>Notification Console (Admin)</span>
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
 
                             <DialogFooter className="p-4 border-t border-sidebar-border bg-sidebar-accent/10 flex justify-end gap-2">
@@ -376,6 +438,14 @@ function AppSidebar() {
                     {state === "collapsed" ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
                 </Button>
             )}
+
+            {/* Notification Test Modal - Web & Admin only */}
+            {!isMobile && isAdmin && (
+                <NotificationTestModal
+                    open={isNotificationModalOpen}
+                    onOpenChange={setIsNotificationModalOpen}
+                />
+            )}
         </Sidebar>
     );
 }
@@ -392,7 +462,7 @@ export function MainLayout() {
                     {/* Main Routing Container */}
                     <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                         <main className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col w-full">
-                            <div className="flex-1 min-h-0 w-full">
+                            <div className="flex-1 min-h-0 w-full h-full">
                                 <Outlet />
                             </div>
                         </main>
