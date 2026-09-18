@@ -93,14 +93,14 @@ export interface CategorySectionDef {
 export const CATEGORY_ACCORDION_SECTIONS: CategorySectionDef[] = [
     {
         key: 'PR',
-        title: 'PR',
+        title: 'Purchase Requisition',
         icon: FileText,
         stripeClass: 'before:bg-primary',
         iconBgClass: 'bg-primary/10 text-primary border-primary/20',
     },
     {
         key: 'PO',
-        title: 'PO',
+        title: 'Purchase Order',
         icon: Package,
         stripeClass: 'before:bg-info',
         iconBgClass: 'bg-info/10 text-info border-info/20',
@@ -122,6 +122,14 @@ export const CATEGORY_ACCORDION_SECTIONS: CategorySectionDef[] = [
 ];
 
 export const MAIN_CATEGORIES: ObjectCategory[] = ['PR', 'PO', 'CLAIM', 'RESERVATION'];
+
+export function getFirstTaskByCategoryOrder(tasks: InboxTask[]): InboxTask | undefined {
+    for (const category of MAIN_CATEGORIES) {
+        const firstTask = tasks.find((task) => getTaskObjectCategory(task) === category);
+        if (firstTask) return firstTask;
+    }
+    return tasks[0];
+}
 
 /**
  * Normalizes an InboxTask to one of the 4 main object categories.

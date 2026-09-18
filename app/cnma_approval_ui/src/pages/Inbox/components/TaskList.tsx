@@ -151,28 +151,41 @@ export function TaskList({
     const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
 
     // ─── 4-Section Category Accordion state ───────────────────
-    const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(() => {
-        if (!isMobile) {
-            return new Set<ObjectCategory>(['PR', 'PO', 'CLAIM', 'RESERVATION']);
-        }
-        return new Set<ObjectCategory>();
-    });
+    const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(
+        () => new Set<ObjectCategory>()
+    );
 
     // If activeCategory is explicitly selected (e.g. from desktop CategoryPillsBar), expand it
     useEffect(() => {
         if (activeCategory && activeCategory !== 'ALL') {
-            setExpandedCategories((prev) => {
-                const next = new Set(prev);
-                next.add(activeCategory);
-                return next;
-            });
+            setExpandedCategories(new Set<ObjectCategory>([activeCategory]));
         }
     }, [activeCategory]);
+
+    // Mobile does not auto-navigate to the first filtered task, so reveal every
+    // category containing matches and keep unrelated groups collapsed.
+    useEffect(() => {
+        if (!isMobile || selectedTaskId) return;
+
+        if (!filters.hasLocalFilter) {
+            setExpandedCategories(new Set<ObjectCategory>());
+            return;
+        }
+
+        const matchingCategories = new Set<ObjectCategory>();
+        for (const task of filters.filteredTasks) {
+            const category = getTaskObjectCategory(task);
+            if (category !== 'OTHER') {
+                matchingCategories.add(category);
+            }
+        }
+        setExpandedCategories(matchingCategories);
+    }, [isMobile, selectedTaskId, filters.hasLocalFilter, filters.filteredTasks]);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const lastScrolledTaskIdRef = useRef<string | null>(null);
 
-    // Ensure selected task's category is expanded and automatically scroll to the card
+    // Focus the selected task by keeping only its category expanded.
     useEffect(() => {
         if (!selectedTaskId) {
             lastScrolledTaskIdRef.current = null;
@@ -190,12 +203,7 @@ export function TaskList({
 
         const cat = getTaskObjectCategory(currentTask);
         if (cat && cat !== 'OTHER') {
-            setExpandedCategories((prev) => {
-                if (prev.has(cat as ObjectCategory)) return prev;
-                const next = new Set(prev);
-                next.add(cat as ObjectCategory);
-                return next;
-            });
+            setExpandedCategories(new Set<ObjectCategory>([cat as ObjectCategory]));
         }
 
         if (lastScrolledTaskIdRef.current === currentTask.instanceId) {

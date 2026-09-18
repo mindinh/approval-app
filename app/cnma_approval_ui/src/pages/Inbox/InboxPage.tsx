@@ -20,7 +20,12 @@ import { useIsMobile, Button } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
 import { useMobileNav } from '@/contexts/MobileNavContext';
 import { MobileTopBar } from '@/components/layouts/MobileTopBar';
-import { computeCategoryCounts, getTaskObjectCategory, type ObjectCategory } from './utils/categoryUtils';
+import {
+    computeCategoryCounts,
+    getFirstTaskByCategoryOrder,
+    getTaskObjectCategory,
+    type ObjectCategory,
+} from './utils/categoryUtils';
 
 type TaskScope = 'my' | 'approved';
 
@@ -188,9 +193,11 @@ export default function InboxPage() {
         // Only auto-select when the user navigated to the list root without a specific taskId.
         // If selectedTaskId is present (e.g. direct deep link), do NOT overwrite it!
         if (!selectedTaskId) {
+            const firstTask = getFirstTaskByCategoryOrder(tasks);
+            if (!firstTask) return;
             hasAutoSelected.current = true;
             const basePath = scope === 'approved' ? '/approved' : '/inbox';
-            navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
+            navigate(`${basePath}/${encodeURIComponent(firstTask.instanceId)}`, { replace: true });
         }
     }, [selectedTaskId, isLoadingList, tasks, navigate, scope, isMobile]);
 
@@ -411,8 +418,9 @@ export default function InboxPage() {
 
     const handleLoadFirstTask = useCallback(() => {
         const basePath = scope === 'approved' ? '/approved' : '/inbox';
-        if (tasks.length > 0) {
-            navigate(`${basePath}/${encodeURIComponent(tasks[0].instanceId)}`, { replace: true });
+        const firstTask = getFirstTaskByCategoryOrder(tasks);
+        if (firstTask) {
+            navigate(`${basePath}/${encodeURIComponent(firstTask.instanceId)}`, { replace: true });
         } else {
             navigate(basePath, { replace: true });
         }

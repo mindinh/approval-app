@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import { matchTaskDocumentType } from '@/pages/Inbox/hooks/useTaskFilters';
+import { getDocumentCreationTimestamp, matchTaskDocumentType } from '@/pages/Inbox/hooks/useTaskFilters';
 
 function filterByDocumentTypes(tasks: InboxTask[], documentType?: string | string[]): InboxTask[] {
     const selectedDocTypes = Array.isArray(documentType)
@@ -90,5 +90,18 @@ describe('useTaskFilters - documentType multiselect filtering', () => {
         const poTasks = filterByDocumentTypes(mockTasks, ['PO']);
         expect(poTasks).toHaveLength(2);
         expect(poTasks.map(t => t.instanceId)).toEqual(['po-1', 'po-2']);
+    });
+});
+
+describe('getDocumentCreationTimestamp', () => {
+    it('uses document CreationDate and CreationTime instead of task createdOn', () => {
+        const task = {
+            ...mockTasks[0],
+            createdOn: '2026-09-15T10:00:00Z',
+            creationDate: '2026-09-10',
+            creationTime: '08:30:15',
+        };
+
+        expect(getDocumentCreationTimestamp(task)).toBe(new Date('2026-09-10T08:30:15').getTime());
     });
 });

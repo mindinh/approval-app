@@ -3,6 +3,7 @@ import {
     getTaskObjectCategory,
     filterTasksByCategory,
     computeCategoryCounts,
+    getFirstTaskByCategoryOrder,
     CATEGORY_ACCORDION_SECTIONS,
     MAIN_CATEGORIES,
 } from '@/pages/Inbox/utils/categoryUtils';
@@ -113,6 +114,14 @@ describe('categoryUtils', () => {
                 'RESERVATION',
             ]);
             expect(MAIN_CATEGORIES).toEqual(['PR', 'PO', 'CLAIM', 'RESERVATION']);
+        });
+
+        it('selects the first PR even when a Reservation appears first in the API list', () => {
+            const reservation = createMockTask({ instanceId: 'reservation-1', objectType: 'BUS2093' });
+            const secondPr = createMockTask({ instanceId: 'pr-2', objectType: 'BUS2105' });
+            const firstPr = createMockTask({ instanceId: 'pr-1', businessContext: { type: 'PR' } as any });
+
+            expect(getFirstTaskByCategoryOrder([reservation, secondPr, firstPr])?.instanceId).toBe('pr-2');
         });
     });
 });

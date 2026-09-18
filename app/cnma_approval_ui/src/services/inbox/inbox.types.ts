@@ -248,6 +248,8 @@ export interface InboxTask {
     status: string;
     priority?: string;
     createdOn?: string;
+    creationDate?: string;
+    creationTime?: string;
     createdByName?: string;
     processorName?: string;
     scenarioId?: string;

@@ -43,6 +43,17 @@ const TEXT_TO_DOC_TYPE_MAP: Record<string, { code: string; isPR?: boolean; isPO?
     'CLAIM': { code: 'CLAIM' },
 };
 
+export function getDocumentCreationTimestamp(task: InboxTask): number | null {
+    const creationDate = task.creationDate || (task as any).CreationDate;
+    const creationTime = task.creationTime || (task as any).CreationTime;
+    if (!creationDate) return null;
+
+    const datePart = String(creationDate).slice(0, 10);
+    const timePart = creationTime ? String(creationTime).slice(0, 8) : '00:00:00';
+    const timestamp = new Date(`${datePart}T${timePart}`).getTime();
+    return Number.isNaN(timestamp) ? null : timestamp;
+}
+
 /**
  * Matches a task against a selected document type filter target.
  * Supports exact text match, clean text options without codes, PR vs PO category scoping,
@@ -273,9 +284,8 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string, activeCategor
                 ? new Date(toDate.getTime()).setHours(23, 59, 59, 999)
                 : Infinity;
             result = result.filter((task) => {
-                if (!task.createdOn) return false;
-                const t = new Date(task.createdOn).getTime();
-                return !isNaN(t) && t >= from && t <= to;
+                const documentCreatedAt = getDocumentCreationTimestamp(task);
+                return documentCreatedAt !== null && documentCreatedAt >= from && documentCreatedAt <= to;
             });
         }
 

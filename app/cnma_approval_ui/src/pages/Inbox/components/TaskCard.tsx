@@ -104,6 +104,7 @@ export const TaskCard = memo(function TaskCard({
                 role="button"
                 tabIndex={0}
                 id={`task-card-${task.instanceId}`}
+                aria-current={isSelected ? 'true' : undefined}
                 onClick={() => onClick(task)}
                 onMouseEnter={handlePrefetch}
                 onFocus={handlePrefetch}
@@ -122,10 +123,10 @@ export const TaskCard = memo(function TaskCard({
                     'shadow-xs hover:shadow-sm',
                     // Colour — selected
                     isSelected && {
-                        'border-info/35 ring-1 ring-info/10 shadow-sm bg-info/5': colorKey === 'info',
-                        'border-warning/35 ring-1 ring-warning/10 shadow-sm bg-warning/5': colorKey === 'warning',
-                        'border-success/35 ring-1 ring-success/10 shadow-sm bg-success/5': colorKey === 'success',
-                        'border-primary/35 ring-1 ring-primary/10 shadow-sm bg-primary/5': colorKey === 'primary',
+                        'border-info ring-2 ring-info/30 shadow-md bg-info/10': colorKey === 'info',
+                        'border-warning ring-2 ring-warning/30 shadow-md bg-warning/10': colorKey === 'warning',
+                        'border-success ring-2 ring-success/30 shadow-md bg-success/10': colorKey === 'success',
+                        'border-primary ring-2 ring-primary/30 shadow-md bg-primary/10': colorKey === 'primary',
                     },
                     // Priority accent stripe (left edge)
                     !isSelected && stripeClass !== 'before:bg-transparent' &&
@@ -252,6 +253,7 @@ export const TaskCard = memo(function TaskCard({
         <Button
             variant="ghost"
             id={`task-card-${task.instanceId}`}
+            aria-current={isSelected ? 'true' : undefined}
             onClick={() => onClick(task)}
             onMouseEnter={handlePrefetch}
             onFocus={handlePrefetch}
@@ -275,11 +277,11 @@ export const TaskCard = memo(function TaskCard({
                 ],
                 // Colour — selected
                 isSelected && [
-                    'shadow-sm',
-                    colorKey === 'info' && 'border-info/35 ring-1 ring-info/10 bg-info/5 before:bg-info',
-                    colorKey === 'warning' && 'border-warning/35 ring-1 ring-warning/10 bg-warning/5 before:bg-warning',
-                    colorKey === 'success' && 'border-success/35 ring-1 ring-success/10 bg-success/5 before:bg-success',
-                    colorKey === 'primary' && 'border-primary/35 ring-1 ring-primary/10 bg-primary/5 before:bg-primary',
+                    'shadow-md ring-2',
+                    colorKey === 'info' && 'border-info ring-info/30 bg-info/10 before:bg-info',
+                    colorKey === 'warning' && 'border-warning ring-warning/30 bg-warning/10 before:bg-warning',
+                    colorKey === 'success' && 'border-success ring-success/30 bg-success/10 before:bg-success',
+                    colorKey === 'primary' && 'border-primary ring-primary/30 bg-primary/10 before:bg-primary',
                 ],
             )}
         >
@@ -407,4 +409,3 @@ export const TaskCard = memo(function TaskCard({
         </Button>
     );
 });
-
