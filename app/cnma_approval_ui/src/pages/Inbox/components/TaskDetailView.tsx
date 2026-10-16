@@ -1,12 +1,9 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Skeleton } from '@cnma/react-ui';
-
-import type { TaskDetail as TaskDetailType } from '@/services/inbox/inbox.types';
-import { ArrowLeft, FileText, AlertTriangle, RotateCcw, Info, FileQuestion } from 'lucide-react';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@cnma/react-ui';
+import { FileText, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-
 import { invalidateAfterComment } from '@/pages/Inbox/hooks/inboxInvalidation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useErrorModal } from '@/contexts/ErrorContext';
@@ -17,7 +14,6 @@ import {
     CommentsPanel,
     DetailsPanel,
     OverviewPanel,
-    StatusHeaderBadges,
     WorkflowApprovalPanel,
     makeTabDefinitions,
 } from './panels';
@@ -27,8 +23,12 @@ import { normalizeDetailForView } from '../utils/normalizeTaskDetail';
 import { TaskActionPanel } from './TaskActionPanel';
 import { TaskDetailSkeleton, SecondaryTabSkeleton } from './TaskDetailSkeletons';
 import { ReferencePrDetailView } from './ReferencePrDetailView';
+import { TaskDetailErrorState } from './TaskDetailErrorState';
+import { TaskDetailHeader } from './TaskDetailHeader';
+import { TaskDetailTabContent } from './TaskDetailTabContent';
+import { useMobileTabGestures } from '../hooks/useMobileTabGestures';
 
-interface TaskDetailViewProps {
+export interface TaskDetailViewProps {
     detail: any;
     isLoading: boolean;
     isError?: boolean;
@@ -67,6 +67,10 @@ export function TaskDetailView({
     isApprovedScope = false,
     showActionPanel = true,
 }: TaskDetailViewProps) {
+    const { t } = useTranslation();
+    const queryClient = useQueryClient();
+    const { showError } = useErrorModal();
+
     const viewData = useMemo(() => normalizeDetailForView(detail), [detail]);
     const businessModel = useMemo(
         () => (detail ? resolveBusinessSectionModel(detail) : null),
@@ -80,19 +84,12 @@ export function TaskDetailView({
     const [activeSubView, setActiveSubView] = useState<{ type: 'reference-pr'; prNumber: string } | null>(null);
 
     const prevTabIndexRef = useRef(0);
-    const { t } = useTranslation();
 
     const ptr = usePullToRefresh({
         onRefresh: onRetry ? () => void onRetry() : () => { },
         isRefreshing: isSecondaryLoading || isLoading,
         disabled: !isMobile || !onRetry,
     });
-
-    const queryClient = useQueryClient();
-    const handleCommentAdded = useCallback(() => {
-        if (!viewData) return;
-        invalidateAfterComment(queryClient, viewData.instanceId);
-    }, [viewData, queryClient]);
 
     const activeTaskId = viewData?.instanceId || '';
     const activeTab = viewData && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
@@ -104,6 +101,11 @@ export function TaskDetailView({
     const handleSelectReferencePr = useCallback((prNumber: string) => {
         setActiveSubView({ type: 'reference-pr', prNumber });
     }, []);
+
+    const handleCommentAdded = useCallback(() => {
+        if (!viewData) return;
+        invalidateAfterComment(queryClient, viewData.instanceId);
+    }, [viewData, queryClient]);
 
     const documentId = viewData?.documentId || '';
     const workflowData = viewData?.workflowData;
@@ -133,8 +135,6 @@ export function TaskDetailView({
         [viewData, workflowData?.steps?.length, detailsCount, prAttachmentCount, t]
     );
 
-    const { showError } = useErrorModal();
-
     // Automatically trigger ErrorModal when a detail loading error occurs (suppress 404 Not Found and 403 Forbidden)
     useEffect(() => {
         if (isError && error) {
@@ -151,118 +151,50 @@ export function TaskDetailView({
         }
     }, [isError, error, showError, onRetry, onBack]);
 
+    const handleMobileTabChange = useCallback((nextTab: string) => {
+        prevTabIndexRef.current = tabs.findIndex((t) => t.value === activeTab);
+        setTabState({ taskId: viewData?.instanceId || '', tab: nextTab });
+    }, [activeTab, tabs, viewData?.instanceId]);
+
+    // Mobile gestures (pull-up to next tab, touch resistance, wheel, center tab pills)
+    const {
+        pullUpDistance,
+        isSwitchingTab,
+        pullThreshold,
+        tabButtonRefs,
+        currentTabIndex,
+        handleContainerTouchStart,
+        handleContainerTouchMove,
+        handleContainerTouchEnd,
+        handleContainerWheel,
+    } = useMobileTabGestures({
+        isMobile,
+        tabs,
+        activeTab,
+        containerRef: ptr.containerRef,
+        onTabChange: handleMobileTabChange,
+    });
+
+    // Compute mobile animation direction
+    const animationDirection = currentTabIndex >= prevTabIndexRef.current ? 1 : -1;
+
+    // ── Early returns (All hooks strictly declared above this line) ───────────
+
     if (isLoading) {
         return <TaskDetailSkeleton onBack={onBack} isMobile={isMobile} />;
     }
 
     if (isError && !detail) {
-        const parsed = parseError(error);
-        const isNotFound = parsed.category === 'notFound' || parsed.details?.statusCode === 404;
-        const isForbidden = parsed.category === 'auth' || parsed.details?.statusCode === 403 || parsed.details?.statusCode === 401;
-        const isUnavailable = isNotFound || isForbidden;
-
-        const errorTitle = isForbidden
-            ? t('inbox.accessDenied', 'Access Denied')
-            : (isNotFound ? t('inbox.taskNotFound', 'Task Not Found') : parsed.title);
-
-        const errorDesc = isForbidden
-            ? t('inbox.taskForbiddenDesc', 'You do not have permission to view this task, or it belongs to another user.')
-            : (isNotFound ? t('inbox.taskNotFoundDesc', 'The requested task does not exist in your worklist or has already been processed.') : parsed.message);
-
         return (
-            <div className="flex h-full min-w-0 w-full flex-col bg-background relative overflow-hidden">
-                {isMobile && (
-                    <div className="bg-card border-b border-border/70 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 shadow-xs shrink-0">
-                        <div className="flex items-center gap-2.5">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={onBack}
-                                className="shrink-0 size-9 p-0 rounded-xl hover:bg-muted active:scale-90 transition-all text-foreground"
-                                aria-label="Back to task list"
-                            >
-                                <ArrowLeft className="size-5" />
-                            </Button>
-                            <h2 className="text-base font-bold text-foreground truncate">
-                                {errorTitle}
-                            </h2>
-                        </div>
-                    </div>
-                )}
-                <div className="flex flex-1 flex-col items-center justify-center text-center p-8 max-w-md mx-auto space-y-4">
-                    <div className={cn(
-                        "flex size-14 items-center justify-center rounded-full",
-                        isUnavailable ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-destructive/10 text-destructive"
-                    )}>
-                        {isUnavailable ? <FileQuestion className="size-8" /> : <AlertTriangle className="size-8" />}
-                    </div>
-                    <h3 className="text-base font-bold text-foreground">
-                        {errorTitle}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                        {errorDesc}
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                        {isUnavailable ? (
-                            <>
-                                {onLoadFirstTask && (
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={onLoadFirstTask}
-                                        className="gap-1.5 text-xs"
-                                    >
-                                        <RotateCcw className="size-3.5" />
-                                        {hasTasks
-                                            ? t('inbox.loadFirstTask', 'Reload')
-                                            : t('common.backToList', 'Back to Task List')}
-                                    </Button>
-                                )}
-                                {onBack && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={onBack}
-                                        className="gap-1.5 text-xs"
-                                    >
-                                        <ArrowLeft className="size-3.5" />
-                                        {t('common.back', 'Back to List')}
-                                    </Button>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                {onBack && (
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={onBack}
-                                        className="gap-1.5 text-xs"
-                                    >
-                                        <ArrowLeft className="size-3.5" />
-                                        {t('common.back', 'Back to List')}
-                                    </Button>
-                                )}
-                                {onRetry && (
-                                    <Button variant="outline" size="sm" onClick={onRetry} className="gap-1.5 text-xs">
-                                        <RotateCcw className="size-3.5" />
-                                        {t('common.retry', 'Retry')}
-                                    </Button>
-                                )}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => showError(error, { onRetry })}
-                                    className="gap-1.5 text-xs"
-                                >
-                                    <Info className="size-3.5" />
-                                    {t('error.viewDetails', 'View Diagnostics')}
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
+            <TaskDetailErrorState
+                error={error}
+                isMobile={isMobile}
+                onBack={onBack}
+                onRetry={onRetry}
+                onLoadFirstTask={onLoadFirstTask}
+                hasTasks={hasTasks}
+                onShowErrorDialog={(err) => showError(err, { onRetry })}
+            />
         );
     }
 
@@ -288,86 +220,7 @@ export function TaskDetailView({
         );
     }
 
-
-    // Render tab content (shared between mobile & desktop)
-    const renderTabContent = (tabValue: string, mobile: boolean) => {
-        switch (tabValue) {
-            case 'overview':
-                return businessModel ? (
-                    <OverviewPanel
-                        model={businessModel}
-                        detail={viewData}
-                        isMobile={mobile}
-                        isSecondaryLoading={isSecondaryLoading}
-                        onSelectReferencePr={handleSelectReferencePr}
-                    />
-                ) : null;
-            case 'details':
-                if (isSecondaryLoading && businessModel && businessModel.tables.length === 0) {
-                    return <SecondaryTabSkeleton message={t('task.loadingDetails', 'Loading details...')} />;
-                }
-                return businessModel ? (
-                    <DetailsPanel
-                        model={businessModel}
-                        detail={viewData}
-                        isMobile={mobile}
-                        isSecondaryLoading={isSecondaryLoading}
-                        onSelectReferencePr={handleSelectReferencePr}
-                    />
-                ) : null;
-            case 'workflow':
-                return (
-                    <WorkflowApprovalPanel
-                        data={workflowData}
-                        isLoading={false}
-                        error={workflowError}
-                        taskDetail={viewData?.task}
-                    />
-                );
-            case 'attachments':
-                if (isPrAttachmentsLoading || (isSecondaryLoading && (viewData?.attachments?.length || 0) === 0)) {
-                    return <SecondaryTabSkeleton message={t('task.loadingAttachments', 'Loading attachments...')} />;
-                }
-                return <AttachmentsPanel detail={viewData} isMobile={mobile} allowUpload={!isApprovedScope} />;
-            case 'comments':
-                if (isSecondaryLoading && (viewData?.comments?.length || 0) === 0) {
-                    return <SecondaryTabSkeleton message={t('task.loadingComments', 'Loading comments...')} />;
-                }
-                return (
-                    <CommentsPanel
-                        detail={viewData}
-                        instanceId={viewData?.instanceId}
-                        onCommentAdded={handleCommentAdded}
-                        allowAddComment={!isApprovedScope && viewData?.supports?.comments !== false}
-                        context={{
-                            sapOrigin: viewData?.task?.sapOrigin,
-                            documentId: viewData?.task?.businessContext?.documentId || viewData?.documentId,
-                            businessObjectType: viewData?.task?.businessContext?.type || viewData?.docCategory,
-                        }}
-                    />
-                );
-            case 'activity':
-                if (
-                    isSecondaryLoading &&
-                    (viewData?.processingLogs?.length || 0) === 0 &&
-                    (viewData?.workflowLogs?.length || 0) === 0
-                ) {
-                    return <SecondaryTabSkeleton message={t('task.loadingActivity', 'Loading activity...')} />;
-                }
-                return <ActivityPanel detail={viewData} />;
-            default:
-                return null;
-        }
-    };
-
-    // Compute mobile animation direction
-    const currentTabIndex = tabs.findIndex((t) => t.value === activeTab);
-    const animationDirection = currentTabIndex >= prevTabIndexRef.current ? 1 : -1;
-
-    const handleMobileTabChange = (nextTab: string) => {
-        prevTabIndexRef.current = tabs.findIndex((t) => t.value === activeTab);
-        setTabState({ taskId: viewData?.instanceId || '', tab: nextTab });
-    };
+    const isActionPanelVisible = showActionPanel && (viewData?.normalTask ?? viewData?.task?.normalTask) !== false;
 
     return (
         <div className="flex h-full min-w-0 w-full max-w-full overflow-hidden flex-col bg-muted/30 relative">
@@ -376,49 +229,14 @@ export function TaskDetailView({
                     <div className="h-full bg-primary animate-pulse w-full" />
                 </div>
             )}
+
             {/* ── Header ── */}
-            {isMobile ? (
-                <div className="bg-card border-b border-border/70 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 shadow-xs shrink-0">
-                    <div className="flex items-start gap-2.5">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={onBack}
-                            className="shrink-0 size-9 p-0 rounded-xl hover:bg-muted active:scale-90 transition-all text-foreground"
-                            aria-label="Back to task list"
-                        >
-                            <ArrowLeft className="size-5" />
-                        </Button>
-                        <div className="flex-1 min-w-0 space-y-1 pt-0.5">
-                            {isSecondaryLoading ? (
-                                <Skeleton className="h-6 w-3/4 rounded-md animate-pulse bg-muted/60" />
-                            ) : (
-                                <h2 className="text-base font-bold text-foreground leading-tight line-clamp-2">
-                                    {viewData?.title || 'Task Details'}
-                                </h2>
-                            )}
-                            <div className="pt-0.5">
-                                <StatusHeaderBadges detail={viewData} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="border-b border-border/60 bg-background px-5 py-4">
-                    <div className="flex items-start gap-3">
-                        <div className="min-w-0 flex-1 space-y-2">
-                            {isSecondaryLoading ? (
-                                <Skeleton className="h-7 w-80 my-0.5 rounded-md animate-pulse bg-muted/60" />
-                            ) : (
-                                <h2 className="text-xl font-semibold text-foreground truncate">
-                                    {viewData?.title || 'Task Details'}
-                                </h2>
-                            )}
-                            <StatusHeaderBadges detail={viewData} />
-                        </div>
-                    </div>
-                </div>
-            )}
+            <TaskDetailHeader
+                viewData={viewData}
+                isMobile={isMobile}
+                isSecondaryLoading={isSecondaryLoading}
+                onBack={onBack}
+            />
 
             {/* ── Desktop Tabs ── */}
             {!isMobile && (
@@ -535,7 +353,7 @@ export function TaskDetailView({
             )}
 
             {/* ── Desktop: docked action footer ── */}
-            {!isMobile && showActionPanel && (viewData?.normalTask ?? viewData?.task?.normalTask) !== false && (
+            {!isMobile && isActionPanelVisible && (
                 <div className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-sm px-5 py-3 empty:hidden">
                     <TaskActionPanel
                         detail={viewData}
@@ -555,48 +373,51 @@ export function TaskDetailView({
                 <>
                     <div className="bg-card border-b border-border/60 px-3 py-1.5 shrink-0 shadow-2xs">
                         <div className="flex overflow-x-auto no-scrollbar gap-1">
-                                {tabs.map((tab) => {
-                                    const isActive = activeTab === tab.value;
-                                    return (
-                                        <Button
-                                            variant="ghost"
-                                            key={tab.value}
-                                            onClick={() => handleMobileTabChange(tab.value)}
-                                            className={cn(
-                                                'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full min-h-11 h-auto',
-                                                'focus-visible:outline-none',
+                            {tabs.map((tab) => {
+                                const isActive = activeTab === tab.value;
+                                return (
+                                    <Button
+                                        variant="ghost"
+                                        key={tab.value}
+                                        ref={(el) => {
+                                            tabButtonRefs.current[tab.value] = el;
+                                        }}
+                                        onClick={() => handleMobileTabChange(tab.value)}
+                                        className={cn(
+                                            'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full min-h-11 h-auto',
+                                            'focus-visible:outline-none',
+                                            isActive
+                                                ? 'bg-primary text-white shadow-sm'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70'
+                                        )}
+                                    >
+                                        <tab.icon className={cn("size-3.5", isActive ? "text-white" : "text-muted-foreground/60")} />
+                                        <span>{tab.label}</span>
+                                        {tab.count !== undefined && tab.count > 0 && (
+                                            <span className={cn(
+                                                'ml-0.5 rounded-full px-1.5 py-0 text-xs font-semibold',
                                                 isActive
-                                                    ? 'bg-primary text-white shadow-sm'
-                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70'
-                                            )}
-                                        >
-                                            <tab.icon className={cn("size-3.5", isActive ? "text-white" : "text-muted-foreground/60")} />
-                                            <span>{tab.label}</span>
-                                            {tab.count !== undefined && tab.count > 0 && (
-                                                <span className={cn(
-                                                    'ml-0.5 rounded-full px-1.5 py-0 text-xs font-semibold',
-                                                    isActive
-                                                        ? 'bg-white/20 text-white'
-                                                        : 'bg-muted text-muted-foreground'
-                                                )}>
-                                                    {tab.count}
-                                                </span>
-                                            )}
-                                            {isActive && (
-                                                <motion.div
-                                                    layoutId={`mobile-tab-indicator-${viewData?.instanceId}`}
-                                                    className="absolute inset-0 rounded-full bg-primary -z-10"
-                                                    transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-                                                />
-                                            )}
-                                        </Button>
-                                    );
-                                })}
-                            </div>
+                                                    ? 'bg-white/20 text-white'
+                                                    : 'bg-muted text-muted-foreground'
+                                            )}>
+                                                {tab.count}
+                                            </span>
+                                        )}
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId={`mobile-tab-indicator-${viewData?.instanceId}`}
+                                                className="absolute inset-0 rounded-full bg-primary -z-10"
+                                                transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                                            />
+                                        )}
+                                    </Button>
+                                );
+                            })}
                         </div>
+                    </div>
 
                     {/* ── Mobile: Action Panel directly under switchable tabs ── */}
-                    {isMobile && showActionPanel && (viewData?.normalTask ?? viewData?.task?.normalTask) !== false && (
+                    {isActionPanelVisible && (
                         <div className="shrink-0 border-b border-border/60 bg-card px-3 py-2 shadow-2xs">
                             <TaskActionPanel
                                 detail={viewData}
@@ -613,10 +434,15 @@ export function TaskDetailView({
 
                     <div
                         ref={ptr.containerRef}
+                        onTouchStart={handleContainerTouchStart}
+                        onTouchMove={handleContainerTouchMove}
+                        onTouchEnd={handleContainerTouchEnd}
+                        onTouchCancel={handleContainerTouchEnd}
+                        onWheel={handleContainerWheel}
                         className="flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background"
                     >
-                        {/* ── Mobile Pull-to-Refresh Indicator (Available across all tabs) ── */}
-                        {isMobile && (ptr.pullDistance > 0 || ptr.isRefreshing) && (
+                        {/* ── Mobile Pull-to-Refresh Indicator ── */}
+                        {(ptr.pullDistance > 0 || ptr.isRefreshing) && (
                             <div
                                 className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
                                 style={{
@@ -658,7 +484,53 @@ export function TaskDetailView({
                                 className="w-full"
                             >
                                 <div className="p-4 space-y-4 pb-12">
-                                    {renderTabContent(activeTab, true)}
+                                    <TaskDetailTabContent
+                                        tabValue={activeTab}
+                                        mobile={true}
+                                        businessModel={businessModel}
+                                        viewData={viewData}
+                                        isSecondaryLoading={isSecondaryLoading}
+                                        isPrAttachmentsLoading={isPrAttachmentsLoading}
+                                        workflowData={workflowData}
+                                        workflowError={workflowError}
+                                        isApprovedScope={isApprovedScope}
+                                        onSelectReferencePr={handleSelectReferencePr}
+                                        onCommentAdded={handleCommentAdded}
+                                    />
+                                    {currentTabIndex < tabs.length - 1 && (
+                                        <div className="flex flex-col items-center justify-center pt-6 pb-4 text-xs font-medium text-muted-foreground/70 select-none">
+                                            {pullUpDistance > 0 || isSwitchingTab ? (
+                                                <div className="flex flex-col items-center gap-1.5 text-primary animate-pulse">
+                                                    <div className="flex items-center gap-1.5 font-semibold">
+                                                        <ChevronDown
+                                                            className="size-4 transition-transform duration-200"
+                                                            style={{
+                                                                transform: `rotate(${pullUpDistance >= pullThreshold || isSwitchingTab ? 180 : 0}deg)`,
+                                                            }}
+                                                        />
+                                                        <span>
+                                                            {pullUpDistance >= pullThreshold || isSwitchingTab
+                                                                ? `${t('common.switchingTo', 'Đang chuyển sang')} ${tabs[currentTabIndex + 1]?.label}...`
+                                                                : `${t('common.pullUpToNext', 'Kéo tiếp để xem')} ${tabs[currentTabIndex + 1]?.label}`}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-28 h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                                                        <div
+                                                            className="h-full bg-primary rounded-full transition-all duration-100 ease-out"
+                                                            style={{
+                                                                width: `${Math.min((pullUpDistance / pullThreshold) * 100, 100)}%`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-muted-foreground/50">
+                                                    <span>{t('common.scrollToNextTab', 'Cuộn xuống để xem')} {tabs[currentTabIndex + 1]?.label}</span>
+                                                    <ChevronDown className="size-3.5" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         </AnimatePresence>

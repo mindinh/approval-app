@@ -1,47 +1,35 @@
 /**
  * TaskList — container component for the inbox task list.
  *
- * Phase 3 decomposition: this file now delegates to:
- *   - useTaskSelection (selection state)
- *   - useTaskFilters   (filter state + client-side filtering)
- *   - MassActionBar    (bulk action UI)
- *   - TaskCard         (individual task rendering)
- *
- * Uses infinite scroll (IntersectionObserver) instead of pagination.
+ * Decomposed architecture:
+ *   - useTaskSelection      (selection state)
+ *   - useTaskFilters        (filter state + client-side filtering)
+ *   - useTaskListScroll     (category accordion state, centering, and infinite scroll sentinel)
+ *   - TaskListHeader        (DesktopHeader, ScopeTabs, MobileHeader)
+ *   - TaskListStates        (Skeleton, EmptyState, ListErrorState)
+ *   - TaskListFilterDrawer  (Mobile filter drawer)
+ *   - MassActionBar         (bulk action UI)
+ *   - CategoryAccordionGroup(accordion sections and task cards)
  */
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Skeleton, Button, Tabs, TabsList, TabsTrigger, Checkbox, Input, Drawer, DrawerContent } from '@cnma/react-ui';
-import { TaskCard } from './TaskCard';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Button } from '@cnma/react-ui';
 import { MassActionBar } from './MassActionBar';
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import {
-    Inbox,
-    RefreshCw,
-    ListChecks,
-    X,
-    PanelLeftClose,
-    Filter,
-    Search,
-    Loader2,
-    AlertTriangle,
-    ArrowDown,
-    ArrowLeft,
-    ChevronsUp,
-    ChevronsDownUp,
-    ChevronsUpDown,
-} from 'lucide-react';
+import { RefreshCw, Loader2, ArrowDown, ChevronsUp } from 'lucide-react';
 import { CategoryAccordionGroup } from './CategoryAccordionGroup';
 import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
-import { CATEGORY_CONFIG, getTaskObjectCategory, type ObjectCategory } from '../utils/categoryUtils';
+import type { ObjectCategory } from '../utils/categoryUtils';
 import { useTaskSelection } from '@/pages/Inbox/hooks/useTaskSelection';
 import { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
+import { useTaskListScroll } from '@/pages/Inbox/hooks/useTaskListScroll';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTranslation } from 'react-i18next';
-import { parseError } from '@/utils/parseError';
+import { DesktopHeader, ScopeTabs, MobileHeader } from './TaskListHeader';
+import { ListErrorState, EmptyState, TaskListSkeleton } from './TaskListStates';
+import { TaskListFilterDrawer } from './TaskListFilterDrawer';
 
-
-interface TaskListProps {
+export interface TaskListProps {
     tasks: InboxTask[];
     selectedTaskId: string | null;
     onSelectTask: (task: InboxTask) => void;
@@ -51,10 +39,11 @@ interface TaskListProps {
     onRefresh: () => void;
     isRefreshing: boolean;
     totalItems?: number;
-    // Infinite scroll
+    overallTotalItems?: number;
     hasNextPage?: boolean;
     isFetchingNextPage?: boolean;
-    onLoadMore?: () => void;
+    onLoadMore?: (categories: ObjectCategory[]) => void;
+    onSearchChange?: (search: string) => void;
     showScopeTabs?: boolean;
     myTasksCount?: number;
     approvedTasksCount?: number;
@@ -74,6 +63,7 @@ interface TaskListProps {
     onCategoryChange?: (category: ObjectCategory | null) => void;
     onBackToCategories?: () => void;
     categoryTotals?: Record<ObjectCategory, { pending: number; completed: number; total: number }>;
+    categoryTotalsAreAuthoritative?: boolean;
 }
 
 export function TaskList({
@@ -86,9 +76,11 @@ export function TaskList({
     onRefresh,
     isRefreshing,
     totalItems = tasks.length,
+    overallTotalItems = totalItems,
     hasNextPage = false,
     isFetchingNextPage = false,
     onLoadMore,
+    onSearchChange,
     showScopeTabs = false,
     myTasksCount,
     approvedTasksCount,
@@ -103,13 +95,14 @@ export function TaskList({
     onMassDecision,
     isExecutingMass = false,
     showTaskActions = true,
-    hasMobileScopeBar = false,
     activeCategory,
     onCategoryChange,
     onBackToCategories,
     categoryTotals,
+    categoryTotalsAreAuthoritative = false,
 }: TaskListProps) {
-    // ─── Hooks ─────────────────────────────────────────────
+    const { t } = useTranslation();
+
     const selection = useTaskSelection({
         selectionMode: externalSelectionMode,
         selectedIds: externalSelectedIds,
@@ -118,7 +111,6 @@ export function TaskList({
     });
 
     const [isSelectingAllPages, setIsSelectingAllPages] = useState(false);
-
     const filters = useTaskFilters(tasks, scope, activeCategory);
 
     const ptr = usePullToRefresh({
@@ -127,14 +119,44 @@ export function TaskList({
         disabled: !isMobile,
     });
 
-    const handleCardClick = useCallback((task: InboxTask) => {
-        if (showTaskActions && selection.selectionMode) {
-            setIsSelectingAllPages(false);
-            selection.toggleSelection(task.instanceId);
-        } else {
-            onSelectTask(task);
-        }
-    }, [showTaskActions, selection.selectionMode, selection.toggleSelection, onSelectTask]);
+    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
+
+    const {
+        scrollContainerRef,
+        expandedCategories,
+        isAllCollapsed,
+        handleToggleCategory,
+        handleScrollToTopAndCollapse,
+        handleToggleCollapseAll,
+        canLoadMoreForExpandedCategories,
+        loadableExpandedCategories,
+        sentinelCallbackRef,
+    } = useTaskListScroll({
+        tasks,
+        selectedTaskId,
+        normSelectedId,
+        activeCategory,
+        hasLocalFilter: filters.hasLocalFilter,
+        filteredTasks: filters.filteredTasks,
+        hasNextPage,
+        isFetchingNextPage,
+        onLoadMore,
+        categoryTotals,
+        categoryTotalsAreAuthoritative,
+        scope,
+    });
+
+    const handleCardClick = useCallback(
+        (task: InboxTask) => {
+            if (showTaskActions && selection.selectionMode) {
+                setIsSelectingAllPages(false);
+                selection.toggleSelection(task.instanceId);
+            } else {
+                onSelectTask(task);
+            }
+        },
+        [showTaskActions, selection.selectionMode, selection.toggleSelection, onSelectTask]
+    );
 
     const handleExitSelectionMode = useCallback(() => {
         setIsSelectingAllPages(false);
@@ -148,186 +170,14 @@ export function TaskList({
         }
     }, [selection.selectionMode]);
 
-    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
-
-    // ─── 4-Section Category Accordion state ───────────────────
-    const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(
-        () => new Set<ObjectCategory>()
-    );
-
-    // If activeCategory is explicitly selected (e.g. from desktop CategoryPillsBar), expand it
     useEffect(() => {
-        if (activeCategory && activeCategory !== 'ALL') {
-            setExpandedCategories(new Set<ObjectCategory>([activeCategory]));
-        }
-    }, [activeCategory]);
+        onSearchChange?.(String(filters.appliedValues.search || '').trim());
+    }, [filters.appliedValues.search, onSearchChange]);
 
-    // Mobile does not auto-navigate to the first filtered task, so reveal every
-    // category containing matches and keep unrelated groups collapsed.
-    useEffect(() => {
-        if (!isMobile || selectedTaskId) return;
-
-        if (!filters.hasLocalFilter) {
-            setExpandedCategories(new Set<ObjectCategory>());
-            return;
-        }
-
-        const matchingCategories = new Set<ObjectCategory>();
-        for (const task of filters.filteredTasks) {
-            const category = getTaskObjectCategory(task);
-            if (category !== 'OTHER') {
-                matchingCategories.add(category);
-            }
-        }
-        setExpandedCategories(matchingCategories);
-    }, [isMobile, selectedTaskId, filters.hasLocalFilter, filters.filteredTasks]);
-
-    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-    const lastScrolledTaskIdRef = useRef<string | null>(null);
-
-    // Focus the selected task by keeping only its category expanded.
-    useEffect(() => {
-        if (!selectedTaskId) {
-            lastScrolledTaskIdRef.current = null;
-            return;
-        }
-
-        if (tasks.length === 0) return;
-
-        const currentTask = tasks.find(
-            (t) =>
-                t.instanceId === selectedTaskId ||
-                String(t.instanceId).replace(/^0+/, '') === normSelectedId
-        );
-        if (!currentTask) return;
-
-        const cat = getTaskObjectCategory(currentTask);
-        if (cat && cat !== 'OTHER') {
-            setExpandedCategories(new Set<ObjectCategory>([cat as ObjectCategory]));
-        }
-
-        if (lastScrolledTaskIdRef.current === currentTask.instanceId) {
-            return;
-        }
-
-        let attempts = 0;
-        const maxAttempts = 12;
-        let timeoutId: ReturnType<typeof setTimeout>;
-
-        const attemptScroll = () => {
-            const el =
-                document.getElementById(`task-card-${currentTask.instanceId}`) ||
-                (selectedTaskId ? document.getElementById(`task-card-${selectedTaskId}`) : null);
-            const container = scrollContainerRef.current;
-
-            if (el && container) {
-                const containerRect = container.getBoundingClientRect();
-                const elRect = el.getBoundingClientRect();
-
-                // If card is not already comfortably visible inside the scroll container, scroll to center it
-                const isFullyVisible =
-                    elRect.top >= containerRect.top + 30 &&
-                    elRect.bottom <= containerRect.bottom - 30;
-
-                if (!isFullyVisible) {
-                    const relativeTop = elRect.top - containerRect.top + container.scrollTop;
-                    const targetScrollTop = relativeTop - (container.clientHeight / 2) + (elRect.height / 2);
-                    container.scrollTo({
-                        top: Math.max(0, targetScrollTop),
-                        behavior: 'smooth',
-                    });
-                }
-                lastScrolledTaskIdRef.current = currentTask.instanceId;
-            } else if (attempts < maxAttempts) {
-                attempts++;
-                timeoutId = setTimeout(attemptScroll, 80);
-            }
-        };
-
-        // Delay 250ms to allow category accordion expand animation to settle
-        timeoutId = setTimeout(attemptScroll, 250);
-
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [selectedTaskId, tasks, normSelectedId]);
-
-    const handleToggleCategory = useCallback((cat: ObjectCategory) => {
-        setExpandedCategories((prev) => {
-            const next = new Set(prev);
-            if (next.has(cat)) {
-                next.delete(cat);
-            } else {
-                next.add(cat);
-            }
-            return next;
-        });
-    }, []);
-
-    const handleScrollToTopAndCollapse = useCallback(() => {
-        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        setExpandedCategories(new Set());
-    }, []);
-
-    const handleToggleCollapseAll = useCallback(() => {
-        setExpandedCategories((prev) => {
-            if (prev.size > 0) {
-                return new Set<ObjectCategory>();
-            }
-            return new Set<ObjectCategory>(['PR', 'PO', 'CLAIM', 'RESERVATION']);
-        });
-    }, []);
-
-    const isAllCollapsed = expandedCategories.size === 0;
-
-    // ─── Infinite scroll sentinel (Callback Ref for clean unmount/remount) ─
-    const observerRef = useRef<IntersectionObserver | null>(null);
-
-    const sentinelCallbackRef = useCallback(
-        (node: HTMLDivElement | null) => {
-            if (observerRef.current) {
-                observerRef.current.disconnect();
-                observerRef.current = null;
-            }
-
-            if (!node || !onLoadMore) return;
-
-            const container = scrollContainerRef.current;
-            const observer = new IntersectionObserver(
-                (entries) => {
-                    if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                        onLoadMore();
-                    }
-                },
-                {
-                    root: container || null,
-                    rootMargin: '100px',
-                    threshold: 0,
-                }
-            );
-            observer.observe(node);
-            observerRef.current = observer;
-        },
-        [hasNextPage, isFetchingNextPage, onLoadMore]
-    );
-
-    // ─── Auto-fetch remaining pages when filtering ────────
-    useEffect(() => {
-        if (
-            filters.hasLocalFilter &&
-            hasNextPage &&
-            !isFetchingNextPage &&
-            onLoadMore
-        ) {
-            onLoadMore();
-        }
-    }, [filters.hasLocalFilter, hasNextPage, isFetchingNextPage, onLoadMore]);
-
-    // ─── Auto-fetch remaining pages when Select All across pages is active ──────
+    // Auto-fetch remaining pages only for an explicit Select All action
     useEffect(() => {
         if (!isSelectingAllPages) return;
 
-        // Keep updating selected IDs to include all newly loaded actionable filtered tasks
         const allActionableIds = new Set(
             filters.filteredTasks
                 .filter((t) => t.normalTask !== false)
@@ -336,7 +186,7 @@ export function TaskList({
         selection.updateSelectedIds(allActionableIds);
 
         if (hasNextPage && !isFetchingNextPage && onLoadMore) {
-            onLoadMore();
+            onLoadMore(['PR', 'PO', 'CLAIM', 'RESERVATION']);
         } else if (!hasNextPage) {
             setIsSelectingAllPages(false);
         }
@@ -361,39 +211,35 @@ export function TaskList({
             if (hasNextPage) {
                 setIsSelectingAllPages(true);
                 if (!isFetchingNextPage && onLoadMore) {
-                    onLoadMore();
+                    onLoadMore(['PR', 'PO', 'CLAIM', 'RESERVATION']);
                 }
             }
         }
     }, [actionableFilteredTasks, selection, hasNextPage, isSelectingAllPages, isFetchingNextPage, onLoadMore]);
 
-    // ─── Auto-select first matching task when filters are applied (Desktop master-detail only) ─
-    useEffect(() => {
-        if (isMobile) return; // Never auto-navigate to task detail on mobile after searching/filtering
-        if (!filters.hasLocalFilter) return;
-        if (filters.filteredTasks.length === 0) return;
+    const selectionSummary =
+        showTaskActions && selection.selectionMode
+            ? isSelectingAllPages && isFetchingNextPage
+                ? t('inbox.selectingAllTasks', {
+                      count: selection.selectedIds.size,
+                      defaultValue: `Selecting all... (${selection.selectedIds.size} loaded)`,
+                  })
+                : t('inbox.selectedCount', {
+                      count: selection.selectedIds.size,
+                      defaultValue: `${selection.selectedIds.size} selected`,
+                  })
+            : filters.hasLocalFilter
+              ? t('inbox.filteredSummary', {
+                    count: filters.filteredTasks.length,
+                    total: tasks.length,
+                    defaultValue: `Showing ${filters.filteredTasks.length} of ${tasks.length} tasks`,
+                })
+              : t('inbox.scopeTotalSummary', {
+                    count: totalItems,
+                    total: overallTotalItems,
+                    defaultValue: `${totalItems} of ${overallTotalItems} tasks`,
+                });
 
-        const isCurrentlySelectedInFiltered = filters.filteredTasks.some(
-            (t) => t.instanceId === selectedTaskId
-        );
-
-        if (!isCurrentlySelectedInFiltered) {
-            onSelectTask(filters.filteredTasks[0]);
-        }
-    }, [isMobile, filters.hasLocalFilter, filters.filteredTasks, selectedTaskId, onSelectTask]);
-
-    // ─── Derived state ─────────────────────────────────────
-    const { t } = useTranslation();
-
-    const selectionSummary = showTaskActions && selection.selectionMode
-        ? isSelectingAllPages && isFetchingNextPage
-            ? t('inbox.selectingAllTasks', { count: selection.selectedIds.size, defaultValue: `Selecting all... (${selection.selectedIds.size} loaded)` })
-            : t('inbox.selectedCount', { count: selection.selectedIds.size, defaultValue: `${selection.selectedIds.size} selected` })
-        : filters.hasLocalFilter
-            ? t('inbox.filteredSummary', { count: filters.filteredTasks.length, total: tasks.length, defaultValue: `Showing ${filters.filteredTasks.length} of ${tasks.length} tasks` })
-            : t('inbox.loadedSummary', { loaded: tasks.length, total: totalItems, defaultValue: `${tasks.length} of ${totalItems} tasks` });
-
-    // ─── Loading skeleton ──────────────────────────────────
     if (isLoading) {
         return <TaskListSkeleton />;
     }
@@ -427,10 +273,11 @@ export function TaskList({
                             scope={scope}
                             onScopeChange={onScopeChange}
                             myTasksCount={myTasksCount ?? (scope === 'my' ? totalItems : 0)}
-                            approvedTasksCount={approvedTasksCount ?? (scope === 'approved' ? totalItems : 0)}
+                            approvedTasksCount={
+                                approvedTasksCount ?? (scope === 'approved' ? totalItems : 0)
+                            }
                         />
                     )}
-
 
                     <div className="px-3 pb-3">
                         <FilterBar
@@ -460,10 +307,11 @@ export function TaskList({
                     scope={scope}
                     onScopeChange={onScopeChange}
                     myTasksCount={myTasksCount ?? (scope === 'my' ? totalItems : 0)}
-                    approvedTasksCount={approvedTasksCount ?? (scope === 'approved' ? totalItems : 0)}
+                    approvedTasksCount={
+                        approvedTasksCount ?? (scope === 'approved' ? totalItems : 0)
+                    }
                     filterValues={filters.filterValues}
                     setFilterValues={filters.setFilterValues}
-                    handleFilterApply={filters.handleFilterApply}
                     selectionSummary={selectionSummary}
                     onRefresh={onRefresh}
                     isRefreshing={isRefreshing}
@@ -493,7 +341,7 @@ export function TaskList({
                 />
             )}
 
-            {/* ── Task Results — native scroll so the scrollbar gutter sits OUTSIDE cards ── */}
+            {/* ── Task Results ── */}
             <div
                 ref={(node) => {
                     scrollContainerRef.current = node;
@@ -533,6 +381,7 @@ export function TaskList({
                         </div>
                     </div>
                 )}
+
                 {isError && tasks.length === 0 ? (
                     <ListErrorState error={error} onRefresh={onRefresh} isRefreshing={isRefreshing} />
                 ) : filters.filteredTasks.length === 0 ? (
@@ -541,15 +390,10 @@ export function TaskList({
                         hasFilters={filters.hasLocalFilter}
                         hasNextPage={hasNextPage}
                         isFetchingNextPage={isFetchingNextPage}
-                        onLoadMore={onLoadMore}
+                        onLoadMore={() => onLoadMore?.(loadableExpandedCategories)}
                     />
                 ) : (
-                    <div
-                        className={cn(
-                            'p-2.5 space-y-3',
-                            isMobile && 'px-3.5 pb-28 pt-2'
-                        )}
-                    >
+                    <div className={cn('p-2.5 space-y-3', isMobile && 'px-3.5 pb-28 pt-2')}>
                         <CategoryAccordionGroup
                             tasks={filters.filteredTasks}
                             selectedTaskId={selectedTaskId}
@@ -567,18 +411,17 @@ export function TaskList({
                             }}
                             expandedCategories={expandedCategories}
                             onToggleCategory={handleToggleCategory}
-                            hasNextPage={hasNextPage}
-                            isFetchingNextPage={isFetchingNextPage}
-                            onLoadMore={onLoadMore}
                             categoryTotals={categoryTotals}
                         />
 
-                        {/* ── Infinite Scroll Sentinel (overall fallback) ── */}
+                        {/* ── Infinite Scroll Sentinel ── */}
                         <div ref={sentinelCallbackRef} className="h-2" />
-                        {isFetchingNextPage && (
+                        {isFetchingNextPage && canLoadMoreForExpandedCategories && (
                             <div className="flex items-center justify-center py-4 gap-2">
                                 <Loader2 className="size-4 animate-spin text-primary" />
-                                <span className="text-xs text-muted-foreground">{t('common.loadingMore', 'Loading more...')}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {t('common.loadingMore', 'Loading more...')}
+                                </span>
                             </div>
                         )}
                         {!hasNextPage && tasks.length > 0 && !isFetchingNextPage && (
@@ -607,8 +450,10 @@ export function TaskList({
             {isMobile && (
                 <div
                     className={cn(
-                        "pointer-events-none transition-all duration-300 z-40 fixed right-4",
-                        showTaskActions && selection.selectionMode && selection.selectedIds.size > 0 ? "bottom-28" : "bottom-20"
+                        'pointer-events-none transition-all duration-300 z-40 fixed right-4',
+                        showTaskActions && selection.selectionMode && selection.selectedIds.size > 0
+                            ? 'bottom-28'
+                            : 'bottom-20'
                     )}
                 >
                     <Button
@@ -617,8 +462,8 @@ export function TaskList({
                         size="icon"
                         onClick={handleScrollToTopAndCollapse}
                         className={cn(
-                            "pointer-events-auto size-11 sm:size-12 rounded-full shadow-lg border border-border/80 bg-card/95 hover:bg-card text-foreground backdrop-blur-md active:scale-95 transition-all group cursor-pointer",
-                            "hover:shadow-xl hover:border-primary/50"
+                            'pointer-events-auto size-11 sm:size-12 rounded-full shadow-lg border border-border/80 bg-card/95 hover:bg-card text-foreground backdrop-blur-md active:scale-95 transition-all group cursor-pointer',
+                            'hover:shadow-xl hover:border-primary/50'
                         )}
                         title={t('inbox.scrollToTopAndCollapse', 'Scroll to top & Collapse all')}
                     >
@@ -628,451 +473,12 @@ export function TaskList({
             )}
 
             {/* ── Mobile Filter Drawer ── */}
-            <Drawer
+            <TaskListFilterDrawer
                 open={filters.mobileFiltersOpen}
                 onOpenChange={filters.setMobileFiltersOpen}
-                direction="bottom"
-            >
-                <DrawerContent className="h-[100dvh] rounded-none border-none p-0">
-                    <FilterBar
-                        isMobile={true}
-                        config={filters.filterConfig}
-                        allFilterConfig={filters.allFilterConfig}
-                        values={filters.filterValues}
-                        onChange={filters.setFilterValues}
-                        onApply={(v) => {
-                            filters.handleFilterApply(v);
-                            filters.setMobileFiltersOpen(false);
-                        }}
-                        onClear={filters.handleFilterClear}
-                        onAdaptFilter={filters.handleAdaptFilter}
-                        isLoading={isRefreshing}
-                    />
-                </DrawerContent>
-            </Drawer>
-        </div>
-    );
-}
-
-// ─── Sub-components ────────────────────────────────────────
-
-function DesktopHeader({
-    totalItems,
-    selectionMode,
-    exitSelectionMode,
-    enterSelectionMode,
-    showTaskActions,
-    onRefresh,
-    isRefreshing,
-    onToggleCollapse,
-    scope,
-    onToggleCollapseAll,
-    isAllCollapsed,
-}: {
-    totalItems: number;
-    selectionMode: boolean;
-    exitSelectionMode: () => void;
-    enterSelectionMode: () => void;
-    showTaskActions: boolean;
-    onRefresh: () => void;
-    isRefreshing: boolean;
-    onToggleCollapse?: () => void;
-    scope?: 'my' | 'approved';
-    onToggleCollapseAll?: () => void;
-    isAllCollapsed?: boolean;
-}) {
-    const { t } = useTranslation();
-    const title = scope === 'approved'
-        ? t('nav.approvedTasks', 'Approved Tasks')
-        : t('nav.myTasks', 'My Tasks');
-    return (
-        <div className="flex items-center justify-between px-3 py-3">
-            <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-                <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-                    {totalItems}
-                </span>
-            </div>
-            <div className="flex items-center gap-0.5">
-                {showTaskActions && (
-                    <Button
-                        variant={selectionMode ? 'secondary' : 'ghost'}
-                        size="icon"
-                        onClick={() => (selectionMode ? exitSelectionMode() : enterSelectionMode())}
-                        className="h-8 w-8 rounded-lg hover:bg-muted"
-                        title={selectionMode ? t('common.cancel', 'Exit selection') : t('inbox.select', 'Select tasks')}
-                    >
-                        {selectionMode ? <X className="size-4" /> : <ListChecks className="size-4" />}
-                    </Button>
-                )}
-                {onToggleCollapseAll && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onToggleCollapseAll}
-                        className="h-8 w-8 rounded-lg hover:bg-muted"
-                        title={isAllCollapsed ? t('inbox.expandAll', 'Expand all') : t('inbox.collapseAll', 'Collapse all')}
-                    >
-                        {isAllCollapsed ? <ChevronsUpDown className="size-4" /> : <ChevronsDownUp className="size-4" />}
-                    </Button>
-                )}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onRefresh?.()}
-                    disabled={isRefreshing}
-                    className="h-8 w-8 rounded-lg hover:bg-muted"
-                    title={t('common.refresh', 'Refresh')}
-                >
-                    <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                </Button>
-                {onToggleCollapse && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onToggleCollapse}
-                        className="h-8 w-8 rounded-lg hover:bg-muted"
-                        title={t('nav.collapseSidebar', 'Collapse sidebar')}
-                    >
-                        <PanelLeftClose className="size-4" />
-                    </Button>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function ScopeTabs({
-    scope,
-    onScopeChange,
-    myTasksCount,
-    approvedTasksCount,
-}: {
-    scope: 'my' | 'approved';
-    onScopeChange?: (scope: 'my' | 'approved') => void;
-    myTasksCount: number;
-    approvedTasksCount: number;
-}) {
-    const { t } = useTranslation();
-    return (
-        <div className="px-0 pb-3">
-            <Tabs
-                value={scope}
-                onValueChange={(next) => onScopeChange?.(next as 'my' | 'approved')}
-                className="gap-0"
-            >
-                <TabsList className="h-auto w-full justify-start border-b border-border/60 bg-transparent px-3 py-0 gap-1 rounded-none shadow-none">
-                    <TabsTrigger
-                        value="my"
-                        className={cn(
-                            'h-10 min-w-24 rounded-none border-b-2 border-transparent px-3 text-sm text-muted-foreground',
-                            'hover:bg-muted/30 hover:text-foreground',
-                            'data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:font-medium',
-                            'data-[state=active]:bg-transparent data-[state=active]:shadow-none'
-                        )}
-                    >
-                        {t('nav.myTasks', 'My Tasks')}
-                        <span className="ml-1.5 flex h-4.5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold bg-muted text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                            {myTasksCount}
-                        </span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="approved"
-                        className={cn(
-                            'h-10 min-w-24 rounded-none border-b-2 border-transparent px-3 text-sm text-muted-foreground',
-                            'hover:bg-muted/30 hover:text-foreground',
-                            'data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:font-medium',
-                            'data-[state=active]:bg-transparent data-[state=active]:shadow-none'
-                        )}
-                    >
-                        {t('nav.approvedTasks', 'Approved Tasks')}
-                        <span className="ml-1.5 flex h-4.5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold bg-muted text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                            {approvedTasksCount}
-                        </span>
-                    </TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </div>
-    );
-}
-
-function MobileHeader({
-    totalItems,
-    showScopeTabs,
-    scope,
-    onScopeChange,
-    myTasksCount,
-    approvedTasksCount,
-    filterValues,
-    setFilterValues,
-    handleFilterApply,
-    selectionSummary,
-    onRefresh,
-    isRefreshing,
-    mobileActiveFilterCount,
-    onOpenFilters,
-    selectionMode,
-    exitSelectionMode,
-    enterSelectionMode,
-    showTaskActions,
-    activeCategory,
-    onCategoryChange,
-    onBackToCategories,
-    categoryCounts,
-}: {
-    totalItems: number;
-    showScopeTabs: boolean;
-    scope: 'my' | 'approved';
-    onScopeChange?: (scope: 'my' | 'approved') => void;
-    myTasksCount: number;
-    approvedTasksCount: number;
-    filterValues: any;
-    setFilterValues: (fn: any) => void;
-    handleFilterApply: (v: any) => void;
-    selectionSummary: string;
-    onRefresh: () => void;
-    isRefreshing: boolean;
-    mobileActiveFilterCount: number;
-    onOpenFilters: () => void;
-    selectionMode: boolean;
-    exitSelectionMode: () => void;
-    enterSelectionMode: () => void;
-    showTaskActions: boolean;
-    activeCategory?: ObjectCategory | null;
-    onCategoryChange?: (category: ObjectCategory | null) => void;
-    onBackToCategories?: () => void;
-    categoryCounts?: Record<ObjectCategory, number>;
-}) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="border-b-0 bg-transparent backdrop-blur-none">
-            <div className="space-y-3 px-4 pt-3 pb-4">
-                {showScopeTabs && (
-                    <Tabs
-                        value={scope}
-                        onValueChange={(next) => onScopeChange?.(next as 'my' | 'approved')}
-                        className="gap-0 -mx-4 px-4 overflow-x-auto no-scrollbar border-b border-border/60"
-                    >
-                        <TabsList className="h-auto w-max justify-start bg-transparent p-0 gap-1 rounded-none shadow-none">
-                            <TabsTrigger
-                                value="my"
-                                className={cn(
-                                    'h-10 min-w-24 rounded-none border-b-2 border-transparent px-3 text-sm text-muted-foreground',
-                                    'data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:font-medium',
-                                    'data-[state=active]:bg-transparent data-[state=active]:shadow-none'
-                                )}
-                            >
-                                {t('nav.myTasks', 'My Tasks')}
-                                <span className="ml-1.5 flex h-4.5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold bg-muted text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                                    {myTasksCount}
-                                </span>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="approved"
-                                className={cn(
-                                    'h-10 min-w-24 rounded-none border-b-2 border-transparent px-3 text-sm text-muted-foreground',
-                                    'data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:font-medium',
-                                    'data-[state=active]:bg-transparent data-[state=active]:shadow-none'
-                                )}
-                            >
-                                {t('nav.approvedTasks', 'Approved Tasks')}
-                                <span className="ml-1.5 flex h-4.5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold bg-muted text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                                    {approvedTasksCount}
-                                </span>
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                )}
-
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        id="inbox-search"
-                        placeholder={t('inbox.searchTasks', 'Search by title...')}
-                        value={filterValues.search || ''}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setFilterValues((prev: any) => ({ ...prev, search: val }));
-                            handleFilterApply({ ...filterValues, search: val });
-                        }}
-                        className="rounded-xl border-border bg-card pl-8 text-sm shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] h-11"
-                    />
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs font-medium text-muted-foreground truncate min-w-0 flex-1">
-                        {selectionSummary}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <Button
-                            variant="outline"
-                            onClick={onOpenFilters}
-                            disabled={showTaskActions && selectionMode}
-                            className="h-8 rounded-lg border-border bg-card px-2.5 text-xs font-medium text-muted-foreground shadow-2xs hover:bg-muted/30"
-                        >
-                            <Filter className="mr-1.5 size-3.5" />
-                            {t('common.filter', 'Filter')}
-                            {mobileActiveFilterCount > 0 && (
-                                <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0 text-[10px] font-semibold text-white">
-                                    {mobileActiveFilterCount}
-                                </span>
-                            )}
-                        </Button>
-                        {showTaskActions && (
-                            <Button
-                                variant="outline"
-                                onClick={() => (selectionMode ? exitSelectionMode() : enterSelectionMode())}
-                                className={cn(
-                                    'h-8 rounded-lg border bg-card px-2.5 text-xs font-medium shadow-2xs',
-                                    selectionMode
-                                        ? 'border-destructive/30 text-destructive hover:bg-error-bg'
-                                        : 'border-border text-muted-foreground hover:bg-muted/30'
-                                )}
-                            >
-                                {selectionMode ? (
-                                    <>
-                                        <X className="mr-1.5 size-3.5" />
-                                        {t('common.cancel', 'Cancel')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <ListChecks className="mr-1.5 size-3.5" />
-                                        {t('inbox.select', 'Select')}
-                                    </>
-                                )}
-                            </Button>
-                        )}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onRefresh?.()}
-                            disabled={isRefreshing}
-                            className="h-8 w-8 rounded-lg border border-border bg-card text-muted-foreground shadow-2xs hover:bg-muted/30"
-                            title={t('common.refresh', 'Refresh')}
-                        >
-                            <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ListErrorState({
-    error,
-    onRefresh,
-    isRefreshing,
-}: {
-    error: unknown;
-    onRefresh: () => void;
-    isRefreshing: boolean;
-}) {
-    const { t } = useTranslation();
-    const parsed = parseError(error);
-
-    return (
-        <div className="flex flex-col items-center justify-center px-6 py-12 text-center space-y-3">
-            <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                <AlertTriangle className="size-6" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground">{parsed.title}</h3>
-            <p className="max-w-60 text-xs text-muted-foreground leading-relaxed">
-                {parsed.message}
-            </p>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="gap-1.5 text-xs mt-1"
-            >
-                <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
-                <span>{t('common.retry', 'Retry')}</span>
-            </Button>
-        </div>
-    );
-}
-
-function EmptyState({
-    hasSearch,
-    hasFilters,
-    hasNextPage,
-    isFetchingNextPage,
-    onLoadMore,
-}: {
-    hasSearch: boolean;
-    hasFilters: boolean;
-    hasNextPage?: boolean;
-    isFetchingNextPage?: boolean;
-    onLoadMore?: () => void;
-}) {
-    const { t } = useTranslation();
-    const message = hasSearch || hasFilters ? t('inbox.noMatchingTasks', 'No matching tasks') : t('inbox.inboxEmpty', 'Inbox is empty');
-    const sub = hasSearch || hasFilters
-        ? isFetchingNextPage
-            ? t('inbox.searchingServerTasks', 'Searching remaining tasks on server...')
-            : t('inbox.tryAdjusting', 'Try adjusting your search or filter criteria.')
-        : t('inbox.noPendingTasks', 'No pending tasks assigned to you.');
-
-    return (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center space-y-3">
-            <div className="mb-1 rounded-full bg-muted p-4">
-                {isFetchingNextPage ? (
-                    <Loader2 className="size-8 animate-spin text-primary" />
-                ) : (
-                    <Inbox className="size-8 text-muted-foreground" />
-                )}
-            </div>
-            <h3 className="text-sm font-medium text-foreground">{message}</h3>
-            <p className="max-w-56 text-xs text-muted-foreground">{sub}</p>
-
-            {hasNextPage && (hasSearch || hasFilters) && onLoadMore && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onLoadMore}
-                    disabled={isFetchingNextPage}
-                    className="mt-2 text-xs gap-1.5 rounded-lg"
-                >
-                    {isFetchingNextPage ? (
-                        <>
-                            <Loader2 className="size-3.5 animate-spin text-primary" />
-                            <span>{t('inbox.searchingServer', 'Searching server...')}</span>
-                        </>
-                    ) : (
-                        <span>{t('inbox.loadMoreToSearch', 'Load more tasks to search')}</span>
-                    )}
-                </Button>
-            )}
-        </div>
-    );
-}
-
-function TaskListSkeleton() {
-    return (
-        <div className="flex h-full flex-col">
-            <div className="space-y-3 border-b border-border/50 p-4">
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-            </div>
-            <div className="flex-1 p-0">
-                {Array.from({ length: 6 }).map((_, index) => (
-                    <div
-                        key={index}
-                        className="mx-3 my-2 space-y-2 rounded-xl border border-border/50 bg-card/95 p-4"
-                    >
-                        <Skeleton className="h-4 w-3/4" />
-                        <div className="flex gap-1.5">
-                            <Skeleton className="h-4 w-14 rounded-md" />
-                            <Skeleton className="h-4 w-12 rounded-md" />
-                        </div>
-                        <Skeleton className="h-3 w-1/2" />
-                    </div>
-                ))}
-            </div>
+                filters={filters}
+                isRefreshing={isRefreshing}
+            />
         </div>
     );
 }

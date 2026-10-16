@@ -38,7 +38,25 @@
         "of": "of",
         "total": "Total",
         "clearFilters": "Clear Filters",
-        "backToList": "Back to Task List"
+        "backToList": "Back to Task List",
+        "previous": "Previous",
+        "next": "Next",
+        "allTypes": "All Types",
+        "nTypesSelected": "{{count}} types",
+        "nSelected": "{{count}} selected",
+        "selectAll": "Select All",
+        "clear": "Clear",
+        "clearFilter": "Clear filter",
+        "goBack": "Go Back",
+        "errorDetails": "Details",
+        "refreshing": "Refreshing...",
+        "releaseToRefresh": "Release to refresh",
+        "pullToRefresh": "Pull down to refresh",
+        "switchingTo": "Switching to",
+        "pullUpToNext": "Pull up to view",
+        "scrollToNextTab": "Scroll down to view",
+        "loadingMore": "Loading more...",
+        "default": "Default"
     },
     "nav": {
         "home": "Home",
@@ -48,7 +66,8 @@
         "approvedTasks": "Approved Tasks",
         "logOut": "Log Out",
         "openMenu": "Open navigation menu",
-        "substitutionInbox": "Substitution Inbox"
+        "substitutionInbox": "Substitution Inbox",
+        "collapseSidebar": "Collapse sidebar"
     },
     "profile": {
         "title": "User Profile",
@@ -60,12 +79,22 @@
         "welcomeBack": "Welcome back",
         "pendingApprovals": "{{count}} pending approvals",
         "tasksToReview": "Tasks to Review",
+        "newestTasks": "Newest Tasks",
         "quickAccess": "Quick Access",
         "viewAll": "View All",
         "systemStatus": "All systems operational",
         "statTotal": "Total Tasks",
         "statNew": "New Tasks",
-        "statApproved": "Approved"
+        "statApproved": "Approved",
+        "totalTasks": "Total Tasks",
+        "noTasks": "No pending tasks. You're all caught up!",
+        "allCaughtUp": "All caught up! No pending approvals",
+        "openInbox": "Go to Inbox",
+        "systemOverview": "System Overview",
+        "urgentTasks": "{{count}} tasks pending over 5 days",
+        "quickAccessMyTasksDesc": "Pending items awaiting your review & approval",
+        "quickAccessApprovedDesc": "History of requests you previously approved",
+        "quickAccessDashboardDesc": "Performance analytics, charts & approval metrics"
     },
     "category": {
         "all": "All Tasks",
@@ -149,6 +178,9 @@
             "arcTitle": "{{status}}: {{count}} requests",
             "inApproving": "In Approving",
             "completed": "Completed"
+        },
+        "pagination": {
+            "showing": "Showing {{start}} to {{end}} of {{total}}"
         }
     },
     "inbox": {
@@ -171,7 +203,29 @@
         "scrollToTopAndCollapse": "Scroll to top & Collapse all",
         "view": "View",
         "hide": "Hide",
-        "noTasksInCategory": "No tasks in this category"
+        "noTasksInCategory": "No tasks in this category",
+        "filteredSubtypeCount": "Showing {{count}} of {{total}}",
+        "totalSubtypeCount": "{{count}} requests",
+        "noTasksInSubtype": "No tasks found for this subtype",
+        "showAllInGroup": "Show all tasks",
+        "allTasksLoaded": "All tasks loaded",
+        "ofSubtypes": "of {{total}} types",
+        "selectingAllTasks": "Selecting all... ({{count}} loaded)",
+        "selectedCount": "{{count}} selected",
+        "filteredSummary": "Showing {{count}} of {{total}} tasks",
+        "scopeTotalSummary": "{{count}} of {{total}} tasks",
+        "select": "Select tasks",
+        "expandAll": "Expand all",
+        "collapseAll": "Collapse all",
+        "searchTasks": "Search by title...",
+        "noMatchingTasks": "No matching tasks",
+        "inboxEmpty": "Inbox is empty",
+        "searchingServerTasks": "Searching remaining tasks on server...",
+        "tryAdjusting": "Try adjusting your search or filter criteria.",
+        "noPendingTasks": "No pending tasks assigned to you.",
+        "searchingServer": "Searching server...",
+        "loadMoreToSearch": "Load more tasks to search",
+        "ccTasksCannotDecide": "Review-only (CC) tasks cannot be approved or rejected."
     },
     "task": {
         "overdue5Days": "Pending > 5 days (Overdue)",
@@ -214,7 +268,26 @@
         "clickRowDetails": "Click a row to view complete details",
         "cardViewDesc": "Full line items card view",
         "itemNum": "Item #{{num}}",
-        "viewDetails": "View details"
+        "viewDetails": "View details",
+        "ccNotActionable": "Review-only / CC tasks cannot be approved or rejected",
+        "processingLog": "Processing Log",
+        "actionsTaken": "Actions taken on this task",
+        "noProcessingLog": "No processing log entries found.",
+        "workflowLog": "Workflow Log",
+        "workflowExecution": "Workflow execution history",
+        "noWorkflowLog": "No workflow log entries found.",
+        "noDetailsAvailable": "No detail items available for this task.",
+        "viewReferencePr": "View Reference PR",
+        "itemDeleted": "Item Deleted",
+        "details": "Details",
+        "rowId": "Row ID:",
+        "noOverviewAvailable": "No overview data available.",
+        "backToPo": "Back to PO {{id}}",
+        "backToPoTask": "Back to PO Task",
+        "loadingDetails": "Loading details...",
+        "loadingAttachments": "Loading attachments...",
+        "loadingComments": "Loading comments...",
+        "loadingActivity": "Loading activity..."
     },
     "comments": {
         "title": "Comments",
@@ -227,7 +300,8 @@
         "noUsersFound": "No users found matching query.",
         "typeToSearch": "Type to search users by name, user ID, or email...",
         "tagUser": "CC / Tag Users",
-        "taggedUsers": "Tagged Users"
+        "taggedUsers": "Tagged Users",
+        "suggestions": "Suggestions"
     },
     "decision": {
         "approve": "Approve",
@@ -250,7 +324,16 @@
         "massApproving": "Approving {{count}} tasks...",
         "massRejecting": "Rejecting {{count}} tasks...",
         "massApproveSuccess": "{{count}} tasks approved successfully",
-        "massRejectSuccess": "{{count}} tasks rejected successfully"
+        "massRejectSuccess": "{{count}} tasks rejected successfully",
+        "massRejectDesc": "A rejection reason is required and will be applied to all selected tasks.",
+        "massApproveDesc": "You may optionally add a common comment before confirming.",
+        "selectedTasks": "Selected Tasks",
+        "comment": "Comment",
+        "enterReasonRequired": "Enter reason for rejection (required)...",
+        "addCommentOptional": "Add an approval comment (optional)...",
+        "cancel": "Cancel",
+        "undo": "Undo",
+        "submitting": "Submitting..."
     },
     "forward": {
         "title": "Forward Task",
@@ -276,6 +359,8 @@
         "approved": "Approved",
         "rejected": "Rejected",
         "completed": "Completed",
+        "pendingVerify": "Pending Verify",
+        "verified": "Verified",
         "draft": "Draft",
         "submitted": "Submitted"
     },
@@ -315,7 +400,11 @@
             "network": "Unable to connect to the server. Please check your network connection.",
             "auth": "You do not have permission to view or execute actions on this document.",
             "notFound": "The requested document or task could not be found."
-        }
+        },
+        "failedToLoadPr": "Failed to load Purchase Requisition",
+        "prNotFound": "Reference PR {{id}} could not be loaded or was not found.",
+        "pageNotFound": "Page Not Found",
+        "pageNotFoundDescription": "The page or resource you are looking for does not exist or has been moved."
     },
     "toasts": {
         "actionInProgress": "Action in progress...",
@@ -377,5 +466,13 @@
         "priorityHigh": "High",
         "priorityNeutral": "Neutral",
         "authPrefix": "Auth"
+    },
+    "auth": {
+        "accessDenied": "Access Denied",
+        "accessDeniedMessage": "You do not have permission to access this page. Please contact your administrator."
+    },
+    "navigation": {
+        "home": "Go to Home",
+        "inbox": "Go to Inbox"
     }
 }

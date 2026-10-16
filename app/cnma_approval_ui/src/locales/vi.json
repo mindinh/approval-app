@@ -38,7 +38,25 @@
         "of": "trong",
         "total": "Tổng",
         "clearFilters": "Xóa bộ lọc",
-        "backToList": "Về danh sách công việc"
+        "backToList": "Về danh sách công việc",
+        "previous": "Trước",
+        "next": "Sau",
+        "allTypes": "Tất cả loại",
+        "nTypesSelected": "{{count}} loại",
+        "nSelected": "Đã chọn {{count}}",
+        "selectAll": "Chọn tất cả",
+        "clear": "Xóa",
+        "clearFilter": "Xóa bộ lọc",
+        "goBack": "Quay lại",
+        "errorDetails": "Chi tiết",
+        "refreshing": "Đang làm mới...",
+        "releaseToRefresh": "Thả ra để làm mới",
+        "pullToRefresh": "Kéo xuống để làm mới",
+        "switchingTo": "Đang chuyển sang",
+        "pullUpToNext": "Kéo tiếp để xem",
+        "scrollToNextTab": "Cuộn xuống để xem",
+        "loadingMore": "Đang tải thêm...",
+        "default": "Mặc định"
     },
     "nav": {
         "home": "Trang chủ",
@@ -47,7 +65,9 @@
         "myTasks": "Cần duyệt",
         "approvedTasks": "Đã duyệt",
         "openMenu": "Mở danh mục điều hướng",
-        "substitutionInbox": "Hộp thư thay thế"
+        "substitutionInbox": "Hộp thư thay thế",
+        "collapseSidebar": "Thu gọn thanh bên",
+        "logOut": "Đăng xuất"
     },
     "profile": {
         "title": "Thông tin cá nhân",
@@ -59,12 +79,22 @@
         "welcomeBack": "Xin chào",
         "pendingApprovals": "{{count}} yêu cầu cần duyệt",
         "tasksToReview": "Công việc cần xử lý",
+        "newestTasks": "Yêu cầu mới nhất",
         "quickAccess": "Truy cập nhanh",
         "viewAll": "Xem tất cả",
         "systemStatus": "Hệ thống hoạt động bình thường",
         "statTotal": "Tổng công việc",
         "statNew": "Cần duyệt",
-        "statApproved": "Đã duyệt"
+        "statApproved": "Đã duyệt",
+        "totalTasks": "Tổng công việc",
+        "noTasks": "Không có yêu cầu nào đang chờ xử lý.",
+        "allCaughtUp": "Bạn đã hoàn thành tất cả yêu cầu!",
+        "openInbox": "Đến hộp thư đến",
+        "systemOverview": "Tổng quan hệ thống",
+        "urgentTasks": "{{count}} yêu cầu quá hạn 5 ngày",
+        "quickAccessMyTasksDesc": "Các yêu cầu đang chờ bạn xem xét & phê duyệt",
+        "quickAccessApprovedDesc": "Lịch sử các yêu cầu bạn đã phê duyệt",
+        "quickAccessDashboardDesc": "Phân tích hiệu suất, biểu đồ & chỉ số phê duyệt"
     },
     "category": {
         "all": "Tất cả",
@@ -148,6 +178,9 @@
             "arcTitle": "{{status}}: {{count}} yêu cầu",
             "inApproving": "Đang duyệt",
             "completed": "Đã hoàn tất"
+        },
+        "pagination": {
+            "showing": "Hiển thị từ {{start}} đến {{end}} trong tổng số {{total}}"
         }
     },
     "inbox": {
@@ -170,7 +203,29 @@
         "scrollToTopAndCollapse": "Lên đầu & Thu gọn tất cả",
         "view": "Xem",
         "hide": "Thu gọn",
-        "noTasksInCategory": "Không có tác vụ nào trong danh mục này"
+        "noTasksInCategory": "Không có tác vụ nào trong danh mục này",
+        "filteredSubtypeCount": "Hiển thị {{count}} trên {{total}}",
+        "totalSubtypeCount": "{{count}} yêu cầu",
+        "noTasksInSubtype": "Không tìm thấy công việc cho loại này",
+        "showAllInGroup": "Xem tất cả công việc",
+        "allTasksLoaded": "Đã tải xong tất cả công việc",
+        "ofSubtypes": "trên {{total}} loại",
+        "selectingAllTasks": "Đang chọn tất cả... (đã tải {{count}})",
+        "selectedCount": "Đã chọn {{count}}",
+        "filteredSummary": "Hiển thị {{count}} trên {{total}} công việc",
+        "scopeTotalSummary": "{{count}} trên {{total}} công việc",
+        "select": "Chọn công việc",
+        "expandAll": "Mở rộng tất cả",
+        "collapseAll": "Thu gọn tất cả",
+        "searchTasks": "Tìm theo tiêu đề...",
+        "noMatchingTasks": "Không có công việc phù hợp",
+        "inboxEmpty": "Hộp thư trống",
+        "searchingServerTasks": "Đang tìm các công việc còn lại trên máy chủ...",
+        "tryAdjusting": "Thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc.",
+        "noPendingTasks": "Không có công việc nào đang chờ bạn xử lý.",
+        "searchingServer": "Đang tìm trên máy chủ...",
+        "loadMoreToSearch": "Tải thêm công việc để tìm kiếm",
+        "ccTasksCannotDecide": "Công việc chỉ xem (CC) không thể phê duyệt hoặc từ chối."
     },
     "task": {
         "overdue5Days": "Tồn tại trên 5 ngày",
@@ -213,7 +268,26 @@
         "clickRowDetails": "Nhấp vào hàng để xem chi tiết đầy đủ",
         "cardViewDesc": "Xem danh sách dạng thẻ đầy đủ",
         "itemNum": "Mục #{{num}}",
-        "viewDetails": "Xem chi tiết"
+        "viewDetails": "Xem chi tiết",
+        "ccNotActionable": "Công việc chỉ xem / CC không thể phê duyệt hoặc từ chối",
+        "processingLog": "Nhật ký xử lý",
+        "actionsTaken": "Các thao tác đã thực hiện cho công việc này",
+        "noProcessingLog": "Không tìm thấy nhật ký xử lý nào.",
+        "workflowLog": "Nhật ký quy trình",
+        "workflowExecution": "Lịch sử thực thi quy trình",
+        "noWorkflowLog": "Không tìm thấy nhật ký quy trình nào.",
+        "noDetailsAvailable": "Không có chi tiết nào cho công việc này.",
+        "viewReferencePr": "Xem PR tham chiếu",
+        "itemDeleted": "Dòng đã bị xóa",
+        "details": "Chi tiết",
+        "rowId": "Mã dòng:",
+        "noOverviewAvailable": "Không có dữ liệu tổng quan.",
+        "backToPo": "Quay lại PO {{id}}",
+        "backToPoTask": "Quay lại công việc PO",
+        "loadingDetails": "Đang tải chi tiết...",
+        "loadingAttachments": "Đang tải tệp đính kèm...",
+        "loadingComments": "Đang tải bình luận...",
+        "loadingActivity": "Đang tải hoạt động..."
     },
     "comments": {
         "title": "Bình luận",
@@ -226,7 +300,8 @@
         "noUsersFound": "Không tìm thấy người dùng phù hợp.",
         "typeToSearch": "Nhập để tìm kiếm theo tên, mã SAP, hoặc email...",
         "tagUser": "CC / Gắn thẻ",
-        "taggedUsers": "Người dùng được gắn thẻ"
+        "taggedUsers": "Người dùng được gắn thẻ",
+        "suggestions": "Gợi ý"
     },
     "decision": {
         "approve": "Phê duyệt",
@@ -249,7 +324,16 @@
         "massApproving": "Đang phê duyệt {{count}} công việc...",
         "massRejecting": "Đang từ chối {{count}} công việc...",
         "massApproveSuccess": "Đã phê duyệt {{count}} công việc thành công",
-        "massRejectSuccess": "Đã từ chối {{count}} công việc thành công"
+        "massRejectSuccess": "Đã từ chối {{count}} công việc thành công",
+        "massRejectDesc": "Cần nhập lý do từ chối và lý do này sẽ được áp dụng cho tất cả công việc đã chọn.",
+        "massApproveDesc": "Bạn có thể thêm bình luận chung trước khi xác nhận (tùy chọn).",
+        "selectedTasks": "Công việc đã chọn",
+        "comment": "Bình luận",
+        "enterReasonRequired": "Nhập lý do từ chối (bắt buộc)...",
+        "addCommentOptional": "Thêm bình luận phê duyệt (tùy chọn)...",
+        "cancel": "Hủy",
+        "undo": "Hoàn tác",
+        "submitting": "Đang gửi..."
     },
     "forward": {
         "title": "Chuyển tiếp công việc",
@@ -275,6 +359,8 @@
         "approved": "Đã duyệt",
         "rejected": "Đã từ chối",
         "completed": "Hoàn thành",
+        "pendingVerify": "Chờ xác nhận",
+        "verified": "Đã xác nhận",
         "draft": "Bản nháp",
         "submitted": "Đã gửi"
     },
@@ -314,7 +400,11 @@
             "network": "Không thể kết nối tới máy chủ. Vui lòng kiểm tra đường truyền mạng.",
             "auth": "Bạn không có quyền xem hoặc thực hiện thao tác trên chứng từ này.",
             "notFound": "Không tìm thấy chứng từ hoặc công việc được yêu cầu."
-        }
+        },
+        "failedToLoadPr": "Không thể tải Yêu cầu mua sắm (PR)",
+        "prNotFound": "PR tham chiếu {{id}} không thể tải hoặc không tìm thấy.",
+        "pageNotFound": "Không tìm thấy trang",
+        "pageNotFoundDescription": "Trang hoặc tài nguyên bạn đang tìm không tồn tại hoặc đã được di chuyển."
     },
     "toasts": {
         "actionInProgress": "Đang xử lý...",
@@ -376,5 +466,13 @@
         "priorityHigh": "Cao",
         "priorityNeutral": "Bình thường",
         "authPrefix": "Xác thực"
+    },
+    "auth": {
+        "accessDenied": "Từ chối truy cập",
+        "accessDeniedMessage": "Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên."
+    },
+    "navigation": {
+        "home": "Về trang chủ",
+        "inbox": "Đến hộp thư"
     }
 }

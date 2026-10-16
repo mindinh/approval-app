@@ -56,7 +56,7 @@ export const INBOX_FILTER_CONFIG: FilterFieldConfig[] = [
     },
     {
         key: 'createdDate',
-        label: 'Created Date',
+        label: 'Created On',
         type: 'dateRange',
         visible: true,
     },

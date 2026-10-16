@@ -1,9 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
     ChevronDown,
-    Loader2,
     SlidersHorizontal,
     X,
 } from 'lucide-react';
@@ -41,9 +40,6 @@ interface CategoryAccordionGroupProps {
     onToggleSelection: (taskId: string) => void;
     expandedCategories: Set<ObjectCategory>;
     onToggleCategory: (category: ObjectCategory) => void;
-    hasNextPage?: boolean;
-    isFetchingNextPage?: boolean;
-    onLoadMore?: () => void;
     categoryTotals?: Record<ObjectCategory, { pending: number; completed: number; total: number }>;
 }
 
@@ -60,9 +56,6 @@ export function CategoryAccordionGroup({
     onToggleSelection,
     expandedCategories,
     onToggleCategory,
-    hasNextPage = false,
-    isFetchingNextPage = false,
-    onLoadMore,
     categoryTotals,
 }: CategoryAccordionGroupProps) {
     const { t } = useTranslation();
@@ -98,38 +91,6 @@ export function CategoryAccordionGroup({
             [cat]: new Set(subtypes),
         }));
     };
-
-    // Infinite scroll observer for all expanded category sections (multi-sentinel support)
-    const observerRef = useRef<IntersectionObserver | null>(null);
-    const observedNodesRef = useRef<Set<HTMLDivElement>>(new Set());
-
-    useEffect(() => {
-        if (!onLoadMore) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries.some((e) => e.isIntersecting) && hasNextPage && !isFetchingNextPage) {
-                    onLoadMore();
-                }
-            },
-            { rootMargin: '200px' }
-        );
-        observerRef.current = observer;
-
-        // Observe any already mounted sentinels
-        observedNodesRef.current.forEach((el) => observer.observe(el));
-
-        return () => {
-            observer.disconnect();
-            observerRef.current = null;
-        };
-    }, [hasNextPage, isFetchingNextPage, onLoadMore]);
-
-    const registerSentinel = React.useCallback((node: HTMLDivElement | null) => {
-        if (!node) return;
-        observedNodesRef.current.add(node);
-        observerRef.current?.observe(node);
-    }, []);
 
     // Group tasks by category
     const tasksByCategory = React.useMemo(() => {
@@ -373,16 +334,7 @@ export function CategoryAccordionGroup({
                                             ))
                                         )}
 
-                                        {/* Sentinel for Infinite Scrolling in this expanded section */}
-                                        <div ref={registerSentinel} className="h-2" />
-
-                                        {isFetchingNextPage && (
-                                            <div className="flex items-center justify-center py-3 gap-2 text-xs text-muted-foreground">
-                                                <Loader2 className="size-4 animate-spin text-primary" />
-                                                <span>{t('common.loadingMore', 'Loading more...')}</span>
-                                            </div>
-                                        )}
-                                        {!hasNextPage && catTasks.length > 0 && !isFetchingNextPage && (
+                                        {totalCount > 0 && catTasks.length >= totalCount && (
                                             <p className="text-center text-[11px] text-muted-foreground/70 py-2">
                                                 {t('inbox.allTasksLoaded', 'All tasks loaded')}
                                             </p>
