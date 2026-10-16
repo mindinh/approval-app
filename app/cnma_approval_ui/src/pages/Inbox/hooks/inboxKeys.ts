@@ -13,6 +13,7 @@ export const inboxKeys = {
 
     // ─── Dashboard ─────────────────────────────────────────
     dashboard: () => [...inboxKeys.all, 'dashboard'] as const,
+    statusCounts: () => [...inboxKeys.all, 'statusCounts'] as const,
 
     // ─── Current User ──────────────────────────────────────
     currentUser: () => [...inboxKeys.all, 'currentUser'] as const,
@@ -25,6 +26,8 @@ export const inboxKeys = {
     approvedTasksPrefix: () => [...inboxKeys.all, 'approvedTasks'] as const,
     approvedTasks: (pagination?: { top?: number; skip?: number }) =>
         [...inboxKeys.all, 'approvedTasks', pagination ?? {}] as const,
+    scopedTasks: (scope: 'my' | 'approved', category: string, search: string) =>
+        [...inboxKeys.all, 'scopedTasks', scope, category, search] as const,
 
     // ─── Task Detail ───────────────────────────────────────
     taskDetail: (id: string) => [...inboxKeys.all, 'task', normId(id)] as const,
@@ -51,6 +54,8 @@ export const inboxKeys = {
 
     // ─── Notification Service Testing ──────────────────────
     notificationTypes: () => [...inboxKeys.all, 'notificationTypes'] as const,
-};
 
+    // ─── Category Counts ───────────────────────────────────
+    categoryCounts: (scope: string) => [...inboxKeys.all, 'categoryCounts', scope] as const,
+};
 

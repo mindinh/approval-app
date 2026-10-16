@@ -14,6 +14,8 @@ import type {
     TaggedUser,
     WorkflowApprovalTreeResponse,
     DashboardResponse,
+    CategoryCountsResponse,
+    TaskStatusCountsResponse,
 } from './inbox.types';
 
 
@@ -36,6 +38,20 @@ export interface UserInfo {
  * Inbox API — All backend calls for the inbox feature.
  */
 export const inboxApi = {
+    getStatusCounts: async (): Promise<TaskStatusCountsResponse> => {
+        const { data } = await axiosInstance.get<TaskStatusCountsResponse>(`${BASE_URL}/status-counts`);
+        return data;
+    },
+    /**
+     * Get real-time task counts grouped by business object category.
+     */
+    getCategoryCounts: async (scope: 'my' | 'approved' = 'my'): Promise<CategoryCountsResponse> => {
+        const { data } = await axiosInstance.get<CategoryCountsResponse>(
+            `${BASE_URL}/category-counts?scope=${scope}`
+        );
+        return data;
+    },
+
     /**
      * Get current user display info (name, email) from JWT claims.
      */
@@ -51,9 +67,22 @@ export const inboxApi = {
      * Get dashboard data for the current user.
      * Returns all task records from the ZI_PR_DASH_BOARD entity.
      */
-    getDashboard: async (): Promise<DashboardResponse> => {
+    getDashboard: async (params?: {
+        top?: number;
+        skip?: number;
+        category?: string;
+        documentType?: string;
+        status?: string;
+    }): Promise<DashboardResponse> => {
+        const query = new URLSearchParams();
+        if (params?.top != null) query.set('top', String(params.top));
+        if (params?.skip != null) query.set('skip', String(params.skip));
+        if (params?.category) query.set('category', params.category);
+        if (params?.documentType) query.set('documentType', params.documentType);
+        if (params?.status) query.set('status', params.status);
+        const qs = query.toString();
         const { data } = await axiosInstance.get<DashboardResponse>(
-            `${BASE_URL}/dashboard`
+            `${BASE_URL}/dashboard${qs ? `?${qs}` : ''}`
         );
         return data;
     },
@@ -61,10 +90,12 @@ export const inboxApi = {
     /**
      * Get tasks for the current user (with optional pagination).
      */
-    getTasks: async (params?: { top?: number; skip?: number }): Promise<TaskListResponse> => {
+    getTasks: async (params?: { top?: number; skip?: number; category?: string; search?: string }): Promise<TaskListResponse> => {
         const query = new URLSearchParams();
         if (params?.top != null) query.set('top', String(params.top));
         if (params?.skip != null) query.set('skip', String(params.skip));
+        if (params?.category) query.set('category', params.category);
+        if (params?.search) query.set('search', params.search);
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskListResponse>(
             `${BASE_URL}${qs ? `?${qs}` : ''}`
@@ -75,10 +106,12 @@ export const inboxApi = {
     /**
      * Get approved tasks for the current user (with optional pagination).
      */
-    getApprovedTasks: async (params?: { top?: number; skip?: number }): Promise<TaskListResponse> => {
+    getApprovedTasks: async (params?: { top?: number; skip?: number; category?: string; search?: string }): Promise<TaskListResponse> => {
         const query = new URLSearchParams();
         if (params?.top != null) query.set('top', String(params.top));
         if (params?.skip != null) query.set('skip', String(params.skip));
+        if (params?.category) query.set('category', params.category);
+        if (params?.search) query.set('search', params.search);
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskListResponse>(
             `${BASE_URL}/approved${qs ? `?${qs}` : ''}`

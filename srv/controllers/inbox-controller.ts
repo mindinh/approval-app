@@ -222,8 +222,55 @@ export class InboxController {
     getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { sapUser, userJwt } = resolveIdentity(req);
-            const result = await this.processor.getDashboardSummary(sapUser, userJwt);
+            const status = req.query.status === 'Completed' || req.query.status === 'In Approving'
+                ? req.query.status
+                : undefined;
+            const result = await this.processor.getDashboardSummary(sapUser, userJwt, {
+                top: req.query.top ? parseInt(String(req.query.top), 10) : 50,
+                skip: req.query.skip ? parseInt(String(req.query.skip), 10) : 0,
+                category: this.parseTaskCategory(req.query.category),
+                documentType: typeof req.query.documentType === 'string' ? req.query.documentType : undefined,
+                status,
+            });
             res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * @openapi
+     * /tasks/category-counts:
+     *   get:
+     *     summary: Fetch task counts by business object category
+     *     description: Retrieves real-time counts for PR, PO, Reservation, and Claim.
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: scope
+     *         schema:
+     *           type: string
+     *           enum: [my, approved]
+     *     responses:
+     *       200:
+     *         description: Category counts breakdown
+     */
+    getStatusCounts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { sapUser, userJwt } = resolveIdentity(req);
+            res.json(await this.processor.getStatusCounts(sapUser, userJwt));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getCategoryCounts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { sapUser, userJwt } = resolveIdentity(req);
+            const scope = (req.query.scope as string) === 'approved' ? 'approved' : 'my';
+            const counts = await this.processor.getCategoryCounts(sapUser, scope, userJwt);
+            res.json(counts);
         } catch (error) {
             next(error);
         }
@@ -255,8 +302,10 @@ export class InboxController {
             const { sapUser, userJwt } = resolveIdentity(req);
             const top = req.query.top ? parseInt(String(req.query.top), 10) : undefined;
             const skip = req.query.skip ? parseInt(String(req.query.skip), 10) : undefined;
+            const category = this.parseTaskCategory(req.query.category);
+            const search = typeof req.query.search === 'string' ? req.query.search : undefined;
 
-            const result = await this.processor.getTasks(sapUser, userJwt, { top, skip });
+            const result = await this.processor.getTasks(sapUser, userJwt, { top, skip }, { category, search });
             res.json({
                 items: result.items,
                 total: result.total
@@ -292,8 +341,10 @@ export class InboxController {
             const { sapUser, userJwt } = resolveIdentity(req);
             const top = req.query.top ? parseInt(String(req.query.top), 10) : undefined;
             const skip = req.query.skip ? parseInt(String(req.query.skip), 10) : undefined;
+            const category = this.parseTaskCategory(req.query.category);
+            const search = typeof req.query.search === 'string' ? req.query.search : undefined;
 
-            const result = await this.processor.getApprovedTasks(sapUser, userJwt, { top, skip });
+            const result = await this.processor.getApprovedTasks(sapUser, userJwt, { top, skip }, { category, search });
             res.json({
                 items: result.items,
                 total: result.total
@@ -302,6 +353,12 @@ export class InboxController {
             next(error);
         }
     };
+
+    private parseTaskCategory(value: unknown): 'PR' | 'PO' | 'RESERVATION' | 'CLAIM' | undefined {
+        return value === 'PR' || value === 'PO' || value === 'RESERVATION' || value === 'CLAIM'
+            ? value
+            : undefined;
+    }
 
     /**
      * @openapi

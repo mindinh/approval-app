@@ -60,8 +60,30 @@ export function useCurrentUser() {
     });
 }
 
+// ─── useCategoryCounts ─────────────────────────────────────
+export function useCategoryCounts(scope: 'my' | 'approved' = 'my', options?: { enabled?: boolean }) {
+    return useQuery({
+        queryKey: inboxKeys.categoryCounts(scope),
+        queryFn: () => inboxApi.getCategoryCounts(scope),
+        staleTime: 60 * 1000, // 1 minute fresh
+        enabled: options?.enabled !== false,
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useStatusCounts(options?: { enabled?: boolean }) {
+    return useQuery({
+        queryKey: inboxKeys.statusCounts(),
+        queryFn: () => inboxApi.getStatusCounts(),
+        staleTime: 60_000,
+        enabled: options?.enabled !== false,
+        refetchOnWindowFocus: false,
+        refetchInterval: (q) => listRefetchInterval(q.state.error),
+    });
+}
+
 // ─── useTasks ──────────────────────────────────────────────
-export function useTasks(options?: { enabled?: boolean; top?: number; skip?: number }) {
+export function useTasks(options?: { enabled?: boolean; top?: number; skip?: number; staleTime?: number }) {
     const pagination = options?.top != null || options?.skip != null
         ? { top: options?.top, skip: options?.skip }
         : undefined;
@@ -69,7 +91,7 @@ export function useTasks(options?: { enabled?: boolean; top?: number; skip?: num
     const query = useQuery({
         queryKey: inboxKeys.tasks(pagination),
         queryFn: () => inboxApi.getTasks(pagination),
-        staleTime: STALE.LIST,
+        staleTime: options?.staleTime ?? STALE.LIST,
         enabled: options?.enabled !== false,
         placeholderData: keepPreviousData,
         refetchOnWindowFocus: false,
@@ -111,6 +133,40 @@ export function useApprovedTasks(options?: { enabled?: boolean; top?: number; sk
 // ─── useInfiniteTasks (infinite scroll) ────────────────────
 const INFINITE_PAGE_SIZE = 50;
 
+export function useInfiniteCategoryTasks(
+    scope: 'my' | 'approved',
+    category: 'PR' | 'PO' | 'RESERVATION' | 'CLAIM',
+    search = ''
+) {
+    const query = useInfiniteQuery({
+        queryKey: inboxKeys.scopedTasks(scope, category, search),
+        queryFn: ({ pageParam = 0 }) => {
+            const params = { top: INFINITE_PAGE_SIZE, skip: pageParam, category, search: search || undefined };
+            return scope === 'approved'
+                ? inboxApi.getApprovedTasks(params)
+                : inboxApi.getTasks(params);
+        },
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            const totalFetched = allPages.reduce((sum, page) => sum + page.items.length, 0);
+            if (lastPage.items.length === 0 || totalFetched >= lastPage.total) return undefined;
+            return totalFetched;
+        },
+        staleTime: STALE.LIST,
+        // Debounced search changes the query key. Keep the current list visible
+        // until the matching server result arrives instead of flashing a full skeleton.
+        placeholderData: keepPreviousData,
+        refetchOnWindowFocus: false,
+        retry: (failureCount, error: any) => {
+            if (isSapUserMappingMissing(error)) return false;
+            return failureCount < 1;
+        },
+    });
+
+    useErrorModalOnQueryError(query.error, `Failed to load ${category} tasks`);
+    return query;
+}
+
 export function useInfiniteTasks(options?: { enabled?: boolean }) {
     const query = useInfiniteQuery({
         queryKey: inboxKeys.tasksPrefix(),
@@ -119,8 +175,8 @@ export function useInfiniteTasks(options?: { enabled?: boolean }) {
         initialPageParam: 0,
         getNextPageParam: (lastPage, allPages) => {
             const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
-            if (totalFetched >= lastPage.total) return undefined;
-            return totalFetched;
+            if (lastPage.items.length === 0 || totalFetched >= lastPage.total) return undefined;
+            return allPages.length * INFINITE_PAGE_SIZE;
         },
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,
@@ -144,8 +200,8 @@ export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
         initialPageParam: 0,
         getNextPageParam: (lastPage, allPages) => {
             const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
-            if (totalFetched >= lastPage.total) return undefined;
-            return totalFetched;
+            if (lastPage.items.length === 0 || totalFetched >= lastPage.total) return undefined;
+            return allPages.length * INFINITE_PAGE_SIZE;
         },
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,

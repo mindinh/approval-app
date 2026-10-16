@@ -20,7 +20,9 @@ export {
     useApprovedTasks,
     useInfiniteTasks,
     useInfiniteApprovedTasks,
+    useInfiniteCategoryTasks,
     useTaskDetail,
+    useCategoryCounts,
 } from './inboxQueries';
 
 // Mutation hooks

@@ -44,7 +44,8 @@ export class SapOdataAdapter {
         userJwt?: string,
         targetInstanceId?: string,
         pagination?: { top?: number; skip?: number },
-        selectFields?: string
+        selectFields?: string,
+        additionalFilter?: string
     ): Promise<any[]> {
         const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
         const entitySet = ODATA_SERVICES.INSTANCE_LIST.entitySet;
@@ -76,6 +77,10 @@ export class SapOdataAdapter {
             const padded10 = String(cleanId).padStart(10, '0');
             const padded12 = String(cleanId).padStart(12, '0');
             filterConditions.push(`(DocumentNumber eq '${padded10}' or TechnicalWrkflwObject eq '${padded10}' or WorkflowTaskInternalID eq '${cleanId}' or WorkflowTaskInternalID eq '${padded10}' or WorkflowTaskInternalID eq '${padded12}')`);
+        }
+
+        if (additionalFilter) {
+            filterConditions.push(additionalFilter);
         }
 
         if (filterConditions.length > 0) {
@@ -366,7 +371,7 @@ export class SapOdataAdapter {
             return Array.isArray(value) ? value : [];
         } catch (err: any) {
             console.error(`[SapOdataAdapter] Failed to fetch CNMA_TASKBYSTATUS:`, err.message);
-            return [];
+            throw err;
         }
     }
 
@@ -408,6 +413,53 @@ export class SapOdataAdapter {
         } catch (err: any) {
             console.error(`[SapOdataAdapter] Failed to fetch CNMA_BUSUSER from SAP backend:`, err.message);
             return [];
+        }
+    }
+
+    async getCategoryCount(
+        sapUser: string,
+        status?: string | string[],
+        docCategoryFilter?: string,
+        userJwt?: string
+    ): Promise<number> {
+        try {
+            const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
+            const entitySet = ODATA_SERVICES.INSTANCE_LIST.entitySet;
+
+            const params: Record<string, string> = {
+                $format: 'json',
+                $count: 'true',
+                $top: '0'
+            };
+
+            const filterConditions: string[] = [];
+
+            if (status) {
+                const statusList = Array.isArray(status) ? status : [status];
+                filterConditions.push(`(${statusList.map(s => `WorkflowTaskStatus eq '${s}'`).join(' or ')})`);
+            }
+
+            if (docCategoryFilter) {
+                filterConditions.push(docCategoryFilter);
+            }
+
+            if (filterConditions.length > 0) {
+                params.$filter = filterConditions.join(' and ');
+            }
+
+            const response: any = await this.sapClient.get(
+                path,
+                `/${entitySet}`,
+                params,
+                sapUser,
+                userJwt
+            );
+
+            const count = Number(response?.['@odata.count'] ?? response?.d?.__count ?? 0);
+            return isNaN(count) ? 0 : count;
+        } catch (err: any) {
+            this.logger.error(`Failed to get category count: ${err.message}`);
+            throw err;
         }
     }
 }

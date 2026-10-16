@@ -10,6 +10,11 @@ import type { QueryClient } from '@tanstack/react-query';
 import { inboxKeys } from './inboxKeys';
 
 const normId = (id?: string | null): string => (id ? String(id).replace(/^0+/, '') : '');
+const invalidateScopedLists = (queryClient: QueryClient) => {
+    queryClient.invalidateQueries({ queryKey: inboxKeys.statusCounts() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'scopedTasks'] });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'categoryCounts'] });
+};
 
 // ─── Policy: After a decision (approve / reject) ──────────
 // Broadest scope — both task lists shift, detail & workflow are stale.
@@ -20,6 +25,7 @@ export function invalidateAfterDecision(
     const cleanId = normId(instanceId);
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
+    invalidateScopedLists(queryClient);
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
     if (instanceId !== cleanId) {
@@ -35,6 +41,7 @@ export function invalidateAfterMassDecision(
 ) {
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
+    invalidateScopedLists(queryClient);
     for (const id of instanceIds) {
         const cleanId = normId(id);
         queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
@@ -54,6 +61,7 @@ export function invalidateAfterForward(
 ) {
     const cleanId = normId(instanceId);
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
+    invalidateScopedLists(queryClient);
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
     queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
     if (instanceId !== cleanId) {
@@ -88,6 +96,9 @@ export function invalidateAfterComment(
 export function invalidateTaskList(queryClient: QueryClient, selectedTaskId?: string | null) {
     queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
+    invalidateScopedLists(queryClient);
+    void queryClient.refetchQueries({ queryKey: [...inboxKeys.all, 'scopedTasks'] });
+    void queryClient.refetchQueries({ queryKey: [...inboxKeys.all, 'categoryCounts'] });
     void queryClient.refetchQueries({ queryKey: inboxKeys.tasksPrefix() });
     void queryClient.refetchQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
 

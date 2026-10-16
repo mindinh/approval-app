@@ -77,6 +77,62 @@ describe('SapOdataAdapter', () => {
     });
   });
 
+  describe('Home OData requests', () => {
+    it('requests only five newest pending tasks from SAP', async () => {
+      mockSapClient.get.mockResolvedValue({ value: [], '@odata.count': 1000 });
+      await adapter.getInstances('SAP_USER', ['IN PROCESSING'], 'jwt', undefined, { top: 5 });
+      expect(mockSapClient.get).toHaveBeenCalledExactlyOnceWith(
+        expect.any(String), '/CNMA_WFTASK',
+        expect.objectContaining({
+          $top: '5',
+          $orderby: 'TaskCreationDateTime desc',
+          $filter: "(WorkflowTaskStatus eq 'IN PROCESSING')",
+        }),
+        'SAP_USER', 'jwt'
+      );
+    });
+
+    it('reads the status aggregate without fetching worklist rows', async () => {
+      const rows = [{ WorkflowTaskStatus: 'COMPLETED', RequestCount: 7 }];
+      mockSapClient.get.mockResolvedValue({ value: rows });
+      expect(await adapter.getStatusCounts('SAP_USER', 'jwt')).toEqual(rows);
+      expect(mockSapClient.get).toHaveBeenCalledExactlyOnceWith(
+        expect.any(String), '/CNMA_TASKBYSTATUS', { $format: 'json' }, 'SAP_USER', 'jwt'
+      );
+    });
+
+    it('does not turn an SAP aggregate failure into an empty result', async () => {
+      mockSapClient.get.mockRejectedValue(new Error('SAP unavailable'));
+      await expect(adapter.getStatusCounts('SAP_USER')).rejects.toThrow('SAP unavailable');
+    });
+  });
+
+  describe('getCategoryCount', () => {
+    it('queries only the OData count with the supplied status and category filters', async () => {
+      mockSapClient.get.mockResolvedValue({ value: [], '@odata.count': 37 });
+
+      const count = await adapter.getCategoryCount(
+        'SAP_USER',
+        ['READY', 'IN PROCESSING'],
+        "DocCategory eq 'BUS2105'",
+        'jwt-token'
+      );
+
+      expect(count).toBe(37);
+      expect(mockSapClient.get).toHaveBeenCalledWith(
+        expect.any(String),
+        '/CNMA_WFTASK',
+        expect.objectContaining({
+          $top: '0',
+          $count: 'true',
+          $filter: "(WorkflowTaskStatus eq 'READY' or WorkflowTaskStatus eq 'IN PROCESSING') and DocCategory eq 'BUS2105'"
+        }),
+        'SAP_USER',
+        'jwt-token'
+      );
+    });
+  });
+
   describe('Direct SAP Mode (USE_MOCK_SAP === "false")', () => {
     beforeEach(() => {
       process.env.USE_MOCK_SAP = 'false';

@@ -16,6 +16,7 @@ vi.mock('../../../srv/lib/integrations/sap-odata-adapter', () => {
   return {
     SapOdataAdapter: class {
       getInstances = vi.fn();
+      getStatusCounts = vi.fn();
       getDetailBatch = vi.fn();
       getDetail = vi.fn();
       addComment = vi.fn();
@@ -60,17 +61,20 @@ describe('InboxProcessor', () => {
       
       const result = await processor.getTasks('MOCK_USER');
       expect(result).toEqual({ items: [], total: 0 });
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledTimes(1);
       expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith(
         'MOCK_USER',
-        expect.arrayContaining(['IN PROCESSING', 'IN_PROCESSING', 'Pending approval', 'Partially approved']),
+        ['IN PROCESSING'],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined
       );
     });
 
-    it('should fetch tasks, apply pagination and format cards', async () => {
-      const mockInstances = [
+    it('should format the page already paginated by SAP without slicing it again', async () => {
+      const page = Object.assign([
         {
           instanceID: '000000000001',
           typeid: 'BUS2105',
@@ -81,10 +85,9 @@ describe('InboxProcessor', () => {
           taskCreationDateTime: '2026-04-05T08:13:18.43246Z',
           createdByUser: 'DIENTRAN'
         },
-        { instanceID: '000000000002', typeid: 'BUS2012', instid: '45000002', status: 'IN PROCESSING', total: 2000, curr_vnd: 'VND' },
-        { instanceID: '000000000003', typeid: 'BUS2105', instid: '10000003', status: 'IN PROCESSING', total: 3000, curr_vnd: 'VND' }
-      ];
-      mockSapOdataAdapter.getInstances.mockResolvedValue(mockInstances);
+        { instanceID: '000000000002', typeid: 'BUS2012', instid: '45000002', status: 'IN PROCESSING', total: 2000, curr_vnd: 'VND' }
+      ], { totalCount: 3 });
+      mockSapOdataAdapter.getInstances.mockResolvedValue(page);
 
       const result = await processor.getTasks('MOCK_USER', 'my-jwt-token', { top: 2, skip: 0 });
 
@@ -103,6 +106,40 @@ describe('InboxProcessor', () => {
       expect(result.items[1].priority).toBe('MEDIUM');
       expect(result.items[1].total).toBe(2000);
     });
+
+    it('keeps a non-zero-skip page returned by SAP', async () => {
+      const page = Object.assign([
+        { instanceID: '000000000051', typeid: 'BUS2105', instid: '10000051', status: 'IN PROCESSING' },
+        { instanceID: '000000000052', typeid: 'BUS2012', instid: '45000052', status: 'IN PROCESSING' }
+      ], { totalCount: 1200 });
+      mockSapOdataAdapter.getInstances.mockResolvedValue(page);
+
+      const result = await processor.getTasks('MOCK_USER', 'jwt', { top: 50, skip: 50 });
+
+      expect(result.total).toBe(1200);
+      expect(result.items.map((item) => item.instanceId)).toEqual(['000000000051', '000000000052']);
+    });
+
+    it('scopes pagination to one category and applies escaped server search', async () => {
+      mockSapOdataAdapter.getInstances.mockResolvedValue(Object.assign([], { totalCount: 0 }));
+
+      await processor.getTasks(
+        'MOCK_USER',
+        'jwt',
+        { top: 50, skip: 100 },
+        { category: 'PO', search: "O'Brien" }
+      );
+
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith(
+        'MOCK_USER',
+        expect.arrayContaining(['IN PROCESSING']),
+        'jwt',
+        undefined,
+        { top: 50, skip: 100 },
+        undefined,
+        "DocCategory eq 'BUS2012' and (contains(DocumentNumber,'O''Brien') or contains(CreatedByUser,'O''Brien') or contains(DocumentTypeText,'O''Brien'))"
+      );
+    });
   });
 
   describe('getApprovedTasks', () => {
@@ -111,20 +148,54 @@ describe('InboxProcessor', () => {
         { instanceID: '101', typeid: 'BUS2105', instid: '1000101', status: 'COMPLETED' },
         { instanceID: '102', typeid: 'BUS2012', instid: '4500102', status: 'COMPLETED' }
       ];
-      mockSapOdataAdapter.getInstances.mockResolvedValue(mockCompletedInstances);
+      mockSapOdataAdapter.getInstances.mockResolvedValue(
+        Object.assign(mockCompletedInstances, { totalCount: 2 })
+      );
 
       const res = await processor.getApprovedTasks('MOCK_USER', 'jwt', { top: 2 });
 
+      expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledTimes(1);
       expect(mockSapOdataAdapter.getInstances).toHaveBeenCalledWith(
         'MOCK_USER',
-        expect.arrayContaining(['COMPLETED', 'Approved', 'Rejected', 'Cancelled']),
+        ['COMPLETED'],
         'jwt',
         undefined,
-        { top: 2 }
+        { top: 2 },
+        undefined,
+        undefined
       );
       expect(res.items.length).toBe(2);
       expect(res.items[0].instanceId).toBe('101');
       expect(res.items[0].status).toBe('COMPLETED');
+    });
+  });
+
+  describe('getStatusCounts', () => {
+    it('uses one SAP aggregate call for all three Home counts', async () => {
+      mockSapOdataAdapter.getStatusCounts.mockResolvedValue([
+        { WorkflowTaskStatus: 'IN PROCESSING', RequestCount: 12 },
+        { WorkflowTaskStatus: 'COMPLETED', RequestCount: 30 },
+      ]);
+
+      expect(await processor.getStatusCounts('MOCK_USER', 'jwt')).toEqual({
+        total: 42, inApproval: 12, completed: 30,
+      });
+      expect(mockSapOdataAdapter.getStatusCounts).toHaveBeenCalledExactlyOnceWith('MOCK_USER', 'jwt');
+      expect(mockSapOdataAdapter.getInstances).not.toHaveBeenCalled();
+    });
+
+    it('returns zero for a status absent from the aggregate', async () => {
+      mockSapOdataAdapter.getStatusCounts.mockResolvedValue([
+        { WorkflowTaskStatus: 'COMPLETED', RequestCount: 3 },
+      ]);
+      expect(await processor.getStatusCounts('MOCK_USER')).toEqual({
+        total: 3, inApproval: 0, completed: 3,
+      });
+    });
+
+    it('propagates aggregate failures instead of reporting zero tasks', async () => {
+      mockSapOdataAdapter.getStatusCounts.mockRejectedValue(new Error('SAP unavailable'));
+      await expect(processor.getStatusCounts('MOCK_USER')).rejects.toThrow('SAP unavailable');
     });
   });
 

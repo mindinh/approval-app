@@ -31,6 +31,7 @@ export interface CnmaTaskByDocTypeEntity {
     DocumentType: string;
     DocCategory: string;
     MovementType?: string;
+    Status: string;
     DocumentTypeText: string;
     MovementTypeName?: string;
     RequestCount: number;
@@ -87,4 +88,3 @@ export interface MassDecisionResponse {
     failedCount: number;
     results: MassDecisionItemResult[];
 }
-

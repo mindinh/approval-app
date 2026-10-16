@@ -397,6 +397,7 @@ export interface DashboardTask {
 export interface DocTypeCountItem {
     DocumentType: string;
     DocCategory: string;
+    Status: string;
     DocumentTypeText?: string;
     RequestCount: number;
     SumNetAmountLocalCrcy: number;
@@ -421,6 +422,12 @@ export interface DashboardResponse {
 export interface TaskListResponse {
     items: InboxTask[];
     total: number;
+}
+
+export interface TaskStatusCountsResponse {
+    total: number;
+    inApproval: number;
+    completed: number;
 }
 
 export type TaskDetailResponse = TaskDetail;
@@ -520,3 +527,11 @@ export interface MassDecisionResponse {
     results: MassDecisionItemResult[];
 }
 
+export interface CategoryCountsResponse {
+    PR: number | null;
+    PO: number | null;
+    RESERVATION: number | null;
+    CLAIM: number | null;
+    ALL: number;
+    complete: boolean;
+}

@@ -24,6 +24,8 @@ export function createInboxRouter(): Router {
 
     // 3. Dashboard metrics aggregation
     router.get('/dashboard', controller.getDashboard);
+    router.get('/category-counts', controller.getCategoryCounts);
+    router.get('/status-counts', controller.getStatusCounts);
 
     // 4. Worklists & Reference Details
     router.get('/approved', controller.getApprovedTasks);

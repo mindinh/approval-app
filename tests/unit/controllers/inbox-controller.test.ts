@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockExecuteDecision = vi.fn();
 const mockForwardTask = vi.fn();
 const mockAddComment = vi.fn();
+const mockGetStatusCounts = vi.fn();
 
 vi.mock('../../../srv/lib/processors/inbox-processor', () => {
     return {
@@ -11,6 +12,7 @@ vi.mock('../../../srv/lib/processors/inbox-processor', () => {
             executeDecision = mockExecuteDecision;
             forwardTask = mockForwardTask;
             addComment = mockAddComment;
+            getStatusCounts = mockGetStatusCounts;
         }
     };
 });
@@ -35,6 +37,29 @@ function makeReqRes(body: any, params: any = {}, query: any = {}) {
     const next = vi.fn();
     return { req, res, next };
 }
+
+describe('InboxController.getStatusCounts', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('returns all Home counts from the aggregate processor', async () => {
+        const counts = { total: 8, inApproval: 3, completed: 5 };
+        mockGetStatusCounts.mockResolvedValue(counts);
+        const { req, res, next } = makeReqRes({});
+        await new InboxController().getStatusCounts(req, res, next);
+        expect(mockGetStatusCounts).toHaveBeenCalledTimes(1);
+        expect(res.json).toHaveBeenCalledWith(counts);
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('passes aggregate failures to error middleware', async () => {
+        const error = new Error('SAP unavailable');
+        mockGetStatusCounts.mockRejectedValue(error);
+        const { req, res, next } = makeReqRes({});
+        await new InboxController().getStatusCounts(req, res, next);
+        expect(next).toHaveBeenCalledWith(error);
+        expect(res.json).not.toHaveBeenCalled();
+    });
+});
 
 describe('InboxController.postDecision', () => {
     beforeEach(() => {

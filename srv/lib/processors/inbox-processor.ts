@@ -27,26 +27,29 @@ import {
 
 /** Status list for active pending tasks ("My Tasks") */
 export const ACTIVE_TASK_STATUSES = [
-    'IN PROCESSING',
-    'IN_PROCESSING',
-    'Pending approval',
-    'Partially approved',
-    'Pending Approval',
-    'Partially Approved',
-    'PENDING APPROVAL',
-    'PARTIALLY APPROVED'
+    'IN PROCESSING'
 ];
 
 /** Status list for processed/historic tasks ("Approved Tasks") */
 export const APPROVED_TASK_STATUSES = [
-    'COMPLETED',
-    'Approved',
-    'Rejected',
-    'Cancelled',
-    'APPROVED',
-    'REJECTED',
-    'CANCELLED'
+    'COMPLETED'
 ];
+
+const TASK_CATEGORY_FILTERS = [
+    "DocCategory eq 'BUS2105'",
+    "DocCategory eq 'BUS2012'",
+    "(DocCategory eq 'ZBUS2093' or DocCategory eq 'BUS2093')",
+    "DocCategory eq 'CLAIM'",
+];
+
+type TaskCategory = 'PR' | 'PO' | 'RESERVATION' | 'CLAIM';
+
+const TASK_CATEGORY_FILTER_BY_KEY: Record<TaskCategory, string> = {
+    PR: TASK_CATEGORY_FILTERS[0],
+    PO: TASK_CATEGORY_FILTERS[1],
+    RESERVATION: TASK_CATEGORY_FILTERS[2],
+    CLAIM: TASK_CATEGORY_FILTERS[3],
+};
 
 interface CachedInstance {
     normalTask: boolean;
@@ -70,7 +73,12 @@ export class InboxProcessor {
     /**
      * Retrieves active/pending approval tasks for the specified user.
      */
-    async getTasks(sapUser: string, userJwt?: string, pagination?: { top?: number; skip?: number }) {
+    async getTasks(
+        sapUser: string,
+        userJwt?: string,
+        pagination?: { top?: number; skip?: number },
+        filters?: { category?: TaskCategory; search?: string }
+    ) {
         this.logger.info(`Fetching tasks for user: ${sapUser}`);
         try {
             const customInstances = await this.sapOdataAdapter.getInstances(
@@ -78,16 +86,16 @@ export class InboxProcessor {
                 ACTIVE_TASK_STATUSES,
                 userJwt,
                 undefined,
-                pagination
+                pagination,
+                undefined,
+                this._buildTaskFilter(filters)
             );
             if (!customInstances || customInstances.length === 0) {
                 return { items: [], total: 0 };
             }
 
             const total = (customInstances as any).totalCount ?? customInstances.length;
-            const paginatedInstances = this._paginate(customInstances, pagination);
-
-            const items = paginatedInstances.map((inst: any) => {
+            const items = customInstances.map((inst: any) => {
                 return this._buildTaskCard(inst);
             });
 
@@ -101,7 +109,12 @@ export class InboxProcessor {
     /**
      * Retrieves completed/historic tasks for the specified user.
      */
-    async getApprovedTasks(sapUser: string, userJwt?: string, pagination?: { top?: number; skip?: number }) {
+    async getApprovedTasks(
+        sapUser: string,
+        userJwt?: string,
+        pagination?: { top?: number; skip?: number },
+        filters?: { category?: TaskCategory; search?: string }
+    ) {
         this.logger.info(`Fetching approved/completed tasks for user: ${sapUser}`);
         try {
             const customInstances = await this.sapOdataAdapter.getInstances(
@@ -109,16 +122,16 @@ export class InboxProcessor {
                 APPROVED_TASK_STATUSES,
                 userJwt,
                 undefined,
-                pagination
+                pagination,
+                undefined,
+                this._buildTaskFilter(filters)
             );
             if (!customInstances || customInstances.length === 0) {
                 return { items: [], total: 0 };
             }
 
             const total = (customInstances as any).totalCount ?? customInstances.length;
-            const paginatedInstances = this._paginate(customInstances, pagination);
-
-            const items = paginatedInstances.map((inst: any) => {
+            const items = customInstances.map((inst: any) => {
                 const overrideStatus = inst.status === 'COMPLETED' ? 'COMPLETED' : undefined;
                 return this._buildTaskCard(inst, overrideStatus);
             });
@@ -464,18 +477,47 @@ export class InboxProcessor {
         }
     }
 
-    async getDashboardSummary(sapUser: string, userJwt?: string) {
+    async getDashboardSummary(
+        sapUser: string,
+        userJwt?: string,
+        options?: {
+            top?: number;
+            skip?: number;
+            category?: TaskCategory;
+            documentType?: string;
+            status?: 'In Approving' | 'Completed';
+        }
+    ) {
         this.logger.info(`Generating dashboard summary for user: ${sapUser}`);
+        const statusFilter = options?.status === 'Completed'
+            ? APPROVED_TASK_STATUSES
+            : options?.status === 'In Approving'
+                ? ACTIVE_TASK_STATUSES
+                : undefined;
+        const detailFilters: string[] = [];
+        if (options?.category) detailFilters.push(TASK_CATEGORY_FILTER_BY_KEY[options.category]);
+        if (options?.documentType) {
+            detailFilters.push(`DocumentType eq '${options.documentType.replace(/'/g, "''")}'`);
+        }
         const [statusCountsRaw, docTypeCounts, customInstances] = await Promise.all([
             this.sapOdataAdapter.getStatusCounts(sapUser, userJwt).catch(() => []),
             this.sapOdataAdapter.getDocTypeCounts(sapUser, userJwt).catch(() => []),
-            this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => [])
+            this.sapOdataAdapter.getInstances(
+                sapUser,
+                statusFilter,
+                userJwt,
+                undefined,
+                { top: options?.top ?? 50, skip: options?.skip ?? 0 },
+                undefined,
+                detailFilters.length > 0 ? detailFilters.join(' and ') : undefined
+            ).catch(() => [])
         ]);
+        const detailTotal = Number((customInstances as any).totalCount ?? customInstances.length);
 
         const statusCounts = statusCountsRaw.map((s: any) => {
             const rawStatus = (s.WorkflowTaskStatus || '').toUpperCase().trim();
             let statusLabel = 'In Approving';
-            if (rawStatus === 'COMPLETED' || rawStatus === 'COMPLETE') {
+            if (['APPROVED', 'COMPLETED', 'COMPLETE', 'REJECTED', 'CANCELLED', 'CANCELED'].includes(rawStatus)) {
                 statusLabel = 'Completed';
             }
             return {
@@ -526,7 +568,56 @@ export class InboxProcessor {
             statusCounts,
             docTypeCounts,
             items,
-            total: items.length
+            total: detailTotal
+        };
+    }
+
+    private _buildTaskFilter(filters?: { category?: TaskCategory; search?: string }): string | undefined {
+        const conditions: string[] = [];
+        if (filters?.category) conditions.push(TASK_CATEGORY_FILTER_BY_KEY[filters.category]);
+        const search = filters?.search?.trim().replace(/'/g, "''");
+        if (search) {
+            conditions.push(
+                `(contains(DocumentNumber,'${search}') or contains(CreatedByUser,'${search}') or contains(DocumentTypeText,'${search}'))`
+            );
+        }
+        return conditions.length > 0 ? conditions.join(' and ') : undefined;
+    }
+
+    async getStatusCounts(sapUser: string, userJwt?: string) {
+        const rows = await this.sapOdataAdapter.getStatusCounts(sapUser, userJwt);
+        let inApproval = 0;
+        let completed = 0;
+        for (const row of rows) {
+            if (row.WorkflowTaskStatus === 'IN PROCESSING') inApproval += Number(row.RequestCount || 0);
+            if (row.WorkflowTaskStatus === 'COMPLETED') completed += Number(row.RequestCount || 0);
+        }
+        return { total: inApproval + completed, inApproval, completed };
+    }
+
+    async getCategoryCounts(sapUser: string, scope: 'my' | 'approved' = 'my', userJwt?: string) {
+        this.logger.info(`Fetching category counts for user: ${sapUser}, scope: ${scope}`);
+        const statuses = scope === 'approved' ? APPROVED_TASK_STATUSES : ACTIVE_TASK_STATUSES;
+
+        // Query server count for each category in parallel via $top=0&$count=true
+        const results = await Promise.allSettled(
+            (Object.entries(TASK_CATEGORY_FILTER_BY_KEY) as [TaskCategory, string][]).map(async ([category, filter]) => ({
+                category,
+                count: await this.sapOdataAdapter.getCategoryCount(sapUser, statuses, filter, userJwt),
+            }))
+        );
+        const counts: Record<TaskCategory, number | null> = { PR: null, PO: null, RESERVATION: null, CLAIM: null };
+        for (const result of results) {
+            if (result.status === 'fulfilled') counts[result.value.category] = result.value.count;
+        }
+
+        const availableCounts = Object.values(counts).filter((count): count is number => count !== null);
+        const total = availableCounts.reduce((sum, count) => sum + count, 0);
+
+        return {
+            ...counts,
+            ALL: total,
+            complete: availableCounts.length === Object.keys(counts).length,
         };
     }
 
@@ -671,19 +762,6 @@ export class InboxProcessor {
             return cached ? cached.normalTask : false;
         }
     }
-
-    /**
-     * Slice instance array according to top/skip pagination params.
-     */
-    private _paginate<T>(instances: T[], pagination?: { top?: number; skip?: number }): T[] {
-        if (pagination?.top === undefined && pagination?.skip === undefined) {
-            return instances;
-        }
-        const skip = pagination.skip ?? 0;
-        const top = pagination.top ?? instances.length;
-        return instances.length > top ? instances.slice(skip, skip + top) : instances;
-    }
-
 
     private _buildTaskCard(inst: any, overrideStatus?: string) {
         const objectType = resolveObjectTypeFromInstance(inst, 'PR');
