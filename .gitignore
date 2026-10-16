@@ -10,6 +10,7 @@ db.sqlite-shm
 .cdsrc-private.json
 package-lock.json
 dist/
+app/cnma_approval_ui/.pwa-test-*/
 resources/
 .DS_Store
 *.zip

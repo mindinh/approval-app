@@ -14,7 +14,7 @@
       "authenticationType": "none"
     },
     {
-      "source": "^/(web-manifest\\.json|pwa-icon-.*\\.png|apple-touch-icon\\.png|favicon\\.svg|RESOURCE_FAVICON\\.png|sw\\.js)$",
+      "source": "^/(web-manifest\\.json|sap-.*\\.png|pwa-icon-.*\\.png|apple-touch-icon\\.png|favicon\\.svg|RESOURCE_FAVICON\\.png|sw\\.js)$",
       "target": "/$1",
       "localDir": "resources/cnma",
       "authenticationType": "none"

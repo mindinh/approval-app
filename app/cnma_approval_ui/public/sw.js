@@ -1,14 +1,14 @@
-const CACHE_NAME = "prorequest-v1";
+const CACHE_NAME = "prorequest-v2-sap-icons";
 
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./web-manifest.json",
-  "./pwa-icon-192.png",
-  "./pwa-icon-512.png",
-  "./apple-touch-icon.png",
-  "./favicon.svg",
-  "./RESOURCE_FAVICON.png"
+  "./sap-pwa-icon-192.png",
+  "./sap-pwa-icon-512.png",
+  "./sap-pwa-icon-maskable-512.png",
+  "./sap-apple-touch-icon.png",
+  "./sap-favicon.png"
 ];
 
 self.addEventListener("install", (event) => {

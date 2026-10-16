@@ -22,7 +22,7 @@ if (appleTouchIcon) {
     const pathSegments = window.location.pathname.split('/');
     pathSegments.pop(); // Remove index.html or last filename if present
     const basePath = pathSegments.join('/') + '/';
-    const absoluteIconUrl = new URL(`${basePath}apple-touch-icon.png`.replace(/\/+/g, '/'), window.location.origin).href;
+    const absoluteIconUrl = new URL(`${basePath}sap-apple-touch-icon.png`.replace(/\/+/g, '/'), window.location.origin).href;
     appleTouchIcon.setAttribute('href', absoluteIconUrl);
     console.log('[PWA] Resolved absolute apple-touch-icon URL:', absoluteIconUrl);
 }

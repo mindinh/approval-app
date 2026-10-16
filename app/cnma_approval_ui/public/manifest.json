@@ -20,7 +20,7 @@
           "action": "approve",
           "title": "My Approval",
           "subTitle": "Workflow Task Management",
-          "icon": "apple-touch-icon.png"
+          "icon": "sap-apple-touch-icon.png"
         }
       }
     }
@@ -33,7 +33,7 @@
     "technology": "UI5",
     "fullWidth": true,
     "icons": {
-      "icon": "apple-touch-icon.png"
+      "icon": "sap-apple-touch-icon.png"
     },
     "deviceTypes": {
       "desktop": true,

@@ -32,7 +32,7 @@
       "csrfProtection": false
     },
     {
-      "source": "^/(logout-page\\.html|web-manifest\\.json|pwa-icon-.*\\.png|apple-touch-icon\\.png|RESOURCE_FAVICON\\.png|favicon\\.svg|sw\\.js)$",
+      "source": "^/(logout-page\\.html|web-manifest\\.json|sap-.*\\.png|pwa-icon-.*\\.png|apple-touch-icon\\.png|RESOURCE_FAVICON\\.png|favicon\\.svg|sw\\.js)$",
       "target": "/$1",
       "service": "html5-apps-repo-rt",
       "authenticationType": "none"
