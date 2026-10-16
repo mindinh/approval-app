@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Inbox, ClipboardCheck, LayoutDashboard } from 'lucide-react';
 import { useIsMobile } from '@cnma/react-ui';
 import { useMobileNav } from '@/contexts/MobileNavContext';
-import { useTasks } from '@/pages/Inbox/hooks/inboxQueries';
+import { useStatusCounts } from '@/pages/Inbox/hooks/inboxQueries';
 import { cn } from '@/lib/utils';
 
 export function MobileBottomBar() {
@@ -15,8 +15,8 @@ export function MobileBottomBar() {
     const { isBottomBarVisible, currentTab } = useMobileNav();
 
     // Query pending task count for the badge
-    const { data: myTasksData } = useTasks({ enabled: isMobile });
-    const pendingCount = myTasksData?.total ?? 0;
+    const { data: taskCounts } = useStatusCounts({ enabled: isMobile });
+    const pendingCount = taskCounts?.inApproval ?? 0;
 
     if (!isMobile) return null;
 

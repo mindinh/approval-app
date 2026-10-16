@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { inboxKeys } from '@/pages/Inbox/hooks/inboxKeys';
 import type { DashboardTask, StatusCountItem, DocTypeCountItem } from '@/services/inbox/inbox.types';
@@ -63,6 +63,8 @@ export function normalizeDashboardStatus(raw: string): string {
         case 'COMPLETED':
         case 'COMPLETE':
         case 'REJECTED':
+        case 'CANCELLED':
+        case 'CANCELED':
             return 'Completed';
         default:
             return 'In Approving'; // Default unknown statuses to In Approving
@@ -137,11 +139,17 @@ export interface TableRow {
 }
 
 // ─── API Query Hook ───────────────────────────────────────
-export function useDashboardQuery(options?: { enabled?: boolean }) {
+export function useDashboardQuery(
+    params?: { top?: number; skip?: number; category?: string; documentType?: string; status?: string },
+    options?: { enabled?: boolean }
+) {
     return useQuery({
-        queryKey: inboxKeys.dashboard(),
-        queryFn: () => inboxApi.getDashboard(),
+        queryKey: [...inboxKeys.dashboard(), params ?? {}],
+        queryFn: () => inboxApi.getDashboard(params),
         staleTime: 5 * 60 * 1000,  // 5 min
+        // Filter and pagination changes must not replace the whole dashboard with
+        // its initial skeleton while the next server result is being fetched.
+        placeholderData: keepPreviousData,
         refetchOnWindowFocus: true,
         ...options
     });
@@ -243,8 +251,35 @@ export function useDashboardData(
             else g.inApprovingCount++;
         }
 
+        if (docTypeCounts && docTypeCounts.length > 0) {
+            const aggregateGroups = new Map<string, TaskTypeCount>();
+            for (const item of docTypeCounts) {
+                const rawDocType = item.DocumentType || 'Standard';
+                const type = getDocTypeDescription(rawDocType, item.DocumentTypeText);
+                const category = resolveCategory(item.DocCategory, rawDocType, item.DocumentTypeText);
+                const status = normalizeDashboardStatus(item.Status);
+                const count = Number(item.RequestCount || 0);
+                const aggregate = aggregateGroups.get(type);
+                if (aggregate) {
+                    aggregate.count += count;
+                    if (status === 'Completed') aggregate.completedCount += count;
+                    else aggregate.inApprovingCount += count;
+                } else {
+                    aggregateGroups.set(type, {
+                        type,
+                        rawDocType,
+                        category,
+                        count,
+                        inApprovingCount: status === 'Completed' ? 0 : count,
+                        completedCount: status === 'Completed' ? count : 0,
+                    });
+                }
+            }
+            return Array.from(aggregateGroups.values()).sort((a, b) => b.count - a.count);
+        }
+
         return Array.from(groups.values()).sort((a, b) => b.count - a.count);
-    }, [normalizedTasks]);
+    }, [docTypeCounts, normalizedTasks]);
 
     // 5b. Category roll-ups for the 4 overview cards (total / pending / completed).
     // Total always represents the grand total across all statuses (In Approving + Completed).
@@ -265,8 +300,33 @@ export function useDashboardData(
             }
         }
 
+        if (docTypeCounts && docTypeCounts.length > 0) {
+            const aggregateTotal = EMPTY_CATEGORY_COUNTS();
+            const aggregatePending = EMPTY_CATEGORY_COUNTS();
+            const aggregateCompleted = EMPTY_CATEGORY_COUNTS();
+            for (const item of docTypeCounts) {
+                const category = resolveCategory(item.DocCategory, item.DocumentType, item.DocumentTypeText);
+                const count = Number(item.RequestCount || 0);
+                const status = normalizeDashboardStatus(item.Status);
+                aggregateTotal[category] += count;
+                aggregateTotal.ALL += count;
+                if (status === 'Completed') {
+                    aggregateCompleted[category] += count;
+                    aggregateCompleted.ALL += count;
+                } else {
+                    aggregatePending[category] += count;
+                    aggregatePending.ALL += count;
+                }
+            }
+            return {
+                categoryCounts: aggregateTotal,
+                pendingCounts: aggregatePending,
+                completedCounts: aggregateCompleted,
+            };
+        }
+
         return { categoryCounts: total, pendingCounts: pending, completedCounts: completed };
-    }, [normalizedTasks]);
+    }, [docTypeCounts, normalizedTasks]);
 
     // 5d. The task list is capped at 1000 rows server-side. When the status aggregate
     //     reports more than we received, the per-type and per-category splits above are

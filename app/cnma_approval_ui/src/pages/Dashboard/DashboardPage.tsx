@@ -57,8 +57,16 @@ export default function DashboardPage() {
         documentType: '',
         category: '',
     }));
+    const [tablePage, setTablePage] = useState(1);
+    const tablePageSize = 50;
     // Fetch master tasks data
-    const { data: dashboardData, isLoading, isError, refetch, isRefetching } = useDashboardQuery();
+    const { data: dashboardData, isLoading, isError, refetch, isRefetching } = useDashboardQuery({
+        top: tablePageSize,
+        skip: (tablePage - 1) * tablePageSize,
+        category: appliedFilters.category || undefined,
+        documentType: appliedFilters.documentType || undefined,
+        status: appliedFilters.status?.[0],
+    });
     const tasks = dashboardData?.items ?? [];
 
     // Derives filtered sets, KPI numbers, and charts data
@@ -74,8 +82,14 @@ export default function DashboardPage() {
         isTruncated,
     } = useDashboardData(tasks, appliedFilters, dashboardData?.statusCounts, dashboardData?.docTypeCounts);
 
+    const tableTotal = dashboardData?.total ?? tableRows.length;
+    const tablePageCount = Math.max(1, Math.ceil(tableTotal / tablePageSize));
+    const currentTablePage = Math.min(tablePage, tablePageCount);
+    const paginatedTableRows = tableRows;
+
     // ── Handlers ─────────────────────────────────────────
     const handleFilterClear = useCallback(() => {
+        setTablePage(1);
         setAppliedFilters({
             status: [],
             documentType: '',
@@ -84,10 +98,12 @@ export default function DashboardPage() {
     }, []);
 
     const handleCategorySelect = useCallback((category: CategoryType | '') => {
+        setTablePage(1);
         setAppliedFilters((prev) => ({ ...prev, category }));
     }, []);
 
     const handleTypeSelect = useCallback((documentType: string) => {
+        setTablePage(1);
         setAppliedFilters((prev) => ({ ...prev, documentType }));
     }, []);
 
@@ -95,6 +111,7 @@ export default function DashboardPage() {
     // Status is a single choice: the donut reports one slice at a time, and picking
     // both statuses would be indistinguishable from picking none.
     const handleStatusSelect = useCallback((status: string | null) => {
+        setTablePage(1);
         setAppliedFilters((prev) => ({ ...prev, status: status ? [status] : [] }));
     }, []);
 
@@ -238,11 +255,11 @@ export default function DashboardPage() {
                         completedCounts={completedCounts}
                     />
 
-                    {/* Per-type splits come from the task list, which the server caps at 1000 rows */}
+                    {/* Detail rows and status splits still come from the capped task sample. */}
                     {isTruncated && (
                         <p className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
                             <AlertCircle size={12} />
-                            {t('dashboard.truncatedNotice', 'Category and type breakdowns cover the 1000 most recent tasks.')}
+                            {t('dashboard.truncatedNotice', 'Detail rows and status splits cover the 1000 most recent tasks; category and type totals use the full SAP aggregates.')}
                         </p>
                     )}
 
@@ -266,7 +283,7 @@ export default function DashboardPage() {
                                         : appliedFilters.status?.length
                                             ? t('dashboard.charts.filteredBy', { filter: appliedFilters.status.join(', ') })
                                             : t('dashboard.charts.allTasks')}
-                                    {tableRows.length > 0 && ` — ${t('dashboard.itemsCount', { count: tableRows.length })}`}
+                                    {tableTotal > 0 && ` — ${t('dashboard.itemsCount', { count: tableTotal })}`}
                                 </p>
                             </div>
                         </div>
@@ -278,11 +295,11 @@ export default function DashboardPage() {
                                 </div>
                             ) : isMobile ? (
                                 <div className="flex flex-col border-t border-border divide-y divide-border bg-white">
-                                    {tableRows.map((row, idx) => (
+                                    {paginatedTableRows.map((row, idx) => (
                                         <div key={`${row.docNumber}-${idx}`} className="flex relative items-center p-4 hover:bg-muted/50 transition-colors">
                                             {/* Left - Index */}
                                             <div className="w-8 text-xs font-bold text-muted-foreground shrink-0 mt-0.5">
-                                                {idx + 1}
+                                                {(currentTablePage - 1) * tablePageSize + idx + 1}
                                             </div>
 
                                             {/* Middle - Doc Number & Type */}
@@ -334,10 +351,10 @@ export default function DashboardPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {tableRows.map((row, idx) => (
+                                        {paginatedTableRows.map((row, idx) => (
                                             <TableRow key={`${row.docNumber}-${idx}`} className="bg-white">
                                                 <TableCell className="px-5 py-3.5 text-xs md:text-sm font-semibold text-muted-foreground">
-                                                    {idx + 1}
+                                                    {(currentTablePage - 1) * tablePageSize + idx + 1}
                                                 </TableCell>
                                                 <TableCell className="px-5 py-3.5 text-xs md:text-sm font-bold text-primary">
                                                     {row.docNumber}
@@ -359,6 +376,36 @@ export default function DashboardPage() {
                                 </Table>
                             )}
                         </div>
+                        {tableTotal > 0 && (
+                            <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 text-xs text-muted-foreground">
+                                <span>
+                                    {t('dashboard.pagination.showing', {
+                                        start: (currentTablePage - 1) * tablePageSize + 1,
+                                        end: Math.min(currentTablePage * tablePageSize, tableTotal),
+                                        total: tableTotal,
+                                        defaultValue: `Showing ${(currentTablePage - 1) * tablePageSize + 1} to ${Math.min(currentTablePage * tablePageSize, tableTotal)} of ${tableTotal}`,
+                                    })}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        className="h-7 min-w-0 px-2 text-[11px]"
+                                        disabled={currentTablePage === 1}
+                                        onClick={() => setTablePage(Math.max(1, currentTablePage - 1))}
+                                    >
+                                        {t('common.previous', 'Previous')}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="h-7 min-w-0 px-2 text-[11px]"
+                                        disabled={currentTablePage === tablePageCount}
+                                        onClick={() => setTablePage(Math.min(tablePageCount, currentTablePage + 1))}
+                                    >
+                                        {t('common.next', 'Next')}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 </div>
             )}

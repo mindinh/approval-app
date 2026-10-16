@@ -200,14 +200,13 @@ function AppSidebar() {
     }
 
     const items = [
-        { value: 'home', label: t('nav.home', 'Home'), icon: Home, route: '/home', mobileOnly: true },
+        { value: 'home', label: t('nav.home', 'Home'), icon: Home, route: '/home' },
         { value: 'my', label: t('nav.myTasks', 'My Tasks'), icon: Inbox, route: '/inbox' },
         { value: 'approved', label: t('nav.approvedTasks', 'Approved Tasks'), icon: ClipboardCheck, route: '/approved' },
         { value: 'dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard, route: '/dashboard' },
     ];
 
-    // Filter items based on viewport type
-    const filteredItems = items.filter(item => !item.mobileOnly || isMobile);
+    const filteredItems = items;
 
     const handleNavItemClick = (item: typeof items[0]) => {
         setLocalActiveTab(item.value);

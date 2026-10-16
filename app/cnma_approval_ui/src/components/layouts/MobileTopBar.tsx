@@ -77,7 +77,7 @@ export function MobileTopBar({ title, className, embedded = false }: MobileTopBa
                 "px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex items-center justify-between shadow-xs relative z-20 shrink-0 min-h-[52px]",
                 className
             )}
-            style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' }}
+            style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 20%, var(--primary-hover) 100%)' }}
         >
             <div className="flex items-center gap-2 min-w-0 flex-1 max-w-[70%]">
                 <div className="size-7 rounded-full bg-white/20 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-white/30 shadow-2xs">

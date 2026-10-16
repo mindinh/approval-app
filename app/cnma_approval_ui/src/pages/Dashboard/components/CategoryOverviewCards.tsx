@@ -62,18 +62,6 @@ const CARD_CATEGORIES: Array<{
         },
     },
     {
-        category: 'RESV',
-        labelKey: 'dashboard.categories.resv',
-        fallbackLabel: 'Reservation',
-        style: {
-            badge: 'bg-warning text-white',
-            surface: 'bg-warning-bg border-warning',
-            ring: 'ring-2 ring-warning/20',
-            accent: 'text-warning',
-            bar: '[&>[data-slot=progress-indicator]]:bg-warning',
-        },
-    },
-    {
         category: 'CLAIM',
         labelKey: 'dashboard.categories.claim',
         fallbackLabel: 'Claim Form',
@@ -85,6 +73,18 @@ const CARD_CATEGORIES: Array<{
             bar: '[&>[data-slot=progress-indicator]]:bg-success',
         },
     },
+    {
+        category: 'RESV',
+        labelKey: 'dashboard.categories.resv',
+        fallbackLabel: 'Reservation',
+        style: {
+            badge: 'bg-warning text-white',
+            surface: 'bg-warning-bg border-warning',
+            ring: 'ring-2 ring-warning/20',
+            accent: 'text-warning',
+            bar: '[&>[data-slot=progress-indicator]]:bg-warning',
+        },
+    }
 ];
 
 interface CategoryOverviewCardsProps {
