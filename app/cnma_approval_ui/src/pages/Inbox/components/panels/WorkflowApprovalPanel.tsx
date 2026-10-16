@@ -11,6 +11,7 @@ import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
     isInApprovingStatus,
+    isPendingVerifyStatus,
     isRejectedApprovalStatus,
     isApprovedApprovalStatus,
     formatApprovalStatus,
@@ -71,11 +72,12 @@ export function WorkflowApprovalPanel({
                         const statusRaw = normalizeApprovalStatus(step.status);
                         const isRejected = isRejectedApprovalStatus(step.status);
                         const isApproved = isApprovedApprovalStatus(step.status);
+                        const isPendingVerify = isPendingVerifyStatus(step.status);
 
-                        const isCurrent = index === currentIndex && !isRejected && !isApproved;
+                        const isCurrent = (index === currentIndex || isPendingVerify) && !isRejected && !isApproved;
                         const isNext = index === nextIndex && !isRejected && !isApproved;
                         const isCompleted = isApproved || (currentIndex >= 0 ? index < currentIndex && !isRejected : false);
-                        const isPending = !isCompleted && !isCurrent && !isRejected;
+                        const isPending = !isCompleted && !isCurrent && !isRejected && !isPendingVerify;
 
                         const isExpanded = expandedStepLevels.includes(step.level);
 
@@ -88,7 +90,7 @@ export function WorkflowApprovalPanel({
                                 lineClasses = "border-l-2 border-dotted border-destructive/50 w-0.5";
                             } else if (isCompleted) {
                                 lineClasses = "bg-success w-0.5";
-                            } else if (isCurrent) {
+                            } else if (isCurrent || isPendingVerify) {
                                 lineClasses = "border-l-2 border-dotted border-warning/40 w-0.5";
                             } else {
                                 lineClasses = "border-l-2 border-dotted border-border w-0.5";
@@ -114,7 +116,7 @@ export function WorkflowApprovalPanel({
                                             <div className="flex items-center justify-center size-7 rounded-full bg-success text-white shadow-sm ring-4 ring-card">
                                                 <CheckCircle2 className="size-4" />
                                             </div>
-                                        ) : isCurrent ? (
+                                        ) : (isCurrent || isPendingVerify) ? (
                                             <div className="flex items-center justify-center size-7 rounded-full bg-warning/15 text-warning ring-4 ring-card font-medium text-xs">
                                                 <Loader2 className="size-3.5 animate-spin" />
                                             </div>
@@ -143,13 +145,18 @@ export function WorkflowApprovalPanel({
                                     <div className="flex items-start justify-between">
                                         <h4 className={cn(
                                             "text-base flex items-center gap-2 font-semibold truncate mb-1.5",
-                                            isRejected ? "text-destructive" : isCurrent ? "text-foreground" : "text-foreground/80",
+                                            isRejected ? "text-destructive" : (isCurrent || isPendingVerify) ? "text-foreground" : "text-foreground/80",
                                             isPending && "text-muted-foreground"
                                         )}>
                                             <span>{title}</span>
                                             {isRejected && <Badge variant="destructive" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Rejected</Badge>}
-                                            {isCurrent && <Badge variant="warning" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Current</Badge>}
-                                            {isNext && <Badge variant="info" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Next</Badge>}
+                                            {isPendingVerify ? (
+                                                <Badge variant="warning" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Pending Verify</Badge>
+                                            ) : isCurrent ? (
+                                                <Badge variant="warning" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Current</Badge>
+                                            ) : isNext ? (
+                                                <Badge variant="info" className="h-5 px-1.5 text-xs uppercase tracking-wider font-semibold">Next</Badge>
+                                            ) : null}
                                         </h4>
                                     </div>
 
@@ -162,11 +169,15 @@ export function WorkflowApprovalPanel({
                                                     ? "text-destructive font-semibold"
                                                     : isCompleted
                                                     ? "text-success"
-                                                    : isCurrent
-                                                    ? "text-warning"
+                                                    : (isCurrent || isPendingVerify)
+                                                    ? "text-warning font-semibold"
                                                     : "text-muted-foreground"
                                             )}>
-                                                {isCurrent && statusRaw === 'PENDING' ? 'In Approving' : formatApprovalStatus(statusRaw)}
+                                                {isPendingVerify
+                                                    ? 'Pending Verify'
+                                                    : isCurrent && statusRaw === 'PENDING'
+                                                    ? 'In Approving'
+                                                    : formatApprovalStatus(statusRaw)}
                                             </span>
                                         </div>
 

@@ -38,6 +38,8 @@ export function StatusBadge({ status }: { status?: string }) {
         IN_APPROVING: 'inApproving',
         PENDING_APPROVAL: 'pendingApproval',
         PARTIALLY_APPROVED: 'partiallyApproved',
+        PENDING_VERIFY: 'pendingVerify',
+        VERIFIED: 'verified',
         STARTED: 'inApproving',
         COMPLETED: 'completed',
         COMPLETE: 'completed',

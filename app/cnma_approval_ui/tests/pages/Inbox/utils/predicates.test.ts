@@ -3,6 +3,7 @@ import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
     isInApprovingStatus,
+    isPendingVerifyStatus,
     isRejectedApprovalStatus,
     isApprovedApprovalStatus,
     formatApprovalStatus,
@@ -34,14 +35,14 @@ describe('normalizeApprovalStatus', () => {
 });
 
 describe('isPendingApprovalStatus', () => {
-    it.each(['PENDING', 'IN_PROCESS', 'IN APPROVING', 'IN_APPROVING', 'CURRENT', 'OPEN'])(
+    it.each(['PENDING', 'IN_PROCESS', 'IN APPROVING', 'IN_APPROVING', 'CURRENT', 'OPEN', 'Pending Verify', 'PENDING_VERIFY', 'PENDING_VERIFICATION'])(
         'returns true for %s',
         (status) => {
             expect(isPendingApprovalStatus(status)).toBe(true);
         }
     );
 
-    it.each(['pending', 'in_process', 'in approving', 'in_approving', 'current', 'open'])(
+    it.each(['pending', 'in_process', 'in approving', 'in_approving', 'current', 'open', 'pending verify'])(
         'returns true for lowercase variant %s',
         (status) => {
             expect(isPendingApprovalStatus(status)).toBe(true);
@@ -63,6 +64,21 @@ describe('isPendingApprovalStatus', () => {
     it('returns false for unknown statuses', () => {
         expect(isPendingApprovalStatus('COMPLETED')).toBe(false);
         expect(isPendingApprovalStatus('RANDOM_STATUS')).toBe(false);
+    });
+});
+
+describe('isPendingVerifyStatus', () => {
+    it.each(['Pending Verify', 'PENDING_VERIFY', 'PENDING_VERIFICATION', 'pending verify'])(
+        'returns true for %s',
+        (status) => {
+            expect(isPendingVerifyStatus(status)).toBe(true);
+        }
+    );
+
+    it('returns false for standard PENDING or APPROVED', () => {
+        expect(isPendingVerifyStatus('PENDING')).toBe(false);
+        expect(isPendingVerifyStatus('APPROVED')).toBe(false);
+        expect(isPendingVerifyStatus(undefined)).toBe(false);
     });
 });
 
@@ -105,7 +121,7 @@ describe('isRejectedApprovalStatus', () => {
 });
 
 describe('isApprovedApprovalStatus', () => {
-    it.each(['APPROVED', 'APPROVE', 'ACCEPT', 'ACCEPTED', 'COMPLETED', 'COMPLETE'])(
+    it.each(['APPROVED', 'APPROVE', 'ACCEPT', 'ACCEPTED', 'COMPLETED', 'COMPLETE', 'VERIFIED', 'Verified'])(
         'returns true for %s',
         (status) => {
             expect(isApprovedApprovalStatus(status)).toBe(true);
@@ -115,6 +131,7 @@ describe('isApprovedApprovalStatus', () => {
     it('returns false for REJECTED or PENDING', () => {
         expect(isApprovedApprovalStatus('REJECTED')).toBe(false);
         expect(isApprovedApprovalStatus('PENDING')).toBe(false);
+        expect(isApprovedApprovalStatus('Pending Verify')).toBe(false);
     });
 });
 
@@ -137,6 +154,11 @@ describe('formatApprovalStatus', () => {
 
     it('formats snake_case with multiple underscores correctly', () => {
         expect(formatApprovalStatus('READY_FOR_APPROVAL')).toBe('Ready For Approval');
+    });
+
+    it('formats Pending Verify and PENDING_VERIFY correctly', () => {
+        expect(formatApprovalStatus('Pending Verify')).toBe('Pending Verify');
+        expect(formatApprovalStatus('PENDING_VERIFY')).toBe('Pending Verify');
     });
 });
 

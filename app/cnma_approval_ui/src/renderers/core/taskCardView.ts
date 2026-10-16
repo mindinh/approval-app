@@ -52,13 +52,13 @@ export function extractTaskEntityRecord(task: InboxTask, cachedDetail?: any): Ra
 /**
  * Formats dynamic backend chips if present.
  */
-function formatDynamicChip(chip: any, task: InboxTask): BusinessChip {
+function formatDynamicChip(chip: any, task: InboxTask, amountLocale?: string): BusinessChip {
     let formattedValue = '';
 
     switch (chip.dataType) {
         case 'AMOUNT': {
             const currency = chip.currency || task.curr_vnd || task.doc_curr || 'VND';
-            formattedValue = formatAmountWithCurrency(chip.value, currency);
+            formattedValue = formatAmountWithCurrency(chip.value, currency, amountLocale);
             break;
         }
         case 'DATE': {
@@ -101,7 +101,8 @@ export function evalTaskCardChips(
 ): BusinessChip[] {
     // 1. If backend dynamic chips exist, format and return them
     if (task.businessChips && task.businessChips.length > 0) {
-        return task.businessChips.map((chip) => formatDynamicChip(chip, task));
+        const amountLocale = viewDef.docCategory === 'CLAIM' ? 'vi-VN' : undefined;
+        return task.businessChips.map((chip) => formatDynamicChip(chip, task, amountLocale));
     }
 
     // 2. If object view has defined cardChips, evaluate them

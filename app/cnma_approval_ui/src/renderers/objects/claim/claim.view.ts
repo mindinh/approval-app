@@ -10,7 +10,7 @@ export const CLAIM_VIEW: ObjectViewDefinition = {
         stripeClass: 'before:bg-success'
     },
     cardChips: [
-        chip(amount({ value: 'PaymentAmountLocalCrcy|PaymentAmount|TotalNetAmountLocalCrcy|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total' }), true),
+        chip(amount({ value: 'PaymentAmountLocalCrcy|PaymentAmount|TotalNetAmountLocalCrcy|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total', locale: 'vi-VN' }), true),
         chip(text({ source: 'DocumentTypeText|doctyp_desc|ClaimTypeText|documentTypeDisplay|DocumentType|DocCategory', label: 'Type' })),
     ],
     overviewCard: {
@@ -26,8 +26,21 @@ export const CLAIM_VIEW: ObjectViewDefinition = {
             CLAIM_OVERVIEW_FIELDS.vendor,
             CLAIM_OVERVIEW_FIELDS.paymentAmount,
             CLAIM_OVERVIEW_FIELDS.totalAmount,
+            CLAIM_OVERVIEW_FIELDS.note,
         ]
     },
+    overviewCards: [
+        {
+            id: 'claim-verification',
+            title: 'Verification',
+            fields: [
+                CLAIM_OVERVIEW_FIELDS.veriStatus,
+                CLAIM_OVERVIEW_FIELDS.veriBy,
+                CLAIM_OVERVIEW_FIELDS.veriDate,
+                CLAIM_OVERVIEW_FIELDS.veriComment,
+            ]
+        }
+    ],
     lineItemTable: {
         id: 'claim-items',
         title: 'Line Items',

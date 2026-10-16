@@ -76,10 +76,24 @@ export function resolveObjectView(
     const cards: DetailCardModel[] = [];
     const tables: DetailTableModel[] = [];
 
-    // 1. Evaluate Overview Card
+    // 1. Evaluate Overview Card(s)
+    const cardDefs: CardDefinition[] = [];
     if (definition.overviewCard) {
+        cardDefs.push(definition.overviewCard);
+    }
+    if (Array.isArray(definition.overviewCards)) {
+        cardDefs.push(...definition.overviewCards);
+    }
+    if (Array.isArray(definition.cards)) {
+        cardDefs.push(...definition.cards);
+    }
+
+    for (const cardDef of cardDefs) {
+        if (!cardDef) continue;
+        if (cardDef.predicate && !cardDef.predicate(businessObject)) continue;
+
         const cardFields: DetailField[] = [];
-        for (const fieldDef of (definition.overviewCard.fields || [])) {
+        for (const fieldDef of (cardDef.fields || [])) {
             if (!fieldDef) continue;
             const evaluated = evalField(fieldDef, businessObject);
             if (evaluated) {
@@ -87,8 +101,8 @@ export function resolveObjectView(
             }
         }
         cards.push({
-            id: definition.overviewCard.id,
-            title: definition.overviewCard.title,
+            id: cardDef.id,
+            title: cardDef.title,
             fields: cardFields
         });
     }

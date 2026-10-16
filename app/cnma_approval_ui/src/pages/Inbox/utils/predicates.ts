@@ -32,6 +32,13 @@ const PENDING_STATUS_KEYS = new Set([
     'IN_APPROVING',
     'CURRENT',
     'OPEN',
+    'PENDING_VERIFY',
+    'PENDING_VERIFICATION',
+]);
+
+const PENDING_VERIFY_STATUS_KEYS = new Set([
+    'PENDING_VERIFY',
+    'PENDING_VERIFICATION',
 ]);
 
 const IN_APPROVING_STATUS_KEYS = new Set([
@@ -57,6 +64,7 @@ const APPROVED_STATUS_KEYS = new Set([
     'ACCEPTED',
     'COMPLETED',
     'COMPLETE',
+    'VERIFIED',
 ]);
 
 /**
@@ -64,6 +72,13 @@ const APPROVED_STATUS_KEYS = new Set([
  */
 export function isPendingApprovalStatus(value?: string): boolean {
     return PENDING_STATUS_KEYS.has(toStatusKey(value));
+}
+
+/**
+ * Returns `true` if the approval status specifically represents a "pending verify" state.
+ */
+export function isPendingVerifyStatus(value?: string): boolean {
+    return PENDING_VERIFY_STATUS_KEYS.has(toStatusKey(value));
 }
 
 /**
@@ -89,11 +104,13 @@ export function isApprovedApprovalStatus(value?: string): boolean {
 
 /**
  * Format a raw approval status string into a human-readable label.
- * Example: `'IN_PROCESS'` → `'In Process'`
+ * Example: `'IN_PROCESS'` → `'In Process'`, `'PENDING_VERIFY'` → `'Pending Verify'`
  */
 export function formatApprovalStatus(value?: string): string {
     const status = normalizeApprovalStatus(value);
     if (status === 'UNKNOWN') return 'Unknown';
+    if (status === 'PENDING VERIFY' || status === 'PENDING_VERIFY') return 'Pending Verify';
+    if (status === 'VERIFIED') return 'Verified';
     return status
         .toLowerCase()
         .replace(/_/g, ' ')

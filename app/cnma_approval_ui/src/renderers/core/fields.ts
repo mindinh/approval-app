@@ -45,6 +45,7 @@ export function codeText(config: {
 export function amount(config: {
     value: string;
     currency?: string;
+    locale?: string;
     label: string;
     key?: string;
     align?: 'left' | 'center' | 'right';
@@ -59,7 +60,7 @@ export function amount(config: {
         align: config.align || 'right',
         formatter: (val, record) => {
             const curr = String(getRecordVal(record, currencySource) || '');
-            return formatRawAmount(val, curr || undefined);
+            return formatRawAmount(val, curr || undefined, config.locale);
         }
     };
 }
@@ -100,7 +101,7 @@ export function date(config: {
         source: config.source,
         align: config.align,
         formatter: config.formatter || ((val, record) => {
-            const timeVal = config.timeSource ? record?.[config.timeSource] : (record?.CreationTime || record?.creationTime || record?.CreatedOnTime);
+            const timeVal = config.timeSource ? (getRecordVal(record, config.timeSource) ?? record?.[config.timeSource]) : (record?.CreationTime || record?.creationTime || record?.CreatedOnTime);
             return formatRawDate(val, timeVal);
         })
     };

@@ -22,6 +22,7 @@ export interface CardDefinition {
     id: string;
     title: string;
     fields: FieldDefinition[];
+    predicate?: VisibilityPredicate;
 }
 
 export interface TableColumnDefinition {
@@ -58,6 +59,8 @@ export interface ObjectViewDefinition {
     docCategory: string;
     documentType?: string;
     overviewCard: CardDefinition;
+    overviewCards?: CardDefinition[];
+    cards?: CardDefinition[];
     lineItemTable?: TableDefinition;
     cardConfig?: TaskCardStyleConfig;
     cardChips?: TaskCardChipDefinition[];

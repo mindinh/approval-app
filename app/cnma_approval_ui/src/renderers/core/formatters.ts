@@ -31,9 +31,9 @@ export function formatRawDate(value: unknown, timeValue?: unknown): string {
     return `${day}/${month}/${year}`;
 }
 
-export function formatRawAmount(value: unknown, currency?: string): string {
+export function formatRawAmount(value: unknown, currency?: string, locale?: string): string {
     if (value === null || value === undefined || value === '') return '-';
-    return formatAmountWithCurrency(String(value), currency);
+    return formatAmountWithCurrency(String(value), currency, locale);
 }
 
 export function formatRawQuantity(value: unknown, unit?: string): string {
@@ -61,9 +61,22 @@ export function formatRawValue(value: unknown): string {
     return str === '' ? '-' : str;
 }
 
+export function formatNoteText(value: unknown): string {
+    if (value === null || value === undefined || value === '') return '-';
+    const str = String(value);
+    if (!str.trim()) return '-';
+
+    return str
+        .replace(/\r\n|\r/g, '\n')
+        .split('\n')
+        .map((line) => line.trim())
+        .join('\n')
+        .trim();
+}
+
 export function formatRawMultilineText(value: unknown, record?: any, navPropName?: string): string {
     if (typeof value === 'string' && value.trim()) {
-        return value.trim();
+        return formatNoteText(value);
     }
 
     const extractLines = (arr: any[]): string[] => {
@@ -107,6 +120,7 @@ export function formatVendorCodeAndName(record?: any): string {
     const rawCode = (record.Vendor || record.Supplier || record.VendorCode || record.vendor || record.supplier || record.vendorCode || '').trim();
     const code = rawCode === '-' ? '' : rawCode;
     const nameParts = [
+        record.VendorName || record.Name1 || record.SupplierName || '',
         record.VendorName2 || record.Name2 || '',
         record.VendorName3 || record.Name3 || '',
         record.VendorName4 || record.Name4 || ''

@@ -32,7 +32,7 @@ export function OverviewPanel({
         f.isLongText ||
         f.dataType === 'LONG_TEXT' ||
         f.dataType === 'TEXTAREA' ||
-        ['description', 'header note', 'header text', 'purpose', 'paid by', 'bank details', 'notes', 'remarks'].includes(f.label.toLowerCase());
+        ['description', 'header note', 'header text', 'purpose', 'paid by', 'bank details', 'note', 'notes', 'remarks'].includes(f.label.toLowerCase());
 
     const isReferencePrField = (key: string, label: string) => {
         const k = key.toLowerCase();
@@ -70,8 +70,14 @@ export function OverviewPanel({
                 const longTextFields = section.fields.filter((f) => checkIsLongText(f));
 
                 return (
-                    <div key={section.id} className="bg-white rounded-xl border border-border/50 p-6 shadow-xs space-y-5">
-                        <h3 className="text-base font-bold text-foreground tracking-tight border-b border-border/30 pb-3">
+                    <div key={section.id} className={cn(
+                        "bg-white rounded-xl border border-border/50 shadow-xs",
+                        isMobile ? "p-4 space-y-4" : "p-6 space-y-5"
+                    )}>
+                        <h3 className={cn(
+                            "font-bold text-foreground tracking-tight border-b border-border/30 pb-3",
+                            isMobile ? "text-sm" : "text-base"
+                        )}>
                             {section.title === 'Document Summary' ? 'Overview' : section.title}
                         </h3>
 
@@ -159,8 +165,11 @@ export function OverviewPanel({
                                                 <Textarea
                                                     readOnly
                                                     value={val}
-                                                    rows={Math.max(2, Math.min(6, val.split('\n').length))}
-                                                    className="bg-muted/20 border-border/60 text-foreground text-sm resize-none focus-visible:ring-0 cursor-default font-sans font-normal leading-relaxed transition-opacity duration-200"
+                                                    rows={Math.max(2, Math.min(8, val.split('\n').length))}
+                                                    className={cn(
+                                                        "bg-muted/20 border-border/60 text-foreground resize-none focus-visible:ring-0 cursor-default font-sans font-normal transition-opacity duration-200",
+                                                        isMobile ? "text-xs leading-relaxed p-2.5" : "text-sm leading-relaxed"
+                                                    )}
                                                 />
                                             )}
                                         </div>
