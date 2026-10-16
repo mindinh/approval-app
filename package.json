@@ -47,7 +47,9 @@
     "test": "vitest run",
     "test:perf": "vitest run tests/performance",
     "test:coverage": "vitest run --coverage",
-    "login:cf": "cf login -a https://api.cf.ap11.hana.ondemand.com/"
+    "cf:login": "cf login -a https://api.cf.ap11.hana.ondemand.com/",
+    "cf:qas": "cf target -o proconarum-vj-qas",
+    "cf:prd": "cf target -o proconarum-vietjet"
   },
   "cds": {
     "odata": {
