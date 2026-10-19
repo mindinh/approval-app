@@ -1,7 +1,7 @@
 # PWA icon verification — 2026-10-13
 
 The app's production build exposes SAP install icons generated from
-`app/cnma_approval_ui/public/sap-logo.png`. This verifies the app opened directly.
+`app/cnma_approval_ui/scripts/sap-logo.png`. This verifies the app opened directly.
 It does not verify installation of the surrounding SAP Build Work Zone site.
 
 ## Automated browser results

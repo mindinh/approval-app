@@ -1,0 +1,5 @@
+.task-detail-header { @apply shrink-0 min-w-0 bg-background border-b border-border/60; }
+.task-detail-tabs { @apply h-auto w-full shrink-0 justify-start gap-1 overflow-x-auto rounded-none border-0 bg-transparent p-0 px-4 shadow-none; }
+.task-detail-tabs__trigger { @apply mb-0 h-9 min-w-0 shrink-0 rounded-t-lg rounded-b-none border border-b-2 border-transparent px-3 py-0 text-sm font-medium text-muted-foreground shadow-none outline-none transition-colors hover:bg-muted/60 hover:text-foreground data-[state=active]:border-primary/20 data-[state=active]:border-b-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 focus-visible:ring-offset-0; }
+.task-detail-tabs__count { @apply border-0 bg-muted px-1.5 py-0 text-xs font-medium tabular-nums text-muted-foreground; }
+.task-detail-tabs__trigger[data-state="active"] .task-detail-tabs__count { @apply bg-primary/10 text-primary; }

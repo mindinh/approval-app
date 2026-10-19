@@ -19,12 +19,8 @@ initFLPMessageListener();
 // This is critical for iOS Safari to successfully fetch the icon without relative path/subpath issues.
 const appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
 if (appleTouchIcon) {
-    const pathSegments = window.location.pathname.split('/');
-    pathSegments.pop(); // Remove index.html or last filename if present
-    const basePath = pathSegments.join('/') + '/';
-    const absoluteIconUrl = new URL(`${basePath}sap-apple-touch-icon.png`.replace(/\/+/g, '/'), window.location.origin).href;
+    const absoluteIconUrl = new URL(appleTouchIcon.getAttribute('href') || './sap-apple-touch-icon-v3.png', document.baseURI).href;
     appleTouchIcon.setAttribute('href', absoluteIconUrl);
-    console.log('[PWA] Resolved absolute apple-touch-icon URL:', absoluteIconUrl);
 }
 
 createRoot(document.getElementById('root')!).render(
@@ -41,21 +37,4 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
 )
 
-// Register Service Worker in production mode
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    window.addEventListener('load', () => {
-        // Resolve dynamic path relative to window.location.pathname context (handles subfolders in BTP)
-        const pathSegments = window.location.pathname.split('/');
-        pathSegments.pop(); // Remove index.html or last filename if present
-        const basePath = pathSegments.join('/') + '/';
-        const swPath = `${basePath}sw.js`.replace(/\/+/g, '/');
-
-        navigator.serviceWorker.register(swPath)
-            .then((registration) => {
-                console.log('[PWA] Service Worker registered with scope:', registration.scope);
-            })
-            .catch((error) => {
-                console.error('[PWA] Service Worker registration failed:', error);
-            });
-    });
-}
+// Service worker updates and pre-React recovery live in public/startup.js.

@@ -14,10 +14,18 @@
       "authenticationType": "none"
     },
     {
-      "source": "^/(web-manifest\\.json|sap-.*\\.png|pwa-icon-.*\\.png|apple-touch-icon\\.png|favicon\\.svg|RESOURCE_FAVICON\\.png|sw\\.js)$",
+      "source": "^/(?:cnma/)?(sw\\.js|startup(?:-recovery)?\\.(?:js|css))$",
       "target": "/$1",
       "localDir": "resources/cnma",
-      "authenticationType": "none"
+      "authenticationType": "none",
+      "cacheControl": "no-cache, no-store, must-revalidate"
+    },
+    {
+      "source": "^/(?:cnma/)?(web-manifest\\.json|sap-.*\\.png|RESOURCE_FAVICON\\.png)$",
+      "target": "/$1",
+      "localDir": "resources/cnma",
+      "authenticationType": "none",
+      "cacheControl": "no-cache"
     },
     {
       "source": "^/index.html$",

@@ -1,88 +1,57 @@
-const CACHE_NAME = "prorequest-v2-sap-icons";
+﻿// Cache public static files only. Session responses and HTML must reach the browser.
+const CACHE_NAME = "prorequest-v3-static-" + encodeURIComponent(self.registration.scope);
 
-const STATIC_ASSETS = [
-  "./",
-  "./index.html",
-  "./web-manifest.json",
-  "./sap-pwa-icon-192.png",
-  "./sap-pwa-icon-512.png",
-  "./sap-pwa-icon-maskable-512.png",
-  "./sap-apple-touch-icon.png",
-  "./sap-favicon.png"
-];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
-  self.skipWaiting();
-});
+self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      // Retire the old cache that could contain login HTML under asset URLs.
+      await Promise.all(keys.filter((key) => key.startsWith("prorequest-v2")).map((key) => caches.delete(key)));
+    } catch (_) {
+      // Storage can be unavailable in mobile/private browsing. Online use still works.
+    }
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
+  const scope = new URL(self.registration.scope);
+  if (request.method !== "GET" || request.mode === "navigate" ||
+      url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) return;
 
-  if (request.method !== "GET") {
-    return;
+  const path = url.pathname.slice(scope.pathname.length);
+  // Mutable install icons and manifests must revalidate normally so branding fixes
+  // reach mobile devices instead of staying in a cache-first service worker.
+  if (!/^assets\/.+\.(js|css|woff2?|ttf|png|svg|jpe?g|webp)$/.test(path)) return;
+
+  function valid(response) {
+    if (!response || response.status !== 200 || response.redirected) return false;
+    const type = (response.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+    if (/\.js$/.test(path)) return /^(application|text)\/(javascript|ecmascript)$/.test(type);
+    if (/\.css$/.test(path)) return type === "text/css";
+    if (/\.json$/.test(path)) return type === "application/json" || type === "application/manifest+json";
+    if (/\.(woff2?|ttf)$/.test(path)) return type.startsWith("font/") || type === "application/font-woff";
+    return type.startsWith("image/");
   }
 
-  // Never cache API calls to CAP/SAP or session endpoints.
-  if (
-    url.pathname.includes("/api/") ||
-    url.pathname.includes("/odata/") ||
-    url.pathname.includes("/browse") ||
-    url.pathname.includes("/admin") ||
-    url.pathname.includes("/user-api") ||
-    url.pathname.includes("/do/logout") ||
-    url.pathname.includes("/logout-page.html")
-  ) {
-    return;
-  }
-
-  // For navigation requests (loading pages), try network first, then cache, fallback to index.html
-  if (request.mode === "navigate") {
-    // If online, do not intercept navigation requests to let the browser handle redirects (e.g. SSO login) natively.
-    // This prevents infinite loops caused by WebKit blocking cross-origin redirects inside service worker fetches.
-    if (self.navigator.onLine) {
-      return;
+  event.respondWith((async () => {
+    let cache;
+    try {
+      cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
+      if (valid(cached)) return cached;
+      if (cached) await cache.delete(request);
+    } catch (_) {
+      cache = null;
     }
-    event.respondWith(
-      caches.match("./index.html") || caches.match("./")
-    );
-    return;
-  }
-
-  // For other static assets, use cache first.
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      return cached || fetch(request).then((response) => {
-        const responseClone = response.clone();
-
-        caches.open(CACHE_NAME).then((cache) => {
-          // Cache static files and styles dynamically
-          if (
-            response.status === 200 &&
-            (url.origin === self.location.origin || url.pathname.includes("/resources/"))
-          ) {
-            cache.put(request, responseClone);
-          }
-        });
-
-        return response;
-      });
-    })
-  );
+    const response = await fetch(request);
+    if (cache && valid(response)) {
+      try { await cache.put(request, response.clone()); } catch (_) { /* Quota must not block the app. */ }
+    }
+    return response;
+  })());
 });

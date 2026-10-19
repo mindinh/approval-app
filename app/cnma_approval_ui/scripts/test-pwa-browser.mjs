@@ -66,7 +66,7 @@ try {
                         assert.equal(new URL(manifest.start_url, manifestUrl).href, origin + prefix);
                         const urls = manifest.icons.map(icon => new URL(icon.src, manifestUrl).href);
                         const touchIcon = await page.locator('link[rel="apple-touch-icon"]').evaluate(el => el.href);
-                        assert.equal(touchIcon, `${origin}${prefix}sap-apple-touch-icon.png`);
+                        assert.equal(touchIcon, `${origin}${prefix}sap-apple-touch-icon-v3.png`);
                         urls.push(touchIcon, await page.locator('link[rel="icon"]').evaluate(el => el.href));
                         for (const url of urls) {
                             assert.ok(url.startsWith(`${origin}${prefix}sap-`), url);

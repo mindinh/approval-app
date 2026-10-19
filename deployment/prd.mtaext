@@ -1,0 +1,12 @@
+_schema-version: "3.3.0"
+ID: cnma_prorequest_s4h.prd
+extends: cnma_prorequest_s4h
+
+# PRD values retained from mta.yaml.
+modules:
+  - name: cnma-prorequest-s4h-srv
+    properties:
+      SAP_USE_DESTINATION: "true"
+      SAP_TASK_DESTINATION: "VJ_PS4"
+      SAP_TASK_CLIENT: "900"
+      USE_MOCK_SAP: "false"

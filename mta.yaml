@@ -70,6 +70,8 @@ modules:
     build-parameters:
       ignore:
         - "node_modules/"
+        # Standalone serves the extracted UI; its ZIP belongs only to the HTML5 deployer.
+        - "resources/cnma/cnma_approval_ui.zip"
       requires:
         - name: cnma-prorequest-s4h-ui
           artifacts:

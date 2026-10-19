@@ -1,0 +1,3 @@
+/* Preserve standalone notch spacing without a separate account header. */
+.mobile-page-header { padding-top: env(safe-area-inset-top); }
+.mobile-home-header { padding-top: calc(var(--spacing) * 5 + env(safe-area-inset-top)); }

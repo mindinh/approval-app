@@ -1,0 +1,9 @@
+/* Shared utilities and theme; omit web fonts to keep recovery independent and small. */
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@import "@cnma/react-ui/theme.css";
+@import "./theme.css";
+@import "./status-dialog.css";
+@source "../components/common/StartupRecoveryDialog.tsx";
+@source "../components/common/StatusDialog.tsx";
+@source "../../node_modules/@cnma/react-ui/dist/index.mjs";

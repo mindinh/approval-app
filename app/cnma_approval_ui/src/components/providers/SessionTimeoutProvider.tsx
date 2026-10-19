@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { AlertTriangle, LogOut, RefreshCw } from 'lucide-react';
-import { Button } from '@cnma/react-ui';
+import { SessionTimeoutDialog } from './SessionTimeoutDialog';
+
 
 // ─── Configuration ────────────────────────────────────────────────
 const IDLE_TIMEOUT_MS = 25 * 60 * 1000; // 25 minutes
@@ -133,90 +133,12 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
     return (
         <SessionTimeoutContext.Provider value={{ triggerSessionExpired }}>
             {children}
-
-            {dialogState !== 'hidden' && (
-                <div
-                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-                >
-                    <div
-                        className="bg-card rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-border animate-in fade-in zoom-in-95 duration-200"
-                    >
-                        <div className="flex items-center gap-3 px-6 pt-6 pb-3">
-                            <div
-                                className={`p-2.5 rounded-xl ${dialogState === 'expired' ? 'bg-destructive/10' : 'bg-warning-bg'}`}
-                            >
-                                <AlertTriangle
-                                    size={22}
-                                    className={dialogState === 'expired' ? 'text-destructive' : 'text-warning'}
-                                />
-                            </div>
-                            <h3 className="text-lg font-semibold text-foreground">
-                                {dialogState === 'expired' ? 'Session Expired' : 'Attention'}
-                            </h3>
-                        </div>
-
-                        <div className="border-t border-border mx-6" />
-
-                        <div className="px-6 py-5">
-                            {dialogState === 'warning' ? (
-                                <p className="text-sm text-muted-foreground">
-                                    Due to inactivity, you are going to be signed out in{' '}
-                                    <span className="font-bold text-foreground text-base">{countdown}</span>{' '}
-                                    Second{countdown !== 1 ? 's' : ''}.
-                                </p>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    Your session has expired. Please sign in again to continue working.
-                                </p>
-                            )}
-                        </div>
-
-                        <div
-                            className="flex items-center justify-center gap-3 px-6 py-4 border-t border-border bg-muted/50"
-                        >
-                            {dialogState === 'warning' ? (
-                                <>
-                                    <Button
-                                        onClick={handleContinueWorking}
-                                        className="px-5 py-2 text-sm font-semibold text-primary-foreground bg-primary rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm"
-                                    >
-                                        <RefreshCw size={15} />
-                                        Continue Working
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={handleLogout}
-                                        className="px-5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                    >
-                                        Sign Out
-                                    </Button>
-                                </>
-                            ) : (
-                                <Button
-                                    onClick={handleLogout}
-                                    className="px-5 py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm"
-                                >
-                                    <LogOut size={15} />
-                                    Sign In Again
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <style>{`
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.95) translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
+            <SessionTimeoutDialog
+                state={dialogState}
+                countdown={countdown}
+                onContinue={handleContinueWorking}
+                onLogout={handleLogout}
+            />
         </SessionTimeoutContext.Provider>
     );
 }
