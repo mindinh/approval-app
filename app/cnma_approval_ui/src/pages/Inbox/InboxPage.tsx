@@ -10,7 +10,6 @@ import type { InboxTask } from '@/services/inbox/inbox.types';
 import { useIsMobile } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
 import { useMobileNav } from '@/contexts/MobileNavContext';
-import { MobileTopBar } from '@/components/layouts/MobileTopBar';
 import {
     getFirstTaskByCategoryOrder,
     type ObjectCategory,
@@ -324,15 +323,6 @@ export default function InboxPage() {
     if (isMobile) {
         return (
             <div className="relative h-full flex flex-col min-h-0 overflow-hidden bg-background">
-                {!selectedTaskId && (
-                    <MobileTopBar
-                        title={
-                            scope === 'approved'
-                                ? t('nav.approvedTasks', 'Approved Tasks')
-                                : t('nav.myTasks', 'My Tasks')
-                        }
-                    />
-                )}
                 <div className="relative flex-1 min-h-0 w-full min-w-0">
                     <AnimatePresence mode="wait">
                         {selectedTaskId ? (

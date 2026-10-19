@@ -12,7 +12,7 @@ import {
     ArrowRight,
 } from 'lucide-react';
 import { useIsMobile, Button, Skeleton } from '@cnma/react-ui';
-import { MobileTopBar } from '@/components/layouts/MobileTopBar';
+import { AccountMenu } from '@/components/layouts/AccountMenu';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { TaskCard } from '@/pages/Inbox/components/TaskCard';
 import { useStatusCounts, useTasks, useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
@@ -79,28 +79,27 @@ export default function HomePage() {
                ========================================================================= */}
             <div className="md:hidden">
                 {/* ── Gradient Header ────────────────────────── */}
-                <div
-                    className="relative px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-16"
-                    style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 20%, var(--primary-hover) 100%)' }}
-                >
-                    {/* Top Bar: User Email + Logout */}
-                    <MobileTopBar embedded />
-
+                <div className="mobile-home-header relative px-5 pb-16 bg-primary text-primary-foreground">
+                    <div className="flex items-start justify-between gap-3">
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
                     >
-                        <p className="text-white/80 text-base font-medium">
+                        <p className="text-base font-medium text-primary-foreground/80">
                             {t('home.welcomeBack', 'Welcome back')},{' '}
-                            <span className="text-white font-bold text-lg">{userInfo?.displayName || 'User'}</span>
+                            <span className="text-lg font-bold text-primary-foreground">{userInfo?.displayName || ''}</span>
                         </p>
-                        <p className="text-white/60 text-xs mt-1">
+                        <p className="text-primary-foreground/70 text-xs mt-1">
                             {stats.newTasks > 0
                                 ? t('home.pendingApprovals', { count: stats.newTasks, defaultValue: `${stats.newTasks} pending approvals` })
                                 : t('home.allCaughtUp', 'All caught up! No pending approvals')}
                         </p>
                     </motion.div>
+                        <div className="shrink-0 rounded-full bg-card text-foreground">
+                            <AccountMenu />
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── Stat Cards (overlapping the gradient) ──── */}

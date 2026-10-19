@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Button, Badge, Tabs, TabsList, TabsTrigger } from '@cnma/react-ui';
+import { Button, Badge, Card, Tabs, TabsList, TabsTrigger } from '@cnma/react-ui';
 import { ArrowLeft, RotateCcw, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -111,6 +111,7 @@ export function ReferencePrDetailView({
 
     // Render individual panel content
     const renderTabContent = (tabValue: string, mobile: boolean) => {
+        if (!viewData) return null;
         switch (tabValue) {
             case 'overview':
                 return businessModel ? (
@@ -216,7 +217,7 @@ export function ReferencePrDetailView({
     return (
         <div className="flex h-full min-w-0 w-full max-w-full overflow-hidden flex-col bg-muted/30 relative">
             {/* ── Header ── */}
-            {isMobile ? (
+            {isMobile && (
                 <div className="bg-card border-b border-border/70 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 shadow-xs shrink-0">
                     <div className="flex items-start gap-2.5">
                         <Button
@@ -243,42 +244,6 @@ export function ReferencePrDetailView({
                         </div>
                     </div>
                 </div>
-            ) : (
-                <div className="border-b border-border/60 bg-background px-5 py-4 shrink-0">
-                    <div className="flex items-start gap-3">
-                        <div className="min-w-0 flex-1 space-y-2">
-                            <div className="flex items-center gap-3">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleBack}
-                                    className="gap-1.5 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg px-2.5 py-1.5 -ml-1 shrink-0"
-                                >
-                                    <ArrowLeft className="size-4" />
-                                    <span>
-                                        {prHistory.length > 1
-                                            ? t('common.back', 'Back')
-                                            : parentDocumentId
-                                            ? t('task.backToPo', 'Back to PO {{id}}', { id: parentDocumentId })
-                                            : t('task.backToPoTask', 'Back to PO Task')}
-                                    </span>
-                                </Button>
-                                <div className="h-4 w-px bg-border/60" />
-                                <h2 className="text-xl font-semibold text-foreground truncate">
-                                    PR #{formattedPrNumber}
-                                </h2>
-                            </div>
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <Badge
-                                    variant="outline"
-                                    className="gap-1 text-xs font-semibold bg-primary/5 text-primary border-primary/20 shrink-0"
-                                >
-                                    <span>Reference PR</span>
-                                </Badge>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             )}
 
             {/* ── Desktop Tabs ── */}
@@ -286,31 +251,63 @@ export function ReferencePrDetailView({
                 <Tabs
                     value={activeTab}
                     onValueChange={setActiveTab}
-                    className="flex-1 min-h-0 w-full flex flex-col gap-0 border-t border-border/60"
+                    className="flex-1 min-h-0 w-full flex flex-col gap-0"
                 >
-                    <TabsList className="h-auto w-full justify-start border-b border-border/60 bg-white px-3 py-0 gap-1 shrink-0">
-                        {tabs.map((tab) => (
-                            <TabsTrigger
-                                key={tab.value}
-                                value={tab.value}
-                                className={cn(
-                                    'h-10 min-w-24 rounded-none border-b-2 border-transparent px-3 text-sm text-muted-foreground',
-                                    'hover:bg-muted/50 hover:text-foreground',
-                                    'data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:font-medium',
-                                    'data-[state=active]:bg-transparent data-[state=active]:shadow-none [&>svg]:data-[state=active]:text-primary'
-                                )}
-                            >
-                                <tab.icon className="size-4" />
-                                <span>{tab.label}</span>
-                                {tab.count !== undefined && tab.count > 0 && (
-                                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                                        {tab.count}
-                                    </span>
-                                )}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-5 space-y-4 pb-6 bg-background">
+                    <Card className="task-detail-header rounded-none border-x-0 border-t-0 gap-0 py-0 shadow-none">
+                        <div className="bg-background px-4 py-4 shrink-0">
+                            <div className="flex items-start gap-3">
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleBack}
+                                            className="gap-1.5 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg px-2.5 py-1.5 -ml-1 shrink-0"
+                                        >
+                                            <ArrowLeft className="size-4" />
+                                            <span>
+                                                {prHistory.length > 1
+                                                    ? t('common.back', 'Back')
+                                                    : parentDocumentId
+                                                    ? t('task.backToPo', 'Back to PO {{id}}', { id: parentDocumentId })
+                                                    : t('task.backToPoTask', 'Back to PO Task')}
+                                            </span>
+                                        </Button>
+                                        <div className="h-4 w-px bg-border/60" />
+                                        <h2 className="text-xl font-semibold text-foreground truncate">
+                                            PR #{formattedPrNumber}
+                                        </h2>
+                                    </div>
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Badge
+                                            variant="outline"
+                                            className="gap-1 text-xs font-semibold bg-primary/5 text-primary border-primary/20 shrink-0"
+                                        >
+                                            <span>Reference PR</span>
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <TabsList className="task-detail-tabs">
+                            {tabs.map((tab) => (
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    className="task-detail-tabs__trigger"
+                                >
+                                    <tab.icon className="size-4" />
+                                    <span>{tab.label}</span>
+                                    {tab.count !== undefined && tab.count > 0 && (
+                                        <Badge variant="secondary" className="task-detail-tabs__count">
+                                            {tab.count}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Card>
+                    <div className={cn("flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-5 space-y-4 pb-6 bg-background", activeTab === 'comments' && "task-chat-host overflow-hidden")}>
                         {renderTabContent(activeTab, false)}
                     </div>
                 </Tabs>
@@ -363,7 +360,7 @@ export function ReferencePrDetailView({
                         </div>
                     </div>
 
-                    <div className="flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background">
+                    <div className={cn("flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background", activeTab === 'comments' && "flex flex-col overflow-hidden")}>
                         <AnimatePresence initial={false} mode="popLayout" custom={animationDirection}>
                             <motion.div
                                 key={activeTab}
@@ -372,9 +369,9 @@ export function ReferencePrDetailView({
                                 animate={{ x: 0, opacity: 1, scale: 1 }}
                                 exit={{ x: `${-animationDirection * 20}%`, opacity: 0, scale: 0.98 }}
                                 transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
-                                className="w-full"
+                                className={cn("w-full", activeTab === 'comments' && "flex-1 min-h-0 flex flex-col")}
                             >
-                                <div className="p-4 space-y-4 pb-12">
+                                <div className={cn("p-4 space-y-4 pb-12", activeTab === 'comments' && "task-chat-host")}>
                                     {renderTabContent(activeTab, true)}
                                 </div>
                             </motion.div>

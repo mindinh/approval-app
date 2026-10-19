@@ -143,6 +143,7 @@ export function usePullToRefresh({
 
     return {
         containerRef: setRef,
+        scrollContainerRef: containerRef,
         pullDistance,
         isPulling,
         isThresholdReached,

@@ -1,5 +1,5 @@
 import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
-import type { ObjectViewDefinition, FieldDefinition, TableColumnDefinition } from './renderer.types';
+import type { ObjectViewDefinition, FieldDefinition, TableColumnDefinition, CardDefinition } from './renderer.types';
 import type { BusinessSectionModel, DetailCardModel, DetailTableModel, DetailField, DetailTableColumn, DetailTableRow } from '../TaskDetailSections.types';
 import { formatCodeText, formatRawAmount, formatRawQuantity, formatRawValue } from './formatters';
 

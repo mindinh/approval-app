@@ -28,7 +28,7 @@ export function FilterBarField({ config, value, onChange, isMobile }: FilterBarF
     );
 }
 
-function normalizeDateRange(val: any): { from?: Date; to?: Date } {
+function normalizeDateRange(val: any): { from: Date | undefined; to: Date | undefined } {
     if (!val || typeof val !== 'object') return { from: undefined, to: undefined };
     const parseDate = (d: any) => {
         if (!d) return undefined;

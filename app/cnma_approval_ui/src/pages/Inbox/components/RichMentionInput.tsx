@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import type { BusUser } from '@/services/inbox/inbox.types';
 
@@ -10,17 +11,19 @@ export interface RichMentionInputRef {
 }
 
 interface RichMentionInputProps {
+    className?: string;
     value: string;
     onChange: (text: string) => void;
     onMentionQuery: (query: string, index: number, isOpen: boolean) => void;
     onSubmit: () => void;
     placeholder?: string;
-    maxLength?: number;
+    invalid?: boolean;
+    describedBy?: string;
     disabled?: boolean;
 }
 
 export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInputProps>(
-    ({ value, onChange, onMentionQuery, onSubmit, placeholder, disabled }, ref) => {
+    ({ value, onChange, onMentionQuery, onSubmit, placeholder, disabled, invalid, describedBy, className }, ref) => {
         const editorRef = useRef<HTMLDivElement>(null);
         const isInternalChange = useRef(false);
 
@@ -36,9 +39,15 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
                     } else if (el.tagName === 'BR') {
                         result += '\n';
                     } else {
+                        // Browsers create block elements on Enter and multiline paste.
+                        // Keep their line boundaries while ignoring the empty-line placeholder BR.
+                        const isBlock = ['DIV', 'P', 'LI'].includes(el.tagName);
+                        if (isBlock && el.previousSibling && !result.endsWith('\n')) result += '\n';
+                        const isPlaceholder = isBlock && el.childNodes.length === 1 && el.firstChild?.nodeName === 'BR';
                         for (let i = 0; i < el.childNodes.length; i++) {
-                            walk(el.childNodes[i]);
+                            if (!isPlaceholder) walk(el.childNodes[i]);
                         }
+                        if (isBlock && el.nextSibling) result += '\n';
                     }
                 } else if (node.nodeType === Node.TEXT_NODE) {
                     const rawText = node.nodeValue || '';
@@ -137,7 +146,7 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
         }, [value]);
 
         const checkMentionQuery = () => {
-            if (!editorRef.current) return;
+            if (disabled || !editorRef.current) return;
             const sel = window.getSelection();
             if (!sel || sel.rangeCount === 0) {
                 onMentionQuery('', -1, false);
@@ -162,13 +171,14 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
         };
 
         const handleInput = () => {
-            if (!editorRef.current) return;
+            if (disabled || !editorRef.current) return;
             isInternalChange.current = true;
             onChange(getFormattedText());
             checkMentionQuery();
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (disabled) return;
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
                 onSubmit();
@@ -178,13 +188,19 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
         return (
             <div
                 ref={editorRef}
+                role="textbox"
+                aria-label={placeholder}
+                aria-multiline="true"
+                aria-disabled={disabled}
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
                 contentEditable={!disabled}
                 suppressContentEditableWarning
                 onInput={handleInput}
                 onKeyUp={checkMentionQuery}
                 onKeyDown={handleKeyDown}
-                data-placeholder={placeholder || "Write a comment... (Type '@' to mention someone)"}
-                className="min-h-[88px] max-h-[160px] p-3 rounded-lg border border-border/60 bg-card text-foreground focus:outline-none focus-visible:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors font-sans text-base sm:text-sm overflow-y-auto whitespace-pre-wrap break-words relative empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/60 empty:before:pointer-events-none"
+                data-placeholder={placeholder}
+                className={cn("min-h-22 max-h-40 p-3 rounded-lg border border-border/60 bg-card text-foreground focus:outline-none focus-visible:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors font-sans text-base sm:text-sm overflow-y-auto whitespace-pre-wrap break-words relative empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/60 empty:before:pointer-events-none", className)}
             />
         );
     }

@@ -42,7 +42,7 @@ export function extractTaskEntityRecord(task: InboxTask, cachedDetail?: any): Ra
     return {
         ...task,
         ...task?.businessContext,
-        ...legacyHeader,
+        ...(legacyHeader && typeof legacyHeader === 'object' ? legacyHeader : {}),
         ...boFromCache,
         DocCategory: rawObjectType,
         DocumentType: rawDocType,

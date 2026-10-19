@@ -1,11 +1,17 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { Send, Loader2, MessageSquare, User, AtSign, X, ArrowRight } from 'lucide-react';
-import { Button, Textarea, Badge } from '@cnma/react-ui';
-import type { TaskDetail, WorkflowApprovalComment, BusUser, TaggedUser } from '@/services/inbox/inbox.types';
+import { Fragment, useState, useMemo, useRef, useEffect, useId } from 'react';
+import { Send, Loader2, MessageSquare, ArrowRight } from 'lucide-react';
+import { Button, Badge, Card, FieldSeparator, Skeleton } from '@cnma/react-ui';
+import { UserAvatar } from '@/components/common/UserAvatar';
+import type { TaskDetail, BusUser, TaggedUser } from '@/services/inbox/inbox.types';
 import { useAddComment } from '@/pages/Inbox/hooks/useInbox';
 import { TeamsMentionDropdown } from '@/pages/Inbox/components/TeamsMentionDropdown';
 import { RichMentionInput, type RichMentionInputRef } from '@/pages/Inbox/components/RichMentionInput';
-import { formatDate, formatDateTime } from '@/utils/formatters/date';
+import { formatDateTime } from '@/utils/formatters/date';
+import { useUserIdentity } from '@/pages/Inbox/hooks/useUserIdentity';
+import { useCommentToday } from '@/pages/Inbox/hooks/useCommentToday';
+import { isCurrentCommentAuthor, commentAuthorInitials } from '@/pages/Inbox/utils/commentAuthor';
+import { COMMENT_MAX_LENGTH, getCommentDraftState } from '@/pages/Inbox/utils/commentDraft';
+import { buildCommentTimeline, isSameCommentDay } from '@/pages/Inbox/utils/commentTimeline';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -49,38 +55,49 @@ function renderFormattedCommentText(text: string) {
 export function CommentsPanel({
     detail,
     instanceId,
-    onCommentAdded,
     context,
     allowAddComment = true,
 }: {
     detail: TaskDetail;
     instanceId?: string;
-    onCommentAdded?: () => void;
     context?: { sapOrigin?: string; documentId?: string; businessObjectType?: string };
     allowAddComment?: boolean;
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [commentText, setCommentText] = useState('');
+    const draft = getCommentDraftState(commentText);
+    const draftHelpId = useId();
     const [isMentionOpen, setIsMentionOpen] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
-    const [mentionIndex, setMentionIndex] = useState(-1);
     const [taggedUsers, setTaggedUsers] = useState<BusUser[]>([]);
     const richInputRef = useRef<RichMentionInputRef>(null);
     const commentListRef = useRef<HTMLDivElement>(null);
+    const submitLock = useRef(false);
     const addCommentMutation = useAddComment();
+    const { currentUser } = useUserIdentity({ comments: detail.comments });
 
     const comments = useMemo(() => {
         return (detail.comments || [])
             .filter((tc) => Boolean((tc.text || '').trim()))
-            .map((tc, idx) => ({
-                id: tc.id || `tc-${idx}`,
-                text: tc.text,
-                createdBy: tc.createdByName || tc.createdBy || 'Unknown',
-                createdAt: tc.createdAt || '',
-                forward: tc.forward === true,
-                toUser: tc.toUser || '',
-            }));
-    }, [detail.comments]);
+            .map((tc, idx) => {
+                return {
+                    id: tc.id || `tc-${idx}`,
+                    text: tc.text,
+                    createdBy: tc.createdBy?.trim() || tc.createdByName?.trim() || t('comments.unknownAuthor'),
+                    isOwn: isCurrentCommentAuthor(tc.createdBy, currentUser),
+                    createdAt: tc.createdAt || '',
+                    forward: tc.forward === true,
+                    toUser: tc.toUser || '',
+                };
+            });
+    }, [detail.comments, currentUser, t]);
+    const timeline = useMemo(() => buildCommentTimeline(comments), [comments]);
+    const today = useCommentToday();
+    const formatDayLabel = (day: Date | null) => {
+        if (!day) return t('comments.unknownDate');
+        if (isSameCommentDay(day, today)) return t('comments.today');
+        return formatDateTime(day.toISOString(), i18n.language, { dateStyle: 'medium' });
+    };
 
     // Auto-scroll to bottom when comments list updates (e.g. user adds comment or detail refetches)
     useEffect(() => {
@@ -95,7 +112,7 @@ export function CommentsPanel({
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [comments]);
+    }, [comments, addCommentMutation.isPending]);
 
     const handleCommentTextChange = (text: string) => {
         setCommentText(text);
@@ -104,7 +121,7 @@ export function CommentsPanel({
     };
 
     const handleSubmit = () => {
-        if (!commentText.trim() || !instanceId) return;
+        if (!allowAddComment || !draft.canSend || !instanceId || submitLock.current || addCommentMutation.isPending) return;
         const docNum = context?.documentId || detail?.documentId || detail?.businessObject?.DocumentNumber || detail?.businessObject?.PurchaseRequisition || detail?.businessObject?.PurchaseOrder || detail?.businessObject?.ReservationNumber || detail?.businessObject?.ClaimNumber || instanceId;
         const boType = context?.businessObjectType || detail?.docCategory || detail?.businessObject?.DocCategory || detail?.objectType || '';
 
@@ -116,10 +133,12 @@ export function CommentsPanel({
             EMAIL: u.EmailAddress || '',
         }));
 
+        submitLock.current = true;
+        setIsMentionOpen(false);
         addCommentMutation.mutate(
             {
                 instanceId,
-                text: commentText.trim(),
+                text: draft.text,
                 taggedUsers: formattedTaggedUsers,
                 context: {
                     sapOrigin: context?.sapOrigin || detail?.task?.sapOrigin || 'LOCAL',
@@ -128,18 +147,19 @@ export function CommentsPanel({
                 },
             },
             {
+                onSettled: () => { submitLock.current = false; },
                 onSuccess: () => {
                     setCommentText('');
                     setTaggedUsers([]);
                     setIsMentionOpen(false);
                     richInputRef.current?.clear();
-                    onCommentAdded?.();
                 },
             }
         );
     };
 
     const handleSelectMentionUser = (user: BusUser) => {
+        if (submitLock.current) return;
         richInputRef.current?.insertMention(user, mentionQuery);
 
         setTaggedUsers((prev) => {
@@ -150,119 +170,97 @@ export function CommentsPanel({
         setIsMentionOpen(false);
     };
 
-    const handleTriggerMention = () => {
-        richInputRef.current?.focus();
-        setIsMentionOpen(true);
-        setMentionQuery('');
-    };
-
-    const handleRemoveTag = (sapUserName: string) => {
-        setTaggedUsers((prev) => prev.filter((u) => u.SAPUserName !== sapUserName));
-    };
-
     return (
-        <div className="bg-card rounded-none sm:rounded-xl shadow-none sm:shadow-sm border border-border/40 overflow-visible relative flex flex-col">
-            <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between text-foreground">
-                <div className="flex items-center gap-2">
-                    <MessageSquare className="size-5 text-muted-foreground/80" />
-                    <h3 className="text-base font-semibold">{t('comments.title', 'Comments')}</h3>
-                </div>
-            </div>
-
-            <div className="p-5 flex flex-col space-y-6">
-                {/* Comment list */}
+        <Card className="task-chat" role="region" aria-label={t('comments.title')}>
+            <div ref={commentListRef} className="task-chat__messages" role="log" aria-label={t('comments.title')}>
                 {comments.length === 0 && (
-                    <div className="py-8 text-center text-sm text-muted-foreground/60">
-                        No comments yet.
+                    <div className="task-chat__empty">
+                        <MessageSquare className="size-8" aria-hidden="true" />
+                        {t('comments.empty')}
                     </div>
                 )}
-                <div ref={commentListRef} className="space-y-3 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
-                    {comments.map((comment) => (
-                        <div
-                            key={comment.id}
-                            className={cn(
-                                'relative rounded-lg border p-3 space-y-1.5 bg-muted/10 min-w-0 max-w-full overflow-hidden',
-                                comment.forward && 'border-warning/40 bg-warning/5 pl-4'
-                            )}
-                        >
-                            {comment.forward && (
-                                <div className="flex items-center gap-1.5 text-xs font-medium text-warning">
-                                    <ArrowRight aria-hidden="true" className="size-3.5 shrink-0 text-warning" />
-                                    <span>
-                                        Forwarded to{' '}
-                                        <span className="font-semibold">{comment.toUser?.trim() || '(no recipient)'}</span>
-                                    </span>
+                {timeline.map(({ comment, day, startsDay }) => (
+                    <Fragment key={comment.id}>
+                        {startsDay && (
+                            <FieldSeparator className="task-chat__day-divider">
+                                {formatDayLabel(day)}
+                            </FieldSeparator>
+                        )}
+                        <div className={cn('task-chat__message', comment.isOwn && 'task-chat__message--own')}>
+                            <UserAvatar className="task-chat__avatar">{commentAuthorInitials(comment.createdBy)}</UserAvatar>
+                            <div className="task-chat__body">
+                                <div className="task-chat__metadata">
+                                    <span className="task-chat__author">{comment.createdBy}</span>
+                                    <time className="task-chat__time" title={formatDateTime(comment.createdAt, i18n.language)}>
+                                        {formatDateTime(comment.createdAt, i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </time>
                                 </div>
-                            )}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <User className="size-3 shrink-0" />
-                                <span className="font-medium text-foreground/80 truncate">{comment.createdBy}</span>
-                                <span>·</span>
-                                <span className="shrink-0">{formatDateTime(comment.createdAt)}</span>
+                                <div className={cn('task-chat__bubble', comment.forward && 'task-chat__bubble--forward')}>
+                                    {comment.forward && (
+                                        <div className="task-chat__forward">
+                                            <ArrowRight className="size-3.5 shrink-0" aria-hidden="true" />
+                                            {t('comments.forwardedTo', { recipient: comment.toUser.trim() || t('comments.noRecipient') })}
+                                        </div>
+                                    )}
+                                    {renderFormattedCommentText(comment.text)}
+                                </div>
                             </div>
-                            <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-foreground min-w-0">
-                                {renderFormattedCommentText(comment.text)}
-                            </div>
-                            {comment.forward && (
-                                <span
-                                    aria-hidden
-                                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-warning/60 rounded-l-lg"
-                                />
-                            )}
                         </div>
-                    ))}
-                </div>
-
-                {/* Comment input area */}
-                {allowAddComment && instanceId && (
-                    <div className="flex flex-col gap-3 relative">
-                        {/* MS Teams Style Mention Dropdown Popover */}
-                        <TeamsMentionDropdown
-                            isOpen={isMentionOpen}
-                            searchQuery={mentionQuery}
-                            onSelectUser={handleSelectMentionUser}
-                            onClose={() => setIsMentionOpen(false)}
-                        />
-
+                    </Fragment>
+                ))}
+                {addCommentMutation.isPending && (
+                    <div className="task-chat__message task-chat__message--own" role="status" aria-label={t('comments.sending')}>
+                        <UserAvatar className="task-chat__avatar">{commentAuthorInitials(currentUser?.sapUsername || '')}</UserAvatar>
+                        <div className="task-chat__body task-chat__pending" aria-hidden="true">
+                            <Skeleton className="task-chat__skeleton-author" />
+                            <div className="task-chat__bubble task-chat__skeleton-bubble">
+                                <Skeleton className="task-chat__skeleton-line" />
+                                <Skeleton className="task-chat__skeleton-line task-chat__skeleton-line--short" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+            {allowAddComment && instanceId && (
+                <div className="task-chat__composer" aria-busy={addCommentMutation.isPending}>
+                    <div className={cn('task-chat__input-row', draft.exceedsLimit && 'task-chat__input-row--invalid')}>
+                    {isMentionOpen && !addCommentMutation.isPending && <TeamsMentionDropdown
+                        isOpen={isMentionOpen && !addCommentMutation.isPending}
+                        searchQuery={mentionQuery}
+                        onSelectUser={handleSelectMentionUser}
+                        onClose={() => setIsMentionOpen(false)}
+                    />}
                         <RichMentionInput
                             ref={richInputRef}
                             value={commentText}
                             onChange={handleCommentTextChange}
-                            onMentionQuery={(query, idx, open) => {
-                                setMentionQuery(query);
-                                setMentionIndex(idx);
-                                setIsMentionOpen(open);
-                            }}
+                            onMentionQuery={(query, _index, open) => { setMentionQuery(query); setIsMentionOpen(open); }}
                             onSubmit={handleSubmit}
-                            placeholder="Write a comment... (Type '@' to mention someone)"
+                            placeholder={t('comments.placeholder')}
+                            disabled={addCommentMutation.isPending}
+                            invalid={draft.exceedsLimit}
+                            describedBy={draftHelpId}
+                            className="task-chat__editor"
                         />
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground/60">
-                                    Ctrl+Enter to submit {commentText.length > 0 && `· ${commentText.length}/255`}
+                        <div className="task-chat__input-footer">
+                            <div id={draftHelpId} className="task-chat__draft-help">
+                                <span className={cn('task-chat__counter', draft.exceedsLimit && 'task-chat__counter--invalid')}
+                                    title={t('comments.characterLimitHint')}>
+                                    {t('comments.characterLimitCount', { count: draft.length, max: COMMENT_MAX_LENGTH })}
                                 </span>
+                                {draft.exceedsLimit && <span className="task-chat__limit-error" role="status">
+                                    {t('comments.characterLimitExceeded', { max: COMMENT_MAX_LENGTH })}
+                                </span>}
                             </div>
-                            <Button
-                                onClick={handleSubmit}
-                                disabled={!commentText.trim() || addCommentMutation.isPending}
-                                className={cn(
-                                    "bg-primary hover:bg-primary-hover text-primary-foreground disabled:opacity-50",
-                                    "px-4 h-11 sm:h-9 font-medium transition-colors"
-                                )}
-                            >
-                                {addCommentMutation.isPending && (
-                                    <Loader2 className="size-4 animate-spin mr-2" />
-                                )}
-                                Add Comment
+                            <Button size="icon" className="task-chat__send" onClick={handleSubmit}
+                                aria-label={t('comments.send')} title={t('comments.submitHint')} disabled={!draft.canSend || addCommentMutation.isPending}>
+                                {addCommentMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                             </Button>
                         </div>
                     </div>
-                )}
-            </div>
-        </div>
+
+                </div>
+            )}
+        </Card>
     );
 }
-
-
-

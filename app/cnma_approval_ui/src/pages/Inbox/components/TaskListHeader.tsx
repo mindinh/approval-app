@@ -1,3 +1,4 @@
+import { AccountMenu } from '@/components/layouts/AccountMenu';
 import { useTranslation } from 'react-i18next';
 import { Button, Tabs, TabsList, TabsTrigger, Input } from '@cnma/react-ui';
 import {
@@ -209,7 +210,7 @@ export function MobileHeader({
     const { t } = useTranslation();
 
     return (
-        <div className="border-b-0 bg-transparent backdrop-blur-none">
+        <div className="mobile-page-header border-b-0 bg-transparent backdrop-blur-none">
             <div className="space-y-3 px-4 pt-3 pb-4">
                 {showScopeTabs && (
                     <Tabs
@@ -248,18 +249,21 @@ export function MobileHeader({
                     </Tabs>
                 )}
 
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        id="inbox-search"
-                        placeholder={t('inbox.searchTasks', 'Search by title...')}
-                        value={filterValues.search || ''}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setFilterValues((prev: any) => ({ ...prev, search: val }));
-                        }}
-                        className="rounded-xl border-border bg-card pl-8 text-sm shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] h-11"
-                    />
+                <div className="flex items-center gap-2">
+                    <div className="relative min-w-0 flex-1">
+                        <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            id="inbox-search"
+                            placeholder={t('inbox.searchTasks', 'Search by title...')}
+                            value={filterValues.search || ''}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFilterValues((prev: any) => ({ ...prev, search: val }));
+                            }}
+                            className="rounded-xl border-border bg-card pl-8 text-sm h-11"
+                        />
+                    </div>
+                    <AccountMenu />
                 </div>
 
                 <div className="flex items-center justify-between gap-2">

@@ -77,18 +77,13 @@ export function invalidateAfterComment(
     instanceId: string,
 ) {
     const cleanId = normId(instanceId);
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
-    if (instanceId !== cleanId) {
-        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
-        queryClient.invalidateQueries({ queryKey: ['inbox', 'workflow', instanceId] });
-    }
+    const matchesTask = (key: readonly unknown[], kind: string) =>
+        key[0] === 'inbox' && key[1] === kind && normId(String(key[2] ?? '')) === cleanId;
 
-    // Force immediate refetch so new comment displays instantly in UI!
-    queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-    if (instanceId !== cleanId) {
-        queryClient.refetchQueries({ queryKey: ['inbox', 'task', instanceId] });
-    }
+    // Workflow refresh can run independently; only the conversation gates send completion.
+    void queryClient.invalidateQueries({ predicate: query => matchesTask(query.queryKey, 'workflow') });
+    // Invalidation already refetches active queries. A second explicit refetch cancels that request.
+    return queryClient.invalidateQueries({ predicate: query => matchesTask(query.queryKey, 'task') });
 }
 
 

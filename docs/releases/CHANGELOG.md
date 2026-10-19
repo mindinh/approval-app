@@ -4,6 +4,35 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ## [Unreleased]
 
+### Fixed
+- Restore the selected desktop tab's rounded top/side border and keep keyboard focus inside the trigger so the horizontally scrolling row cannot clip it.
+- Place desktop task-detail/reference-PR tab triggers inside their header and align navigation with header content; keep mobile pill navigation separate.
+- Blend desktop task/reference-PR tabs into their header surface, removing the intervening frame/divider while preserving the bottom underline and mobile pill navigation.
+- Keep desktop task-detail/reference-PR tabs compact: round only the top corners, restore the active underline and remove outer/vertical padding. Remove six unused public icons/SLA images and move icon source artwork into scripts. Use transparent v4 favicon/general-purpose PWA icons to remove the white tile in desktop browser/PWA branding, while retaining opaque maskable and Apple install assets.
+- Address Comments review findings: require verified SAP identity for ownership/profile, remove obsolete directory helpers, refresh relative dates at midnight/resume, fix tag-picker selection and mobile tab scroll refs, and make the full frontend application typecheck pass through the explicit `typecheck` command.
+- Separate consecutive comment days with localized Today/date dividers. Preserve missing dates instead of replacing them with the current time; cover grouping and mobile/desktop rendering with regression tests.
+- Display persisted SAP usernames in Comments and resolve the current SAP session principal through the caller's propagated identity for right alignment and User Profile. Remove directory downloads from this flow.
+- Share lazy SAP identity resolution between Comments and User Profile. Display the verified SAP username separately from the login email, using SAP 72 and localized loading/unresolved states.
+- Restore the Comments tab's outer spacing and rounded card container to match the other detail tabs while keeping history scrolling and the composer docked inside.
+- Increase sidebar navigation icons consistently in expanded and collapsed states using the shared size scale.
+- Support complete paginated SAP directory reads for mentions and user pickers, propagating lookup failures for retry.
+- Widen the collapsed sidebar using the shared spacing scale and center its icons, logo, and neutral account avatar without resizing them.
+- Keep sidebar navigation row height and icon spacing stable when collapsing, overriding the UI library's smaller collapsed row size.
+- Refresh the desktop sidebar with compact navigation, translucent primary selection without a left accent, separated administration, the original floating collapse/expand control, and a compact account footer. Extract navigation and consolidate sidebar styling while preserving mobile and Work Zone behavior.
+- Wait for the refreshed conversation before reporting comment success and unlocking the composer. Remove duplicate task refetches from the comment invalidation policy and detail view.
+- Standardize all user avatars on a shared neutral treatment across account menus, profiles, conversations, mentions, and user pickers.
+- Restore the branded mobile Home header with its welcome message and compact account menu, scoped to Home only.
+- Remove the desktop chat composer's outer surface and full-width divider, retaining the centered input shell and character counter.
+- Center the desktop chat input with a bounded width and compact single row for the editor, character counter, and send action; preserve the mobile layout and 255-character validation.
+- Restore the always-visible 255-character comment counter and block oversized submissions, including keyboard shortcuts and mention markup. Place the full-width chat editor above its counter/send footer.
+- Bound long message widths and composer height, wrap unbroken content, and preserve multiline drafts when sending.
+- Use a docked composer and internally scrolling conversation, preserving mentions and read-only behavior. Compact mobile headers and expose logout through the shared account menu.
+- Give clean SAP install icons versioned filenames in both HTML entry points and manifests so the next deployment does not reuse old icon URLs.
+- Prevent mobile startup failures caused by caching login HTML as JavaScript or CSS; retire the legacy PWA cache and update the worker independently of the main application bundle.
+- Use a shared `@cnma/react-ui` status dialog for startup recovery and session timeout, with application theme tokens and English/Vietnamese translations. Recovery supports retry and resetting only this app's cache.
+- Exclude the redundant UI ZIP from the standalone approuter while retaining the extracted UI and the Work Zone deployer ZIP. Remove unreachable Office preview engines, unused frontend dependency declarations, and unreferenced legacy images.
+- Follow the existing component/utility/style directories for startup recovery and share its dialog stylesheet with session timeout. Remove the baked-in checkerboard from SAP install artwork, regenerate mobile icons, and allow icon metadata to refresh outside the worker cache.
+
 ## [1.0.17] - 2026-09-14
 
 ### Added

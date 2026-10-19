@@ -1,11 +1,9 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@cnma/react-ui';
+import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@cnma/react-ui';
 import { FileText, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { invalidateAfterComment } from '@/pages/Inbox/hooks/inboxInvalidation';
-import { useQueryClient } from '@tanstack/react-query';
 import { useErrorModal } from '@/contexts/ErrorContext';
 import { parseError } from '@/utils/parseError';
 import {
@@ -68,7 +66,6 @@ export function TaskDetailView({
     showActionPanel = true,
 }: TaskDetailViewProps) {
     const { t } = useTranslation();
-    const queryClient = useQueryClient();
     const { showError } = useErrorModal();
 
     const viewData = useMemo(() => normalizeDetailForView(detail), [detail]);
@@ -101,11 +98,6 @@ export function TaskDetailView({
     const handleSelectReferencePr = useCallback((prNumber: string) => {
         setActiveSubView({ type: 'reference-pr', prNumber });
     }, []);
-
-    const handleCommentAdded = useCallback(() => {
-        if (!viewData) return;
-        invalidateAfterComment(queryClient, viewData.instanceId);
-    }, [viewData, queryClient]);
 
     const documentId = viewData?.documentId || '';
     const workflowData = viewData?.workflowData;
@@ -171,7 +163,7 @@ export function TaskDetailView({
         isMobile,
         tabs,
         activeTab,
-        containerRef: ptr.containerRef,
+        containerRef: ptr.scrollContainerRef,
         onTabChange: handleMobileTabChange,
     });
 
@@ -198,7 +190,7 @@ export function TaskDetailView({
         );
     }
 
-    if (!detail) {
+    if (!detail || !viewData) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <FileText className="size-12 text-muted-foreground/30 mb-4" />
@@ -231,12 +223,12 @@ export function TaskDetailView({
             )}
 
             {/* ── Header ── */}
-            <TaskDetailHeader
+            {isMobile && <TaskDetailHeader
                 viewData={viewData}
                 isMobile={isMobile}
                 isSecondaryLoading={isSecondaryLoading}
                 onBack={onBack}
-            />
+            />}
 
             {/* ── Desktop Tabs ── */}
             {!isMobile && (
@@ -248,36 +240,34 @@ export function TaskDetailView({
                             tab: nextTab,
                         })
                     }
-                    className="flex-1 min-h-0 w-full flex flex-col gap-0 border-t border-border/60"
+                    className="flex-1 min-h-0 w-full flex flex-col gap-0"
                 >
-                    <TabsList className="h-auto w-full justify-start border-b border-border/60 bg-white px-3 py-0 gap-1">
-                        {tabs.map((tab) => (
-                            <TabsTrigger
-                                key={tab.value}
-                                value={tab.value}
-                                className={cn(
-                                    'h-10 min-w-24 rounded-none border-b-2 border-transparent px-3 text-sm text-muted-foreground',
-                                    'hover:bg-muted/50 hover:text-foreground',
-                                    'data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:font-medium',
-                                    'data-[state=active]:bg-transparent data-[state=active]:shadow-none [&>svg]:data-[state=active]:text-primary'
-                                )}
-                            >
-                                <tab.icon className="size-4" />
-                                <span>{tab.label}</span>
-                                {tab.count !== undefined && tab.count > 0 && (
-                                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                                        {tab.count}
-                                    </span>
-                                )}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
+                    <TaskDetailHeader viewData={viewData} isSecondaryLoading={isSecondaryLoading} onBack={onBack}>
+                        <TabsList className="task-detail-tabs">
+                            {tabs.map((tab) => (
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    className="task-detail-tabs__trigger"
+                                >
+                                    <tab.icon className="size-4" />
+                                    <span>{tab.label}</span>
+                                    {tab.count !== undefined && tab.count > 0 && (
+                                        <Badge variant="secondary" className="task-detail-tabs__count">
+                                            {tab.count}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </TaskDetailHeader>
 
                     <div className={cn(
                         "flex-1 min-h-0 overflow-y-auto overflow-x-hidden",
-                        activeTab === 'attachments' && "hidden"
+                        activeTab === 'attachments' && "hidden",
+                        activeTab === 'comments' && "flex flex-col overflow-hidden"
                     )}>
-                        <div className="w-full px-5 py-4 space-y-4 pb-6">
+                        <div className={cn("w-full px-5 py-4 space-y-4 pb-6", activeTab === 'comments' && "task-chat-host")}>
                             <TabsContent value="overview" className="mt-0 w-full">
                                 {businessModel && (
                                     <OverviewPanel
@@ -312,14 +302,13 @@ export function TaskDetailView({
                                     taskDetail={viewData?.task}
                                 />
                             </TabsContent>
-                            <TabsContent value="comments" className="mt-0 w-full">
+                            <TabsContent value="comments" className="mt-0 w-full h-full min-h-0">
                                 {isSecondaryLoading && (viewData?.comments?.length || 0) === 0 ? (
                                     <SecondaryTabSkeleton message={t('task.loadingComments', 'Loading comments...')} />
                                 ) : (
                                     <CommentsPanel
                                         detail={viewData}
                                         instanceId={viewData?.instanceId}
-                                        onCommentAdded={handleCommentAdded}
                                         allowAddComment={!isApprovedScope && viewData?.supports?.comments !== false}
                                         context={{
                                             sapOrigin: viewData?.task?.sapOrigin,
@@ -344,7 +333,6 @@ export function TaskDetailView({
                     <TabsContent value="attachments" className="mt-0 w-full flex-1 min-h-0 px-5 py-4 data-[state=active]:flex data-[state=active]:flex-col">
                         <AttachmentsPanel
                             detail={viewData}
-                            allowUpload={!isApprovedScope}
                             isPrLoading={isPrAttachmentsLoading}
                             isSecLoading={isSecondaryLoading}
                         />
@@ -384,20 +372,20 @@ export function TaskDetailView({
                                         }}
                                         onClick={() => handleMobileTabChange(tab.value)}
                                         className={cn(
-                                            'relative shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 mt-1 mb-1 mx-1 text-sm font-medium transition-all rounded-full min-h-11 h-auto',
+                                            'relative shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium transition-all rounded-full min-h-11 h-auto',
                                             'focus-visible:outline-none',
                                             isActive
-                                                ? 'bg-primary text-white shadow-sm'
+                                                ? 'bg-primary text-primary-foreground shadow-sm'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70'
                                         )}
                                     >
-                                        <tab.icon className={cn("size-3.5", isActive ? "text-white" : "text-muted-foreground/60")} />
+                                        <tab.icon className={cn("size-3.5", isActive ? "text-primary-foreground" : "text-muted-foreground/60")} />
                                         <span>{tab.label}</span>
                                         {tab.count !== undefined && tab.count > 0 && (
                                             <span className={cn(
                                                 'ml-0.5 rounded-full px-1.5 py-0 text-xs font-semibold',
                                                 isActive
-                                                    ? 'bg-white/20 text-white'
+                                                    ? 'bg-primary-foreground/20 text-primary-foreground'
                                                     : 'bg-muted text-muted-foreground'
                                             )}>
                                                 {tab.count}
@@ -418,7 +406,7 @@ export function TaskDetailView({
 
                     {/* ── Mobile: Action Panel directly under switchable tabs ── */}
                     {isActionPanelVisible && (
-                        <div className="shrink-0 border-b border-border/60 bg-card px-3 py-2 shadow-2xs">
+                        <div className="shrink-0 border-b border-border/60 bg-card px-3 py-2 shadow-2xs empty:hidden">
                             <TaskActionPanel
                                 detail={viewData}
                                 onDecision={onDecision}
@@ -434,12 +422,12 @@ export function TaskDetailView({
 
                     <div
                         ref={ptr.containerRef}
-                        onTouchStart={handleContainerTouchStart}
-                        onTouchMove={handleContainerTouchMove}
-                        onTouchEnd={handleContainerTouchEnd}
-                        onTouchCancel={handleContainerTouchEnd}
-                        onWheel={handleContainerWheel}
-                        className="flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background"
+                        onTouchStart={activeTab === 'comments' ? undefined : handleContainerTouchStart}
+                        onTouchMove={activeTab === 'comments' ? undefined : handleContainerTouchMove}
+                        onTouchEnd={activeTab === 'comments' ? undefined : handleContainerTouchEnd}
+                        onTouchCancel={activeTab === 'comments' ? undefined : handleContainerTouchEnd}
+                        onWheel={activeTab === 'comments' ? undefined : handleContainerWheel}
+                        className={cn("flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background", activeTab === 'comments' && "flex flex-col overflow-hidden")}
                     >
                         {/* ── Mobile Pull-to-Refresh Indicator ── */}
                         {(ptr.pullDistance > 0 || ptr.isRefreshing) && (
@@ -481,9 +469,9 @@ export function TaskDetailView({
                                 animate={{ x: 0, opacity: 1, scale: 1 }}
                                 exit={{ x: `${-animationDirection * 20}%`, opacity: 0, scale: 0.98 }}
                                 transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
-                                className="w-full"
+                                className={cn("w-full", activeTab === 'comments' && "flex-1 min-h-0 flex flex-col")}
                             >
-                                <div className="p-4 space-y-4 pb-12">
+                                <div className={cn("p-4 space-y-4 pb-12", activeTab === 'comments' && "task-chat-host")}>
                                     <TaskDetailTabContent
                                         tabValue={activeTab}
                                         mobile={true}
@@ -495,9 +483,8 @@ export function TaskDetailView({
                                         workflowError={workflowError}
                                         isApprovedScope={isApprovedScope}
                                         onSelectReferencePr={handleSelectReferencePr}
-                                        onCommentAdded={handleCommentAdded}
                                     />
-                                    {currentTabIndex < tabs.length - 1 && (
+                                    {activeTab !== 'comments' && currentTabIndex < tabs.length - 1 && (
                                         <div className="flex flex-col items-center justify-center pt-6 pb-4 text-xs font-medium text-muted-foreground/70 select-none">
                                             {pullUpDistance > 0 || isSwitchingTab ? (
                                                 <div className="flex flex-col items-center gap-1.5 text-primary animate-pulse">

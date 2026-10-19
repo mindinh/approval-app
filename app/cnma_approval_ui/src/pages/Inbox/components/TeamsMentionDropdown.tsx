@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useBusUsers } from '../hooks/useBusUsers';
 import type { BusUser } from '@/services/inbox/inbox.types';
 import { Loader2 } from 'lucide-react';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import { useTranslation } from 'react-i18next';
 
 interface TeamsMentionDropdownProps {
@@ -135,9 +136,9 @@ export function TeamsMentionDropdown({
                                 }`}
                             >
                                 {/* Teams circular avatar */}
-                                <div className="size-7 rounded-full bg-gradient-to-br from-primary/80 to-primary text-primary-foreground flex items-center justify-center font-bold text-[11px] shrink-0 shadow-sm">
+                                <UserAvatar className="size-7">
                                     {initials}
-                                </div>
+                                </UserAvatar>
 
                                 <div className="flex flex-col min-w-0 flex-1">
                                     <span className="font-semibold text-xs truncate leading-tight">

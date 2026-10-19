@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { inboxKeys } from '../hooks/inboxKeys';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { resolveTaskCardConfigForTask, type BusinessChip } from '@/renderers/ObjectView.registry';
+import { resolveTaskCardConfigForTask } from '@/renderers/ObjectView.registry';
+import type { BusinessChip } from '@/renderers/core/taskCardView';
 
 import { isApprovedApprovalStatus } from '../utils/predicates';
 
