@@ -10,6 +10,7 @@ describe('Inbox Handler Router', () => {
         
         expect(routes).toContain('/');
         expect(routes).toContain('/approved');
+        expect(routes).toContain('/me/sap-user');
         expect(routes).toContain('/:id');
         expect(routes).toContain('/:id/overview');
         expect(routes).toContain('/:id/information');

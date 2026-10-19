@@ -153,6 +153,16 @@ export class InboxController {
      *       200:
      *         description: Profile object
      */
+    getCurrentSapUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { sapUser, userJwt } = resolveIdentity(req);
+            res.setHeader('Cache-Control', 'private, no-store');
+            res.json(await this.processor.getCurrentSapUser(sapUser, userJwt));
+        } catch (error) {
+            next(error);
+        }
+    };
+
     getMe = (req: Request, res: Response): void => {
         const { sapUser, userJwt } = resolveIdentity(req);
         
@@ -197,6 +207,12 @@ export class InboxController {
         res.json({
             id: sapUser,
             sapUser,
+            // Local mock sessions write as the explicitly configured Basic Auth user.
+            // Never infer ownership from a shared technical account in deployed sessions.
+            ...(!userJwt && sapUser === 'MOCK_USER' && process.env.NODE_ENV !== 'production'
+                && !process.env.VCAP_APPLICATION && process.env.SAP_USE_DESTINATION === 'false'
+                && process.env.SAP_SEND_USER_HEADER !== 'true' && process.env.SAP_TASK_USER?.trim()
+                ? { commentAuthorId: process.env.SAP_TASK_USER.trim().toUpperCase() } : {}),
             displayName: `${firstName} ${lastName}`.trim(),
             firstName,
             lastName,

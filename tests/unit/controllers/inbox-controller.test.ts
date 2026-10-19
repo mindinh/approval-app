@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock the inbox-processor so we can drive the controller in isolation.
 const mockExecuteDecision = vi.fn();
 const mockForwardTask = vi.fn();
 const mockAddComment = vi.fn();
 const mockGetStatusCounts = vi.fn();
+const mockGetCurrentSapUser = vi.fn();
 
 vi.mock('../../../srv/lib/processors/inbox-processor', () => {
     return {
@@ -13,11 +14,66 @@ vi.mock('../../../srv/lib/processors/inbox-processor', () => {
             forwardTask = mockForwardTask;
             addComment = mockAddComment;
             getStatusCounts = mockGetStatusCounts;
+            getCurrentSapUser = mockGetCurrentSapUser;
         }
     };
 });
 
 import { InboxController } from '../../../srv/controllers/inbox-controller';
+
+describe('InboxController.getCurrentSapUser', () => {
+    it('passes the authenticated principal to SAP and returns the resolved username', async () => {
+        const { req, res, next } = makeReqRes({});
+        delete req.headers['x-sap-user'];
+        const token = `header.${Buffer.from(JSON.stringify({ email: 'hieu.lam@example.com' })).toString('base64url')}.signature`;
+        req.headers.authorization = `Bearer ${token}`;
+        mockGetCurrentSapUser.mockResolvedValueOnce({ sapUsername: 'CONARUM2' });
+        await new InboxController().getCurrentSapUser(req, res, next);
+        expect(mockGetCurrentSapUser).toHaveBeenCalledWith('HIEU.LAM@EXAMPLE.COM', token);
+        expect(res.json).toHaveBeenCalledWith({ sapUsername: 'CONARUM2' });
+        expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store');
+    });
+
+    it('propagates lookup errors instead of claiming the email is a SAP username', async () => {
+        const { req, res, next } = makeReqRes({});
+        const error = new Error('SAP current-user endpoint unavailable');
+        mockGetCurrentSapUser.mockRejectedValueOnce(error);
+        await new InboxController().getCurrentSapUser(req, res, next);
+        expect(next).toHaveBeenCalledWith(error);
+        expect(res.json).not.toHaveBeenCalled();
+    });
+});
+
+describe('InboxController.getMe comment writer identity', () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    function getProfile() {
+        const { req, res } = makeReqRes({});
+        delete req.headers.authorization;
+        new InboxController().getMe(req, res);
+        return res.json.mock.calls[0][0];
+    }
+
+    beforeEach(() => {
+        vi.stubEnv('NODE_ENV', 'development');
+        vi.stubEnv('VCAP_APPLICATION', '');
+        vi.stubEnv('SAP_USE_DESTINATION', 'false');
+        vi.stubEnv('SAP_SEND_USER_HEADER', 'false');
+        vi.stubEnv('SAP_TASK_USER', ' LocalWriter ');
+    });
+
+    it('preserves login identity and exposes the explicit local Basic Auth writer', () => {
+        expect(getProfile()).toMatchObject({ id: 'MOCK_USER', sapUser: 'MOCK_USER', commentAuthorId: 'LOCALWRITER' });
+    });
+
+    it.each([
+        ['NODE_ENV', 'production'], ['VCAP_APPLICATION', '{}'],
+        ['SAP_USE_DESTINATION', 'true'], ['SAP_SEND_USER_HEADER', 'true'], ['SAP_TASK_USER', ''],
+    ])('does not infer a writer when %s=%s', (key, value) => {
+        vi.stubEnv(key, value);
+        expect(getProfile()).not.toHaveProperty('commentAuthorId');
+    });
+});
 
 // Bypass auth-helper by stubbing resolveIdentity. We achieve this with a
 // minimal middleware that injects sapUser/userJwt before the controller runs.

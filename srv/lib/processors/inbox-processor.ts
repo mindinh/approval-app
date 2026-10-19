@@ -643,6 +643,15 @@ export class InboxProcessor {
         }
     }
 
+    async getCurrentSapUser(sapUser: string, userJwt?: string) {
+        try {
+            return await this.sapOdataAdapter.getCurrentSapUser(sapUser, userJwt);
+        } catch (error: any) {
+            this.logger.error(`Failed to resolve the current SAP session user: ${error.message}`);
+            throw new AppError('Unable to resolve the current SAP user', 502);
+        }
+    }
+
     async searchBusUsers(searchPattern: string, sapUser: string, userJwt?: string) {
         this.logger.info(`Searching bus users with pattern: "${searchPattern}" for user: ${sapUser}`);
         try {

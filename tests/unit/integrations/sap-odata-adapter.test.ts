@@ -22,6 +22,46 @@ describe('SapOdataAdapter', () => {
     mockSapClient = (adapter as any).sapClient;
   });
 
+  it('reads the actual SAP session user through the same propagated principal', async () => {
+    mockSapClient.get.mockResolvedValue({ id: ' CONARUM2 ', fullName: 'SAP Name' });
+    expect(await adapter.getCurrentSapUser('HIEU.LAM@CONARUM.COM', 'user-jwt')).toEqual({ sapUsername: 'CONARUM2' });
+    expect(mockSapClient.get).toHaveBeenCalledWith('/sap/bc/ui2', '/start_up', {}, 'HIEU.LAM@CONARUM.COM', 'user-jwt');
+  });
+
+  it.each([{ id: '' }, { id: 'login@example.com' }, { id: 'USER_NAME_TOO_LONG' }, '<html>Login</html>'])('rejects invalid SAP identity responses %j', async payload => {
+    mockSapClient.get.mockResolvedValue(payload);
+    await expect(adapter.getCurrentSapUser('LOGIN', 'jwt')).rejects.toThrow('SAP session did not return a valid SAP username');
+  });
+
+  it('finds directory users beyond the first 500 records', async () => {
+    mockSapClient.get
+      .mockResolvedValueOnce({ value: Array.from({ length: 500 }, (_, i) => ({ SAPUserName: `USER${i}` })) })
+      .mockResolvedValueOnce({ value: [{ SAPUserName: 'CONARUM1', EmailAddress: 'jane@example.com' }] });
+    expect(await adapter.searchBusUsers('jane@example.com', 'LOGIN')).toEqual([
+      { SAPUserName: 'CONARUM1', EmailAddress: 'jane@example.com' },
+    ]);
+    expect(mockSapClient.get.mock.calls[1][2]).toMatchObject({ $skip: '500', $top: '500' });
+  });
+
+  it('does not hide a failed directory lookup as an empty result', async () => {
+    mockSapClient.get.mockRejectedValue(new Error('SAP unavailable'));
+    await expect(adapter.searchBusUsers('jane@example.com', 'LOGIN')).rejects.toThrow('SAP unavailable');
+  });
+
+  it('follows short server-driven pages using the continuation token', async () => {
+    mockSapClient.get
+      .mockResolvedValueOnce({ value: [{ SAPUserName: 'FIRST' }], '@odata.nextLink': 'CNMA_BUSUSER?$skiptoken=next%2Bpage' })
+      .mockResolvedValueOnce({ value: [{ SAPUserName: 'LAST' }] });
+    expect(await adapter.searchBusUsers('', 'LOGIN')).toHaveLength(2);
+    expect(mockSapClient.get.mock.calls[1][2]).toMatchObject({ $skiptoken: 'next+page' });
+  });
+
+  it('rejects a repeated page instead of silently truncating or looping forever', async () => {
+    mockSapClient.get.mockResolvedValue({ value: [{ SAPUserName: 'FIRST' }], '@odata.nextLink': 'CNMA_BUSUSER?$skip=1' });
+    await expect(adapter.searchBusUsers('', 'LOGIN')).rejects.toThrow('pagination did not advance');
+    expect(mockSapClient.get).toHaveBeenCalledTimes(2);
+  });
+
   describe('getInstances Worklist', () => {
     it('should query SAP instance list', async () => {
       mockSapClient.get.mockResolvedValue({

@@ -26,6 +26,8 @@ const BASE_URL = 'api/cnma/APPROVAL_SRV/tasks';
 export interface UserInfo {
     id: string;
     sapUser?: string;
+    sapUsername?: string;
+    commentAuthorId?: string;
     displayName: string;
     firstName?: string;
     lastName?: string;
@@ -38,6 +40,10 @@ export interface UserInfo {
  * Inbox API — All backend calls for the inbox feature.
  */
 export const inboxApi = {
+    getCurrentSapUser: async (): Promise<{ sapUsername: string }> => {
+        const { data } = await axiosInstance.get<{ sapUsername: string }>(`${BASE_URL}/me/sap-user`);
+        return data;
+    },
     getStatusCounts: async (): Promise<TaskStatusCountsResponse> => {
         const { data } = await axiosInstance.get<TaskStatusCountsResponse>(`${BASE_URL}/status-counts`);
         return data;
