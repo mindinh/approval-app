@@ -1,5 +1,6 @@
 import cds from '@sap/cds';
 import express from 'express';
+import path from 'node:path';
 import passport from 'passport';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -21,7 +22,15 @@ cds.on('bootstrap', (app: express.Application) => {
         });
     }
 
-    // Health check
+    /**
+     * @openapi
+     * /health:
+     *   get:
+     *     summary: BFF health
+     *     responses:
+     *       200:
+     *         description: Service name, status and timestamp
+     */
     app.get('/api/cnma/APPROVAL_SRV/health', (_req: express.Request, res: express.Response) => {
         res.json({
             status: 'ok',
@@ -30,7 +39,16 @@ cds.on('bootstrap', (app: express.Application) => {
         });
     });
 
-    // Debug Configuration Endpoint (Deprecated — raw OData renderers in use)
+    /**
+     * @openapi
+     * /debug-config:
+     *   get:
+     *     summary: Legacy mapping configuration notice
+     *     deprecated: true
+     *     responses:
+     *       200:
+     *         description: Backend mapping configuration has been removed
+     */
     app.get('/api/cnma/APPROVAL_SRV/debug-config', (_req: express.Request, res: express.Response) => {
         res.json({ status: 'deprecated', message: 'Backend JSON mapping configuration removed. Frontend uses raw OData declarative renderers.' });
     });
@@ -47,7 +65,7 @@ cds.on('bootstrap', (app: express.Application) => {
             servers: [
                 {
                     url: '/api/cnma/APPROVAL_SRV',
-                    description: 'Local BFF Service Root',
+                    description: 'BFF service root on the current host',
                 }
             ],
             components: {
@@ -62,9 +80,8 @@ cds.on('bootstrap', (app: express.Application) => {
             }
         },
         apis: [
-            './srv/controllers/*.ts',
-            './srv/controllers/**/*.ts',
-            './gen/srv/controllers/*.js'
+            path.join(__dirname, 'controllers/*.{ts,js}').replace(/\\/g, '/'),
+            path.join(__dirname, 'server.{ts,js}').replace(/\\/g, '/')
         ]
     };
 

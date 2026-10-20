@@ -52,8 +52,8 @@ By introducing `AddCommentOptions` and `TaggedUser` interfaces, comment options 
 **Class / Function:** `CommentsPanel.renderFormattedCommentText` & `RichMentionInput.getFormattedText`
 
 **Fix Implemented:**
-- In [RichMentionInput.tsx](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx#L44), raw user text containing `<tag>` or `</tag>` is escaped to `&lt;tag&gt;` / `&lt;/tag&gt;` during `getFormattedText()`.
-- In [CommentsPanel.tsx](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx#L14), `unescapeTags` safely unescapes `&lt;tag&gt;` back to text when rendering, ensuring user text cannot spoof system mention badges.
+- In [RichMentionInput.tsx](../../app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx#L44), raw user text containing `<tag>` or `</tag>` is escaped to `&lt;tag&gt;` / `&lt;/tag&gt;` during `getFormattedText()`.
+- In [CommentsPanel.tsx](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx#L14), `unescapeTags` safely unescapes `&lt;tag&gt;` back to text when rendering, ensuring user text cannot spoof system mention badges.
 
 ---
 
@@ -70,7 +70,7 @@ By introducing `AddCommentOptions` and `TaggedUser` interfaces, comment options 
 **Class / Function:** `RichMentionInput.handleKeyDown`
 
 **Fix Implemented:**
-- Updated [RichMentionInput.tsx](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx#L169) to check `(e.ctrlKey || e.metaKey) && e.key === 'Enter'`, allowing macOS users to submit using `Cmd+Enter`.
+- Updated [RichMentionInput.tsx](../../app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx#L169) to check `(e.ctrlKey || e.metaKey) && e.key === 'Enter'`, allowing macOS users to submit using `Cmd+Enter`.
 
 ---
 

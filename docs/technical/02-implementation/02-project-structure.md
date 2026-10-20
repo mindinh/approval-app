@@ -1,115 +1,40 @@
 # Project Codebase Structure
 
-> **Owner:** Lead SAP CAP Architect | **Last Updated:** 2026-08-27 | **Status:** Active
+> **Owner:** Project Team | **Last Updated:** 2026-10-20 | **Status:** Active
 
-This document provides a comprehensive folder structure walkthrough mapping key components of both the CAP backend BFF and the Vite React frontend.
+## Backend
 
----
+| Location | Responsibility |
+| --- | --- |
+| [server.ts](../../../srv/server.ts) | CAP bootstrap, custom REST mount, health, Swagger and middleware. |
+| [service.cds](../../../srv/service.cds), [service.ts](../../../srv/service.ts) | CAP notification service contracts and handlers. |
+| [handlers/inbox-handler.ts](../../../srv/handlers/inbox-handler.ts) | Express route registrations. |
+| [controllers](../../../srv/controllers) | Inbox and notification HTTP handlers. |
+| [processors](../../../srv/lib/processors) | Inbox orchestration, object configuration/resolution, decision strategies and OData paths. |
+| [integrations](../../../srv/lib/integrations) | SAP transport, metadata-backed raw strategies and notification client. |
+| [utils](../../../srv/lib/utils) | Identity, errors, validation, MIME, filenames, logging and cache utility. |
+| [tests](../../../tests) | Backend unit and mocked performance tests. |
 
-## 📂 Overall Directory Tree
+No active backend mapping/configuration directory or mock-data provider is present. The old `clearDetailCache` export is a compatibility no-op.
 
-```
-cnma-approval/
-├── app/                               # UI Frontend applications
-│   ├── cnma_approval_ui/              # Vite React UI5/Tailwind application
-│   │   ├── src/
-│   │   │   ├── components/            # Reusable core UI components (buttons, modals, badges)
-│   │   │   ├── config/                # App-level configs & environment settings
-│   │   │   ├── contexts/              # Global React context providers (Theme, Auth, Toast)
-│   │   │   ├── locales/               # i18n translation files (en.json, vi.json)
-│   │   │   ├── renderers/             # Declarative Raw OData Renderer Architecture
-│   │   │   │   ├── core/              # Renderer engine primitives & evaluators
-│   │   │   │   │   ├── fields.ts      # Field definition primitives (text, codeText, amount, date, tableCol)
-│   │   │   │   │   ├── formatters.ts  # Value formatters for dates, amounts, quantities, codes
-│   │   │   │   │   ├── objectView.ts  # Layout evaluator converting raw entities to section model
-│   │   │   │   │   ├── predicates.ts  # Rule-based visibility helpers (when.eq, when.exists, etc.)
-│   │   │   │   │   ├── renderer.types.ts # Renderer type definitions & contracts
-│   │   │   │   │   └── taskCardView.ts   # Declarative TaskCard card titles, chips, and total amount builder
-│   │   │   │   ├── objects/           # Object field catalogs & layout view definitions
-│   │   │   │   │   ├── claim/         # Claim Form view definitions (claim.fields.ts, claim.view.ts)
-│   │   │   │   │   ├── po/            # Purchase Order catalogs (po.fields.ts, po.views.ts)
-│   │   │   │   │   ├── pr/            # Purchase Requisition catalogs (pr.fields.ts, pr.views.ts)
-│   │   │   │   │   └── reservation/   # Material Reservation catalogs (reservation.fields.ts, reservation.view.ts)
-│   │   │   │   └── ObjectView.registry.ts # Master registry resolver for DocCategory & DocumentType
-│   │   │   ├── pages/                 # Full page view structures
-│   │   │   │   ├── Dashboard/         # Dashboard metrics page & custom hooks
-│   │   │   │   └── Inbox/             # Unified inbox workspace page
-│   │   │   │       ├── components/    # Sub-panels, modals, and panel views
-│   │   │   │       │   ├── ForwardTaskDialog.tsx  # Task forwarding user search modal
-│   │   │   │       │   ├── RichMentionInput.tsx   # Text input supporting @mention user tagging
-│   │   │   │       │   ├── TagUserDialog.tsx      # CC user tagging dialog modal
-│   │   │   │       │   ├── TaskActionPanel.tsx    # Floating action bar (Approve, Reject, Forward, Tag)
-│   │   │   │       │   ├── TaskCard.tsx           # Task card item (driven by taskCardView.ts)
-│   │   │   │       │   ├── TaskDetailSkeletons.tsx # Skeleton loading states
-│   │   │   │       │   ├── TaskDetailView.tsx
-│   │   │   │       │   ├── TeamsMentionDropdown.tsx # Autocomplete list for user mentions
-│   │   │   │       │   └── panels/    # OverviewPanel, AttachmentsPanel, CommentsPanel, WorkflowApprovalPanel
-│   │   │   │       ├── hooks/         # Query hooks (useInbox, useSearchUsers, useBusUsers, useTaskFilters)
-│   │   │   │       └── index.tsx      # Inbox page composition root
-│   │   │   ├── services/              # API Client fetch queries (Axios REST clients)
-│   │   │   ├── styles/                # CSS styling, tokens, theme rules, and Sonner toast layout
-│   │   │   └── utils/                 # Utilities & launchpad helpers (launchpad.ts, parseError.ts)
-│   │   ├── tests/                     # Vitest unit tests for components & renderers
-│   │   └── package.json               # Frontend dependencies & scripts
-│   └── router/                        # Standalone Approuter proxy (BTP Cloud Foundry deployment)
-├── docs/                              # Project documentation suite
-│   ├── business/                      # Business process flows, permissions, data dictionary
-│   ├── product/                       # User guide & introduction
-│   ├── technical/                     # Technical architecture, implementation, and reference docs
-│   └── code-review/                   # Code review reports & audit logs
-├── srv/                               # CAP Node.js Backend BFF
-│   ├── api/                           # CDS OData entity and route service definitions
-│   ├── controllers/                   # Controller endpoint handlers (Express REST API)
-│   │   └── inbox-controller.ts        # REST routing, auth extraction, decision strategy routing
-│   ├── external/                      # Imported SAP CDS metadata models
-│   ├── lib/                           # Core business processors and integrations
-│   │   ├── integrations/              # Outbound connectors to SAP backend (Strategy pattern)
-│   │   │   ├── base.ts                # BaseRawDetail strategy class handling raw OData querying & unwrap
-│   │   │   ├── claim.ts               # Expense Claim raw detail strategy
-│   │   │   ├── comment.types.ts       # Unified comment payload contract and interface
-│   │   │   ├── detail.ts              # Unified detail retrieval strategy contract
-│   │   │   ├── po.ts                  # Purchase Order raw detail strategy
-│   │   │   ├── pr.ts                  # Purchase Requisition raw detail strategy
-│   │   │   ├── re.ts                  # Material Reservation raw detail strategy
-│   │   │   ├── sap-client.ts          # SAP client connector with CSRF token handling
-│   │   │   ├── sap-odata-adapter.ts   # Facade adapter managing strategy dispatch & caching
-│   │   │   └── taskprocessing-adapter.ts # SAP Task Gateway operations adapter
-│   │   ├── processors/                # Business processors and orchestrators
-│   │   │   ├── decision-strategy.ts   # Decision strategy pattern & capability validation
-│   │   │   ├── inbox-processor.ts     # Main orchestrator returning raw task detail payload
-│   │   │   ├── object-type-resolver.ts # Object type resolution & hint resolution
-│   │   │   └── odata-config.ts        # OData service constants and path mappings
-│   │   └── utils/                     # Cache engine, file-helper.ts, request-validator.ts, logging, auth
-│   ├── server.ts                      # Express bootstrap logic (passport, XSUAA JWT, REST routing)
-│   └── service.cds                    # CDS BFF Service path definitions
-├── tests/                             # Backend Unit, Integration & Performance tests
-│   ├── performance/                   # Stress & Performance benchmark suite
-│   └── unit/                          # Unit test suite for adapters, strategies, and processors
-├── mta.yaml                           # Multi-Target Application deployment descriptor
-└── package.json                       # Root package config & execution scripts
-```
+## Frontend
 
----
+| Location | Responsibility |
+| --- | --- |
+| [App.tsx](../../../app/cnma_approval_ui/src/App.tsx) | Application routes/shell. |
+| [InboxPage.tsx](../../../app/cnma_approval_ui/src/pages/Inbox/InboxPage.tsx) | Inbox page composition; `index.ts` exports the page. |
+| [Inbox components](../../../app/cnma_approval_ui/src/pages/Inbox/components) | Cards, task detail, reference PR and collaboration panels. |
+| [Inbox hooks](../../../app/cnma_approval_ui/src/pages/Inbox/hooks) | Queries, filtering, selection and actions. |
+| [renderers](../../../app/cnma_approval_ui/src/renderers) | Object registry, core primitives, object-specific field/view definitions and worklist chip evaluation. |
+| [services](../../../app/cnma_approval_ui/src/services) | Shared HTTP client and typed API contracts. |
+| [locales](../../../app/cnma_approval_ui/src/locales) | Translation catalogs. |
+| [frontend tests](../../../app/cnma_approval_ui/tests) | Unit and browser fixtures. |
 
-## 🔑 Crucial Backend Component Files
+Task-card fields are now defined through renderer `cardChips` and `core/taskCardView.ts`; the historical `taskCard.mapper.ts` is absent.
 
-*   [`srv/server.ts`](file:///d:/learning/test/cnma_approval/srv/server.ts): Bootstraps Express application. Mounts REST routes at `/api/cnma/APPROVAL_SRV`.
-*   [`srv/controllers/inbox-controller.ts`](file:///d:/learning/test/cnma_approval/srv/controllers/inbox-controller.ts): Express REST API controller layer mapping task list, details, decisions, comments, and attachments.
-*   [`srv/lib/processors/decision-strategy.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/decision-strategy.ts): Encapsulates task decision rules, permission validation (prohibiting Forward for CC tasks), and execution dispatch.
-*   [`srv/lib/processors/inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts): Business orchestrator fetching raw business objects and taskprocessing states concurrently.
-*   [`srv/lib/integrations/base.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/base.ts): Defines `BaseRawDetail` strategy class handling OData `$expand` fetches and stripping transport containers (`__metadata`, `__deferred`) without altering property keys.
-*   [`srv/lib/integrations/sap-odata-adapter.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts): Unified SAP OData facade managing raw document strategies (`PrDetail`, `PoDetail`, `ClaimDetail`, `ReDetail`) and in-memory TTL caching.
+## Build and deployment
 
----
-
-## 🔑 Crucial Frontend Component Files
-
-*   [`app/cnma_approval_ui/src/pages/Inbox/index.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/index.tsx): Composition root for the inbox workspace layout.
-*   [`app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx): Task detail container reading raw task response and resolving section models via `resolveBusinessSectionModel`.
-*   [`app/cnma_approval_ui/src/renderers/ObjectView.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/ObjectView.registry.ts): Master registry mapping `DocCategory` and `DocumentType` to declarative layout view specifications.
-*   [`app/cnma_approval_ui/src/pages/Inbox/components/panels/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/): Sub-panels managing overview cards, item tables, attachments, comments, and workflow timelines:
-    *   `OverviewPanel.tsx`: Renders overview section cards dynamically from declarative `BusinessSectionModel`.
-    *   `DetailsPanel.tsx`: Renders line item tables with view mode toggle (`Table` vs `Card Grid`) and direct S/4HANA Launchpad deep links.
-    *   `AttachmentsPanel.tsx`: Renders file attachment grid with preview modal.
-    *   `CommentsPanel.tsx`: Renders timeline notes, inline Forward audit log indicators (`User A -> User B`), and comment box.
-    *   `WorkflowApprovalPanel.tsx`: Renders release strategy workflow timeline with rejection visual highlights.
+[MTA](../../../mta.yaml) builds the CAP backend and React UI, packages the standalone [Approuter](../../../app/router), and deploys UI resources to the HTML5 repository.
+[QAS](../../../deployment/qas.mtaext) and [PRD](../../../deployment/prd.mtaext) override destination/client properties.
+`gen/`, frontend `dist/` and `mta_archives/` are generated outputs.
+See [local setup](01-local-setup.md), [configuration](../04-reference/01-configuration.md) and [API reference](03-backend-bff-endpoints.md).

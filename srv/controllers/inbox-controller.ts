@@ -32,17 +32,25 @@ const readRawBody = (req: Request): Promise<Buffer> => {
 export class InboxController {
     private readonly processor = new InboxProcessor();
 
+
+
     /**
      * @openapi
      * /tasks/debug/current-user:
      *   get:
-     *     summary: Diagnostics for the current user
-     *     description: Checks incoming user identity and BTP JWT authorization details.
+     *     summary: Diagnostics for current identity
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     responses:
-     *       200:
-     *         description: Diagnostic object
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getDebugCurrentUser = (req: Request, res: Response): void => {
         const sapUser = getSapUser(req);
@@ -60,17 +68,25 @@ export class InboxController {
         });
     };
 
+
+
     /**
      * @openapi
      * /tasks/debug/jwt:
      *   get:
-     *     summary: Diagnostics for raw JWT
-     *     description: Returns decoded claims of the incoming JWT token.
+     *     summary: Inspect JWT diagnostics
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     responses:
-     *       200:
-     *         description: Decoded claims payload
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getDebugJwt = (req: Request, res: Response): void => {
         const jwtInfo = extractJwtFromRequest(req);
@@ -100,17 +116,25 @@ export class InboxController {
         });
     };
 
+
+
     /**
      * @openapi
      * /tasks/debug/auth-summary:
      *   get:
-     *     summary: Check system auth bindings
-     *     description: Checks connection profiles (Destination vs Axios) and header properties.
+     *     summary: Inspect authentication configuration
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     responses:
-     *       200:
-     *         description: Diagnostic auth configuration metrics
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getDebugAuthSummary = (req: Request, res: Response): void => {
         const sapUser = getSapUser(req);
@@ -135,23 +159,31 @@ export class InboxController {
                 authMode: process.env.SAP_USE_DESTINATION === 'true' ? 'principal-propagation' : 'technical-user',
                 propagationExpected: process.env.SAP_USE_DESTINATION === 'true',
                 sapUser: sapUser,
-                destinationName: process.env.SAP_TASK_DESTINATION || 'SAP_ABAP_BACKEND',
+                destinationName: process.env.SAP_TASK_DESTINATION?.trim() || null,
             },
             claims: payload ? summarizeJwtClaims(payload) : null,
         });
     };
 
+
+
     /**
      * @openapi
-     * /tasks/me:
+     * /tasks/me/sap-user:
      *   get:
-     *     summary: Resolved user profile
-     *     description: Decodes BTP scopes to resolve role configuration (Admin vs User).
+     *     summary: Resolve current SAP business user
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     responses:
-     *       200:
-     *         description: Profile object
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getCurrentSapUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -163,6 +195,25 @@ export class InboxController {
         }
     };
 
+
+    /**
+     * @openapi
+     * /tasks/me:
+     *   get:
+     *     summary: Resolved user profile
+     *     tags:
+     *       - Tasks
+     *     security:
+     *       - BearerAuth: []
+     *     responses:
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
+     */
     getMe = (req: Request, res: Response): void => {
         const { sapUser, userJwt } = resolveIdentity(req);
         
@@ -223,17 +274,54 @@ export class InboxController {
 
 
 
+
+
     /**
      * @openapi
      * /tasks/dashboard:
      *   get:
-     *     summary: Fetch dashboard aggregation
-     *     description: Merges metrics, statuses, and net amounts.
+     *     summary: Dashboard aggregation
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: top
+     *         schema:
+     *           type: integer
+     *       - in: query
+     *         name: skip
+     *         schema:
+     *           type: integer
+     *       - in: query
+     *         name: category
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - PR
+     *             - PO
+     *             - RESERVATION
+     *             - CLAIM
+     *       - in: query
+     *         name: status
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - In Approving
+     *             - Completed
+     *       - in: query
+     *         name: documentType
+     *         schema:
+     *           type: string
      *     responses:
-     *       200:
-     *         description: Dashboard summary array
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -254,23 +342,25 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/category-counts:
+     * /tasks/status-counts:
      *   get:
-     *     summary: Fetch task counts by business object category
-     *     description: Retrieves real-time counts for PR, PO, Reservation, and Claim.
+     *     summary: Task counts by workflow status
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
-     *     parameters:
-     *       - in: query
-     *         name: scope
-     *         schema:
-     *           type: string
-     *           enum: [my, approved]
      *     responses:
-     *       200:
-     *         description: Category counts breakdown
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getStatusCounts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -281,6 +371,34 @@ export class InboxController {
         }
     };
 
+
+    /**
+     * @openapi
+     * /tasks/category-counts:
+     *   get:
+     *     summary: Task counts by category
+     *     tags:
+     *       - Tasks
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: scope
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - my
+     *             - approved
+     *           default: my
+     *     responses:
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
+     */
     getCategoryCounts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { sapUser, userJwt } = resolveIdentity(req);
@@ -292,12 +410,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks:
+     * /tasks:
      *   get:
-     *     summary: Retrieve active workflow tasks
-     *     description: Fetches all pending PR/PO approval tasks for the active user.
+     *     summary: Active workflow tasks
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -309,9 +430,34 @@ export class InboxController {
      *         name: skip
      *         schema:
      *           type: integer
+     *       - in: query
+     *         name: category
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - PR
+     *             - PO
+     *             - RESERVATION
+     *             - CLAIM
+     *       - in: query
+     *         name: search
+     *         schema:
+     *           type: string
      *     responses:
-     *       200:
-     *         description: Standardized tasks array envelope
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 items:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     additionalProperties: true
+     *                 total:
+     *                   type: number
      */
     getTasks = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -331,12 +477,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/approved:
+     * /tasks/approved:
      *   get:
-     *     summary: Retrieve processed tasks history
-     *     description: Retrieves the completed workflow items history.
+     *     summary: Processed workflow tasks
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -348,9 +497,34 @@ export class InboxController {
      *         name: skip
      *         schema:
      *           type: integer
+     *       - in: query
+     *         name: category
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - PR
+     *             - PO
+     *             - RESERVATION
+     *             - CLAIM
+     *       - in: query
+     *         name: search
+     *         schema:
+     *           type: string
      *     responses:
-     *       200:
-     *         description: Standardized tasks array envelope
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 items:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     additionalProperties: true
+     *                 total:
+     *                   type: number
      */
     getApprovedTasks = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -376,12 +550,15 @@ export class InboxController {
             : undefined;
     }
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}:
+     * /tasks/{id}:
      *   get:
-     *     summary: Fetch single task details
-     *     description: Retrieves full context for the target task.
+     *     summary: Raw business object and taskprocessing detail
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -390,25 +567,14 @@ export class InboxController {
      *         required: true
      *         schema:
      *           type: string
-     *       - in: query
-     *         name: typeid
-     *         schema:
-     *           type: string
-     *       - in: query
-     *         name: instid
-     *         schema:
-     *           type: string
-     *       - in: query
-     *         name: businessObjectType
-     *         schema:
-     *           type: string
-     *       - in: query
-     *         name: documentId
-     *         schema:
-     *           type: string
      *     responses:
-     *       200:
-     *         description: Enriched details model
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getTaskDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -421,12 +587,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}/overview:
+     * /tasks/{id}/overview:
      *   get:
-     *     summary: Fast-path overview
-     *     description: Retrieves detailed attributes (maps to getTaskDetail).
+     *     summary: Task overview
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -436,8 +605,13 @@ export class InboxController {
      *         schema:
      *           type: string
      *     responses:
-     *       200:
-     *         description: Enriched details model
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getTaskOverview = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -450,12 +624,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}/information:
+     * /tasks/{id}/information:
      *   get:
-     *     summary: Fetch informational details
-     *     description: Maps to getTaskDetail.
+     *     summary: Task information
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -465,8 +642,13 @@ export class InboxController {
      *         schema:
      *           type: string
      *     responses:
-     *       200:
-     *         description: Enriched details model
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getTaskInformation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -479,12 +661,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}/workflow-approval-tree:
+     * /tasks/{id}/workflow-approval-tree:
      *   get:
-     *     summary: Fetch workflow approval tree
-     *     description: Resolves the release strategy hierarchy and signatures log.
+     *     summary: Workflow approval tree
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -495,12 +680,20 @@ export class InboxController {
      *           type: string
      *       - in: query
      *         name: documentId
-     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: businessObjectType
      *         schema:
      *           type: string
      *     responses:
-     *       200:
-     *         description: Hierarchy log tree
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getWorkflowApprovalTree = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -515,12 +708,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}/comments:
+     * /tasks/{id}/comments:
      *   post:
-     *     summary: Post a comment message
-     *     description: Appends a note into the collaboration thread (synced to ERP).
+     *     summary: Add document comment and optional mentions
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -533,18 +729,70 @@ export class InboxController {
      *         name: documentId
      *         schema:
      *           type: string
+     *         description: Required unless supplied in _context.documentId
+     *       - in: query
+     *         name: objectType
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: approverNumber
+     *         schema:
+     *           type: string
      *     requestBody:
      *       required: true
      *       content:
      *         application/json:
      *           schema:
      *             type: object
+     *             required:
+     *               - text
      *             properties:
      *               text:
      *                 type: string
+     *                 maxLength: 255
+     *               objectType:
+     *                 type: string
+     *               taskId:
+     *                 type: string
+     *               approverNumber:
+     *                 type: string
+     *               _context:
+     *                 type: object
+     *                 properties:
+     *                   documentId:
+     *                     type: string
+     *                   businessObjectType:
+     *                     type: string
+     *                   objectType:
+     *                     type: string
+     *                   approverNumber:
+     *                     type: string
+     *               taggedUsers:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     USERNAME:
+     *                       type: string
+     *                     EMAIL:
+     *                       type: string
+     *               TAGGEDUSER:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     USERNAME:
+     *                       type: string
+     *                     EMAIL:
+     *                       type: string
      *     responses:
-     *       200:
-     *         description: Success envelope
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     postComment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -579,28 +827,116 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}/attachments:
-     *   post:
-     *     summary: Upload a raw attachment file
-     *     description: Uploads a binary file to GOS.
+     * /tasks/attachments/{attachId}/content:
+     *   get:
+     *     summary: Stream attachment content
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
      *       - in: path
-     *         name: id
+     *         name: attachId
      *         required: true
      *         schema:
      *           type: string
-     *       - in: header
-     *         name: slug
+     *       - in: query
+     *         name: documentId
      *         schema:
      *           type: string
-     *       - in: header
-     * /tasks/tasks/{id}/attachments/{attId}/content:
+     *         description: Needed when no task id can resolve the document
+     *       - in: query
+     *         name: objectType
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: docCategory
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: type
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: disposition
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - inline
+     *             - attachment
+     *           default: inline
+     *     responses:
+     *       '200':
+     *         description: Binary attachment
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '404':
+     *         description: Attachment not found
+     * /tasks/attachments/{attachId}/content/{fileName}:
      *   get:
-     *     summary: Stream attachment binary content
+     *     summary: Stream attachment content
+     *     tags:
+     *       - Tasks
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: attachId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: fileName
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: documentId
+     *         schema:
+     *           type: string
+     *         description: Needed when no task id can resolve the document
+     *       - in: query
+     *         name: objectType
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: docCategory
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: type
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: disposition
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - inline
+     *             - attachment
+     *           default: inline
+     *     responses:
+     *       '200':
+     *         description: Binary attachment
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '404':
+     *         description: Attachment not found
+     * /tasks/{id}/attachments/{attId}/content:
+     *   get:
+     *     summary: Stream attachment content
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -616,12 +952,97 @@ export class InboxController {
      *           type: string
      *       - in: query
      *         name: documentId
+     *         schema:
+     *           type: string
+     *         description: Needed when no task id can resolve the document
+     *       - in: query
+     *         name: objectType
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: docCategory
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: type
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: disposition
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - inline
+     *             - attachment
+     *           default: inline
+     *     responses:
+     *       '200':
+     *         description: Binary attachment
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '404':
+     *         description: Attachment not found
+     * /tasks/{id}/attachments/{attId}/content/{fileName}:
+     *   get:
+     *     summary: Stream attachment content
+     *     tags:
+     *       - Tasks
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
      *         required: true
      *         schema:
      *           type: string
+     *       - in: path
+     *         name: attId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: fileName
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: documentId
+     *         schema:
+     *           type: string
+     *         description: Needed when no task id can resolve the document
+     *       - in: query
+     *         name: objectType
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: docCategory
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: type
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: disposition
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - inline
+     *             - attachment
+     *           default: inline
      *     responses:
-     *       200:
-     *         description: Raw binary file
+     *       '200':
+     *         description: Binary attachment
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '404':
+     *         description: Attachment not found
      */
     streamAttachment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -681,12 +1102,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
      * /tasks/pr/{docNum}:
      *   get:
-     *     summary: Fetch Purchase Requisition detail by document number
-     *     description: Retrieves CNMA_PRHEADER entity with all standard navigation expands.
+     *     summary: Reference PR detail with actions disabled
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -696,8 +1120,13 @@ export class InboxController {
      *         schema:
      *           type: string
      *     responses:
-     *       200:
-     *         description: Full PR detail model with businessObject
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getPrDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -710,11 +1139,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
      * /tasks/pr/{docNum}/attachments:
      *   get:
-     *     summary: Get PR attachments metadata
+     *     summary: Reference PR attachment metadata
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -724,8 +1157,20 @@ export class InboxController {
      *         schema:
      *           type: string
      *     responses:
-     *       200:
-     *         description: Metadata list
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 attachments:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     additionalProperties: true
+     *                 count:
+     *                   type: integer
      */
     getPrAttachments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -742,11 +1187,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
      * /tasks/pr/{docNum}/attachments/{attachId}/content:
      *   get:
-     *     summary: Stream PR attachment content
+     *     summary: Stream reference PR attachment
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -760,9 +1209,66 @@ export class InboxController {
      *         required: true
      *         schema:
      *           type: string
+     *       - in: query
+     *         name: disposition
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - inline
+     *             - attachment
+     *           default: inline
      *     responses:
-     *       200:
-     *         description: Raw binary file
+     *       '200':
+     *         description: Binary attachment
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '404':
+     *         description: Attachment not found
+     * /tasks/pr/{docNum}/attachments/{attachId}/content/{fileName}:
+     *   get:
+     *     summary: Stream reference PR attachment
+     *     tags:
+     *       - Tasks
+     *     security:
+     *       - BearerAuth: []
+     *     description: fileName is accepted for route compatibility; the response uses the SAP filename.
+     *     parameters:
+     *       - in: path
+     *         name: docNum
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: attachId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: fileName
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: disposition
+     *         schema:
+     *           type: string
+     *           enum:
+     *             - inline
+     *             - attachment
+     *           default: inline
+     *     responses:
+     *       '200':
+     *         description: Binary attachment
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       '404':
+     *         description: Attachment not found
      */
     streamPrAttachment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -810,11 +1316,15 @@ export class InboxController {
     };
 
 
+
+
     /**
      * @openapi
-     * /tasks/tasks/{id}/decision:
+     * /tasks/{id}/decision:
      *   post:
-     *     summary: Execute approval/rejection decision
+     *     summary: Execute task decision
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -832,9 +1342,36 @@ export class InboxController {
      *             properties:
      *               decisionKey:
      *                 type: string
+     *               sapDecisionKey:
+     *                 type: string
+     *               comment:
+     *                 type: string
+     *               approverNumber:
+     *                 type: string
+     *               _context:
+     *                 type: object
+     *                 properties:
+     *                   documentId:
+     *                     type: string
+     *                   businessObjectType:
+     *                     type: string
+     *                   objectType:
+     *                     type: string
+     *                   approverNumber:
+     *                     type: string
+     *             anyOf:
+     *               - required:
+     *                   - decisionKey
+     *               - required:
+     *                   - sapDecisionKey
      *     responses:
-     *       200:
-     *         description: Success envelope
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     postDecision = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -872,11 +1409,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
      * /tasks/mass-decision:
      *   post:
-     *     summary: Execute bulk approval/rejection decisions across multiple tasks
+     *     summary: Execute bulk decisions
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     requestBody:
@@ -885,9 +1426,6 @@ export class InboxController {
      *         application/json:
      *           schema:
      *             type: object
-     *             required:
-     *               - decisionKey
-     *               - items
      *             properties:
      *               decisionKey:
      *                 type: string
@@ -897,6 +1435,7 @@ export class InboxController {
      *                 type: string
      *               items:
      *                 type: array
+     *                 minItems: 1
      *                 items:
      *                   type: object
      *                   required:
@@ -912,9 +1451,21 @@ export class InboxController {
      *                       type: string
      *                     sapOrigin:
      *                       type: string
+     *             anyOf:
+     *               - required:
+     *                   - decisionKey
+     *               - required:
+     *                   - sapDecisionKey
+     *             required:
+     *               - items
      *     responses:
-     *       200:
-     *         description: Consolidated multi-status results
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     postMassDecision = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -950,11 +1501,15 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
      * /tasks/search-users:
      *   get:
-     *     summary: Search users for task forwarding
+     *     summary: Search forwarding users
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -966,9 +1521,18 @@ export class InboxController {
      *         name: q
      *         schema:
      *           type: string
+     *       - in: query
+     *         name: searchPattern
+     *         schema:
+     *           type: string
      *     responses:
-     *       200:
-     *         description: Array of matched user objects
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getSearchUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -982,21 +1546,38 @@ export class InboxController {
         }
     };
 
+
+
     /**
      * @openapi
      * /tasks/bus-users:
      *   get:
-     *     summary: Search CNMA_BUSUSER for CC tagging
+     *     summary: Search business users for mentions
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
      *       - in: query
+     *         name: SearchPattern
+     *         schema:
+     *           type: string
+     *       - in: query
      *         name: q
      *         schema:
      *           type: string
+     *       - in: query
+     *         name: searchPattern
+     *         schema:
+     *           type: string
      *     responses:
-     *       200:
-     *         description: Array of matched CNMA_BUSUSER objects
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getBusUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -1011,11 +1592,15 @@ export class InboxController {
     };
 
 
+
+
     /**
      * @openapi
      * /tasks/{id}/forward:
      *   post:
-     *     summary: Forward task to another user
+     *     summary: Forward task to SAP user
+     *     tags:
+     *       - Tasks
      *     security:
      *       - BearerAuth: []
      *     parameters:
@@ -1030,14 +1615,33 @@ export class InboxController {
      *         application/json:
      *           schema:
      *             type: object
+     *             required:
+     *               - forwardTo
      *             properties:
      *               forwardTo:
      *                 type: string
+     *                 maxLength: 12
      *               comment:
      *                 type: string
+     *               _context:
+     *                 type: object
+     *                 properties:
+     *                   documentId:
+     *                     type: string
+     *                   businessObjectType:
+     *                     type: string
+     *                   objectType:
+     *                     type: string
+     *                   approverNumber:
+     *                     type: string
      *     responses:
-     *       200:
-     *         description: Success envelope
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     postForwardTask = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -1063,17 +1667,7 @@ export class InboxController {
         }
     };
 
-    /**
-     * @openapi
-     * /tasks:
-     *   get:
-     *     summary: Catch-all fallback list
-     *     security:
-     *       - BearerAuth: []
-     *     responses:
-     *       200:
-     *         description: List value array
-     */
+
     getFallbackTasks = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { sapUser, userJwt } = resolveIdentity(req);

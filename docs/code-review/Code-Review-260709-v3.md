@@ -2,7 +2,7 @@
 
 **Date:** 260709
 **Reviewer:** Leo – AI + 4-Eyes
-**Scope:** [srv/lib/integrations/sap-odata-adapter.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts), [srv/lib/integrations/detail-strategy.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/detail-strategy.ts), [srv/lib/integrations/pr-strategy.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr-strategy.ts), [srv/lib/integrations/po-strategy.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po-strategy.ts), [srv/lib/processors/inbox-processor.ts](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts), [srv/lib/utils/file-helper.ts](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts)
+**Scope:** [srv/lib/integrations/sap-odata-adapter.ts](../../srv/lib/integrations/sap-odata-adapter.ts), srv/lib/integrations/detail-strategy.ts (historical path: `srv/lib/integrations/detail-strategy.ts`), srv/lib/integrations/pr-strategy.ts (historical path: `srv/lib/integrations/pr-strategy.ts`), srv/lib/integrations/po-strategy.ts (historical path: `srv/lib/integrations/po-strategy.ts`), [srv/lib/processors/inbox-processor.ts](../../srv/lib/processors/inbox-processor.ts), [srv/lib/utils/file-helper.ts](../../srv/lib/utils/file-helper.ts)
 
 ---
 

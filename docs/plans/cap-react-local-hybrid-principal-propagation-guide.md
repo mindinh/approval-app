@@ -1,5 +1,7 @@
 # Guide test local CAP + React với BTP Destination Principal Propagation
 
+> **Status:** Generic design reference, not the current application setup. For this checkout use [local setup](../technical/02-implementation/01-local-setup.md) and [configuration](../technical/04-reference/01-configuration.md). Examples such as `VITE_CAP_BASE_URL` and `VITE_DEV_JWT` are not read by the current frontend; its proxy uses `VITE_PP_JWT`.
+
 > Mục tiêu: chạy **React + CAP ở local**, nhưng CAP vẫn bind tới service thật trên **BTP Cockpit** như XSUAA/IAS, Destination, Connectivity để gọi xuống SAP S/4 on-premise bằng **Principal Propagation** và lấy đúng SAP user.
 
 ---

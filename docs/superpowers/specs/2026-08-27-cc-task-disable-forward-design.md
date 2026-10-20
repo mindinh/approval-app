@@ -196,7 +196,7 @@ Direct POST /tasks/{instanceId}/forward
 User opens CC task in inbox
   → InboxPage mounts TaskDetailView
   → useTaskDetail(instanceId) fires
-  → GET /tasks/tasks/{instanceId}
+  → GET /tasks/{instanceId}
     → inbox-processor.getTaskDetail()
       → objectTypeResolver.resolve(instanceId, ..., { businessObjectType: ... })
         → adapter returns inst with normalTask

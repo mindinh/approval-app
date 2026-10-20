@@ -28,7 +28,7 @@ Following the initial code review, all warnings and low-priority findings have b
 ### 🟡 WARNING
 
 #### 1. [FIXED] DRY Violation: Duplicated Object Type Resolution Logic
-* **Location:** [inbox-processor.ts](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts#L426)
+* **Location:** [inbox-processor.ts](../../srv/lib/processors/inbox-processor.ts#L426)
 * **Resolution:** Refactored the task definition-to-objectType resolution logic into a single private helper method `_resolveObjectType` that caches/uses runtime instances to prevent double network requests. Used this method in both `getTaskDetail` and `getWorkflowApprovalTree`.
 
 ---
@@ -36,11 +36,11 @@ Following the initial code review, all warnings and low-priority findings have b
 ### 🔵 LOW
 
 #### 1. [FIXED] Naming Tech Debt: Reusing `prNumber` for PO Steps
-* **Location:** [po.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts), [pr.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts), [inbox-processor.ts](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts), [inbox.types.ts](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/services/inbox/inbox.types.ts), and [WorkflowApprovalPanel.tsx](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/WorkflowApprovalPanel.tsx).
+* **Location:** [po.ts](../../srv/lib/integrations/po.ts), [pr.ts](../../srv/lib/integrations/pr.ts), [inbox-processor.ts](../../srv/lib/processors/inbox-processor.ts), [inbox.types.ts](../../app/cnma_approval_ui/src/services/inbox/inbox.types.ts), and [WorkflowApprovalPanel.tsx](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/WorkflowApprovalPanel.tsx).
 * **Resolution:** Renamed the key `prNumber` to `documentId` across the backend strategies, controller, frontend service interfaces, and rendering loops, ensuring semantic correctness for all document categories.
 
 #### 2. [FIXED] Test Coverage: Mocking Assertions Updated
-* **Location:** [sap-odata-adapter.test.ts](file:///d:/learning/test/cnma_approval/tests/unit/integrations/sap-odata-adapter.test.ts) and [makeTabDefinitions.test.ts](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/tests/pages/Inbox/components/panels/makeTabDefinitions.test.ts).
+* **Location:** [sap-odata-adapter.test.ts](../../tests/unit/integrations/sap-odata-adapter.test.ts) and [makeTabDefinitions.test.ts](../../app/cnma_approval_ui/tests/pages/Inbox/components/panels/makeTabDefinitions.test.ts).
 * **Resolution:** Updated mock assertions to verify that PO details are returned with standard expands and that PO workflow tabs render correctly in the tab definitions. Run both test suites with **100% success** (77 backend tests, 103 frontend tests passing).
 
 ---

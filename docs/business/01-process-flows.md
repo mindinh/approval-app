@@ -1,6 +1,6 @@
 # Business Process Flows
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-14 | **Status:** Active
+> **Owner:** Lead Business Analyst | **Last Updated:** 2026-10-20 | **Status:** Active
 
 This document maps out the operational and lifecycle processes governing the **CNMA Approval** portal. The diagrams below illustrate how data flows and how actions transition across system boundaries for all supported business object types: **Purchase Requisitions (PR)**, **Purchase Orders (PO)**, **Expense Claims (CLAIM)**, and **Material Reservations (RE)**.
 
@@ -273,3 +273,7 @@ sequenceDiagram
 
 
 
+
+## Action outcome handling
+
+A successful workflow decision and its supporting audit note are separate backend operations on some document types. Claim actions can return a partial-success result when one SAP operation fails. Users should review the returned outcome and refreshed task state before retrying.

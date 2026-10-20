@@ -21,15 +21,15 @@ All warnings (W1–W5) and most LOW-priority findings have been fixed in this re
 
 | Finding | Status | Resolution |
 |---|---|---|
-| **W1** DRY: `addComment` duplicated 4× | ✅ Fixed | Lifted to `BaseRawDetail.buildCommentPayload()` in [srv/lib/integrations/base.ts:38-58](srv/lib/integrations/base.ts#L38-L58). Each strategy now only owns its URL. |
-| **W2** DRY: `forwardOnHeader` duplicated 2× | ✅ Fixed | Lifted to `BaseRawDetail.buildForwardPayload()` in [srv/lib/integrations/base.ts:64-70](srv/lib/integrations/base.ts#L64-L70). |
-| **W3** TS error on `resolveObjectTypeFromTypeId(undefined)` | ✅ Fixed | Widened signature to `string \| undefined \| null` in [srv/lib/processors/odata-config.ts:25](srv/lib/processors/odata-config.ts#L25). |
+| **W1** DRY: `addComment` duplicated 4× | ✅ Fixed | Lifted to `BaseRawDetail.buildCommentPayload()` in [srv/lib/integrations/base.ts:38-58](../../srv/lib/integrations/base.ts#L38-L58). Each strategy now only owns its URL. |
+| **W2** DRY: `forwardOnHeader` duplicated 2× | ✅ Fixed | Lifted to `BaseRawDetail.buildForwardPayload()` in [srv/lib/integrations/base.ts:64-70](../../srv/lib/integrations/base.ts#L64-L70). |
+| **W3** TS error on `resolveObjectTypeFromTypeId(undefined)` | ✅ Fixed | Widened signature to `string \| undefined \| null` in [srv/lib/processors/odata-config.ts:25](../../srv/lib/processors/odata-config.ts#L25). |
 | **W4** Best-effort failures masked as SUCCESS | ✅ Fixed | `executeDecision` now surfaces `status: 'PARTIAL_SUCCESS'` and `partialSuccess: true` when any best-effort leg fails. |
-| **W5** Open/Closed: `executeDecision` mixed orchestration + payload building | ✅ Fixed | Extracted `DecisionStrategy` interface in new [srv/lib/processors/decision-strategy.ts](srv/lib/processors/decision-strategy.ts) with `TaskprocessingDecisionStrategy` and `ClaimDecisionStrategy` implementations. |
-| **L1** Camel/Pascal case aliasing verbose | ✅ Fixed | Added `pickField()` helper in [srv/lib/processors/inbox-utils.ts:9-19](srv/lib/processors/inbox-utils.ts#L9-L19); `filterComments` refactored to use it. |
-| **L2/L4** Silent error swallowing in attachment fallback | ✅ Fixed | Added `this.logger.debug()` (CLAIM empty result + CLAIM exception) and `this.logger.warn()` (final fallback exhaustion) in [srv/lib/integrations/sap-odata-adapter.ts:260-292](srv/lib/integrations/sap-odata-adapter.ts#L260-L292). |
-| **L3** `ObjectTypeResolver.resolve` 100-LOC monolith | ✅ Fixed | Extracted `buildFallbackTaskRuntime()` helper at module level in [srv/lib/processors/object-type-resolver.ts:131-166](srv/lib/processors/object-type-resolver.ts#L131-L166). |
-| **L5** Malformed body → 500 instead of 400 | ✅ Fixed | Added `srv/lib/utils/request-validator.ts` with `ensureString`, `ensureOptionalString`, `ensureObject`, `ensureArray` helpers; wired into `postDecision`, `postForwardTask`, `postComment` in [srv/controllers/inbox-controller.ts](srv/controllers/inbox-controller.ts). |
+| **W5** Open/Closed: `executeDecision` mixed orchestration + payload building | ✅ Fixed | Extracted `DecisionStrategy` interface in new [srv/lib/processors/decision-strategy.ts](../../srv/lib/processors/decision-strategy.ts) with `TaskprocessingDecisionStrategy` and `ClaimDecisionStrategy` implementations. |
+| **L1** Camel/Pascal case aliasing verbose | ✅ Fixed | Added `pickField()` helper in [srv/lib/processors/inbox-utils.ts:9-19](../../srv/lib/processors/inbox-utils.ts#L9-L19); `filterComments` refactored to use it. |
+| **L2/L4** Silent error swallowing in attachment fallback | ✅ Fixed | Added `this.logger.debug()` (CLAIM empty result + CLAIM exception) and `this.logger.warn()` (final fallback exhaustion) in [srv/lib/integrations/sap-odata-adapter.ts:260-292](../../srv/lib/integrations/sap-odata-adapter.ts#L260-L292). |
+| **L3** `ObjectTypeResolver.resolve` 100-LOC monolith | ✅ Fixed | Extracted `buildFallbackTaskRuntime()` helper at module level in [srv/lib/processors/object-type-resolver.ts:131-166](../../srv/lib/processors/object-type-resolver.ts#L131-L166). |
+| **L5** Malformed body → 500 instead of 400 | ✅ Fixed | Added `srv/lib/utils/request-validator.ts` with `ensureString`, `ensureOptionalString`, `ensureObject`, `ensureArray` helpers; wired into `postDecision`, `postForwardTask`, `postComment` in [srv/controllers/inbox-controller.ts](../../srv/controllers/inbox-controller.ts). |
 | **L7** No controller-layer test for 400 propagation | ✅ Fixed | New `tests/unit/controllers/inbox-controller.test.ts` (11 tests) + `tests/unit/processors/decision-strategy.test.ts` (15 tests) + `tests/unit/integrations/base-detail.test.ts` (15 tests). |
 
 ---
@@ -77,11 +77,11 @@ All warnings (W1–W5) and most LOW-priority findings have been fixed in this re
 
 | File | Purpose |
 |---|---|
-| [srv/lib/processors/decision-strategy.ts](srv/lib/processors/decision-strategy.ts) | DecisionStrategy interface + Taskprocessing/Claim implementations + registry |
-| [srv/lib/utils/request-validator.ts](srv/lib/utils/request-validator.ts) | `ensureString`, `ensureObject`, `ensureArray`, `ensureOptionalString` helpers |
-| [tests/unit/controllers/inbox-controller.test.ts](tests/unit/controllers/inbox-controller.test.ts) | Controller-layer 400-validation tests (11 cases) |
-| [tests/unit/processors/decision-strategy.test.ts](tests/unit/processors/decision-strategy.test.ts) | Strategy unit tests (15 cases) |
-| [tests/unit/integrations/base-detail.test.ts](tests/unit/integrations/base-detail.test.ts) | `buildCommentPayload`/`buildForwardPayload`/`padDocumentId` cross-strategy tests (15 cases) |
+| [srv/lib/processors/decision-strategy.ts](../../srv/lib/processors/decision-strategy.ts) | DecisionStrategy interface + Taskprocessing/Claim implementations + registry |
+| [srv/lib/utils/request-validator.ts](../../srv/lib/utils/request-validator.ts) | `ensureString`, `ensureObject`, `ensureArray`, `ensureOptionalString` helpers |
+| [tests/unit/controllers/inbox-controller.test.ts](../../tests/unit/controllers/inbox-controller.test.ts) | Controller-layer 400-validation tests (11 cases) |
+| [tests/unit/processors/decision-strategy.test.ts](../../tests/unit/processors/decision-strategy.test.ts) | Strategy unit tests (15 cases) |
+| [tests/unit/integrations/base-detail.test.ts](../../tests/unit/integrations/base-detail.test.ts) | `buildCommentPayload`/`buildForwardPayload`/`padDocumentId` cross-strategy tests (15 cases) |
 
 ---
 
@@ -89,19 +89,19 @@ All warnings (W1–W5) and most LOW-priority findings have been fixed in this re
 
 | File | Change Summary |
 |---|---|
-| [srv/lib/integrations/base.ts](srv/lib/integrations/base.ts) | Added `buildCommentPayload`, `buildForwardPayload`, `padDocumentId` helpers |
-| [srv/lib/integrations/pr.ts](srv/lib/integrations/pr.ts) | Slimmed `addComment`/`forwardOnHeader` to use shared helpers (~50 → ~10 LOC each) |
-| [srv/lib/integrations/po.ts](srv/lib/integrations/po.ts) | Same slim-down as PR |
-| [srv/lib/integrations/re.ts](srv/lib/integrations/re.ts) | Same slim-down as PR |
-| [srv/lib/integrations/claim.ts](srv/lib/integrations/claim.ts) | Same slim-down + uses `padDocumentId` in `approveOnHeader` & `fetchAttachmentContent` |
-| [srv/lib/integrations/sap-odata-adapter.ts](srv/lib/integrations/sap-odata-adapter.ts) | Added logger; debug logs in attachment fallback paths |
-| [srv/lib/processors/inbox-processor.ts](srv/lib/processors/inbox-processor.ts) | `executeDecision` reduced from 80 LOC of branching to 30 LOC of strategy dispatch |
-| [srv/lib/processors/object-type-resolver.ts](srv/lib/processors/object-type-resolver.ts) | Extracted `buildFallbackTaskRuntime` |
-| [srv/lib/processors/inbox-utils.ts](srv/lib/processors/inbox-utils.ts) | Added `pickField` helper; refactored `filterComments` |
-| [srv/lib/processors/odata-config.ts](srv/lib/processors/odata-config.ts) | `resolveObjectTypeFromTypeId` accepts `string \| undefined \| null` |
-| [srv/controllers/inbox-controller.ts](srv/controllers/inbox-controller.ts) | `postDecision`/`postForwardTask`/`postComment` use runtime validators |
-| [tests/unit/processors/inbox-processor.test.ts](tests/unit/processors/inbox-processor.test.ts) | Updated 2 partial-failure tests; +1 success test |
-| [tests/unit/integrations/sap-odata-adapter.test.ts](tests/unit/integrations/sap-odata-adapter.test.ts) | Verified by extension (no change required) |
+| [srv/lib/integrations/base.ts](../../srv/lib/integrations/base.ts) | Added `buildCommentPayload`, `buildForwardPayload`, `padDocumentId` helpers |
+| [srv/lib/integrations/pr.ts](../../srv/lib/integrations/pr.ts) | Slimmed `addComment`/`forwardOnHeader` to use shared helpers (~50 → ~10 LOC each) |
+| [srv/lib/integrations/po.ts](../../srv/lib/integrations/po.ts) | Same slim-down as PR |
+| [srv/lib/integrations/re.ts](../../srv/lib/integrations/re.ts) | Same slim-down as PR |
+| [srv/lib/integrations/claim.ts](../../srv/lib/integrations/claim.ts) | Same slim-down + uses `padDocumentId` in `approveOnHeader` & `fetchAttachmentContent` |
+| [srv/lib/integrations/sap-odata-adapter.ts](../../srv/lib/integrations/sap-odata-adapter.ts) | Added logger; debug logs in attachment fallback paths |
+| [srv/lib/processors/inbox-processor.ts](../../srv/lib/processors/inbox-processor.ts) | `executeDecision` reduced from 80 LOC of branching to 30 LOC of strategy dispatch |
+| [srv/lib/processors/object-type-resolver.ts](../../srv/lib/processors/object-type-resolver.ts) | Extracted `buildFallbackTaskRuntime` |
+| [srv/lib/processors/inbox-utils.ts](../../srv/lib/processors/inbox-utils.ts) | Added `pickField` helper; refactored `filterComments` |
+| [srv/lib/processors/odata-config.ts](../../srv/lib/processors/odata-config.ts) | `resolveObjectTypeFromTypeId` accepts `string \| undefined \| null` |
+| [srv/controllers/inbox-controller.ts](../../srv/controllers/inbox-controller.ts) | `postDecision`/`postForwardTask`/`postComment` use runtime validators |
+| [tests/unit/processors/inbox-processor.test.ts](../../tests/unit/processors/inbox-processor.test.ts) | Updated 2 partial-failure tests; +1 success test |
+| [tests/unit/integrations/sap-odata-adapter.test.ts](../../tests/unit/integrations/sap-odata-adapter.test.ts) | Verified by extension (no change required) |
 
 ---
 

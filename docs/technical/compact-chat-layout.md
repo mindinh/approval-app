@@ -2,6 +2,8 @@
 
 Desktop tab navigation is rendered inside the task header through its children slot; the reference-PR header likewise contains its tab list. Both headers sit within the library Tabs context, align navigation with header content and own the bottom divider. Mobile keeps its separate pill navigation.
 
+The desktop header uses the shared `bg-card` surface (white in the light theme), including its title and tab navigation, to distinguish it from the muted page background. The reference-PR title inherits this surface instead of painting a separate page background.
+
 Selected desktop triggers have a subtle primary top/side border and a stronger bottom underline. Keyboard focus uses an inset ring with no outer offset, keeping it visible inside the horizontally scrolling tab row; the native outline is suppressed. Mobile pills are unchanged.
 
 Desktop task-detail and reference-PR tabs share `task-detail-tabs.css`: compact underline triggers with rounded top corners only, no tab-list or vertical trigger padding, a subtle primary selected surface, neutral hover, compact library Badge counters and an accessible keyboard-focus ring. The desktop tab row shares the header background without an intervening border, gap or separate framed surface; only the divider below the navigation remains. Library Tabs retain their keyboard behavior; the tab row scrolls horizontally within its own width when necessary. Mobile retains its existing pill tab navigation.

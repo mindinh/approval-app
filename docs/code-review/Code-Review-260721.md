@@ -46,7 +46,7 @@ No critical issues or show-stoppers found. All bugs (blank detail pages, missing
 ## Finding Details
 
 ### [W1] — Dynamic Configuration Reloading (RESOLVED)
-**Class / Function:** [ConfigRegistry](file:///d:/learning/test/cnma_approval/srv/lib/mapping/config-registry.ts)
+**Class / Function:** ConfigRegistry (historical path: `srv/lib/mapping/config-registry.ts`)
 
 **Detail:**
 Added a file-watcher under development environments (`process.env.NODE_ENV !== 'production'`) that invalidates cache keys and re-runs `loadConfigurations()` upon folder edits:
@@ -76,7 +76,7 @@ Added a file-watcher under development environments (`process.env.NODE_ENV !== '
 ---
 
 ### [W2] — Direct Object Mutation (RESOLVED)
-**Class / Function:** [inbox-processor.ts:enrichBusinessObjectForSchema](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts)
+**Class / Function:** [inbox-processor.ts:enrichBusinessObjectForSchema](../../srv/lib/processors/inbox-processor.ts)
 
 **Detail:**
 Implemented deep cloning within the schema enrichment block to guarantee immutability:
