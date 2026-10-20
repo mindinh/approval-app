@@ -33,6 +33,7 @@ try {
             };
         });
         assert.equal(surface.inside, true, 'tabs are inside the header');
+        assert.equal(surface.headerBackground, 'rgb(255, 255, 255)', 'light-theme header uses the white card surface');
         assert.equal(surface.listBackground, 'rgba(0, 0, 0, 0)', 'tab row inherits the header surface');
         assert.equal(surface.tabsBorder, '0px', 'no frame above tabs');
         assert.equal(surface.listTopBorder, '0px');

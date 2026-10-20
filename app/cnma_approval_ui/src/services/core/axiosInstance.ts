@@ -1,10 +1,8 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { triggerSessionExpiredGlobal } from '@/components/providers/SessionTimeoutProvider';
 
-const isLocal = false;
-
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: isLocal ? 'http://localhost:5000' : '',
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',

@@ -254,7 +254,7 @@ export function ReferencePrDetailView({
                     className="flex-1 min-h-0 w-full flex flex-col gap-0"
                 >
                     <Card className="task-detail-header rounded-none border-x-0 border-t-0 gap-0 py-0 shadow-none">
-                        <div className="bg-background px-4 py-4 shrink-0">
+                        <div className="px-4 py-4 shrink-0">
                             <div className="flex items-start gap-3">
                                 <div className="min-w-0 flex-1 space-y-2">
                                     <div className="flex items-center gap-3">
