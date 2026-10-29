@@ -203,7 +203,7 @@ describe('ClaimDecisionStrategy', () => {
         );
         expect(deps.addComment).toHaveBeenCalledWith(
             '212',
-            '',
+            'approve claim 212',
             'MOCK_USER',
             expect.objectContaining({ decision: 'A', objectType: 'CLAIM', taskId: '212', approverNumber: '1' })
         );
@@ -234,16 +234,20 @@ describe('ClaimDecisionStrategy', () => {
         );
         // Critical: approveOnHeader MUST NOT be called when the user is rejecting.
         expect(deps.sapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
+        expect(deps.addComment).toHaveBeenCalledWith(
+            '212', 'reject claim 212', 'MOCK_USER',
+            expect.objectContaining({ decision: 'R', taskId: '212' })
+        );
     });
 
-    it('falls back to "Rejected by <user>" zcomment when no user comment is provided for reject', async () => {
+    it.each(['', '  \n '])('skips comment API for reject with blank comment %j', async (comment) => {
         const deps = makeDeps();
         await strategy.execute(
             {
                 instanceId: '212',
                 decisionKey: '0002',
                 sapDecisionKey: '0002',
-                comment: '',
+                comment,
                 sapUser: 'MOCK_USER',
                 documentId: '212',
                 objectType: 'CLAIM',
@@ -256,16 +260,17 @@ describe('ClaimDecisionStrategy', () => {
             'MOCK_USER', undefined
         );
         expect(deps.sapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
+        expect(deps.addComment).not.toHaveBeenCalled();
     });
 
-    it('falls back to "Approved by <user>" zcomment when no user comment provided', async () => {
+    it.each(['', '  \n '])('skips comment API for approve with blank comment %j', async (comment) => {
         const deps = makeDeps();
-        await strategy.execute(
+        const outcome = await strategy.execute(
             {
                 instanceId: '212',
                 decisionKey: '0001',
                 sapDecisionKey: '0001',
-                comment: '',
+                comment,
                 sapUser: 'MOCK_USER',
                 documentId: '212',
                 objectType: 'CLAIM',
@@ -277,6 +282,9 @@ describe('ClaimDecisionStrategy', () => {
             { decision: 'A', comment: 'Approved by MOCK_USER', approverNumber: '1' },
             'MOCK_USER', undefined
         );
+        expect(deps.addComment).not.toHaveBeenCalled();
+        expect(outcome.status).toBe('SUCCESS');
+        expect(outcome.comment).toBeUndefined();
     });
 
     it('passes custom approverNumber when provided in context', async () => {
@@ -301,7 +309,7 @@ describe('ClaimDecisionStrategy', () => {
         );
         expect(deps.addComment).toHaveBeenCalledWith(
             '0000000220',
-            '',
+            'approve claim',
             'MOCK_USER',
             expect.objectContaining({ approverNumber: '2' })
         );

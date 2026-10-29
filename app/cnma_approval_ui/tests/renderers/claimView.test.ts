@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { formatNoteText } from '@/renderers/core/formatters';
 import { CLAIM_OVERVIEW_FIELDS } from '@/renderers/objects/claim/claim.fields';
 import { CLAIM_VIEW } from '@/renderers/objects/claim/claim.view';
-import { evalField } from '@/renderers/core/objectView';
+import { evalField, resolveObjectView } from '@/renderers/core/objectView';
 
 describe('formatNoteText', () => {
     it('handles standard newlines and trims whitespace per line', () => {
@@ -42,6 +42,27 @@ describe('formatNoteText', () => {
 });
 
 describe('CLAIM_OVERVIEW_FIELDS & CLAIM_VIEW', () => {
+    it('pairs item amounts with document and header local currency using the CLAIM locale', () => {
+        const amounts = {
+            PaymentAmount: 243563.97,
+            TotalNetAmountLocalCrcy: 6347277058,
+            DocumentCurrency: 'USD',
+        };
+        const model = resolveObjectView(CLAIM_VIEW, {
+            ...amounts,
+            LocalCurrency: 'VND',
+            _Item: [{ ...amounts, ItemNumber: '1', InvoiceAmount: 243563.97 }],
+        });
+
+        const header = model.cards[0].fields;
+        const item = model.tables[0].rows[0].values;
+        expect(item.paymentAmount).toBe('243.563,97 USD');
+        expect(item.totalNetAmountLocalCrcy).toBe('6.347.277.058 VND');
+        expect(item.invoiceAmount).toBe('243.563,97 USD');
+        expect(item.paymentAmount).toBe(header.find(field => field.label === 'Payment Amount')?.value);
+        expect(item.totalNetAmountLocalCrcy).toBe(header.find(field => field.label === 'Total Amount')?.value);
+    });
+
     const mockRecord = {
         DocCategory: 'CLAIM',
         DocumentNumber: '0000000284',

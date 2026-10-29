@@ -1,6 +1,6 @@
 import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
 
-export type FieldValueFormatter = (value: unknown, record: RawODataEntity) => string;
+export type FieldValueFormatter = (value: unknown, record: RawODataEntity, headerRecord?: RawODataEntity) => string;
 export type VisibilityPredicate = (record: RawODataEntity) => boolean;
 
 export interface FieldDefinition {

@@ -55,7 +55,7 @@
                 <Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
                 <Property Name="BaseUnit" Type="Edm.String" Nullable="false" MaxLength="3"/>
                 <Property Name="CostPrice" Type="Edm.Decimal" Nullable="false" Precision="11" Scale="variable"/>
-                <Property Name="Price" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="Price" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="Currency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="RequirementDate" Type="Edm.Date"/>
                 <Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/>
@@ -213,10 +213,10 @@
                 <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
                 <Property Name="PaymentAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="13"/>
                 <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
-                <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalVatAmount" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalOrderValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalVatAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalOrderValue" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="Agent" Type="Edm.String" Nullable="false" MaxLength="12"/>
                 <Property Name="ApproverNumber" Type="Edm.String" Nullable="false" MaxLength="1"/>
@@ -241,7 +241,7 @@
                 <Property Name="Quantity" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
                 <Property Name="Unit" Type="Edm.String" Nullable="false" MaxLength="3"/>
                 <Property Name="DeliveryDate" Type="Edm.Date"/>
-                <Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="ValuationPrice" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="ValuationPricePRCD" Type="Edm.Decimal" Nullable="false" Precision="20" Scale="2"/>
                 <Property Name="ReferenceDocumentNumber" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="GLAccount" Type="Edm.String" Nullable="false" MaxLength="10"/>
@@ -252,11 +252,11 @@
                 <Property Name="CommitmentItemDescription" Type="Edm.String" Nullable="false" MaxLength="50"/>
                 <Property Name="OrderInternalID" Type="Edm.String" Nullable="false" MaxLength="12"/>
                 <Property Name="OrderInternalName" Type="Edm.String" Nullable="false" MaxLength="40"/>
-                <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalNetAmountLocalCrcyPRCD" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalNetAmountLocalCrcyPRCD" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="Deleted" Type="Edm.String" Nullable="false" MaxLength="1"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
             </EntityType>
             <EntityType Name="ZI_CNMA_PRITEMType">
@@ -291,7 +291,7 @@
                 <Property Name="FundsCenterName" Type="Edm.String" Nullable="false" MaxLength="20"/>
                 <Property Name="TotalNetAmountDocCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
                 <Property Name="DocumentCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
             </EntityType>
             <EntityType Name="ZI_CNMA_ATTACHType">
@@ -360,10 +360,10 @@
                 <Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
                 <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
-                <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalVatAmount" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
-                <Property Name="TotalOrderValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalVatAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="TotalOrderValue" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType)"/>
                 <NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_ATTACHType)"/>
                 <NavigationProperty Name="_Comment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_COMMENTType)"/>

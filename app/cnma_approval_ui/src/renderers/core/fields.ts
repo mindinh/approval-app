@@ -117,7 +117,7 @@ export function tableCol(config: {
     currency?: string;
     unit?: string;
     align?: 'left' | 'center' | 'right';
-    formatter?: (val: unknown, record: any) => string;
+    formatter?: TableColumnDefinition['formatter'];
 }): TableColumnDefinition {
     return {
         key: config.key,
