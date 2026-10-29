@@ -11,7 +11,7 @@
  *   - MassActionBar         (bulk action UI)
  *   - CategoryAccordionGroup(accordion sections and task cards)
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@cnma/react-ui';
 import { MassActionBar } from './MassActionBar';
 import type { InboxTask } from '@/services/inbox/inbox.types';
@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
 import type { ObjectCategory } from '../utils/categoryUtils';
 import { useTaskSelection } from '@/pages/Inbox/hooks/useTaskSelection';
+import { advanceSelectAllPages } from '@/pages/Inbox/hooks/selectAllPages';
 import { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
 import { useTaskListScroll } from '@/pages/Inbox/hooks/useTaskListScroll';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -28,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { DesktopHeader, ScopeTabs, MobileHeader } from './TaskListHeader';
 import { ListErrorState, EmptyState, TaskListSkeleton } from './TaskListStates';
 import { TaskListFilterDrawer } from './TaskListFilterDrawer';
+import type { CategoryStates } from '../hooks/useInboxData';
 
 export interface TaskListProps {
     tasks: InboxTask[];
@@ -43,6 +45,7 @@ export interface TaskListProps {
     hasNextPage?: boolean;
     isFetchingNextPage?: boolean;
     onLoadMore?: (categories: ObjectCategory[]) => void;
+    onCancelLoadMore?: () => void;
     onSearchChange?: (search: string) => void;
     showScopeTabs?: boolean;
     myTasksCount?: number;
@@ -64,6 +67,9 @@ export interface TaskListProps {
     onBackToCategories?: () => void;
     categoryTotals?: Record<ObjectCategory, { pending: number; completed: number; total: number }>;
     categoryTotalsAreAuthoritative?: boolean;
+    categoryStates?: CategoryStates;
+    onRetryCategory?: (category: ObjectCategory) => void;
+    onRequestedCategoriesChange?: (categories: Exclude<ObjectCategory, 'ALL'>[]) => void;
 }
 
 export function TaskList({
@@ -80,6 +86,7 @@ export function TaskList({
     hasNextPage = false,
     isFetchingNextPage = false,
     onLoadMore,
+    onCancelLoadMore,
     onSearchChange,
     showScopeTabs = false,
     myTasksCount,
@@ -100,6 +107,9 @@ export function TaskList({
     onBackToCategories,
     categoryTotals,
     categoryTotalsAreAuthoritative = false,
+    categoryStates,
+    onRetryCategory,
+    onRequestedCategoriesChange,
 }: TaskListProps) {
     const { t } = useTranslation();
 
@@ -109,8 +119,20 @@ export function TaskList({
         onSelectionModeChange,
         onSelectedIdsChange,
     });
+    const updateSelectedIds = selection.updateSelectedIds;
+    const toggleSelection = selection.toggleSelection;
 
     const [isSelectingAllPages, setIsSelectingAllPages] = useState(false);
+    const selectingAllRef = useRef(false);
+    const stopSelectingAll = useCallback(() => {
+        selectingAllRef.current = false;
+        setIsSelectingAllPages(false);
+        onCancelLoadMore?.();
+    }, [onCancelLoadMore]);
+    // Cancel the previous scope/search's paging on navigation or unmount too.
+    useEffect(() => {
+        return () => onCancelLoadMore?.();
+    }, [onCancelLoadMore]);
     const filters = useTaskFilters(tasks, scope, activeCategory);
 
     const ptr = usePullToRefresh({
@@ -140,57 +162,77 @@ export function TaskList({
         filteredTasks: filters.filteredTasks,
         hasNextPage,
         isFetchingNextPage,
+        pauseAutoLoad: selection.selectionMode || isSelectingAllPages,
+        isMobile,
         onLoadMore,
         categoryTotals,
         categoryTotalsAreAuthoritative,
         scope,
     });
 
+    const expandedKey = [...expandedCategories].sort().join(',');
+    useEffect(() => {
+        onRequestedCategoriesChange?.(expandedKey.split(',').filter(Boolean) as Exclude<ObjectCategory, 'ALL'>[]);
+    }, [expandedKey, onRequestedCategoriesChange]);
+
+    const selectionContext = `${scope}:${activeCategory ?? ''}:${JSON.stringify(filters.appliedValues)}`;
+    const selectionContextRef = useRef(selectionContext);
+    useEffect(() => {
+        if (selectionContextRef.current === selectionContext) return;
+        selectionContextRef.current = selectionContext;
+        stopSelectingAll();
+        updateSelectedIds(new Set());
+    }, [selectionContext, stopSelectingAll, updateSelectedIds]);
+
+    const toggleCategory = useCallback((category: ObjectCategory) => {
+        stopSelectingAll();
+        handleToggleCategory(category);
+    }, [stopSelectingAll, handleToggleCategory]);
+
     const handleCardClick = useCallback(
         (task: InboxTask) => {
             if (showTaskActions && selection.selectionMode) {
-                setIsSelectingAllPages(false);
-                selection.toggleSelection(task.instanceId);
+                stopSelectingAll();
+                toggleSelection(task.instanceId);
             } else {
                 onSelectTask(task);
             }
         },
-        [showTaskActions, selection.selectionMode, selection.toggleSelection, onSelectTask]
+        [showTaskActions, selection.selectionMode, toggleSelection, onSelectTask, stopSelectingAll]
     );
 
     const handleExitSelectionMode = useCallback(() => {
-        setIsSelectingAllPages(false);
+        stopSelectingAll();
         selection.exitSelectionMode();
-    }, [selection]);
+    }, [selection, stopSelectingAll]);
 
     // Reset multi-page select all if selection mode is exited
     useEffect(() => {
         if (!selection.selectionMode) {
-            setIsSelectingAllPages(false);
+            stopSelectingAll();
         }
-    }, [selection.selectionMode]);
+    }, [selection.selectionMode, stopSelectingAll]);
 
     useEffect(() => {
         onSearchChange?.(String(filters.appliedValues.search || '').trim());
     }, [filters.appliedValues.search, onSearchChange]);
 
-    // Auto-fetch remaining pages only for an explicit Select All action
+    const hasCategoryError = Object.values(categoryStates ?? {}).some(state => !!state?.error);
+    // Auto-fetch remaining pages only for an explicit Select All action.
+    // Depend on the stable updater, not the per-render selection wrapper.
     useEffect(() => {
-        if (!isSelectingAllPages) return;
+        if (!isSelectingAllPages || !selectingAllRef.current || !selection.selectionMode) return;
 
-        const allActionableIds = new Set(
-            filters.filteredTasks
-                .filter((t) => t.normalTask !== false)
-                .map((t) => t.instanceId)
-        );
-        selection.updateSelectedIds(allActionableIds);
-
-        if (hasNextPage && !isFetchingNextPage && onLoadMore) {
-            onLoadMore(['PR', 'PO', 'CLAIM', 'RESERVATION']);
-        } else if (!hasNextPage) {
-            setIsSelectingAllPages(false);
-        }
-    }, [isSelectingAllPages, filters.filteredTasks, hasNextPage, isFetchingNextPage, onLoadMore, selection]);
+        advanceSelectAllPages({
+            tasks: filters.filteredTasks,
+            hasNextPage,
+            isFetchingNextPage,
+            hasError: hasCategoryError,
+            updateSelectedIds,
+            loadMore: onLoadMore,
+            stop: stopSelectingAll,
+        });
+    }, [isSelectingAllPages, selection.selectionMode, filters.filteredTasks, hasNextPage, isFetchingNextPage, hasCategoryError, onLoadMore, updateSelectedIds, stopSelectingAll]);
 
     const actionableFilteredTasks = useMemo(
         () => filters.filteredTasks.filter((t) => t.normalTask !== false),
@@ -202,20 +244,18 @@ export function TaskList({
             actionableFilteredTasks.length > 0 &&
             actionableFilteredTasks.every((t) => selection.selectedIds.has(t.instanceId));
 
-        if (allFilteredSelected && (!hasNextPage || isSelectingAllPages)) {
-            setIsSelectingAllPages(false);
+        if (isSelectingAllPages || (allFilteredSelected && !hasNextPage)) {
+            stopSelectingAll();
             selection.updateSelectedIds(new Set<string>());
         } else {
             const allActionableIds = new Set(actionableFilteredTasks.map((t) => t.instanceId));
             selection.updateSelectedIds(allActionableIds);
             if (hasNextPage) {
+                selectingAllRef.current = true;
                 setIsSelectingAllPages(true);
-                if (!isFetchingNextPage && onLoadMore) {
-                    onLoadMore(['PR', 'PO', 'CLAIM', 'RESERVATION']);
-                }
             }
         }
-    }, [actionableFilteredTasks, selection, hasNextPage, isSelectingAllPages, isFetchingNextPage, onLoadMore]);
+    }, [actionableFilteredTasks, selection, hasNextPage, isSelectingAllPages, stopSelectingAll]);
 
     const selectionSummary =
         showTaskActions && selection.selectionMode
@@ -264,7 +304,7 @@ export function TaskList({
                         isRefreshing={isRefreshing}
                         onToggleCollapse={onToggleCollapse}
                         scope={scope}
-                        onToggleCollapseAll={handleToggleCollapseAll}
+                        onToggleCollapseAll={() => { stopSelectingAll(); handleToggleCollapseAll(); }}
                         isAllCollapsed={isAllCollapsed}
                     />
 
@@ -343,6 +383,7 @@ export function TaskList({
 
             {/* ── Task Results ── */}
             <div
+                data-task-scroll-container
                 ref={(node) => {
                     scrollContainerRef.current = node;
                     ptr.containerRef(node);
@@ -384,7 +425,7 @@ export function TaskList({
 
                 {isError && tasks.length === 0 ? (
                     <ListErrorState error={error} onRefresh={onRefresh} isRefreshing={isRefreshing} />
-                ) : filters.filteredTasks.length === 0 ? (
+                ) : filters.filteredTasks.length === 0 && ((totalItems === 0 && categoryTotalsAreAuthoritative) || filters.hasLocalFilter || tasks.length > 0) && !Object.values(categoryStates ?? {}).some(state => state?.isLoading || state?.error) ? (
                     <EmptyState
                         hasSearch={!!filters.appliedValues.search?.trim()}
                         hasFilters={filters.hasLocalFilter}
@@ -395,6 +436,8 @@ export function TaskList({
                 ) : (
                     <div className={cn('p-2.5 space-y-3', isMobile && 'px-3.5 pb-28 pt-2')}>
                         <CategoryAccordionGroup
+                            categoryStates={categoryStates}
+                            onRetryCategory={onRetryCategory}
                             tasks={filters.filteredTasks}
                             selectedTaskId={selectedTaskId}
                             normSelectedId={normSelectedId}
@@ -406,16 +449,23 @@ export function TaskList({
                             selectionMode={selection.selectionMode}
                             selectedIds={selection.selectedIds}
                             onToggleSelection={(id) => {
-                                setIsSelectingAllPages(false);
+                                stopSelectingAll();
                                 selection.toggleSelection(id);
                             }}
                             expandedCategories={expandedCategories}
-                            onToggleCategory={handleToggleCategory}
+                            onToggleCategory={toggleCategory}
                             categoryTotals={categoryTotals}
                         />
 
                         {/* ── Infinite Scroll Sentinel ── */}
                         <div ref={sentinelCallbackRef} className="h-2" />
+                        {canLoadMoreForExpandedCategories && !isFetchingNextPage && !isSelectingAllPages && (
+                            <div className="flex justify-center py-3">
+                                <Button variant="outline" size="sm" onClick={() => onLoadMore?.(loadableExpandedCategories)}>
+                                    {t('inbox.loadMoreTasks', 'Load more tasks')}
+                                </Button>
+                            </div>
+                        )}
                         {isFetchingNextPage && canLoadMoreForExpandedCategories && (
                             <div className="flex items-center justify-center py-4 gap-2">
                                 <Loader2 className="size-4 animate-spin text-primary" />
@@ -460,7 +510,7 @@ export function TaskList({
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={handleScrollToTopAndCollapse}
+                        onClick={() => { stopSelectingAll(); handleScrollToTopAndCollapse(); }}
                         className={cn(
                             'pointer-events-auto size-11 sm:size-12 rounded-full shadow-lg border border-border/80 bg-card/95 hover:bg-card text-foreground backdrop-blur-md active:scale-95 transition-all group cursor-pointer',
                             'hover:shadow-xl hover:border-primary/50'

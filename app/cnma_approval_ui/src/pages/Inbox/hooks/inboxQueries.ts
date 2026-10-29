@@ -11,7 +11,7 @@
  * - Own page-level UI state
  */
 import { useEffect, useRef } from 'react';
-import { keepPreviousData, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, keepPreviousData, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { STALE, REFRESH } from '@/pages/Inbox/utils/constants';
 import { isSapUserMappingMissing } from '@/pages/Inbox/utils/predicates';
@@ -64,7 +64,7 @@ export function useCurrentUser() {
 export function useCategoryCounts(scope: 'my' | 'approved' = 'my', options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: inboxKeys.categoryCounts(scope),
-        queryFn: () => inboxApi.getCategoryCounts(scope),
+        queryFn: ({ signal }) => inboxApi.getCategoryCounts(scope, signal),
         staleTime: 60 * 1000, // 1 minute fresh
         enabled: options?.enabled !== false,
         refetchOnWindowFocus: false,
@@ -74,7 +74,7 @@ export function useCategoryCounts(scope: 'my' | 'approved' = 'my', options?: { e
 export function useStatusCounts(options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: inboxKeys.statusCounts(),
-        queryFn: () => inboxApi.getStatusCounts(),
+        queryFn: ({ signal }) => inboxApi.getStatusCounts(signal),
         staleTime: 60_000,
         enabled: options?.enabled !== false,
         refetchOnWindowFocus: false,
@@ -90,7 +90,7 @@ export function useTasks(options?: { enabled?: boolean; top?: number; skip?: num
 
     const query = useQuery({
         queryKey: inboxKeys.tasks(pagination),
-        queryFn: () => inboxApi.getTasks(pagination),
+        queryFn: ({ signal }) => inboxApi.getTasks(pagination, signal),
         staleTime: options?.staleTime ?? STALE.LIST,
         enabled: options?.enabled !== false,
         placeholderData: keepPreviousData,
@@ -114,7 +114,7 @@ export function useApprovedTasks(options?: { enabled?: boolean; top?: number; sk
 
     const query = useQuery({
         queryKey: inboxKeys.approvedTasks(pagination),
-        queryFn: () => inboxApi.getApprovedTasks(pagination),
+        queryFn: ({ signal }) => inboxApi.getApprovedTasks(pagination, signal),
         staleTime: STALE.LIST,
         enabled: options?.enabled !== false,
         placeholderData: keepPreviousData,
@@ -131,20 +131,20 @@ export function useApprovedTasks(options?: { enabled?: boolean; top?: number; sk
 }
 
 // ─── useInfiniteTasks (infinite scroll) ────────────────────
-const INFINITE_PAGE_SIZE = 50;
+const INFINITE_PAGE_SIZE = 25;
 
-export function useInfiniteCategoryTasks(
+export function categoryTasksQueryOptions(
     scope: 'my' | 'approved',
     category: 'PR' | 'PO' | 'RESERVATION' | 'CLAIM',
     search = ''
 ) {
-    const query = useInfiniteQuery({
+    return infiniteQueryOptions({
         queryKey: inboxKeys.scopedTasks(scope, category, search),
-        queryFn: ({ pageParam = 0 }) => {
+        queryFn: ({ pageParam = 0, signal }) => {
             const params = { top: INFINITE_PAGE_SIZE, skip: pageParam, category, search: search || undefined };
             return scope === 'approved'
-                ? inboxApi.getApprovedTasks(params)
-                : inboxApi.getTasks(params);
+                ? inboxApi.getApprovedTasks(params, signal)
+                : inboxApi.getTasks(params, signal);
         },
         initialPageParam: 0,
         getNextPageParam: (lastPage, allPages) => {
@@ -155,7 +155,8 @@ export function useInfiniteCategoryTasks(
         staleTime: STALE.LIST,
         // Debounced search changes the query key. Keep the current list visible
         // until the matching server result arrives instead of flashing a full skeleton.
-        placeholderData: keepPreviousData,
+        placeholderData: (previousData, previousQuery) =>
+            previousQuery?.queryKey[2] === scope ? previousData : undefined,
         refetchOnWindowFocus: false,
         retry: (failureCount, error: any) => {
             if (isSapUserMappingMissing(error)) return false;
@@ -163,15 +164,24 @@ export function useInfiniteCategoryTasks(
         },
     });
 
-    useErrorModalOnQueryError(query.error, `Failed to load ${category} tasks`);
+}
+
+export function useInfiniteCategoryTasks(
+    scope: 'my' | 'approved',
+    category: 'PR' | 'PO' | 'RESERVATION' | 'CLAIM',
+    search = '',
+    enabled = true
+) {
+    const query = useInfiniteQuery({ ...categoryTasksQueryOptions(scope, category, search), enabled });
+    // Category failures render inline so an unrelated group remains usable.
     return query;
 }
 
 export function useInfiniteTasks(options?: { enabled?: boolean }) {
     const query = useInfiniteQuery({
         queryKey: inboxKeys.tasksPrefix(),
-        queryFn: ({ pageParam = 0 }) =>
-            inboxApi.getTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }),
+        queryFn: ({ pageParam = 0, signal }) =>
+            inboxApi.getTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }, signal),
         initialPageParam: 0,
         getNextPageParam: (lastPage, allPages) => {
             const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
@@ -195,8 +205,8 @@ export function useInfiniteTasks(options?: { enabled?: boolean }) {
 export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
     const query = useInfiniteQuery({
         queryKey: inboxKeys.approvedTasksPrefix(),
-        queryFn: ({ pageParam = 0 }) =>
-            inboxApi.getApprovedTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }),
+        queryFn: ({ pageParam = 0, signal }) =>
+            inboxApi.getApprovedTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }, signal),
         initialPageParam: 0,
         getNextPageParam: (lastPage, allPages) => {
             const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
@@ -225,7 +235,7 @@ export function useTaskDetail(
 
     const query = useQuery<TaskDetailResponse, Error>({
         queryKey: inboxKeys.taskDetail(instanceId || ''),
-        queryFn: () => inboxApi.getTaskDetail(instanceId!),
+        queryFn: ({ signal }) => inboxApi.getTaskDetail(instanceId!, signal),
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
         retry: (failureCount, error: any) => {

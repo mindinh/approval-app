@@ -339,6 +339,23 @@ export class SapOdataAdapter {
         return null;
     }
 
+    /** Strict count path: never turn an unsupported/truncated aggregate into zero. */
+    async getCategorySummary(sapUser: string, statuses: string[], userJwt?: string): Promise<Pick<CnmaTaskByDocTypeEntity, 'DocCategory' | 'Status' | 'RequestCount'>[]> {
+        const response = await this.sapClient.get<{
+            value?: Pick<CnmaTaskByDocTypeEntity, 'DocCategory' | 'Status' | 'RequestCount'>[];
+            '@odata.nextLink'?: string;
+        }>(ODATA_SERVICES.INSTANCE_LIST.servicePath, '/CNMA_TASKBYDOCTYPE', {
+            $format: 'json',
+            $filter: statuses.map(status => `Status eq '${status.replace(/'/g, "''")}'`).join(' or '),
+            $select: 'DocCategory,Status,RequestCount,DocumentType,MovementType',
+        }, sapUser, userJwt);
+        if (!Array.isArray(response?.value) || response['@odata.nextLink'] || response.value.some(row =>
+            typeof row.DocCategory !== 'string' || !statuses.includes(row.Status) ||
+            !Number.isSafeInteger(row.RequestCount) || row.RequestCount < 0
+        )) throw new Error('Incomplete or invalid category summary');
+        return response.value;
+    }
+
     async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByDocTypeEntity[]> {
         try {
             const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;

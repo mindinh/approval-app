@@ -16,7 +16,8 @@ export class ObjectTypeResolver {
     async resolve(
         instanceId: string,
         sapUser: string,
-        userJwt?: string
+        userJwt?: string,
+        cachedInst?: any
     ): Promise<{
         objectType: string;
         instid: string;
@@ -27,24 +28,30 @@ export class ObjectTypeResolver {
     }> {
         this.logger.info(`Resolving details for task ${instanceId}`);
 
-        // 1. Find the task in the user's worklist (CNMA_WFTASK)
         const targetId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-        const instances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId).catch(() => []);
-
-        let inst = instances.find((i: any) => {
-            const rawId = String(i.WorkflowTaskInternalID || i.instanceID || '').replace(/^0+/, '');
-            const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || '').replace(/^0+/, '');
-            return rawId === targetId || rawDocNum === targetId;
-        });
+        let inst: any = (cachedInst && (cachedInst.DocumentNumber || cachedInst.documentNumber || cachedInst.TechnicalWrkflwObject || cachedInst.instid))
+            ? cachedInst
+            : undefined;
 
         if (!inst) {
-            // Fallback to full worklist if filtered query did not match
-            const allInstances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => []);
-            inst = allInstances.find((i: any) => {
+            // 1. Find the task in the user's worklist (CNMA_WFTASK)
+            const instances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt, instanceId).catch(() => []);
+
+            inst = instances.find((i: any) => {
                 const rawId = String(i.WorkflowTaskInternalID || i.instanceID || '').replace(/^0+/, '');
                 const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || '').replace(/^0+/, '');
                 return rawId === targetId || rawDocNum === targetId;
             });
+
+            if (!inst) {
+                // Fallback to full worklist if filtered query did not match
+                const allInstances = await this.sapOdataAdapter.getInstances(sapUser, undefined, userJwt).catch(() => []);
+                inst = allInstances.find((i: any) => {
+                    const rawId = String(i.WorkflowTaskInternalID || i.instanceID || '').replace(/^0+/, '');
+                    const rawDocNum = String(i.DocumentNumber || i.TechnicalWrkflwObject || '').replace(/^0+/, '');
+                    return rawId === targetId || rawDocNum === targetId;
+                });
+            }
         }
 
         if (!inst) {
@@ -60,25 +67,24 @@ export class ObjectTypeResolver {
         const normalTask = inst.NormalTask !== false && inst.normalTask !== false;
         const isTaskCompleted = inst.WorkflowTaskStatus === 'COMPLETED' || inst.status === 'COMPLETED';
 
-        // 2. Fetch business object details directly (e.g. CNMA_CLAIMHEADER, CNMA_PRHEADER, etc.)
-        const businessObject = await this.sapOdataAdapter.getDetail(
+        // Access and task context are resolved above. These two reads are now
+        // independent; runtime errors remain nonfatal, detail errors remain fatal.
+        const runtimePromise = objectType !== 'CLAIM' && !isTaskCompleted
+            ? this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask).catch((e: any) => {
+                this.logger.warn(`Failed to fetch TASKPROCESSING runtime for ${instanceId}: ${e.message}`);
+                return null;
+            })
+            : Promise.resolve(null);
+        const [businessObject, runtime] = await Promise.all([this.sapOdataAdapter.getDetail(
             objectType,
             documentNumber,
             sapUser,
             userJwt,
             false,
             { approverNumber }
-        );
+        ), runtimePromise]);
 
-        // 3. Build task runtime & decision options
-        let taskRuntime: any = null;
-        if (objectType !== 'CLAIM' && !isTaskCompleted) {
-            try {
-                taskRuntime = await this.taskAdapter.getTaskRuntime(instanceId, sapUser, userJwt, normalTask);
-            } catch (e: any) {
-                this.logger.warn(`Failed to fetch TASKPROCESSING runtime for ${instanceId}: ${e.message}`);
-            }
-        }
+        let taskRuntime: any = runtime;
 
         if (!taskRuntime) {
             taskRuntime = buildFallbackTaskRuntime({
@@ -147,5 +153,3 @@ export function buildFallbackTaskRuntime(input: {
         decisions: [],
     };
 }
-
-

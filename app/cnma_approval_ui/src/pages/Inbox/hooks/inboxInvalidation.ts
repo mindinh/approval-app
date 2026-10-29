@@ -89,21 +89,14 @@ export function invalidateAfterComment(
 
 // ─── Policy: Manual refresh of task lists & detail panel ─────
 export function invalidateTaskList(queryClient: QueryClient, selectedTaskId?: string | null) {
-    queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
-    invalidateScopedLists(queryClient);
-    void queryClient.refetchQueries({ queryKey: [...inboxKeys.all, 'scopedTasks'] });
-    void queryClient.refetchQueries({ queryKey: [...inboxKeys.all, 'categoryCounts'] });
-    void queryClient.refetchQueries({ queryKey: inboxKeys.tasksPrefix() });
-    void queryClient.refetchQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
-
-    if (selectedTaskId) {
-        const cleanId = normId(selectedTaskId);
-        queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-        void queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-        if (selectedTaskId !== cleanId) {
-            queryClient.invalidateQueries({ queryKey: ['inbox', 'task', selectedTaskId] });
-            void queryClient.refetchQueries({ queryKey: ['inbox', 'task', selectedTaskId] });
-        }
-    }
+    const listKinds = new Set(['tasks', 'approvedTasks', 'scopedTasks', 'categoryCounts', 'statusCounts']);
+    // Invalidation already fetches active queries. Leave inactive caches stale for
+    // their next mount rather than replaying every cached search and infinite page.
+    return queryClient.invalidateQueries({
+        refetchType: 'active',
+        predicate: ({ queryKey }) => queryKey[0] === 'inbox' && (
+            listKinds.has(String(queryKey[1])) ||
+            (!!selectedTaskId && queryKey[1] === 'task' && normId(String(queryKey[2])) === normId(selectedTaskId))
+        ),
+    });
 }

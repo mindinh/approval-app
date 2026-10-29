@@ -5,6 +5,7 @@ import {
     ChevronDown,
     SlidersHorizontal,
     X,
+    Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskCard } from './TaskCard';
@@ -17,6 +18,7 @@ import {
     type ObjectCategory,
 } from '../utils/categoryUtils';
 import { isPendingApprovalStatus, isApprovedApprovalStatus } from '../utils/predicates';
+import type { CategoryStates } from '../hooks/useInboxData';
 import {
     Button,
     Badge,
@@ -41,6 +43,8 @@ interface CategoryAccordionGroupProps {
     expandedCategories: Set<ObjectCategory>;
     onToggleCategory: (category: ObjectCategory) => void;
     categoryTotals?: Record<ObjectCategory, { pending: number; completed: number; total: number }>;
+    categoryStates?: CategoryStates;
+    onRetryCategory?: (category: ObjectCategory) => void;
 }
 
 export function CategoryAccordionGroup({
@@ -57,6 +61,8 @@ export function CategoryAccordionGroup({
     expandedCategories,
     onToggleCategory,
     categoryTotals,
+    categoryStates,
+    onRetryCategory,
 }: CategoryAccordionGroupProps) {
     const { t } = useTranslation();
 
@@ -117,6 +123,7 @@ export function CategoryAccordionGroup({
             {CATEGORY_ACCORDION_SECTIONS.map((section) => {
                 const isExpanded = expandedCategories.has(section.key);
                 const catTasks = tasksByCategory[section.key] || [];
+                const state = categoryStates?.[section.key];
                 const Icon = section.icon;
 
                 // Pending vs completed vs total count (Total = In Approving + Completed)
@@ -238,6 +245,7 @@ export function CategoryAccordionGroup({
                                     "flex items-center justify-center rounded-full bg-muted/60 dark:bg-muted/40 text-muted-foreground group-hover:text-foreground transition-colors",
                                     isMobile ? "size-8" : "size-7"
                                 )}>
+                                    {state?.isLoading && <Loader2 className="size-3.5 animate-spin text-primary" aria-label={t('common.loading', 'Loading...')} />}
                                     <ChevronDown
                                         className={cn(
                                             "transition-transform duration-300 ease-out",
@@ -261,6 +269,12 @@ export function CategoryAccordionGroup({
                                     className="overflow-hidden"
                                 >
                                     <div className="pt-3 pb-2 space-y-2.5 px-0.5 sm:px-1">
+                                        {!!state?.error && (
+                                            <div role="alert" className="flex items-center justify-between gap-2 rounded-xl border border-destructive/30 p-3 text-xs text-destructive">
+                                                <span>{t('inbox.categoryLoadFailed', 'Unable to load this category.')}</span>
+                                                <Button variant="outline" size="sm" onClick={() => onRetryCategory?.(section.key)}>{t('common.retry', 'Retry')}</Button>
+                                            </div>
+                                        )}
                                         {/* ── Compact Multi-Select Subtype Dropdown (Mobile optimized) ── */}
                                         {shouldShowSubtypeFilter && (
                                             <div className="flex items-center justify-between px-1 pb-1 pt-0.5 text-xs">
@@ -285,7 +299,9 @@ export function CategoryAccordionGroup({
                                             </div>
                                         )}
 
-                                        {catTasks.length === 0 ? (
+                                        {catTasks.length === 0 && (state?.isLoading || state?.error) ? (
+                                            state.isLoading ? <div role="status" className="flex justify-center gap-2 py-6 text-xs text-muted-foreground"><Loader2 className="size-4 animate-spin" />{t('common.loading', 'Loading...')}</div> : null
+                                        ) : catTasks.length === 0 ? (
                                             <div className="text-center text-xs text-muted-foreground py-6 border border-dashed border-border/60 rounded-2xl bg-muted/10 my-1">
                                                 {t('inbox.noTasksInCategory', 'No tasks in this category')}
                                             </div>

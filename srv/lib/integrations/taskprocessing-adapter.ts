@@ -12,18 +12,9 @@ export class TaskprocessingAdapter {
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
         const paddedId = this.padId(instanceId);
         const taskUrl = `/TaskCollection(InstanceID='${encodeURIComponent(paddedId)}')`;
-        
-        let task: any = {};
-        try {
-            const taskRes: any = await this.sapClient.get<any>(path, taskUrl, { $format: 'json' }, sapUser, userJwt);
-            task = taskRes?.d || {};
-        } catch (e: any) {
-            console.warn(`[Adapter] Non-fatal: Failed to fetch task runtime for task ${paddedId}: ${e.message}`);
-        }
-        
-        const origin = task.SAP__Origin || 'LOCAL';
-        let decisions: any[] = [];
-        if (normalTask) {
+
+        const fetchDecisions = async (origin: string): Promise<any[]> => {
+            if (!normalTask) return [];
             try {
                 const decisionRes: any = await this.sapClient.get<any>(
                     path,
@@ -36,10 +27,28 @@ export class TaskprocessingAdapter {
                     sapUser,
                     userJwt
                 );
-                decisions = decisionRes?.d?.results || [];
+                return decisionRes?.d?.results || [];
             } catch (error: any) {
                 console.warn(`[Adapter] Non-fatal: Failed to fetch decision options for task ${paddedId}: ${error.message}`);
+                return [];
             }
+        };
+
+        const taskPromise = this.sapClient.get<any>(path, taskUrl, { $format: 'json' }, sapUser, userJwt)
+            .then((taskRes: any) => taskRes?.d || {})
+            .catch((e: any) => {
+                console.warn(`[Adapter] Non-fatal: Failed to fetch task runtime for task ${paddedId}: ${e.message}`);
+                return {};
+            });
+
+        const [task, initialDecisions] = await Promise.all([
+            taskPromise,
+            fetchDecisions('LOCAL')
+        ]);
+
+        let decisions = initialDecisions;
+        if (normalTask && task.SAP__Origin && task.SAP__Origin !== 'LOCAL') {
+            decisions = await fetchDecisions(task.SAP__Origin);
         }
 
         return {
@@ -47,8 +56,6 @@ export class TaskprocessingAdapter {
             decisions
         };
     }
-
-
 
     async executeDecision(instanceId: string, sapDecisionKey: string, comment: string, sapUser: string, userJwt?: string): Promise<any> {
         const path = ODATA_SERVICES.TASKPROCESSING.servicePath;
@@ -99,5 +106,3 @@ export class TaskprocessingAdapter {
         return await this.sapClient.post(path, url, {}, {}, sapUser, userJwt);
     }
 }
-
-

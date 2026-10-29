@@ -33,6 +33,11 @@ export default function InboxPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [selectedCategory, setSelectedCategory] = useState<ObjectCategory | null>(null);
     const [serverSearch, setServerSearch] = useState('');
+    const [requested, setRequested] = useState<{ scope: TaskScope; categories: Exclude<ObjectCategory, 'ALL'>[] }>({ scope, categories: [] });
+    const handleRequestedCategories = useCallback((categories: Exclude<ObjectCategory, 'ALL'>[]) => {
+        setRequested(previous => previous.scope === scope && previous.categories.join(',') === categories.join(',')
+            ? previous : { scope, categories });
+    }, [scope]);
     const [massDecisionConfig, setMassDecisionConfig] = useState<{
         isOpen: boolean;
         decisionKey: string;
@@ -68,6 +73,8 @@ export default function InboxPage() {
         overallTotalTasks,
         categoryTotals,
         categoryCountsQuery,
+        categoryStates,
+        retryCategory,
         myCategoryCountsQuery,
         approvedCategoryCountsQuery,
         isLoadingList,
@@ -77,23 +84,24 @@ export default function InboxPage() {
         isListError,
         isRefreshingList,
         handleLoadMore,
+        cancelLoadMore,
         refreshList,
     } = useInboxData({
         scope,
         serverSearch,
         selectedTaskId,
+        requestedCategories: requested.scope === scope && !(isMobile && selectedTaskId) ? requested.categories : [],
     });
 
-    // Reset selection state & invalidate query cache whenever scope changes
+    // Query keys isolate each scope; fresh cached lists can be reused on return.
     const prevScopeRef = useRef<TaskScope>(scope);
     useEffect(() => {
         if (prevScopeRef.current !== scope) {
             prevScopeRef.current = scope;
             setSelectionMode(false);
             setSelectedIds(new Set());
-            refreshList();
         }
-    }, [scope, refreshList]);
+    }, [scope]);
 
     const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
     const selectedTask = normSelectedId
@@ -110,7 +118,6 @@ export default function InboxPage() {
         isFetching: isFetchingDetail,
         isError: isErrorDetail,
         error: errorDetail,
-        refetch: refetchDetail,
     } = useTaskDetail(selectedTaskId, undefined, selectedTask);
 
     const decisionMutation = useDecision();
@@ -141,12 +148,7 @@ export default function InboxPage() {
     const isSecondaryLoading = isFetchingDetail && !!activeDetail;
     const isRefreshing = isRefreshingList || (isFetchingDetail && !isLoadingDetail);
 
-    const handleRefreshTasks = useCallback(() => {
-        refreshList();
-        if (selectedTaskId) {
-            void refetchDetail();
-        }
-    }, [refreshList, selectedTaskId, refetchDetail]);
+    const handleRefreshTasks = useCallback(() => refreshList(), [refreshList]);
 
     const handleSelectTask = useCallback(
         (task: InboxTask) => {
@@ -360,10 +362,14 @@ export default function InboxPage() {
                                 className="h-full"
                             >
                                 <TaskList
+                                    key={scope}
+                                    onRequestedCategoriesChange={handleRequestedCategories}
                                     tasks={tasks}
                                     selectedTaskId={selectedTaskId}
                                     onSelectTask={handleSelectTask}
                                     isLoading={isLoadingList}
+                                    categoryStates={categoryStates}
+                                    onRetryCategory={retryCategory}
                                     isError={isListError}
                                     error={listError}
                                     onRefresh={handleRefreshTasks}
@@ -374,6 +380,7 @@ export default function InboxPage() {
                                     approvedTasksCount={approvedCategoryCountsQuery.data?.ALL}
                                     hasNextPage={hasNextPage}
                                     isFetchingNextPage={isFetchingNextPage}
+                                    onCancelLoadMore={cancelLoadMore}
                                     onLoadMore={handleLoadMore}
                                     onSearchChange={setServerSearch}
                                     isMobile
@@ -421,10 +428,14 @@ export default function InboxPage() {
         <div className="flex h-full w-full overflow-hidden bg-background">
             <aside className="relative w-80 shrink-0 overflow-hidden border-r border-border/60 bg-background">
                 <TaskList
+                    key={scope}
+                    onRequestedCategoriesChange={handleRequestedCategories}
                     tasks={tasks}
                     selectedTaskId={selectedTaskId}
                     onSelectTask={handleSelectTask}
                     isLoading={isLoadingList}
+                    categoryStates={categoryStates}
+                    onRetryCategory={retryCategory}
                     isError={isListError}
                     error={listError}
                     onRefresh={handleRefreshTasks}
@@ -435,6 +446,7 @@ export default function InboxPage() {
                     approvedTasksCount={approvedCategoryCountsQuery.data?.ALL}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
+                    onCancelLoadMore={cancelLoadMore}
                     onLoadMore={handleLoadMore}
                     onSearchChange={setServerSearch}
                     selectionMode={selectionMode}

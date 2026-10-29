@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { InboxTask } from '@/services/inbox/inbox.types';
+import { bindScrollPagination } from './scrollPagination';
 import {
     computeCategoryCounts,
     getTaskObjectCategory,
@@ -15,6 +16,8 @@ export interface UseTaskListScrollOptions {
     filteredTasks: InboxTask[];
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    pauseAutoLoad?: boolean;
+    isMobile?: boolean;
     onLoadMore?: (categories: ObjectCategory[]) => void;
     categoryTotals?: Record<ObjectCategory, { pending: number; completed: number; total: number }>;
     categoryTotalsAreAuthoritative?: boolean;
@@ -30,6 +33,8 @@ export function useTaskListScroll({
     filteredTasks,
     hasNextPage,
     isFetchingNextPage,
+    pauseAutoLoad = false,
+    isMobile = false,
     onLoadMore,
     categoryTotals,
     categoryTotalsAreAuthoritative = false,
@@ -37,6 +42,7 @@ export function useTaskListScroll({
 }: UseTaskListScrollOptions) {
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const lastScrolledTaskIdRef = useRef<string | null>(null);
+    const lastRevealedTaskIdRef = useRef<string | null>(null);
 
     // ─── 4-Section Category Accordion state ───────────────────
     const [expandedCategories, setExpandedCategories] = useState<Set<ObjectCategory>>(
@@ -48,12 +54,12 @@ export function useTaskListScroll({
         if (activeCategory && activeCategory !== 'ALL') {
             setExpandedCategories((current) => {
                 if (current.has(activeCategory)) return current;
-                const next = new Set(current);
+                const next = isMobile ? new Set<ObjectCategory>() : new Set(current);
                 next.add(activeCategory);
                 return next;
             });
         }
-    }, [activeCategory]);
+    }, [activeCategory, isMobile]);
 
     // Reveal matching groups after search/filter without collapsing groups the user opened
     useEffect(() => {
@@ -82,6 +88,7 @@ export function useTaskListScroll({
     useEffect(() => {
         if (!selectedTaskId) {
             lastScrolledTaskIdRef.current = null;
+            lastRevealedTaskIdRef.current = null;
             return;
         }
 
@@ -95,7 +102,10 @@ export function useTaskListScroll({
         if (!currentTask) return;
 
         const cat = getTaskObjectCategory(currentTask);
-        if (cat && cat !== 'OTHER') {
+        // Reveal once per selection, independently of delayed card scrolling.
+        // List/query updates must respect a category the user manually closed.
+        if (cat && cat !== 'OTHER' && lastRevealedTaskIdRef.current !== currentTask.instanceId) {
+            lastRevealedTaskIdRef.current = currentTask.instanceId;
             setExpandedCategories((current) => {
                 if (current.has(cat as ObjectCategory)) return current;
                 const next = new Set(current);
@@ -156,11 +166,12 @@ export function useTaskListScroll({
             if (next.has(cat)) {
                 next.delete(cat);
             } else {
+                if (isMobile) next.clear();
                 next.add(cat);
             }
             return next;
         });
-    }, []);
+    }, [isMobile]);
 
     const handleScrollToTopAndCollapse = useCallback(() => {
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -217,39 +228,23 @@ export function useTaskListScroll({
     );
 
     // ─── Infinite scroll sentinel ────────────────────────────
-    const observerRef = useRef<IntersectionObserver | null>(null);
-
-    const sentinelCallbackRef = useCallback(
-        (node: HTMLDivElement | null) => {
-            if (observerRef.current) {
-                observerRef.current.disconnect();
-                observerRef.current = null;
+    const paginationRef = useRef({ canLoadMoreForExpandedCategories, isFetchingNextPage, pauseAutoLoad, loadableExpandedCategories, onLoadMore });
+    const scrollContextRef = useRef('');
+    scrollContextRef.current = `${scope}:${activeCategory ?? ''}:${[...expandedCategories].sort().join(',')}:${pauseAutoLoad}`;
+    paginationRef.current = { canLoadMoreForExpandedCategories, isFetchingNextPage, pauseAutoLoad, loadableExpandedCategories, onLoadMore };
+    const disconnectPaginationRef = useRef<(() => void) | null>(null);
+    const sentinelCallbackRef = useCallback((node: HTMLDivElement | null) => {
+        disconnectPaginationRef.current?.();
+        disconnectPaginationRef.current = null;
+        const container = node?.closest<HTMLDivElement>('[data-task-scroll-container]');
+        if (!node || !container) return;
+        disconnectPaginationRef.current = bindScrollPagination(container, () => {
+            const state = paginationRef.current;
+            if (state.canLoadMoreForExpandedCategories && !state.isFetchingNextPage && !state.pauseAutoLoad) {
+                state.onLoadMore?.(state.loadableExpandedCategories);
             }
-
-            if (!node || !onLoadMore || !canLoadMoreForExpandedCategories) return;
-
-            const container = scrollContainerRef.current;
-            const observer = new IntersectionObserver(
-                (entries) => {
-                    if (
-                        entries[0].isIntersecting &&
-                        canLoadMoreForExpandedCategories &&
-                        !isFetchingNextPage
-                    ) {
-                        onLoadMore(loadableExpandedCategories);
-                    }
-                },
-                {
-                    root: container || null,
-                    rootMargin: '100px',
-                    threshold: 0,
-                }
-            );
-            observer.observe(node);
-            observerRef.current = observer;
-        },
-        [canLoadMoreForExpandedCategories, isFetchingNextPage, loadableExpandedCategories, onLoadMore]
-    );
+        }, () => scrollContextRef.current);
+    }, []);
 
     return {
         scrollContainerRef,

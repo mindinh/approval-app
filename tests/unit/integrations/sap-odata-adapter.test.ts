@@ -28,6 +28,25 @@ describe('SapOdataAdapter', () => {
     expect(mockSapClient.get).toHaveBeenCalledWith('/sap/bc/ui2', '/start_up', {}, 'HIEU.LAM@CONARUM.COM', 'user-jwt');
   });
 
+  it('reads category aggregates filtered by exact workflow status', async () => {
+    mockSapClient.get.mockResolvedValue({ value: [{ DocCategory: 'BUS2105', Status: 'COMPLETED', RequestCount: 1001 }] });
+    expect(await adapter.getCategorySummary('USER', ['COMPLETED'], 'jwt')).toHaveLength(1);
+    expect(mockSapClient.get).toHaveBeenCalledWith(expect.any(String), '/CNMA_TASKBYDOCTYPE', expect.objectContaining({ $filter: "Status eq 'COMPLETED'" }), 'USER', 'jwt');
+  });
+
+  it.each([
+    { value: [{}] }, { value: [{ DocCategory: 'BUS2105', Status: 'COMPLETED', RequestCount: -1 }] },
+    { value: [], '@odata.nextLink': 'next' }, '<html>login</html>',
+  ])('rejects incomplete or malformed category summaries instead of reporting zero: %j', async payload => {
+    mockSapClient.get.mockResolvedValue(payload);
+    await expect(adapter.getCategorySummary('USER', ['COMPLETED'])).rejects.toThrow();
+  });
+
+  it('accepts an explicitly empty aggregate response', async () => {
+    mockSapClient.get.mockResolvedValue({ value: [] });
+    expect(await adapter.getCategorySummary('USER', ['COMPLETED'])).toEqual([]);
+  });
+
   it.each([{ id: '' }, { id: 'login@example.com' }, { id: 'USER_NAME_TOO_LONG' }, '<html>Login</html>'])('rejects invalid SAP identity responses %j', async payload => {
     mockSapClient.get.mockResolvedValue(payload);
     await expect(adapter.getCurrentSapUser('LOGIN', 'jwt')).rejects.toThrow('SAP session did not return a valid SAP username');

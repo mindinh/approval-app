@@ -17,6 +17,63 @@ describe('ObjectTypeResolver', () => {
         resolver = new ObjectTypeResolver(mockSapOdataAdapter, mockTaskAdapter);
     });
 
+    it('starts runtime while the independent business detail request is still pending', async () => {
+        mockSapOdataAdapter.getInstances.mockResolvedValue([
+            { WorkflowTaskInternalID: '123', DocCategory: 'BUS2105', DocumentNumber: '10000001', NormalTask: true }
+        ]);
+        let finishDetail!: (value: object) => void;
+        mockSapOdataAdapter.getDetail.mockImplementation(() => new Promise(resolve => { finishDetail = resolve; }));
+        mockTaskAdapter.getTaskRuntime.mockResolvedValue({ InstanceID: '123', decisions: [] });
+        const resolving = resolver.resolve('123', 'MOCK_USER', 'jwt-token');
+        try {
+            await vi.waitFor(() => expect(mockSapOdataAdapter.getDetail).toHaveBeenCalled());
+            expect(mockTaskAdapter.getTaskRuntime).toHaveBeenCalledTimes(1);
+        } finally {
+            finishDetail({ DocumentNumber: '10000001' });
+            await resolving;
+        }
+    });
+
+    it('keeps runtime failures nonfatal and builds the fallback from the business detail', async () => {
+        mockSapOdataAdapter.getInstances.mockResolvedValue([
+            { WorkflowTaskInternalID: '123', DocCategory: 'BUS2012', DocumentNumber: '45000002', NormalTask: false }
+        ]);
+        mockSapOdataAdapter.getDetail.mockResolvedValue({ TaskTitle: 'Review equipment order' });
+        mockTaskAdapter.getTaskRuntime.mockRejectedValue(new Error('runtime unavailable'));
+        const result = await resolver.resolve('123', 'MOCK_USER', 'jwt-token');
+        expect(result.taskRuntime.TaskTitle).toBe('Review equipment order');
+        expect(result.taskRuntime.decisions).toEqual([]);
+        expect(result.taskRuntime.SupportsForward).toBe(false);
+    });
+
+    it('keeps business detail failures fatal even when runtime succeeds', async () => {
+        mockSapOdataAdapter.getInstances.mockResolvedValue([
+            { WorkflowTaskInternalID: '123', DocCategory: 'BUS2105', DocumentNumber: '10000001' }
+        ]);
+        mockSapOdataAdapter.getDetail.mockRejectedValue(new Error('business detail unavailable'));
+        mockTaskAdapter.getTaskRuntime.mockResolvedValue({ InstanceID: '123', decisions: [] });
+        await expect(resolver.resolve('123', 'MOCK_USER', 'jwt-token')).rejects.toThrow('business detail unavailable');
+    });
+
+    it('handles both detail branches rejecting without an unhandled runtime rejection', async () => {
+        mockSapOdataAdapter.getInstances.mockResolvedValue([
+            { WorkflowTaskInternalID: '123', DocCategory: 'BUS2105', DocumentNumber: '10000001' }
+        ]);
+        mockSapOdataAdapter.getDetail.mockRejectedValue(new Error('business detail unavailable'));
+        mockTaskAdapter.getTaskRuntime.mockRejectedValue(new Error('runtime unavailable'));
+        await expect(resolver.resolve('123', 'MOCK_USER', 'jwt-token')).rejects.toThrow('business detail unavailable');
+    });
+
+    it.each(['BUS2105', 'BUS2012', 'ZBUS2093', 'CLAIM'])('skips runtime for completed %s tasks', async (DocCategory) => {
+        mockSapOdataAdapter.getInstances.mockResolvedValue([
+            { WorkflowTaskInternalID: '123', DocCategory, DocumentNumber: '10000001', WorkflowTaskStatus: 'COMPLETED' }
+        ]);
+        mockSapOdataAdapter.getDetail.mockResolvedValue({ ActionButton: 'X' });
+        const result = await resolver.resolve('123', 'MOCK_USER', 'jwt-token');
+        expect(mockTaskAdapter.getTaskRuntime).not.toHaveBeenCalled();
+        expect(result.taskRuntime.decisions).toEqual([]);
+    });
+
     it('should resolve PR task from worklist', async () => {
         mockSapOdataAdapter.getInstances.mockResolvedValue([
             { WorkflowTaskInternalID: 'task-1', DocCategory: 'BUS2105', DocumentNumber: '10000001', NormalTask: true }
@@ -172,6 +229,31 @@ describe('ObjectTypeResolver', () => {
             { DecisionKey: '0001', DecisionText: 'Approve' },
             { DecisionKey: '0002', DecisionText: 'Reject' }
         ]);
+    });
+
+    it('skips getInstances worklist query when cachedInst is provided', async () => {
+        const cachedInst = {
+            WorkflowTaskInternalID: '000000043034',
+            DocCategory: 'BUS2012',
+            DocumentNumber: '45000002',
+            NormalTask: true
+        };
+        mockTaskAdapter.getTaskRuntime.mockResolvedValue({
+            InstanceID: '000000043034',
+            Status: 'READY',
+            decisions: [{ DecisionKey: '0001' }]
+        });
+        mockSapOdataAdapter.getDetail.mockResolvedValue({
+            DocumentNumber: '45000002'
+        });
+
+        const result = await resolver.resolve('43034', 'MOCK_USER', 'jwt-token', cachedInst);
+
+        expect(mockSapOdataAdapter.getInstances).not.toHaveBeenCalled();
+        expect(mockSapOdataAdapter.getDetail).toHaveBeenCalledWith('PO', '45000002', 'MOCK_USER', 'jwt-token', false, { approverNumber: '1' });
+        expect(mockTaskAdapter.getTaskRuntime).toHaveBeenCalledWith('43034', 'MOCK_USER', 'jwt-token', true);
+        expect(result.objectType).toBe('PO');
+        expect(result.instid).toBe('45000002');
     });
 
     it('should NOT add decisions for CLAIM task when NormalTask is false (CC task)', async () => {

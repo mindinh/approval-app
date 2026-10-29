@@ -17,6 +17,8 @@ vi.mock('../../../srv/lib/integrations/sap-odata-adapter', () => {
     SapOdataAdapter: class {
       getInstances = vi.fn();
       getStatusCounts = vi.fn();
+      getCategorySummary = vi.fn();
+      getCategoryCount = vi.fn();
       getDetailBatch = vi.fn();
       getDetail = vi.fn();
       addComment = vi.fn();
@@ -56,6 +58,30 @@ describe('InboxProcessor', () => {
   });
 
   describe('getTasks', () => {
+    it.each(['my', 'approved'] as const)('uses one grouped summary for %s category totals', async scope => {
+      const status = scope === 'my' ? 'IN PROCESSING' : 'COMPLETED';
+      mockSapOdataAdapter.getCategorySummary.mockResolvedValue([
+        { DocCategory: 'BUS2105', Status: status, RequestCount: 1001 },
+        { DocCategory: 'BUS2012', Status: status, RequestCount: 3 },
+        { DocCategory: 'BUS2093', Status: status, RequestCount: 2 },
+        { DocCategory: 'ZBUS2093', Status: status, RequestCount: 4 },
+      ]);
+      expect(await processor.getCategoryCounts('USER', scope, 'jwt')).toEqual({ PR: 1001, PO: 3, RESERVATION: 6, CLAIM: 0, ALL: 1010, complete: true });
+      expect(mockSapOdataAdapter.getCategorySummary).toHaveBeenCalledWith('USER', [status], 'jwt');
+      expect(mockSapOdataAdapter.getCategoryCount).not.toHaveBeenCalled();
+    });
+
+    it('falls back to exact category counts if the aggregate fails', async () => {
+      mockSapOdataAdapter.getCategorySummary.mockRejectedValue(new Error('Unsupported aggregate'));
+      mockSapOdataAdapter.getCategoryCount.mockResolvedValue(2);
+      expect(await processor.getCategoryCounts('USER')).toMatchObject({ PR: 2, ALL: 8, complete: true });
+      expect(mockSapOdataAdapter.getCategoryCount).toHaveBeenCalledTimes(4);
+    });
+    it.each(['getTasks', 'getApprovedTasks'] as const)('preserves the server total on an empty %s page', async (method) => {
+      mockSapOdataAdapter.getInstances.mockResolvedValue(Object.assign([], { totalCount: 76 }));
+      const result = await processor[method]('MOCK_USER', 'jwt', { top: 25, skip: 100 });
+      expect(result).toEqual({ items: [], total: 76 });
+    });
     it('should return empty list and zero total if no custom instances are found', async () => {
       mockSapOdataAdapter.getInstances.mockResolvedValue([]);
       
@@ -303,10 +329,10 @@ describe('InboxProcessor', () => {
           'MOCK_USER',
           'jwt'
         );
-        // The /comment endpoint body should have empty NOTETEXT (zcomment carries the text)
+        // Both the action zcomment and the comment NOTETEXT carry the decision note.
         expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith(
           '212',
-          '',
+          'approve claim 212 26.08',
           'MOCK_USER',
           { userJwt: 'jwt', decision: 'A', objectType: 'CLAIM', taskId: '212', approverNumber: '1' }
         );
@@ -339,7 +365,7 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
         expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith(
           '212',
-          '',
+          'reject claim 212',
           'MOCK_USER',
           expect.objectContaining({ decision: 'R', objectType: 'CLAIM', approverNumber: '1' })
         );
@@ -511,7 +537,7 @@ describe('InboxProcessor', () => {
           'jwt'
         );
         expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith(
-          '212', '',
+          '212', 'approve via docCategory',
           'MOCK_USER',
           { userJwt: 'jwt', decision: 'A', objectType: 'CLAIM', taskId: '212', approverNumber: '1' }
         );
