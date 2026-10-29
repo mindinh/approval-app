@@ -11,10 +11,11 @@ export class AppError extends Error {
 }
 
 export function handleSapError(error: any): AppError {
-    if (error.response) {
-        // SAP Gateway / HTTP error responses
-        const status = error.response.status;
-        const data = error.response.data;
+    const response = error?.response || error?.cause?.response || error?.rootCause?.response;
+    if (response) {
+        // SAP Gateway / HTTP error responses (including errors wrapped by @sap-cloud-sdk)
+        const status = response.status;
+        const data = response.data;
         const message = data?.error?.message?.value || data?.error?.message || error.message;
         
         if (status === 401 || status === 403) {

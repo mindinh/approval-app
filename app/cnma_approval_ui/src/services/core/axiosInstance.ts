@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
-import { triggerSessionExpiredGlobal } from '@/components/providers/SessionTimeoutProvider';
+import { reauthenticateSession, triggerSessionExpiredGlobal } from '@/components/providers/SessionTimeoutProvider';
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: '',
@@ -80,15 +80,18 @@ axiosInstance.interceptors.response.use(
         contentType.includes('text/html'));
 
     if (isHtmlResponse) {
-      console.warn('[Session] Received HTML instead of JSON (likely redirected to login) -> triggering session expired.');
+      console.warn('[Session] Received HTML instead of JSON (likely redirected to login) -> attempting silent SSO re-auth or showing expired dialog.');
 
+      const method = (response.config.method || 'get').toLowerCase();
       const isMeEndpoint = response.config.url?.endsWith('/me');
       const sessionActive = sessionStorage.getItem('session_active') === 'true';
 
-      if (isMeEndpoint || !sessionActive) {
-        console.log('[Session] Initial session check failed. Redirecting directly to logout/login.');
-        sessionStorage.removeItem('session_active');
-        window.location.href = '/do/logout';
+      // Never redirect to /do/logout here — /do/logout triggers Single Logout (SLO)
+      // on IAS & Azure Entra ID and destroys the user's SSO session.
+      if (isMeEndpoint || !sessionActive || method === 'get') {
+        if (!reauthenticateSession(false)) {
+          triggerSessionExpiredGlobal();
+        }
       } else {
         triggerSessionExpiredGlobal();
       }
@@ -103,22 +106,23 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    const responseCode = error.response?.data?.code;
+    const responseCode = extractErrorCode(error);
     const responseError = error.response?.data?.error;
 
-    // 401 Unauthorized -> session expired
-    // Never hard-reload here to avoid reload loops when backend keeps returning 401.
+    // 401 Unauthorized -> session expired (ONLY for BTP/Approuter session expiry, NEVER for SAP S/4 user mapping errors)
+    // Never redirect to /do/logout (which destroys IAS/Entra SSO via Single Logout).
     if (shouldHandleUnauthorized(error) && !isHandlingSessionExpiry) {
       isHandlingSessionExpiry = true;
-      console.warn('[Session] Token expired -> showing session expired dialog or redirecting.');
+      console.warn('[Session] Token expired (401) -> attempting silent SSO re-auth or showing expired dialog.');
 
-      const isMeEndpoint = originalRequest.url?.endsWith('/me');
+      const method = (originalRequest?.method || 'get').toLowerCase();
+      const isMeEndpoint = originalRequest?.url?.endsWith('/me');
       const sessionActive = sessionStorage.getItem('session_active') === 'true';
 
-      if (isMeEndpoint || !sessionActive) {
-        console.log('[Session] Initial session check failed (401). Redirecting directly to logout/login.');
-        sessionStorage.removeItem('session_active');
-        window.location.href = '/do/logout';
+      if (isMeEndpoint || !sessionActive || method === 'get') {
+        if (!reauthenticateSession(false)) {
+          triggerSessionExpiredGlobal();
+        }
       } else {
         triggerSessionExpiredGlobal();
       }
@@ -128,7 +132,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // 403 on write operation -> likely CSRF token issue, retry once
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    if (error.response?.status === 403 && !originalRequest._retry && responseCode !== 'SAP_AUTH_ERROR') {
       const method = originalRequest.method?.toLowerCase();
       const isWriteOp = method && ['post', 'put', 'patch', 'delete'].includes(method);
 
@@ -148,7 +152,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 403) {
       error.isForbidden = true;
     }
-    if (responseCode === 'SAP_USER_MAPPING_MISSING') {
+    if (responseCode === 'SAP_USER_MAPPING_MISSING' || responseCode === 'SAP_AUTH_ERROR') {
       error.isSapUserMappingMissing = true;
     }
     if (responseCode === 'SAP_CONNECTIVITY_ERROR') {
@@ -162,11 +166,35 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+function extractErrorCode(error: any): string | undefined {
+  const data = error?.response?.data;
+  if (!data || typeof data !== 'object') return undefined;
+  if (typeof data.code === 'string' && data.code.trim()) {
+    return data.code.trim();
+  }
+  if (data.error && typeof data.error === 'object' && typeof data.error.code === 'string' && data.error.code.trim()) {
+    return data.error.code.trim();
+  }
+  return undefined;
+}
+
 function shouldHandleUnauthorized(error: any): boolean {
   if (error.response?.status !== 401) return false;
 
-  const code = error.response?.data?.code;
-  if (code === 'SAP_USER_MAPPING_MISSING' || code === 'SAP_CONNECTIVITY_ERROR') {
+  const code = extractErrorCode(error);
+  if (
+    code === 'SAP_AUTH_ERROR' ||
+    code === 'SAP_USER_MAPPING_MISSING' ||
+    code === 'SAP_CONNECTIVITY_ERROR' ||
+    code === 'SAP_BUSINESS_ERROR'
+  ) {
+    return false;
+  }
+
+  const rawMessage =
+    (typeof error.response?.data?.error?.message === 'string' ? error.response.data.error.message : '') ||
+    (typeof error.response?.data?.message === 'string' ? error.response.data.message : '');
+  if (rawMessage.includes('SAP authentication failure') || rawMessage.includes('SAP business/gateway error')) {
     return false;
   }
 

@@ -228,6 +228,8 @@
         "view": "View",
         "hide": "Hide",
         "noTasksInCategory": "No tasks in this category",
+        "categoryLoadFailed": "Unable to load this category.",
+        "loadMoreTasks": "Load more tasks",
         "filteredSubtypeCount": "Showing {{count}} of {{total}}",
         "totalSubtypeCount": "{{count}} requests",
         "noTasksInSubtype": "No tasks found for this subtype",

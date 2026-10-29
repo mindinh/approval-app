@@ -8,9 +8,10 @@ interface SessionTimeoutDialogProps {
     countdown: number;
     onContinue: () => void;
     onLogout: () => void;
+    onReauthenticate?: () => void;
 }
 
-export function SessionTimeoutDialog({ state, countdown, onContinue, onLogout }: SessionTimeoutDialogProps) {
+export function SessionTimeoutDialog({ state, countdown, onContinue, onLogout, onReauthenticate }: SessionTimeoutDialogProps) {
     const { t } = useTranslation();
     const warning = state === 'warning';
     return (
@@ -30,7 +31,7 @@ export function SessionTimeoutDialog({ state, countdown, onContinue, onLogout }:
                     </AlertDialogAction>
                 </>
             ) : (
-                <AlertDialogCancel className={buttonVariants()} onClick={onLogout}>
+                <AlertDialogCancel className={buttonVariants()} onClick={onReauthenticate || onLogout}>
                     <LogOut aria-hidden />
                     {t('sessionTimeout.signInAgain')}
                 </AlertDialogCancel>

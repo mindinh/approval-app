@@ -1,7 +1,7 @@
 {
   "welcomeFile": "/index.html",
   "authenticationMethod": "route",
-  "sessionTimeout": 60,
+  "sessionTimeout": 28800,
   "logout": {
     "logoutEndpoint": "/do/logout",
     "logoutPage": "/logout-page.html"

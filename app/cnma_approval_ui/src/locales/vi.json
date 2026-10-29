@@ -227,6 +227,8 @@
         "view": "Xem",
         "hide": "Thu gọn",
         "noTasksInCategory": "Không có tác vụ nào trong danh mục này",
+        "categoryLoadFailed": "Không thể tải danh mục này.",
+        "loadMoreTasks": "Tải thêm tác vụ",
         "filteredSubtypeCount": "Hiển thị {{count}} trên {{total}}",
         "totalSubtypeCount": "{{count}} yêu cầu",
         "noTasksInSubtype": "Không tìm thấy công việc cho loại này",

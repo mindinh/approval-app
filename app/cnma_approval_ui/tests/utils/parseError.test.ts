@@ -130,4 +130,25 @@ describe('parseError Utility', () => {
         expect(typeof result.message).toBe('string');
         expect(result.message).toContain('Comment text NoteText exceeds maximum allowed length');
     });
+
+    it('should classify 401 SAP_AUTH_ERROR as SAP User Mapping / Authorization Error instead of Session Expired', () => {
+        const sap401Error = {
+            response: {
+                status: 401,
+                data: {
+                    error: {
+                        message: 'SAP authentication failure: Request failed with status code 401',
+                        code: 'SAP_AUTH_ERROR',
+                    },
+                },
+            },
+        };
+
+        const result = parseError(sap401Error);
+
+        expect(result.category).toBe('auth');
+        expect(result.title).toBe('SAP User Mapping / Authorization Error');
+        expect(result.message).toContain('could not be mapped or authorized in SAP S/4HANA');
+        expect(result.canRetry).toBe(false);
+    });
 });

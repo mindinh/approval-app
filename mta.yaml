@@ -57,6 +57,7 @@ modules:
       disk-quota: 512M
     properties:
       DYNAMIC_IDENTITY_PROVIDER: true
+      SESSION_TIMEOUT: 28800
     requires:
       - name: cnma-prorequest-s4h-auth
       - name: srv-api
