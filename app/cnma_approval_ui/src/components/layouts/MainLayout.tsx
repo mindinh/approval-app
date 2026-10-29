@@ -11,7 +11,6 @@ import {
     LogOut,
     Bell,
 } from 'lucide-react';
-import { NotificationTestModal } from '@/components/modals/NotificationTestModal';
 import { cn } from '@/utils/cn';
 import {
     Button,
@@ -133,7 +132,6 @@ function AppSidebar() {
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
     const { currentUser: userInfo, isResolving, error: identityError, retry: retryIdentity } = useUserIdentity({ resolveProfile: isProfileOpen });
     const sapUsernameLabelId = React.useId();
-    const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
 
     const currentLang = i18n.language || 'en';
     const handleLanguageChange = (lang: string) => {
@@ -317,14 +315,6 @@ function AppSidebar() {
                         </DialogContent>
                     </Dialog>
                 </>
-            )}
-
-            {/* Notification Test Modal - Web & Admin only */}
-            {!isMobile && isAdmin && (
-                <NotificationTestModal
-                    open={isNotificationModalOpen}
-                    onOpenChange={setIsNotificationModalOpen}
-                />
             )}
         </Sidebar>
     );

@@ -48,6 +48,7 @@
     "start:ias:lan": "set HOST=0.0.0.0&& set PORT=4004&& cds bind --exec --profile hybrid -- cds serve --profile hybrid --with-mocks",
     "test": "vitest run",
     "test:perf": "vitest run tests/performance",
+    "benchmark:pages": "tsx scripts/benchmark-pages.ts",
     "test:coverage": "vitest run --coverage",
     "cf:login": "cf login -a https://api.cf.ap11.hana.ondemand.com/",
     "cf:qas": "cf target -o proconarum-vj-qas",

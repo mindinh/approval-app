@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Bell, ClipboardCheck, Home, Inbox, LayoutDashboard } from 'lucide-react';
 import { SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@cnma/react-ui';
 import { cn } from '@/lib/utils';
+import { prefetchRouteData } from '@/utils/routePrefetch';
 
 export function AppSidebarNavigation({ isAdmin }: { isAdmin: boolean }) {
     const { t } = useTranslation();
@@ -29,6 +30,8 @@ export function AppSidebarNavigation({ isAdmin }: { isAdmin: boolean }) {
                                 aria-current={active ? 'page' : undefined}
                                 aria-label={label}
                                 tooltip={label}
+                                onMouseEnter={() => prefetchRouteData(route)}
+                                onFocus={() => prefetchRouteData(route)}
                                 onClick={() => { if (isMobile) setOpenMobile(false); navigate(route); }}
                                 className={cn('app-sidebar__link', collapsed && 'app-sidebar__link--collapsed')}
                             >
