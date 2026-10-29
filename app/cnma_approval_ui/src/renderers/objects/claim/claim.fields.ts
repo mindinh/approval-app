@@ -2,8 +2,11 @@ import { text, codeText, amount, date, tableCol } from '../../core/fields';
 import { formatRawAmount, formatRawDate, formatVendorCodeAndName, formatNoteText } from '../../core/formatters';
 import { getRecordVal } from '../../core/objectView';
 
-const formatItemAmount = (value: unknown, record: Record<string, any>) =>
-    formatRawAmount(value, getRecordVal(record, 'DocumentCurrency'), 'vi-VN');
+const formatItemAmount = (currencySource: 'DocumentCurrency' | 'LocalCurrency') =>
+    (value: unknown, record: Record<string, any>, headerRecord?: Record<string, any>) =>
+        formatRawAmount(value,
+            getRecordVal(record, currencySource) ?? getRecordVal(headerRecord || {}, currencySource),
+            'vi-VN');
 
 export const CLAIM_OVERVIEW_FIELDS = {
     claimNumber: text({ source: 'DocumentNumber|ClaimNumber', label: 'Claim Form Number' }),
@@ -40,7 +43,7 @@ export const CLAIM_TABLE_COLUMNS = {
     netDueDate: tableCol({ key: 'netDueDate', header: 'Net Due Date', source: 'NetDueDate', formatter: (val) => formatRawDate(val) }),
     text: tableCol({ key: 'text', header: 'Text', source: 'Text' }),
     vendor: tableCol({ key: 'vendor', header: 'Vendor', source: 'Vendor' }),
-    invoiceAmount: tableCol({ key: 'invoiceAmount', header: 'Invoice Amount', value: 'InvoiceAmount', currency: 'DocumentCurrency', align: 'right', formatter: formatItemAmount }),
-    paymentAmount: tableCol({ key: 'paymentAmount', header: 'Payment Amount', value: 'PaymentAmount', currency: 'DocumentCurrency', align: 'right', formatter: formatItemAmount }),
-    totalNetAmountLocalCrcy: tableCol({ key: 'totalNetAmountLocalCrcy', header: 'Amount in Local Currency', value: 'TotalNetAmountLocalCrcy', currency: 'DocumentCurrency', align: 'right', formatter: formatItemAmount })
+    invoiceAmount: tableCol({ key: 'invoiceAmount', header: 'Invoice Amount', value: 'InvoiceAmount', currency: 'DocumentCurrency', align: 'right', formatter: formatItemAmount('DocumentCurrency') }),
+    paymentAmount: tableCol({ key: 'paymentAmount', header: 'Payment Amount', value: 'PaymentAmount', currency: 'DocumentCurrency', align: 'right', formatter: formatItemAmount('DocumentCurrency') }),
+    totalNetAmountLocalCrcy: tableCol({ key: 'totalNetAmountLocalCrcy', header: 'Amount in Local Currency', value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', align: 'right', formatter: formatItemAmount('LocalCurrency') })
 };

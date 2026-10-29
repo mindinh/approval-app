@@ -21,6 +21,43 @@ describe('TaskprocessingAdapter', () => {
         mockSapClient = (adapter as any).sapClient;
     });
 
+    describe('getTaskRuntime', () => {
+        it('fetches TaskCollection and DecisionOptions concurrently with default LOCAL origin', async () => {
+            mockSapClient.get.mockImplementation((_path: string, url: string) => {
+                if (url.startsWith('/TaskCollection')) {
+                    return Promise.resolve({ d: { InstanceID: '000000043034', SAP__Origin: 'LOCAL', Status: 'READY' } });
+                }
+                if (url === '/DecisionOptions') {
+                    return Promise.resolve({ d: { results: [{ DecisionKey: '0001', DecisionText: 'Approve' }] } });
+                }
+                return Promise.resolve({ d: {} });
+            });
+
+            const runtime = await adapter.getTaskRuntime('43034', 'MOCK_USER', 'mock-jwt', true);
+
+            expect(mockSapClient.get).toHaveBeenCalledTimes(2);
+            expect(runtime.InstanceID).toBe('000000043034');
+            expect(runtime.decisions).toEqual([{ DecisionKey: '0001', DecisionText: 'Approve' }]);
+        });
+
+        it('re-fetches DecisionOptions when TaskCollection returns a non-LOCAL SAP__Origin', async () => {
+            mockSapClient.get.mockImplementation((_path: string, url: string, params: any) => {
+                if (url.startsWith('/TaskCollection')) {
+                    return Promise.resolve({ d: { InstanceID: '000000043034', SAP__Origin: 'S4H_300', Status: 'READY' } });
+                }
+                if (url === '/DecisionOptions' && params?.SAP__Origin === "'S4H_300'") {
+                    return Promise.resolve({ d: { results: [{ DecisionKey: '0001', DecisionText: 'Approve S4H' }] } });
+                }
+                return Promise.resolve({ d: { results: [] } });
+            });
+
+            const runtime = await adapter.getTaskRuntime('43034', 'MOCK_USER', 'mock-jwt', true);
+
+            expect(mockSapClient.get).toHaveBeenCalledTimes(3);
+            expect(runtime.decisions).toEqual([{ DecisionKey: '0001', DecisionText: 'Approve S4H' }]);
+        });
+    });
+
     describe('searchUsers', () => {
         it('should pass un-encoded search pattern with single quotes escaped to sapClient.get params', async () => {
             mockSapClient.get.mockResolvedValue({

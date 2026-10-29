@@ -53,12 +53,21 @@ const TASK_CATEGORY_FILTER_BY_KEY: Record<TaskCategory, string> = {
 
 interface CachedInstance {
     normalTask: boolean;
+    inst?: any;
+    cachedAt: number;
+}
+
+interface CachedAggregate<T> {
+    data: T;
     cachedAt: number;
 }
 
 export class InboxProcessor {
     private static readonly INSTANCE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+    private static readonly AGGREGATE_CACHE_TTL_MS = 60 * 1000; // 60 seconds
     private readonly instanceCache = new Map<string, CachedInstance>();
+    private readonly statusCountsCache = new Map<string, CachedAggregate<any[]>>();
+    private readonly docTypeCountsCache = new Map<string, CachedAggregate<any[]>>();
 
     private readonly sapClient = new SapClient();
     private readonly taskAdapter = new TaskprocessingAdapter();
@@ -69,6 +78,69 @@ export class InboxProcessor {
         new TaskprocessingDecisionStrategy(),
     ]);
     private readonly logger = new Logger('InboxProcessor');
+
+    private normInstanceId(id?: string | null): string {
+        return id ? String(id).trim().replace(/^0+/, '') : '';
+    }
+
+    private setCachedInstance(sapUser: string, instanceId: string, entry: CachedInstance) {
+        if (!instanceId) return;
+        const normId = this.normInstanceId(instanceId);
+        this.instanceCache.set(instanceId, entry);
+        if (normId) {
+            this.instanceCache.set(normId, entry);
+            if (sapUser) {
+                this.instanceCache.set(`${sapUser}:${normId}`, entry);
+            }
+        }
+        if (sapUser) {
+            this.instanceCache.set(`${sapUser}:${instanceId}`, entry);
+        }
+    }
+
+    private getCachedInstance(sapUser: string, instanceId: string): CachedInstance | undefined {
+        const now = Date.now();
+        const normId = this.normInstanceId(instanceId);
+        const candidates = [
+            sapUser && normId ? `${sapUser}:${normId}` : '',
+            sapUser ? `${sapUser}:${instanceId}` : '',
+            normId,
+            instanceId,
+        ].filter(Boolean);
+
+        for (const key of candidates) {
+            const cached = this.instanceCache.get(key);
+            if (cached && now - cached.cachedAt < InboxProcessor.INSTANCE_CACHE_TTL_MS) {
+                return cached;
+            }
+        }
+        return undefined;
+    }
+
+    private cacheInstancesList(sapUser: string, instances: any[]) {
+        if (!Array.isArray(instances)) return;
+        const now = Date.now();
+        for (const inst of instances) {
+            const rawId = inst?.WorkflowTaskInternalID || inst?.instanceID || inst?.instanceId;
+            if (!rawId) continue;
+            const normalTask = inst.NormalTask !== false && inst.normalTask !== false;
+            this.setCachedInstance(sapUser, String(rawId), {
+                normalTask,
+                inst,
+                cachedAt: now,
+            });
+        }
+    }
+
+    private invalidateUserAggregates(sapUser?: string) {
+        if (sapUser) {
+            this.statusCountsCache.delete(sapUser);
+            this.docTypeCountsCache.delete(sapUser);
+        } else {
+            this.statusCountsCache.clear();
+            this.docTypeCountsCache.clear();
+        }
+    }
 
     /**
      * Retrieves active/pending approval tasks for the specified user.
@@ -91,8 +163,10 @@ export class InboxProcessor {
                 this._buildTaskFilter(filters)
             );
             if (!customInstances || customInstances.length === 0) {
-                return { items: [], total: 0 };
+                return { items: [], total: (customInstances as any)?.totalCount ?? 0 };
             }
+
+            this.cacheInstancesList(sapUser, customInstances);
 
             const total = (customInstances as any).totalCount ?? customInstances.length;
             const items = customInstances.map((inst: any) => {
@@ -127,8 +201,10 @@ export class InboxProcessor {
                 this._buildTaskFilter(filters)
             );
             if (!customInstances || customInstances.length === 0) {
-                return { items: [], total: 0 };
+                return { items: [], total: (customInstances as any)?.totalCount ?? 0 };
             }
+
+            this.cacheInstancesList(sapUser, customInstances);
 
             const total = (customInstances as any).totalCount ?? customInstances.length;
             const items = customInstances.map((inst: any) => {
@@ -155,15 +231,19 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Fetching raw task detail for ${instanceId}`);
         try {
-            const resolved = await this.objectTypeResolver.resolve(instanceId, sapUser, userJwt);
+            const cached = this.getCachedInstance(sapUser, instanceId);
+            const resolved = cached?.inst
+                ? await this.objectTypeResolver.resolve(instanceId, sapUser, userJwt, cached.inst)
+                : await this.objectTypeResolver.resolve(instanceId, sapUser, userJwt);
             const { businessObject, taskRuntime, inst } = resolved;
             const isNormalTask = resolved.normalTask ?? inst?.normalTask ?? true;
             const isClaim = resolved.objectType === 'CLAIM';
             const isCompleted = inst?.status === 'COMPLETED' || inst?.WorkflowTaskStatus === 'COMPLETED';
 
-            if (inst?.normalTask !== undefined) {
-                this.instanceCache.set(instanceId, {
+            if (inst) {
+                this.setCachedInstance(sapUser, instanceId, {
                     normalTask: isNormalTask,
+                    inst,
                     cachedAt: Date.now()
                 });
             }
@@ -258,6 +338,8 @@ export class InboxProcessor {
                     logger: this.logger,
                 }
             );
+
+            this.invalidateUserAggregates(sapUser);
 
             // Preserve the historical shape so the FE keeps working.
             return outcome.adapterResult !== undefined
@@ -499,9 +581,36 @@ export class InboxProcessor {
         if (options?.documentType) {
             detailFilters.push(`DocumentType eq '${options.documentType.replace(/'/g, "''")}'`);
         }
+
+        const now = Date.now();
+        const cachedStatus = this.statusCountsCache.get(sapUser);
+        const cachedDocTypes = this.docTypeCountsCache.get(sapUser);
+
+        const statusCountsPromise = (cachedStatus && now - cachedStatus.cachedAt < InboxProcessor.AGGREGATE_CACHE_TTL_MS)
+            ? Promise.resolve(cachedStatus.data)
+            : this.sapOdataAdapter.getStatusCounts(sapUser, userJwt)
+                .then((rows) => {
+                    if (Array.isArray(rows) && rows.length > 0) {
+                        this.statusCountsCache.set(sapUser, { data: rows, cachedAt: Date.now() });
+                    }
+                    return rows || [];
+                })
+                .catch(() => []);
+
+        const docTypeCountsPromise = (cachedDocTypes && now - cachedDocTypes.cachedAt < InboxProcessor.AGGREGATE_CACHE_TTL_MS)
+            ? Promise.resolve(cachedDocTypes.data)
+            : this.sapOdataAdapter.getDocTypeCounts(sapUser, userJwt)
+                .then((rows) => {
+                    if (Array.isArray(rows) && rows.length > 0) {
+                        this.docTypeCountsCache.set(sapUser, { data: rows, cachedAt: Date.now() });
+                    }
+                    return rows || [];
+                })
+                .catch(() => []);
+
         const [statusCountsRaw, docTypeCounts, customInstances] = await Promise.all([
-            this.sapOdataAdapter.getStatusCounts(sapUser, userJwt).catch(() => []),
-            this.sapOdataAdapter.getDocTypeCounts(sapUser, userJwt).catch(() => []),
+            statusCountsPromise,
+            docTypeCountsPromise,
             this.sapOdataAdapter.getInstances(
                 sapUser,
                 statusFilter,
@@ -512,6 +621,8 @@ export class InboxProcessor {
                 detailFilters.length > 0 ? detailFilters.join(' and ') : undefined
             ).catch(() => [])
         ]);
+
+        this.cacheInstancesList(sapUser, customInstances);
         const detailTotal = Number((customInstances as any).totalCount ?? customInstances.length);
 
         const statusCounts = statusCountsRaw.map((s: any) => {
@@ -586,6 +697,9 @@ export class InboxProcessor {
 
     async getStatusCounts(sapUser: string, userJwt?: string) {
         const rows = await this.sapOdataAdapter.getStatusCounts(sapUser, userJwt);
+        if (Array.isArray(rows) && rows.length > 0) {
+            this.statusCountsCache.set(sapUser, { data: rows, cachedAt: Date.now() });
+        }
         let inApproval = 0;
         let completed = 0;
         for (const row of rows) {
@@ -598,6 +712,21 @@ export class InboxProcessor {
     async getCategoryCounts(sapUser: string, scope: 'my' | 'approved' = 'my', userJwt?: string) {
         this.logger.info(`Fetching category counts for user: ${sapUser}, scope: ${scope}`);
         const statuses = scope === 'approved' ? APPROVED_TASK_STATUSES : ACTIVE_TASK_STATUSES;
+
+        try {
+            const rows = await this.sapOdataAdapter.getCategorySummary(sapUser, statuses, userJwt);
+            const counts = { PR: 0, PO: 0, RESERVATION: 0, CLAIM: 0 };
+            const categories: Record<string, TaskCategory> = {
+                BUS2105: 'PR', BUS2012: 'PO', BUS2093: 'RESERVATION', ZBUS2093: 'RESERVATION', CLAIM: 'CLAIM',
+            };
+            for (const row of rows) {
+                const category = categories[row.DocCategory];
+                if (category) counts[category] += row.RequestCount;
+            }
+            return { ...counts, ALL: Object.values(counts).reduce((sum, count) => sum + count, 0), complete: true };
+        } catch {
+            this.logger.warn('Category summary unavailable; falling back to worklist counts');
+        }
 
         // Query server count for each category in parallel via $top=0&$count=true
         const results = await Promise.allSettled(
@@ -640,6 +769,15 @@ export class InboxProcessor {
         } catch (error: any) {
             this.logger.error(`Error in searchUsers: ${error.message}`);
             throw new AppError(`Failed to search users: ${error.message}`, 500);
+        }
+    }
+
+    async getCurrentSapUser(sapUser: string, userJwt?: string) {
+        try {
+            return await this.sapOdataAdapter.getCurrentSapUser(sapUser, userJwt);
+        } catch (error: any) {
+            this.logger.error(`Failed to resolve the current SAP session user: ${error.message}`);
+            throw new AppError('Unable to resolve the current SAP user', 502);
         }
     }
 
@@ -718,6 +856,8 @@ export class InboxProcessor {
                 }
             }
 
+            this.invalidateUserAggregates(sapUser);
+
             return taskProcResult;
         } catch (error: any) {
             this.logger.error(`Error in forwardTask: ${error.message}`);
@@ -733,8 +873,8 @@ export class InboxProcessor {
         sapUser: string,
         userJwt?: string
     ): Promise<boolean> {
-        const cached = this.instanceCache.get(instanceId);
-        if (cached && Date.now() - cached.cachedAt < InboxProcessor.INSTANCE_CACHE_TTL_MS) {
+        const cached = this.getCachedInstance(sapUser, instanceId);
+        if (cached) {
             return cached.normalTask;
         }
 
@@ -755,11 +895,11 @@ export class InboxProcessor {
             const items = response?.value || response?.d?.results || response?.d || [];
             const item = items[0];
             const normalTask = item ? item.NormalTask !== false : true;
-            this.instanceCache.set(instanceId, { normalTask, cachedAt: Date.now() });
+            this.setCachedInstance(sapUser, instanceId, { normalTask, cachedAt: Date.now() });
             return normalTask;
         } catch (error: any) {
             this.logger.warn(`Failed to fetch NormalTask for instance ${instanceId}: ${error.message}`);
-            return cached ? cached.normalTask : false;
+            return false;
         }
     }
 
@@ -810,4 +950,3 @@ export class InboxProcessor {
 
 
 }
-

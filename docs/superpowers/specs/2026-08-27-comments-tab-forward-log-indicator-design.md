@@ -6,7 +6,7 @@
 
 ## Background
 
-The SAP backend entity `ZI_CNMA_COMMENT` ([METADATA.xml:400-415](../../METADATA.xml#L400)) exposes a `Forward` boolean and `ToUser` string alongside `PostedOn`, `PostedTime`, `NoteText`, `UserComment`. The PR/PO header navigation `_Comment` already returns these fields when expanded by `BaseRawDetail`. Currently the FE renders every comment identically — there is no way to tell a forward event apart from a regular comment.
+The SAP backend entity `ZI_CNMA_COMMENT` (METADATA.xml:400-415 (historical path: `../../METADATA.xml`)) exposes a `Forward` boolean and `ToUser` string alongside `PostedOn`, `PostedTime`, `NoteText`, `UserComment`. The PR/PO header navigation `_Comment` already returns these fields when expanded by `BaseRawDetail`. Currently the FE renders every comment identically — there is no way to tell a forward event apart from a regular comment.
 
 ## Goal
 
@@ -26,8 +26,8 @@ Make sure to ensure responsiveness for Mobile
 
 There are **two** `_Comment` mappers that turn `bo._Comment` rows into comment objects. Both must be extended so the new fields actually reach `CommentsPanel.tsx`:
 
-1. [app/cnma_approval_ui/src/pages/Inbox/components/panels/index.ts](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/index.ts#L30) — produces a local `commentsList` used only for the tab-badge count.
-2. [app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts](../../app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts#L75) — produces the `detail.comments` array that `CommentsPanel.tsx` actually consumes.
+1. app/cnma_approval_ui/src/pages/Inbox/components/panels/index.ts (historical path: `../../app/cnma_approval_ui/src/pages/Inbox/components/panels/index.ts`) — produces a local `commentsList` used only for the tab-badge count.
+2. app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts (historical path: `../../app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts`) — produces the `detail.comments` array that `CommentsPanel.tsx` actually consumes.
 
 In both mappers, the `bo._Comment.map((c: any, idx: number) => ({...}))` returned object gains:
 
@@ -36,7 +36,7 @@ forward: c.Forward === true || c.forward === true,
 toUser: c.ToUser || c.toUser || ''
 ```
 
-Then pass `forward` and `toUser` through the merged list in [CommentsPanel.tsx:77-110](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx#L77).
+Then pass `forward` and `toUser` through the merged list in CommentsPanel.tsx:77-110 (historical path: `../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx`).
 
 The internal merged-shape gains two optional fields:
 
@@ -55,7 +55,7 @@ For `workflowComments` (the approval-tree half of the merge), these fields stay 
 
 ### Rendering
 
-In the existing `merged.map` ([CommentsPanel.tsx:194-211](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx#L194)), the comment card changes from:
+In the existing `merged.map` (CommentsPanel.tsx:194-211 (historical path: `../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx`)), the comment card changes from:
 
 ```
 ┌─────────────────────────────────────────────┐

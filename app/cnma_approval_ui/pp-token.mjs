@@ -189,8 +189,7 @@ async function main() {
   if (directJwt) {
     const envPath = path.resolve(projectRoot, envFile);
     await upsertEnvVars(envPath, {
-      VITE_PP_JWT: directJwt.trim(),
-      VITE_PP_JWT_EXPIRES_AT: ''
+      VITE_PP_JWT: directJwt.trim()
     });
     
     // Also save to root .env for backend local hybrid testing
@@ -241,8 +240,7 @@ async function main() {
     typeof expiresIn === 'number' ? new Date(Date.now() + expiresIn * 1000).toISOString() : '';
   const envPath = path.resolve(projectRoot, envFile);
   await upsertEnvVars(envPath, {
-    VITE_PP_JWT: accessToken,
-    VITE_PP_JWT_EXPIRES_AT: expiresAt
+    VITE_PP_JWT: accessToken
   });
 
   // Also save to root .env for backend local hybrid testing

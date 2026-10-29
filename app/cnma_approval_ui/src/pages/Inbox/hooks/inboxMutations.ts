@@ -169,12 +169,12 @@ export function useAddComment() {
             const toastId = toast.loading('Adding comment...');
             return { toastId };
         },
-        onSuccess: (data, variables, mutationContext) => {
+        onSuccess: async (data, variables, mutationContext) => {
+            await invalidateAfterComment(queryClient, variables.instanceId);
             if (mutationContext?.toastId) {
                 toast.dismiss(mutationContext.toastId);
             }
             toast.success(data.message || 'Comment added.');
-            invalidateAfterComment(queryClient, variables.instanceId);
         },
         onError: (error: any, _variables, mutationContext) => {
             if (mutationContext?.toastId) {

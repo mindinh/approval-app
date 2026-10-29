@@ -39,13 +39,19 @@ export class NotificationController {
      * @openapi
      * /tasks/notification/test-destination:
      *   post:
-     *     summary: Check SAP_Notifications destination connectivity (Admin only)
-     *     description: Checks if destination SAP_Notifications exists and retrieves its endpoint and auth configuration.
+     *     summary: Resolve SAP_Notifications destination
+     *     tags:
+     *       - Notifications
+     *     security:
+     *       - BearerAuth: []
      *     responses:
-     *       200:
-     *         description: Destination resolution status
-     *       403:
-     *         description: Forbidden - Admin access required
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     testDestination = async (req: Request, res: Response): Promise<void> => {
         if (!this.isAdmin(req)) {
@@ -75,12 +81,19 @@ export class NotificationController {
      * @openapi
      * /tasks/notification/types:
      *   get:
-     *     summary: Get registered notification types from SAP BTP Notification Service (Admin only)
+     *     summary: List notification types
+     *     tags:
+     *       - Notifications
+     *     security:
+     *       - BearerAuth: []
      *     responses:
-     *       200:
-     *         description: List of registered notification types
-     *       403:
-     *         description: Forbidden - Admin access required
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     getNotificationTypes = async (req: Request, res: Response): Promise<void> => {
         if (!this.isAdmin(req)) {
@@ -108,12 +121,30 @@ export class NotificationController {
      * @openapi
      * /tasks/notification/create-type:
      *   post:
-     *     summary: Register a Notification Type in SAP BTP Notification Service (Admin only)
+     *     summary: Register notification type
+     *     tags:
+     *       - Notifications
+     *     security:
+     *       - BearerAuth: []
+     *     requestBody:
+     *       required: false
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               key:
+     *                 type: string
+     *               version:
+     *                 type: string
      *     responses:
-     *       200:
-     *         description: Registration result
-     *       403:
-     *         description: Forbidden - Admin access required
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     createNotificationType = async (req: Request, res: Response): Promise<void> => {
         if (!this.isAdmin(req)) {
@@ -142,12 +173,43 @@ export class NotificationController {
      * @openapi
      * /tasks/notification/type:
      *   delete:
-     *     summary: Delete a Notification Type from SAP BTP Notification Service (Admin only)
+     *     summary: Delete notification type
+     *     tags:
+     *       - Notifications
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: id
+     *         schema:
+     *           type: string
+     *         description: Required unless body supplies id or key
+     *       - in: query
+     *         name: version
+     *         schema:
+     *           type: string
+     *           default: '1.0'
+     *     requestBody:
+     *       required: false
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               id:
+     *                 type: string
+     *               key:
+     *                 type: string
+     *               version:
+     *                 type: string
      *     responses:
-     *       200:
-     *         description: Deletion result
-     *       403:
-     *         description: Forbidden - Admin access required
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     deleteNotificationType = async (req: Request, res: Response): Promise<void> => {
         if (!this.isAdmin(req)) {
@@ -186,13 +248,68 @@ export class NotificationController {
      * @openapi
      * /tasks/notification/send-test:
      *   post:
-     *     summary: Send test push notification via SAP BTP Notification Service (Admin only)
-     *     description: Dispatches a notification to destination SAP_Notifications.
+     *     summary: Send test notification
+     *     tags:
+     *       - Notifications
+     *     security:
+     *       - BearerAuth: []
+     *     requestBody:
+     *       required: false
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               endpoint:
+     *                 type: string
+     *               originId:
+     *                 type: string
+     *               notificationTypeId:
+     *                 type: string
+     *               notificationTypeKey:
+     *                 type: string
+     *               notificationTypeVersion:
+     *                 type: string
+     *               priority:
+     *                 type: string
+     *               title:
+     *                 type: string
+     *               subTitle:
+     *                 type: string
+     *               description:
+     *                 type: string
+     *               recipientId:
+     *                 type: string
+     *               eventType:
+     *                 type: string
+     *               subject:
+     *                 type: string
+     *               body:
+     *                 type: string
+     *               properties:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     Key:
+     *                       type: string
+     *                     Value:
+     *                       type: string
+     *                     Type:
+     *                       type: string
+     *                     IsSensitive:
+     *                       type: boolean
+     *               customPayload:
+     *                 type: object
+     *                 additionalProperties: true
      *     responses:
-     *       200:
-     *         description: Result of notification trigger
-     *       403:
-     *         description: Forbidden - Admin access required
+     *       '200':
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               additionalProperties: true
      */
     sendTestNotification = async (req: Request, res: Response): Promise<void> => {
         if (!this.isAdmin(req)) {

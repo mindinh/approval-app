@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import {
     Button,
     Input,
@@ -28,7 +29,7 @@ export function TagUserDialog({
     isOpen,
     onClose,
     onApplyTags,
-    initialSelected = []
+    initialSelected
 }: TagUserDialogProps) {
     const { t } = useTranslation();
     const { searchPattern, setSearchPattern, users, isLoading } = useBusUsers('', 250);
@@ -37,7 +38,7 @@ export function TagUserDialog({
     useEffect(() => {
         if (isOpen) {
             const map = new Map<string, BusUser>();
-            initialSelected.forEach((u) => {
+            initialSelected?.forEach((u) => {
                 if (u.SAPUserName) {
                     map.set(u.SAPUserName, u);
                 }
@@ -45,7 +46,7 @@ export function TagUserDialog({
             setSelectedMap(map);
             setSearchPattern('');
         }
-    }, [isOpen, initialSelected]);
+    }, [isOpen, initialSelected, setSearchPattern]);
 
     const handleToggleUser = (user: BusUser) => {
         setSelectedMap((prev) => {
@@ -130,9 +131,9 @@ export function TagUserDialog({
                                                     onCheckedChange={() => handleToggleUser(user)}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs flex-shrink-0">
+                                                <UserAvatar>
                                                     <User className="w-4 h-4" />
-                                                </div>
+                                                </UserAvatar>
                                                 <div className="min-w-0">
                                                     <div className="text-sm font-medium text-foreground truncate">
                                                         {user.FullName || `${user.FirstName} ${user.LastName}`}
@@ -191,13 +192,13 @@ export function TagUserDialog({
                 </div>
 
                 <DialogFooter className="grid grid-cols-2 gap-3 pt-3 border-t sm:flex sm:justify-end sm:gap-2">
-                    <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="h-11 sm:h-9 font-medium">
+                    <Button variant="outline" onClick={handleClose} className="h-11 sm:h-9 font-medium">
                         {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button
                         variant="action"
                         onClick={handleConfirm}
-                        disabled={selectedList.length === 0 || isSubmitting}
+                        disabled={selectedList.length === 0}
                         className="h-11 sm:h-9 font-medium"
                     >
                         <Check className="w-4 h-4 mr-2" />

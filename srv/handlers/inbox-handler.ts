@@ -21,6 +21,7 @@ export function createInboxRouter(): Router {
 
     // 2. Identity profile
     router.get('/me', controller.getMe);
+    router.get('/me/sap-user', controller.getCurrentSapUser);
 
     // 3. Dashboard metrics aggregation
     router.get('/dashboard', controller.getDashboard);

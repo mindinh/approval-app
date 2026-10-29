@@ -20,7 +20,6 @@ export interface TaskDetailTabContentProps {
     workflowError?: unknown;
     isApprovedScope: boolean;
     onSelectReferencePr: (prNumber: string) => void;
-    onCommentAdded: () => void;
 }
 
 export function TaskDetailTabContent({
@@ -34,7 +33,6 @@ export function TaskDetailTabContent({
     workflowError,
     isApprovedScope,
     onSelectReferencePr,
-    onCommentAdded,
 }: TaskDetailTabContentProps) {
     const { t } = useTranslation();
 
@@ -69,7 +67,7 @@ export function TaskDetailTabContent({
                 <WorkflowApprovalPanel
                     data={workflowData}
                     isLoading={false}
-                    error={workflowError}
+                    error={workflowError instanceof Error ? workflowError.message : typeof workflowError === 'string' ? workflowError : undefined}
                     taskDetail={viewData?.task}
                 />
             );
@@ -78,7 +76,7 @@ export function TaskDetailTabContent({
             if (isPrAttachmentsLoading || (isSecondaryLoading && (viewData?.attachments?.length || 0) === 0)) {
                 return <SecondaryTabSkeleton message={t('task.loadingAttachments', 'Loading attachments...')} />;
             }
-            return <AttachmentsPanel detail={viewData} isMobile={mobile} allowUpload={!isApprovedScope} />;
+            return <AttachmentsPanel detail={viewData} isMobile={mobile} />;
 
         case 'comments':
             if (isSecondaryLoading && (viewData?.comments?.length || 0) === 0) {
@@ -88,7 +86,6 @@ export function TaskDetailTabContent({
                 <CommentsPanel
                     detail={viewData}
                     instanceId={viewData?.instanceId}
-                    onCommentAdded={onCommentAdded}
                     allowAddComment={!isApprovedScope && viewData?.supports?.comments !== false}
                     context={{
                         sapOrigin: viewData?.task?.sapOrigin,

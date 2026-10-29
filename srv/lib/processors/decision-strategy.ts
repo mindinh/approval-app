@@ -135,7 +135,7 @@ export class TaskprocessingDecisionStrategy implements DecisionStrategy {
 /**
  * Claim-specific strategy: invokes the entity-bound `/SAP__self.approve` OR
  * `/SAP__self.reject` action (depending on the user's decision) plus
- * `/SAP__self.comment` in parallel — both best-effort — and reports partial
+ * `/SAP__self.comment` when a user comment is present, in parallel — both best-effort — and reports partial
  * success when any leg fails. SAP exposes these as two distinct bound actions
  * on `CNMA_CLAIMHEADER` per METADATA.xml, so callers must dispatch to the
  * correct one.
@@ -160,7 +160,7 @@ export class ClaimDecisionStrategy implements DecisionStrategy {
         const zcomment = trimmedComment
             || (decisionCode === 'R' ? `Rejected by ${ctx.sapUser || 'user'}` : `Approved by ${ctx.sapUser || 'user'}`);
 
-        deps.logger.info(`Claim ${decisionCode} dual-API call type=CLAIM docId=${ctx.documentId} taskId=${ctx.instanceId}`);
+        deps.logger.info(`Claim ${decisionCode} type=CLAIM docId=${ctx.documentId} taskId=${ctx.instanceId} sendComment=${Boolean(trimmedComment)}`);
 
         // Dispatch to the correct SAP bound action based on the user's decision.
         // `/SAP__self.approve` and `/SAP__self.reject` are two distinct endpoints
@@ -181,24 +181,24 @@ export class ClaimDecisionStrategy implements DecisionStrategy {
                 ctx.sapUser || '',
                 ctx.userJwt,
             ),
-            deps.addComment(ctx.documentId, '', ctx.sapUser || '', {
+            ...(trimmedComment ? [deps.addComment(ctx.documentId, trimmedComment, ctx.sapUser || '', {
                 userJwt: ctx.userJwt,
                 decision: decisionCode,
                 objectType: ctx.objectType || 'CLAIM',
                 taskId: ctx.instanceId,
                 approverNumber,
-            }),
+            })] : []),
         ]);
 
         if (actionResult.status === 'rejected') {
             deps.logger.warn(`Non-fatal: Claim entity-bound ${decisionCode === 'R' ? 'reject' : 'approve'} failed for ${ctx.documentId}: ${(actionResult as PromiseRejectedResult).reason?.message || (actionResult as PromiseRejectedResult).reason}`);
         }
-        if (commentResult.status === 'rejected') {
+        if (commentResult?.status === 'rejected') {
             deps.logger.warn(`Non-fatal: Claim entity-bound comment failed for ${ctx.documentId}: ${(commentResult as PromiseRejectedResult).reason?.message || (commentResult as PromiseRejectedResult).reason}`);
         }
 
         const approve = actionResult.status === 'fulfilled' ? 'fulfilled' : 'rejected';
-        const comment = commentResult.status === 'fulfilled' ? 'fulfilled' : 'rejected';
+        const comment = commentResult?.status;
         const partialSuccess = approve === 'rejected' || comment === 'rejected';
 
         return {

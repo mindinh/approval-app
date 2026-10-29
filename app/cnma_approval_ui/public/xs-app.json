@@ -1,7 +1,7 @@
 {
   "welcomeFile": "/index.html",
   "authenticationMethod": "route",
-  "sessionTimeout": 60,
+  "sessionTimeout": 28800,
   "logout": {
     "logoutEndpoint": "/do/logout",
     "logoutPage": "/logout-page.html"
@@ -32,10 +32,18 @@
       "csrfProtection": false
     },
     {
-      "source": "^/(logout-page\\.html|web-manifest\\.json|sap-.*\\.png|pwa-icon-.*\\.png|apple-touch-icon\\.png|RESOURCE_FAVICON\\.png|favicon\\.svg|sw\\.js)$",
+      "source": "^/(sw\\.js|startup(?:-recovery)?\\.(?:js|css))$",
       "target": "/$1",
       "service": "html5-apps-repo-rt",
-      "authenticationType": "none"
+      "authenticationType": "none",
+      "cacheControl": "no-cache, no-store, must-revalidate"
+    },
+    {
+      "source": "^/(logout-page\\.html|web-manifest\\.json|sap-.*\\.png|RESOURCE_FAVICON\\.png)$",
+      "target": "/$1",
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "none",
+      "cacheControl": "no-cache"
     },
     {
       "source": "^/index.html$",

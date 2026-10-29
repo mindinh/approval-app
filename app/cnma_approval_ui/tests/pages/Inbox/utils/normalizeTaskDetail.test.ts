@@ -2,6 +2,28 @@ import { describe, it, expect } from 'vitest';
 import { normalizeDetailForView } from '@/pages/Inbox/utils/normalizeTaskDetail';
 
 describe('normalizeDetailForView', () => {
+    it('preserves the workflow requester name inside the normalized task', () => {
+        const result = normalizeDetailForView({ taskprocessing: { task: { CreatedByName: 'Jane Doe' } } });
+        expect(result!.task.createdByName).toBe('Jane Doe');
+    });
+    it('preserves missing comment dates and normalizes SAP wall times without inventing a timestamp', () => {
+        const result = normalizeDetailForView({ comments: [
+            { text: 'Missing date' },
+            { text: 'SAP date', PostedOn: '2026-10-18', PostedTime: '08:30:00' },
+            { text: 'Date only', PostedOn: '2026-10-18' },
+        ] });
+        expect(result!.comments.map(comment => comment.createdAt)).toEqual([
+            '', '2026-10-18T08:30:00', '2026-10-18T00:00:00',
+        ]);
+    });
+
+    it('preserves comment identity separately from the display name', () => {
+        const result = normalizeDetailForView({
+            comments: [{ id: 'comment-1', createdBy: 'CONARUM3', createdByName: 'Jane Doe', UserComment: 'Jane Doe', text: 'Review this' }],
+        });
+        expect(result!.comments[0]).toMatchObject({ createdBy: 'CONARUM3', createdByName: 'Jane Doe' });
+    });
+
     it('returns null for empty detail', () => {
         expect(normalizeDetailForView(null)).toBeNull();
         expect(normalizeDetailForView(undefined)).toBeNull();

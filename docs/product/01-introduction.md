@@ -1,5 +1,7 @@
 # Product Introduction & Capabilities
 
+> **Owner:** Product Team | **Last Updated:** 2026-10-20 | **Status:** Active
+
 ## 🎯 Purpose
 The **CNMA Approval** application is a lightweight, mobile-first workflow management portal designed to streamline operational review processes for procurement items. It serves as a unified approval workspace (BFF + UI) that aggregates pending requests directly from backend ERP systems (SAP S/4HANA & SAP Task Gateway) into a single, high-performance interface.
 
@@ -13,6 +15,8 @@ The solution enables executives, procurement leads, and managers to review, comm
 The portal dynamically formats and renders details for different types of procurement objects:
 *   **Purchase Requisitions (PR)**: Used for internal approval of purchasing requests.
 *   **Purchase Orders (PO)**: Used for external-facing contractual commitments to suppliers.
+*   **Expense Claims (CLAIM)**: Review reimbursement documents, verification status and payment amounts.
+*   **Material Reservations (RE)**: Review inventory reservation requests and items.
 
 ### 2. Comprehensive Worklist & Dashboard
 *   **Metric Badges**: Real-time aggregation of pending approvals based on priority, document type, and values.
@@ -33,4 +37,4 @@ The portal dynamically formats and renders details for different types of procur
 ## 💡 Business Benefits
 *   **Accelerated Approval Cycles**: Reduced bottlenecks in purchasing workflows by enabling decisions from any device.
 *   **Clean Core Strategy**: Custom UX and aggregation logic live on SAP BTP, keeping the core S/4HANA systems standard and lightweight.
-*   **Audit Compliance**: All decisions, comments, and attachments are pushed back to the ERP system of record, maintaining a full audit trail.
+*   **Audit Compliance**: Decisions and comments are sent to the ERP system of record; attachments are read and streamed from SAP. Some action paths can report partial success when an audit step fails.

@@ -72,7 +72,7 @@ export const MAX_ATTACHMENT_SIZE_BYTES = MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 // ─── Query Stale Times ─────────────────────────────────────
 
 export const STALE = {
-    LIST: 0,
+    LIST: 30_000,
     DETAIL: 15_000,
     INFORMATION: 20_000,
     OVERVIEW: 20_000,

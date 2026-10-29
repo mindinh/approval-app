@@ -43,8 +43,8 @@ export class ClaimDetail extends BaseRawDetail {
      * SAP exposes two distinct bound actions on `CNMA_CLAIMHEADER` —
      * `/SAP__self.approve` and `/SAP__self.reject` — so callers must dispatch to
      * the correct one. The decision code itself is also recorded separately via
-     * `/SAP__self.comment` so both endpoints must be called for the workflow to
-     * advance. The `zcomment` field carries the user's free-text audit note.
+     * `/SAP__self.comment` when the user provides a comment.
+     * The `zcomment` field carries the user's free-text audit note.
      */
     async approveOnHeader(objectId: string, params: ApproveOnHeaderParams, sapUser: string, userJwt?: string): Promise<void> {
         const paddedId = this.padDocumentId(objectId);

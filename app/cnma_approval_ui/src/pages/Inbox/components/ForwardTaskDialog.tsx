@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import {
     Button,
     Textarea,
@@ -156,9 +157,9 @@ export function ForwardTaskDialog({
                                             }`}
                                         >
                                             <div className="flex items-start gap-2.5 min-w-0">
-                                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium text-xs shrink-0">
+                                                <UserAvatar>
                                                     <User className="w-4 h-4" />
-                                                </div>
+                                                </UserAvatar>
                                                 <div className="min-w-0">
                                                     <div className="text-sm font-medium text-foreground truncate">
                                                         {user.displayName} <span className="text-xs text-muted-foreground font-normal">({user.userId || user.uniqueName})</span>

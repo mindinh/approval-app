@@ -77,38 +77,26 @@ export function invalidateAfterComment(
     instanceId: string,
 ) {
     const cleanId = normId(instanceId);
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.taskWorkflowPrefix(cleanId) });
-    if (instanceId !== cleanId) {
-        queryClient.invalidateQueries({ queryKey: ['inbox', 'task', instanceId] });
-        queryClient.invalidateQueries({ queryKey: ['inbox', 'workflow', instanceId] });
-    }
+    const matchesTask = (key: readonly unknown[], kind: string) =>
+        key[0] === 'inbox' && key[1] === kind && normId(String(key[2] ?? '')) === cleanId;
 
-    // Force immediate refetch so new comment displays instantly in UI!
-    queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-    if (instanceId !== cleanId) {
-        queryClient.refetchQueries({ queryKey: ['inbox', 'task', instanceId] });
-    }
+    // Workflow refresh can run independently; only the conversation gates send completion.
+    void queryClient.invalidateQueries({ predicate: query => matchesTask(query.queryKey, 'workflow') });
+    // Invalidation already refetches active queries. A second explicit refetch cancels that request.
+    return queryClient.invalidateQueries({ predicate: query => matchesTask(query.queryKey, 'task') });
 }
 
 
 // ─── Policy: Manual refresh of task lists & detail panel ─────
 export function invalidateTaskList(queryClient: QueryClient, selectedTaskId?: string | null) {
-    queryClient.invalidateQueries({ queryKey: inboxKeys.tasksPrefix() });
-    queryClient.invalidateQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
-    invalidateScopedLists(queryClient);
-    void queryClient.refetchQueries({ queryKey: [...inboxKeys.all, 'scopedTasks'] });
-    void queryClient.refetchQueries({ queryKey: [...inboxKeys.all, 'categoryCounts'] });
-    void queryClient.refetchQueries({ queryKey: inboxKeys.tasksPrefix() });
-    void queryClient.refetchQueries({ queryKey: inboxKeys.approvedTasksPrefix() });
-
-    if (selectedTaskId) {
-        const cleanId = normId(selectedTaskId);
-        queryClient.invalidateQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-        void queryClient.refetchQueries({ queryKey: inboxKeys.taskDetail(cleanId) });
-        if (selectedTaskId !== cleanId) {
-            queryClient.invalidateQueries({ queryKey: ['inbox', 'task', selectedTaskId] });
-            void queryClient.refetchQueries({ queryKey: ['inbox', 'task', selectedTaskId] });
-        }
-    }
+    const listKinds = new Set(['tasks', 'approvedTasks', 'scopedTasks', 'categoryCounts', 'statusCounts']);
+    // Invalidation already fetches active queries. Leave inactive caches stale for
+    // their next mount rather than replaying every cached search and infinite page.
+    return queryClient.invalidateQueries({
+        refetchType: 'active',
+        predicate: ({ queryKey }) => queryKey[0] === 'inbox' && (
+            listKinds.has(String(queryKey[1])) ||
+            (!!selectedTaskId && queryKey[1] === 'task' && normId(String(queryKey[2])) === normId(selectedTaskId))
+        ),
+    });
 }

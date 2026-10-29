@@ -1,147 +1,48 @@
 # System Architecture Overview
 
-> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-09-04 | **Status:** Active
+> **Owner:** Project Team | **Last Updated:** 2026-10-20 | **Status:** Active
 
-This document provides a high-level technical overview of the **CNMA Approval** system design, integration boundaries, technology stack, and business object transformation architecture.
-
----
-
-## 🏛️ System Architecture Topology
-
-The application is built as a decoupled Multi-Target Application (MTA) deployed on **SAP Business Technology Platform (BTP)**. It follows the Backend-For-Frontend (BFF) pattern powered by a **Config-Driven Mapping Engine**:
+CNMA Approval is a CAP Node.js / Express BFF with React 18, Vite, TypeScript and `@cnma/react-ui`.
+It orchestrates SAP workflow tasks without maintaining a local business database.
 
 ```mermaid
-graph TD
-    subgraph ClientSide [Client Browser]
-        ReactUI["Vite React Frontend<br/>(TypeScript / @cnma/react-ui)"]
-    end
-
-    subgraph SAPBTP [SAP BTP Cloud Foundry Environment]
-        AppRouter["SAP Approuter<br/>(JWT Routing & SSO)"]
-        
-        subgraph BFFService [CAP Node.js BFF Service]
-            Express["Express Controllers<br/>(inbox-controller.ts)"]
-            
-            subgraph ActionPipeline [Decision & Validation Layer]
-                Val["RequestValidator<br/>(request-validator.ts)"]
-                DecStrat["DecisionStrategy Engine<br/>(decision-strategy.ts)"]
-            end
-
-            Proc["Inbox Processor<br/>(inbox-processor.ts)"]
-            
-            subgraph MappingEngine [Config-Driven Mapping Engine]
-                Reg["ConfigRegistry<br/>(srv/configuration/object-types)"]
-                Engine["MappingEngine & Transforms"]
-                Resolver["FieldRequirementResolver"]
-                Projector["CanonicalProjector"]
-            end
-            
-            Adapters["SAP OData Adapters<br/>(PR, PO, CLAIM, RE strategies)"]
-            Cache["In-memory Cache<br/>(TtlLruCache wrapper)"]
-        end
-    end
-
-    subgraph SAPCore [Enterprise On-Premises Core]
-        TaskGW["SAP Task Gateway<br/>(/iwfnd/sgw_taskprocessing)"]
-        S4Core["S/4HANA OData Core<br/>(za_cnma_prorequest)"]
-    end
-
-    ClientSide -->|HTTPS / REST API| AppRouter
-    AppRouter -->|JWT Principal Propagation| Express
-    Express --> Val
-    Val --> DecStrat
-    DecStrat --> Proc
-    Proc --> Reg
-    Proc --> Adapters
-    Adapters -->|Caching layer| Cache
-    Adapters -->|OData v2 Client Protocol| TaskGW
-    Adapters -->|OData v4 Client Protocol| S4Core
-    Proc --> Engine
-    Engine --> Resolver
-    Resolver --> Projector
+flowchart TD
+    UI[React UI] --> Router[SAP Approuter]
+    Router --> REST[Express REST controllers]
+    REST --> Proc[InboxProcessor and decision strategies]
+    Proc --> Adapter[SapOdataAdapter]
+    Proc --> Tasks[TaskprocessingAdapter]
+    Adapter --> Raw[PR / PO / RE / CLAIM raw strategies]
+    Raw --> Client[SapClient]
+    Tasks --> Client
+    Client --> Dest[BTP Destination / Connectivity]
+    Client --> Direct[Direct Axios for configured mode]
+    Dest --> SAP[SAP OData services]
+    Direct --> SAP
+    REST --> Data[Raw businessObject and taskprocessing]
+    Data --> Registry[Frontend ObjectView registry and field catalogs]
+    Registry --> UI
 ```
 
----
+## Responsibilities
 
-## 💻 Technology Stack
+- [server.ts](../../../srv/server.ts) mounts REST at `/api/cnma/APPROVAL_SRV/tasks`, plus health, diagnostics and Swagger UI.
+- [InboxProcessor](../../../srv/lib/processors/inbox-processor.ts) combines raw objects, worklist records and task metadata, and coordinates actions.
+- [SapOdataAdapter](../../../srv/lib/integrations/sap-odata-adapter.ts) registers PR, PO, RE and CLAIM strategies extending [BaseRawDetail](../../../srv/lib/integrations/base.ts).
+- Strategies use `ODATA_SERVICES.INSTANCE_LIST`, unwrap transport containers and retain SAP property names. The historical backend JSON mapping registry/canonical projection engine is gone.
+- [ObjectView.registry.ts](../../../app/cnma_approval_ui/src/renderers/ObjectView.registry.ts), object field/view catalogs and [taskCardView.ts](../../../app/cnma_approval_ui/src/renderers/core/taskCardView.ts) own display layouts and worklist chips.
+- [service.cds](../../../srv/service.cds) and [service.ts](../../../srv/service.ts) expose CAP notification actions alongside REST.
 
-### Frontend Client
-*   **Framework**: React 18+ powered by Vite (bundler and build system).
-*   **Language**: TypeScript.
-*   **Styling**: TailwindCSS & custom vanilla CSS for Fiori-inspired aesthetics.
-*   **Data Fetching**: React Query (TanStack Query v5) for cache synchronization, stale-while-revalidate, and loading state management.
-*   **Dynamic UI**: Schema-driven rendering using `TaskDetailSections.registry.ts` guided by backend `uiSchema`.
+| Object | Header | Category |
+| --- | --- | --- |
+| PR | `CNMA_PRHEADER` | `BUS2105` |
+| PO | `CNMA_POHEADER` | `BUS2012` |
+| RE | `CNMA_RESVHEADER` | `ZBUS2093` |
+| CLAIM | `CNMA_CLAIMHEADER` | `CLAIM` |
 
-### Backend BFF (Backend for Frontend)
-*   **Framework**: SAP Cloud Application Programming Model (CAP) Node.js runtime (`@sap/cds`).
-*   **Language**: TypeScript.
-*   **Web Framework**: Embedded Express.js for routing custom REST APIs (instead of CDS OData).
-*   **Mapping Architecture**: Modular, config-driven engine ([`srv/lib/mapping/`](file:///d:/learning/test/cnma_approval/srv/lib/mapping/)) with declarative JSON specifications per object type.
-*   **Integration SDK**: SAP Cloud SDK (`@sap-cloud-sdk/http-client`, `@sap-cloud-sdk/connectivity`) to perform destination lookups and authentication propagation.
-*   **Authentication**: Passport.js with `@sap/xssec` for JWT token decoding and authorization checks.
+CLAIM header keys additionally include `ApproverNumber`. Aliases are defined in object strategies and the resolver.
 
-### Datastores & Backends
-*   **Task Lists**: SAP Task Gateway (supports workflow tasks, approvals, rejections).
-*   **Procurement & Financial Records**: SAP S/4HANA ERP core exposing OData services (`APPROVAL_SRV`) supporting multiple document types:
-    *   **PR** (Purchase Requisitions - `BUS2105`)
-    *   **PO** (Purchase Orders - `BUS2012`)
-    *   **CLAIM** (Expense Claims - `BUS2081` / `CLAIM`)
-    *   **RE** (Reservations - `BUS2013`)
+## Runtime boundaries
 
----
-
-## 🔄 Consolidated Detail Retrieval & Mapping Flow
-
-The system resolves detailed business object data using a Strategy Pattern combined with the **Config-Driven Mapping Engine** ([04-config-driven-mapping.md](file:///d:/learning/test/cnma_approval/docs/technical/01-architecture/04-config-driven-mapping.md)).
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client as React UI
-    participant Ctrl as InboxController
-    participant Proc as InboxProcessor
-    participant Reg as ConfigRegistry
-    participant Adapter as SapOdataAdapter
-    participant Cache as TtlLruCache
-    participant Strategy as Detail Strategy (PR/PO/CLAIM/RE)
-    participant MapEng as MappingEngine
-    participant Res as FieldRequirementResolver
-    participant Proj as CanonicalProjector
-
-    Client->>Ctrl: GET /tasks/tasks/:id
-    Ctrl->>Proc: getTaskDetail(id, sapUser, userJwt)
-    
-    activate Proc
-    Proc->>Reg: get(objectType)
-    Reg-->>Proc: Return active config.json
-    
-    Proc->>Adapter: getDetail(objectType, documentId, sapUser, jwt)
-    activate Adapter
-    Adapter->>Cache: get(cacheKey)
-    alt Cache Hit
-        Cache-->>Adapter: Return cached raw entity
-    else Cache Miss
-        Adapter->>Strategy: getDetail(documentId, sapUser, jwt)
-        Strategy-->>Adapter: Return raw OData response payload
-        Adapter->>Cache: set(cacheKey, rawPayload)
-    end
-    Adapter-->>Proc: Return raw payload
-    deactivate Adapter
-    
-    Proc->>MapEng: map(rawPayload, config)
-    activate MapEng
-    MapEng-->>Proc: Return CanonicalBusinessObject
-    deactivate MapEng
-
-    Proc->>Res: resolve('detail', config)
-    Res-->>Proc: Return field plan
-    
-    Proc->>Proj: project(canonicalObject, plan)
-    Proj-->>Proc: Return projected canonical object
-    
-    Proc-->>Ctrl: Return consolidated task payload
-    deactivate Proc
-    Ctrl-->>Client: Return JSON response
-```
-
-For detailed specifications on the mapping engine architecture, configuration schemas, and hot-reloading mechanisms, refer to [Config-Driven Mapping Architecture](file:///d:/learning/test/cnma_approval/docs/technical/01-architecture/04-config-driven-mapping.md).
+Approuter authenticates deployed API traffic and forwards tokens. The custom BFF Passport middleware depends on XSUAA credentials and production/`ENABLE_JWT_AUTH`.
+CAP mocked authentication does not provide mocked business objects. See [configuration](../04-reference/01-configuration.md), [API reference](../02-implementation/03-backend-bff-endpoints.md), [renderer architecture](04-config-driven-mapping.md), and [cache behavior](03-caching-strategy.md).

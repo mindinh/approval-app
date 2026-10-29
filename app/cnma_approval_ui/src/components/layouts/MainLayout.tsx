@@ -1,37 +1,33 @@
+import { AccountMenu } from './AccountMenu';
+import { AppSidebarNavigation } from './AppSidebarNavigation';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import * as React from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-    ClipboardCheck,
     ChevronLeft,
     ChevronRight,
-    Inbox,
-    LayoutDashboard,
+    MoreHorizontal,
     LogOut,
-    Home,
     Bell,
 } from 'lucide-react';
-import { NotificationTestModal } from '@/components/modals/NotificationTestModal';
 import { cn } from '@/utils/cn';
 import {
     Button,
     SidebarProvider,
     useSidebar,
-    Sheet,
-    SheetContent,
     SidebarHeader,
-    SidebarContent,
-    SidebarMenu,
-    SidebarMenuItem,
-    SidebarMenuButton,
     SidebarFooter,
     Dialog,
     DialogContent,
     DialogFooter,
     DialogHeader,
-    DialogTitle
+    DialogTitle,
+    Field,
+    FieldLabel,
+    FieldDescription,
 } from '@cnma/react-ui';
-import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
+import { useUserIdentity } from '@/pages/Inbox/hooks/useUserIdentity';
 import { MobileNavProvider } from '@/contexts/MobileNavContext';
 import { MobileBottomBar } from './MobileBottomBar';
 import { isWorkZone } from '@/utils/launchpad';
@@ -130,13 +126,12 @@ Sidebar.displayName = "Sidebar";
 // ── AppSidebar: Nav Menu and Profile Footer ───────────────────────────
 function AppSidebar() {
     const navigate = useNavigate();
-    const location = useLocation();
     const { t, i18n } = useTranslation();
     const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
-    const { data: userInfo } = useCurrentUser();
     const isInWorkZone = isWorkZone();
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-    const [isNotificationModalOpen, setIsNotificationModalOpen] = React.useState(false);
+    const { currentUser: userInfo, isResolving, error: identityError, retry: retryIdentity } = useUserIdentity({ resolveProfile: isProfileOpen });
+    const sapUsernameLabelId = React.useId();
 
     const currentLang = i18n.language || 'en';
     const handleLanguageChange = (lang: string) => {
@@ -171,164 +166,54 @@ function AppSidebar() {
         return 'U';
     }, [userInfo]);
 
-    const [localActiveTab, setLocalActiveTab] = React.useState<string | null>(null);
-
-    React.useEffect(() => {
-        setLocalActiveTab(null);
-    }, [location.pathname]);
-
-    const isDashboard = location.pathname === '/dashboard';
-    const isHome = location.pathname === '/' || location.pathname === '/home';
-    const isInbox = location.pathname.startsWith('/inbox') || location.pathname.startsWith('/tasks');
-    const isApproved = location.pathname.startsWith('/approved');
-    const isNotificationTester = location.pathname.startsWith('/notification-tester');
-
-    // Determine active navigation state
-    let activeValue = localActiveTab || 'my';
-    if (!localActiveTab) {
-        if (isDashboard) {
-            activeValue = 'dashboard';
-        } else if (isHome) {
-            activeValue = 'home';
-        } else if (isApproved) {
-            activeValue = 'approved';
-        } else if (isInbox) {
-            activeValue = 'my';
-        } else if (isNotificationTester) {
-            activeValue = 'notification-tester';
-        }
-    }
-
-    const items = [
-        { value: 'home', label: t('nav.home', 'Home'), icon: Home, route: '/home' },
-        { value: 'my', label: t('nav.myTasks', 'My Tasks'), icon: Inbox, route: '/inbox' },
-        { value: 'approved', label: t('nav.approvedTasks', 'Approved Tasks'), icon: ClipboardCheck, route: '/approved' },
-        { value: 'dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard, route: '/dashboard' },
-    ];
-
-    const filteredItems = items;
-
-    const handleNavItemClick = (item: typeof items[0]) => {
-        setLocalActiveTab(item.value);
-        if (isMobile) {
-            setOpenMobile(false);
-        }
-        navigate(item.route);
-    };
-
     return (
-        <Sidebar className="transition-all duration-300">
+        <Sidebar className="transition-[width] duration-200">
             {/* Header — hidden in WorkZone */}
             {!isInWorkZone && (
-                <SidebarHeader className="p-4 flex-shrink-0 flex items-center justify-between border-b border-sidebar-border h-14">
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                        <img src="./RESOURCE_FAVICON.png" alt="Logo" className="w-6 h-6 shrink-0 rounded-sm" />
+                <SidebarHeader className={cn('app-sidebar__header', state === 'collapsed' && !isMobile && 'app-sidebar__header--collapsed')}>
+                    <div className="flex min-w-0 items-center gap-3">
+                        <img src="./RESOURCE_FAVICON.png" alt={t('nav.applicationName')} className="app-sidebar__logo" />
                         {(state === "expanded" || isMobile) && (
-                            <span className="text-sm font-bold tracking-wide text-sidebar-foreground truncate">prorequest</span>
+                            <span className="app-sidebar__brand">{t('nav.applicationName')}</span>
                         )}
                     </div>
                 </SidebarHeader>
             )}
 
-            {/* Content */}
-            <SidebarContent className={cn("flex-1 overflow-y-auto", (state === "collapsed" && !isMobile) ? "p-2" : "p-3")}>
-                <SidebarMenu className="space-y-1">
-                    {filteredItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = activeValue === item.value;
+            <AppSidebarNavigation isAdmin={isAdmin} />
 
-                        return (
-                            <SidebarMenuItem key={item.value}>
-                                <SidebarMenuButton
-                                    isActive={isActive}
-                                    onClick={() => handleNavItemClick(item)}
-                                    className={cn(
-                                        "w-full flex items-center rounded-lg py-2 text-sm transition-all duration-200 h-auto cursor-pointer",
-                                        (state === "collapsed" && !isMobile) ? "justify-center p-2" : "gap-2.5 px-3",
-                                        isActive
-                                            ? "data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground shadow-sm data-[active=true]:hover:bg-sidebar-primary data-[active=true]:hover:text-sidebar-primary-foreground"
-                                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                                    )}
-                                    title={(state === "collapsed" && !isMobile) ? item.label : undefined}
-                                >
-                                    <Icon className={cn(
-                                        "size-4 shrink-0",
-                                        isActive
-                                            ? "text-sidebar-primary-foreground"
-                                            : "text-sidebar-foreground"
-                                    )} />
-                                    {(state === "expanded" || isMobile) && (
-                                        <span className="truncate font-medium">{item.label}</span>
-                                    )}
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        );
-                    })}
-
-                    {/* Notification Console - Admin on Web only */}
-                    {!isMobile && isAdmin && (
-                        <SidebarMenuItem>
-                            <SidebarMenuButton
-                                isActive={activeValue === 'notification-tester'}
-                                onClick={() => {
-                                    setLocalActiveTab('notification-tester');
-                                    navigate('/notification-tester');
-                                }}
-                                className={cn(
-                                    "w-full flex items-center rounded-lg py-2 text-sm transition-all duration-200 h-auto cursor-pointer",
-                                    (state === "collapsed" && !isMobile) ? "justify-center p-2" : "gap-2.5 px-3",
-                                    activeValue === 'notification-tester'
-                                        ? "data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground shadow-sm data-[active=true]:hover:bg-sidebar-primary data-[active=true]:hover:text-sidebar-primary-foreground"
-                                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                                )}
-                                title={(state === "collapsed" && !isMobile) ? 'Notification Console' : undefined}
-                            >
-                                <Bell className={cn(
-                                    "size-4 shrink-0",
-                                    activeValue === 'notification-tester' ? "text-sidebar-primary-foreground" : "text-primary"
-                                )} />
-                                {(state === "expanded" || isMobile) && (
-                                    <span className="truncate font-medium flex items-center justify-between w-full">
-                                        <span>Notification Console</span>
-                                        <span className={cn(
-                                            "text-xs font-mono px-1.5 py-0.5 rounded font-semibold ml-2",
-                                            activeValue === 'notification-tester'
-                                                ? "bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground"
-                                                : "bg-primary/15 text-primary"
-                                        )}>
-                                            Admin
-                                        </span>
-                                    </span>
-                                )}
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    )}
-                </SidebarMenu>
-            </SidebarContent>
+            {!isMobile && (
+                    <Button onClick={toggleSidebar} variant="ghost" size="icon"
+                        className="app-sidebar__toggle"
+                        aria-label={t(state === 'collapsed' ? 'nav.expandSidebar' : 'nav.collapseSidebar')}
+                        title={t(state === 'collapsed' ? 'nav.expandSidebar' : 'nav.collapseSidebar')}
+                        aria-expanded={state === 'expanded'}>
+                        {state === 'collapsed' ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
+                    </Button>
+            )}
 
             {/* Footer User Profile — hidden in WorkZone */}
             {!isInWorkZone && (
                 <>
                     <SidebarFooter className={cn(
-                        "border-t border-sidebar-border flex-shrink-0",
-                        (state === "collapsed" && !isMobile) ? "p-3 flex items-center justify-center" : "p-2"
+                        "app-sidebar__footer",
+                        (state === "collapsed" && !isMobile) && "app-sidebar__footer--collapsed"
                     )}>
+                        <AccountMenu onViewProfile={() => setIsProfileOpen(true)}>
                         <Button
                             variant="ghost"
-                            onClick={() => setIsProfileOpen(true)}
+                            aria-label={t('nav.account')}
                             className={cn(
-                                "group/profile flex items-center gap-3 transition-all duration-200 text-left cursor-pointer hover:bg-transparent hover:text-sidebar-foreground",
-                                (state === "collapsed" && !isMobile)
-                                    ? "justify-center p-0 w-10 h-10"
-                                    : "w-full p-1.5 h-auto"
+                                "app-sidebar__account",
+                                state === "collapsed" && !isMobile && "app-sidebar__account--collapsed"
                             )}
                         >
-                            <div className="w-8 h-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-bold text-xs shrink-0 border border-sidebar-border group-hover/profile:ring-2 group-hover/profile:ring-primary/40 group-hover/profile:scale-105 transition-all duration-200">
+                            <UserAvatar>
                                 {initials}
-                            </div>
+                            </UserAvatar>
                             {(state === "expanded" || isMobile) && (
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                                    <p className="text-sm font-semibold text-sidebar-foreground truncate">
                                         {fullName}
                                     </p>
                                     <p className="text-xs text-muted-foreground truncate">
@@ -336,19 +221,21 @@ function AppSidebar() {
                                     </p>
                                 </div>
                             )}
+                            {(state === 'expanded' || isMobile) && <MoreHorizontal className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
                         </Button>
+                        </AccountMenu>
                     </SidebarFooter>
 
                     <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-                        <DialogContent className="max-w-sm rounded-lg overflow-hidden p-0 border border-sidebar-border bg-sidebar text-sidebar-foreground">
+                        <DialogContent className="max-w-sm rounded-lg overflow-hidden p-0 border border-sidebar-border bg-sidebar text-sidebar-foreground font-sans">
                             <DialogHeader className="p-6 border-b border-sidebar-border bg-sidebar-accent/10">
                                 <DialogTitle className="text-base font-semibold">{t('profile.title', 'User Profile')}</DialogTitle>
                             </DialogHeader>
 
                             <div className="flex flex-col items-center justify-center p-6 border-b border-sidebar-border bg-sidebar-accent/20">
-                                <div className="w-16 h-16 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-bold text-2xl border border-sidebar-border shadow-sm mb-3">
+                                <UserAvatar className="size-16 text-2xl shadow-sm mb-3">
                                     {initials}
-                                </div>
+                                </UserAvatar>
                                 <h3 className="text-lg font-semibold text-sidebar-foreground">{fullName}</h3>
                                 <p className="text-xs text-muted-foreground font-medium bg-sidebar-primary/10 text-sidebar-primary px-3 py-1 rounded-full mt-2">{roleName}</p>
                             </div>
@@ -358,10 +245,15 @@ function AppSidebar() {
                                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('profile.email', 'Email')}</span>
                                     <span className="col-span-2 text-sm text-sidebar-foreground truncate" title={userInfo?.email}>{userInfo?.email || 'N/A'}</span>
                                 </div>
-                                <div className="grid grid-cols-3 gap-2 items-center">
-                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('profile.sapUser', 'SAP User')}</span>
-                                    <span className="col-span-2 text-sm text-sidebar-foreground font-mono truncate">{userInfo?.sapUser || userInfo?.id || 'N/A'}</span>
-                                </div>
+                                <Field orientation="horizontal" className="grid grid-cols-3 gap-2 items-center">
+                                    <FieldLabel id={sapUsernameLabelId} className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('profile.sapUser')}</FieldLabel>
+                                    <FieldDescription aria-labelledby={sapUsernameLabelId} aria-live="polite" className="col-span-2 min-w-0 break-words text-sm text-sidebar-foreground font-sans">
+                                        {userInfo?.sapUsername || t(isResolving ? 'common.loading' : 'profile.sapUserUnavailable')}
+                                    </FieldDescription>
+                                </Field>
+                                {identityError && !userInfo?.sapUsername && <Button variant="outline" size="sm" onClick={() => void retryIdentity()} disabled={isResolving}>
+                                    {t('common.refresh')}
+                                </Button>}
                                 {/* <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-sidebar-border/50">
                                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('profile.language', 'Language')}</span>
                                     <div className="col-span-2 flex gap-2">
@@ -424,27 +316,6 @@ function AppSidebar() {
                     </Dialog>
                 </>
             )}
-
-            {/* Floating Collapse toggle button */}
-            {!isMobile && (
-                <Button
-                    onClick={toggleSidebar}
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-[-12px] top-6 z-30 hidden h-6 w-6 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent md:flex cursor-pointer p-0"
-                    title={state === "collapsed" ? 'Expand sidebar' : 'Collapse sidebar'}
-                >
-                    {state === "collapsed" ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
-                </Button>
-            )}
-
-            {/* Notification Test Modal - Web & Admin only */}
-            {!isMobile && isAdmin && (
-                <NotificationTestModal
-                    open={isNotificationModalOpen}
-                    onOpenChange={setIsNotificationModalOpen}
-                />
-            )}
         </Sidebar>
     );
 }
@@ -454,7 +325,7 @@ export function MainLayout() {
     return (
         <SidebarProvider defaultOpen={false}>
             <MobileNavProvider>
-                <div className="h-[100dvh] w-screen overflow-hidden flex bg-background">
+                <div className="app-shell h-[100dvh] w-screen overflow-hidden flex bg-background">
                     {/* Global Unified App Sidebar */}
                     <AppSidebar />
 

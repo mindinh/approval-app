@@ -58,6 +58,7 @@ export default function DashboardPage() {
         category: '',
     }));
     const [tablePage, setTablePage] = useState(1);
+    const [isManualRefresh, setIsManualRefresh] = useState(false);
     const tablePageSize = 50;
     // Fetch master tasks data
     const { data: dashboardData, isLoading, isError, refetch, isRefetching } = useDashboardQuery({
@@ -68,6 +69,15 @@ export default function DashboardPage() {
         status: appliedFilters.status?.[0],
     });
     const tasks = dashboardData?.items ?? [];
+
+    const handleManualRefresh = useCallback(async () => {
+        setIsManualRefresh(true);
+        try {
+            await refetch();
+        } finally {
+            setIsManualRefresh(false);
+        }
+    }, [refetch]);
 
     // Derives filtered sets, KPI numbers, and charts data
     const {
@@ -154,7 +164,7 @@ export default function DashboardPage() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => refetch()}
+                            onClick={handleManualRefresh}
                             disabled={isRefetching}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-background border border-border text-primary hover:text-primary-hover cursor-pointer"
                             title={t('common.refresh', 'Refresh')}
@@ -232,7 +242,7 @@ export default function DashboardPage() {
                         transition={{ duration: 0.35 }}
                         className="relative rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6"
                     >
-                        {isRefetching && <RefetchOverlay />}
+                        {isManualRefresh && isRefetching && <RefetchOverlay />}
                         <StatusDonutCard
                             segments={donutSegments}
                             counts={kpiMetrics}

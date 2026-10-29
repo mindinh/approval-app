@@ -2,7 +2,7 @@
 
 **Date:** 260709
 **Reviewer:** Leo – AI + 4-Eyes
-**Scope:** [srv/lib/integrations/object-detail-adapter.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/object-detail-adapter.ts), [srv/lib/integrations/instance-list-adapter.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/instance-list-adapter.ts), [srv/lib/processors/odata-config.ts](file:///d:/learning/test/cnma_approval/srv/lib/processors/odata-config.ts)
+**Scope:** srv/lib/integrations/object-detail-adapter.ts (historical path: `srv/lib/integrations/object-detail-adapter.ts`), srv/lib/integrations/instance-list-adapter.ts (historical path: `srv/lib/integrations/instance-list-adapter.ts`), [srv/lib/processors/odata-config.ts](../../srv/lib/processors/odata-config.ts)
 
 ---
 

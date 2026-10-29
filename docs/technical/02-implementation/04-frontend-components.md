@@ -1,6 +1,6 @@
 # Frontend Component Architecture & Declarative Renderer Engine
 
-> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-09-14 | **Status:** Active
+> **Owner:** Lead Frontend Engineer | **Last Updated:** 2026-10-20 | **Status:** Active
 
 This document details the React component hierarchy, state synchronization patterns, raw OData consumption, and the **Declarative Raw OData Renderer Engine** of the **CNMA Approval** frontend.
 
@@ -8,7 +8,7 @@ This document details the React component hierarchy, state synchronization patte
 
 ## 🏗️ React Component Hierarchy & Workspace Layout
 
-The application employs a unified layout wrapper [`MainLayout.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/layouts/MainLayout.tsx) providing desktop sidebar navigation alongside responsive mobile navigation:
+The application employs a unified layout wrapper [`MainLayout.tsx`](../../../app/cnma_approval_ui/src/components/layouts/MainLayout.tsx) providing desktop sidebar navigation alongside responsive mobile navigation:
 
 ```
 App.tsx (Main App Shell with ErrorBoundary & Toaster)
@@ -54,20 +54,20 @@ App.tsx (Main App Shell with ErrorBoundary & Toaster)
 
 To provide an optimal native mobile experience on smartphones and tablets, the navigation architecture separates desktop drawer patterns from mobile bottom navigation:
 
-### 1. `MobileNavContext` & State Lifecycle ([`src/contexts/MobileNavContext.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/contexts/MobileNavContext.tsx))
+### 1. `MobileNavContext` & State Lifecycle ([`src/contexts/MobileNavContext.tsx`](../../../app/cnma_approval_ui/src/contexts/MobileNavContext.tsx))
 *   **Active Tab Tracking**: Categorizes routes into `home`, `my`, `approved`, `dashboard`, or `other` using pure route resolver `resolveNavTab`.
 *   **Route Drill-Down Detection**: Pure helper `isTaskDetailPath` uses React Router `matchPath` patterns (`/inbox/:taskId`, `/approved/:taskId`, `/tasks/:taskId`) to detect when a user is inspecting a specific task.
 *   **Mutual Exclusivity**:
     *   The `MobileBottomBar` automatically unmounts / slides out (`exit={{ y: '100%', opacity: 0 }}`) when drilling into a task detail view, leaving the viewport dedicated to content and the floating action panel.
     *   When the user activates Mass Selection Mode in `InboxPage.tsx`, `setHideBottomBar(true)` coordinates hiding the bottom bar to make room for mass selection controls.
 
-### 2. Standardized Layout Tokens ([`src/styles/theme.css`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/styles/theme.css))
+### 2. Standardized Layout Tokens ([`src/styles/theme.css`](../../../app/cnma_approval_ui/src/styles/theme.css))
 Arbitrary padding values have been eliminated in favor of CSS variables defined in `:root`:
 *   `--mobile-bottom-nav-height`: `calc(3.75rem + env(safe-area-inset-bottom, 0px))`
 *   `--mobile-bottom-nav-clearance`: `calc(var(--mobile-bottom-nav-height) + 1.5rem)`
 Both `HomePage.tsx` and `DashboardPage.tsx` use `pb-[var(--mobile-bottom-nav-clearance)] md:pb-8` to ensure touch scrolling never obscures content behind the navigation bar regardless of hardware safe-area insets.
 
-### 3. Identity Top Bar ([`src/components/layouts/MobileTopBar.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/layouts/MobileTopBar.tsx))
+### 3. Identity Top Bar ([`src/components/layouts/MobileTopBar.tsx`](../../../app/cnma_approval_ui/src/components/layouts/MobileTopBar.tsx))
 *   Provides user initials avatar, full user email/ID, and one-tap logout (`/do/logout`).
 *   Operates in two modes:
     *   **Embedded**: Placed inside the gradient header on `HomePage.tsx` without outer borders or background.
@@ -78,9 +78,9 @@ Both `HomePage.tsx` and `DashboardPage.tsx` use `pb-[var(--mobile-bottom-nav-cle
 ## 🛡️ Carbon Copy (CC / Review-Only) UI Guardrails
 
 Tasks flagged with `normalTask === false` (Carbon Copy / tagged tasks) receive full-stack UI protection:
-1. **Decision Stripping**: [`normalizeDetailForView`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts) strips decision options (`decisions: []`) and disables forwarding (`supports.forward = false`).
-2. **Action Panel Suppression**: [`TaskActionPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx) immediately returns `null` when `isNormalTask === false`.
-3. **Collaboration Preservation**: In [`TaskDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx), `allowAddComment` checks `!isApprovedScope && viewData?.supports?.comments !== false`, allowing CC reviewers to post comments, mention peers, and preview attachments without approval rights.
+1. **Decision Stripping**: [`normalizeDetailForView`](../../../app/cnma_approval_ui/src/pages/Inbox/utils/normalizeTaskDetail.ts) strips decision options (`decisions: []`) and disables forwarding (`supports.forward = false`).
+2. **Action Panel Suppression**: [`TaskActionPanel.tsx`](../../../app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx) immediately returns `null` when `isNormalTask === false`.
+3. **Collaboration Preservation**: In [`TaskDetailView.tsx`](../../../app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx), `allowAddComment` checks `!isApprovedScope && viewData?.supports?.comments !== false`, allowing CC reviewers to post comments, mention peers, and preview attachments without approval rights.
 4. **Mass Action Exclusion**: Selection checkboxes on CC task cards are rendered as disabled placeholders with explanatory tooltips, and the "Select All" button strictly filters for actionable tasks (`task.normalTask !== false`).
 
 ---
@@ -105,7 +105,7 @@ The frontend relies on **React Query (TanStack Query v5)** for managing asynchro
 
 ## 🗂️ Category Accordion Grouping & Subtype Multi-Select Filtering
 
-The left-pane worklist organizes incoming tasks into hierarchical, collapsible category groups defined in [`src/pages/Inbox/components/CategoryAccordionGroup.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/CategoryAccordionGroup.tsx):
+The left-pane worklist organizes incoming tasks into hierarchical, collapsible category groups defined in [`src/pages/Inbox/components/CategoryAccordionGroup.tsx`](../../../app/cnma_approval_ui/src/pages/Inbox/components/CategoryAccordionGroup.tsx):
 
 *   **Category Partitioning (`categoryUtils.ts`)**:
     *   Normalizes heterogeneous SAP workflow instances into 4 primary categories: `PR`, `PO`, `CLAIM`, `RESERVATION` via `getTaskObjectCategory`.
@@ -122,7 +122,7 @@ The left-pane worklist organizes incoming tasks into hierarchical, collapsible c
 
 ## 📑 In-App Reference Purchase Requisition Navigation Engine
 
-Inspecting linked requisitions is handled natively by [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx):
+Inspecting linked requisitions is handled natively by [`ReferencePrDetailView.tsx`](../../../app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx):
 
 *   **Trigger Mechanism**:
     *   Line item tables in `DetailsPanel.tsx` and header cards in `OverviewPanel.tsx` identify reference PR fields via `isReferencePrField(key, label)`.
@@ -141,7 +141,7 @@ Inspecting linked requisitions is handled natively by [`ReferencePrDetailView.ts
 ## 🛠️ Declarative Column Filtering & Shared Formatters
 
 *   **Declarative Subtype Column Exclusion (`excludeColumns`)**:
-    *   Introduced in [`po.views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.views.ts) and [`pr.views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/pr/pr.views.ts):
+    *   Introduced in [`po.views.ts`](../../../app/cnma_approval_ui/src/renderers/objects/po/po.views.ts) and [`pr.views.ts`](../../../app/cnma_approval_ui/src/renderers/objects/pr/pr.views.ts):
         ```typescript
         function excludeColumns(base: typeof standardColumns, ...keysToExclude: string[]) {
             return base.filter((col) => !keysToExclude.includes(col.key));
@@ -149,13 +149,13 @@ Inspecting linked requisitions is handled natively by [`ReferencePrDetailView.ts
         ```
     *   Dynamically derives subtype-specific column arrays (e.g., omitting `plant` or `storageLocation` for specific document types) from the standard base definition without duplicating column specifications.
 *   **Centralized Vendor Formatter (`formatVendorCodeAndName`)**:
-    *   Extracted to [`renderers/core/formatters.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/formatters.ts) to unify code-and-name resolution across PO and Claim objects, concatenating vendor codes and multiline name fields (`Name1`, `Name2`, `Name3`, `Name4`) into `CODE - FULL NAME`.
+    *   Extracted to [`renderers/core/formatters.ts`](../../../app/cnma_approval_ui/src/renderers/core/formatters.ts) to unify code-and-name resolution across PO and Claim objects, concatenating vendor codes and multiline name fields (`Name1`, `Name2`, `Name3`, `Name4`) into `CODE - FULL NAME`.
 
 ---
 
 ## 🏛️ Declarative Raw OData Renderer Architecture (`src/renderers/`)
 
-The application renders header overview cards and line item tables for all document types (`PR`, `PO`, `RE`, `CLAIM`) and document subtypes (`ZASS`, `ZCON`, `ZCOR`, `ZEXP`, `ZMAK`, `ZNB1`, `ZNB2`, `ZNBR`, `ZTOL`, `ZUB`) using a declarative, rule-based renderer architecture located at [`src/renderers/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/):
+The application renders header overview cards and line item tables for all document types (`PR`, `PO`, `RE`, `CLAIM`) and document subtypes (`ZASS`, `ZCON`, `ZCOR`, `ZEXP`, `ZMAK`, `ZNB1`, `ZNB2`, `ZNBR`, `ZTOL`, `ZUB`) using a declarative, rule-based renderer architecture located at [`src/renderers/`](../../../app/cnma_approval_ui/src/renderers):
 
 ```
 app/cnma_approval_ui/src/renderers/
@@ -199,6 +199,6 @@ Given a raw SAP OData entity and an `ObjectViewDefinition`, `evaluateObjectView`
 
 ## 🌐 Localization & i18n
 
-The application supports bilingual localization (English & Vietnamese) using standard JSON dictionaries located in [`app/cnma_approval_ui/src/locales/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/locales/):
+The application supports bilingual localization (English & Vietnamese) using standard JSON dictionaries located in [`app/cnma_approval_ui/src/locales/`](../../../app/cnma_approval_ui/src/locales):
 *   `en.json`: English translation strings for status codes, document types, card titles, decision actions, and table headers.
 *   `vi.json`: Vietnamese translation strings for all UI components and document labels.

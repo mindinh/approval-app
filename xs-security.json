@@ -46,6 +46,7 @@
   ],
   "oauth2-configuration": {
     "token-validity": 43200,
+    "refresh-token-validity": 2592000,
     "credential-types": [
       "binding-secret",
       "x509"

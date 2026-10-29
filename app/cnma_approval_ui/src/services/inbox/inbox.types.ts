@@ -2,6 +2,7 @@
  * Frontend domain types — mirrors backend normalized models.
  * These types define the API contract between React and CAP.
  */
+import type { RawODataEntity } from './inbox.contracts';
 
 export interface InboxIdentity {
     btpUser: string;
@@ -22,6 +23,7 @@ export interface Decision {
     nature?: DecisionNature;
     /** Whether a comment is mandatory for this decision (from SAP TASKPROCESSING.DecisionOption.CommentMandatory) */
     commentMandatory?: boolean;
+    requiresComment?: boolean;
     /** Whether comments are supported for this decision (from SAP TASKPROCESSING.DecisionOption.CommentSupported, default true) */
     commentSupported?: boolean;
 }
@@ -60,7 +62,6 @@ export interface PurchaseOrderHeader {
     totalOrderValue?: number | string;
     userFullName?: string;
     userName?: string;
-    createdByUser?: string;
     fundsCenter?: string;
     fundsCenterName?: string;
     departmentDisplay?: string;
@@ -210,6 +211,7 @@ export interface BusinessContext {
     documentId?: string;
     pr?: PurchaseRequisitionFactsheetData | Record<string, unknown>;
     po?: PurchaseOrderFactsheetData | Record<string, unknown>;
+    claim?: Record<string, unknown>;
 }
 
 export interface TaskDescription {
@@ -254,11 +256,18 @@ export interface InboxTask {
     processorName?: string;
     scenarioId?: string;
     taskDefinitionId?: string;
+    /** Legacy SAP task payloads may retain the original property casing. */
+    TaskDefinitionID?: string;
     taskDefinitionName?: string;
     instid?: string;
     documentId?: string;
     objectType?: string;
     documentTypeDisplay?: string;
+    documentType?: string;
+    documentTypeDesc?: string;
+    doctyp?: string;
+    currency?: string;
+    decisions?: Decision[];
     companyCodeDisplay?: string;
     companyCode?: string;
     releaseStrategyName?: string;
@@ -290,6 +299,8 @@ export interface TaskComment {
     createdBy?: string;
     createdByName?: string;
     text: string;
+    forward?: boolean;
+    toUser?: string;
 }
 
 export interface ProcessingLog {
@@ -360,7 +371,17 @@ export interface TaskDetailMeta {
     documentType?: string;
 }
 
-export interface TaskDetail {
+export interface TaskDetail extends Partial<InboxTask> {
+    /** Raw-detail envelope and legacy summary fields still consumed by detail renderers. */
+    instanceId?: string;
+    taskId?: string;
+    businessObject?: RawODataEntity;
+    docCategory?: string;
+    totalNetValueBeforeTax?: number | string;
+    totalFreightAmount?: number | string;
+    totalVatAmount?: number | string;
+    totalOrderValue?: number | string;
+    headerNote?: string;
     task: InboxTask;
     _meta?: TaskDetailMeta;
     header?: Record<string, any>;

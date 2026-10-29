@@ -26,6 +26,8 @@ const BASE_URL = 'api/cnma/APPROVAL_SRV/tasks';
 export interface UserInfo {
     id: string;
     sapUser?: string;
+    sapUsername?: string;
+    commentAuthorId?: string;
     displayName: string;
     firstName?: string;
     lastName?: string;
@@ -38,16 +40,20 @@ export interface UserInfo {
  * Inbox API — All backend calls for the inbox feature.
  */
 export const inboxApi = {
-    getStatusCounts: async (): Promise<TaskStatusCountsResponse> => {
-        const { data } = await axiosInstance.get<TaskStatusCountsResponse>(`${BASE_URL}/status-counts`);
+    getCurrentSapUser: async (): Promise<{ sapUsername: string }> => {
+        const { data } = await axiosInstance.get<{ sapUsername: string }>(`${BASE_URL}/me/sap-user`);
+        return data;
+    },
+    getStatusCounts: async (signal?: AbortSignal): Promise<TaskStatusCountsResponse> => {
+        const { data } = await axiosInstance.get<TaskStatusCountsResponse>(`${BASE_URL}/status-counts`, { signal });
         return data;
     },
     /**
      * Get real-time task counts grouped by business object category.
      */
-    getCategoryCounts: async (scope: 'my' | 'approved' = 'my'): Promise<CategoryCountsResponse> => {
+    getCategoryCounts: async (scope: 'my' | 'approved' = 'my', signal?: AbortSignal): Promise<CategoryCountsResponse> => {
         const { data } = await axiosInstance.get<CategoryCountsResponse>(
-            `${BASE_URL}/category-counts?scope=${scope}`
+            `${BASE_URL}/category-counts?scope=${scope}`, { signal }
         );
         return data;
     },
@@ -90,7 +96,7 @@ export const inboxApi = {
     /**
      * Get tasks for the current user (with optional pagination).
      */
-    getTasks: async (params?: { top?: number; skip?: number; category?: string; search?: string }): Promise<TaskListResponse> => {
+    getTasks: async (params?: { top?: number; skip?: number; category?: string; search?: string }, signal?: AbortSignal): Promise<TaskListResponse> => {
         const query = new URLSearchParams();
         if (params?.top != null) query.set('top', String(params.top));
         if (params?.skip != null) query.set('skip', String(params.skip));
@@ -98,7 +104,7 @@ export const inboxApi = {
         if (params?.search) query.set('search', params.search);
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskListResponse>(
-            `${BASE_URL}${qs ? `?${qs}` : ''}`
+            `${BASE_URL}${qs ? `?${qs}` : ''}`, { signal }
         );
         return data;
     },
@@ -106,7 +112,7 @@ export const inboxApi = {
     /**
      * Get approved tasks for the current user (with optional pagination).
      */
-    getApprovedTasks: async (params?: { top?: number; skip?: number; category?: string; search?: string }): Promise<TaskListResponse> => {
+    getApprovedTasks: async (params?: { top?: number; skip?: number; category?: string; search?: string }, signal?: AbortSignal): Promise<TaskListResponse> => {
         const query = new URLSearchParams();
         if (params?.top != null) query.set('top', String(params.top));
         if (params?.skip != null) query.set('skip', String(params.skip));
@@ -114,7 +120,7 @@ export const inboxApi = {
         if (params?.search) query.set('search', params.search);
         const qs = query.toString();
         const { data } = await axiosInstance.get<TaskListResponse>(
-            `${BASE_URL}/approved${qs ? `?${qs}` : ''}`
+            `${BASE_URL}/approved${qs ? `?${qs}` : ''}`, { signal }
         );
         return data;
     },
@@ -122,9 +128,9 @@ export const inboxApi = {
     /**
      * Get full detail for a single task.
      */
-    getTaskDetail: async (instanceId: string): Promise<TaskDetailResponse> => {
+    getTaskDetail: async (instanceId: string, signal?: AbortSignal): Promise<TaskDetailResponse> => {
         const { data } = await axiosInstance.get<TaskDetailResponse>(
-            `${BASE_URL}/${encodeURIComponent(instanceId)}`
+            `${BASE_URL}/${encodeURIComponent(instanceId)}`, { signal }
         );
         return data;
     },

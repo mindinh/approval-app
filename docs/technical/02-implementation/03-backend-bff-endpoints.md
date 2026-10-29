@@ -1,422 +1,95 @@
 # Backend BFF REST API Reference
 
-> **Owner:** Lead CAP Architect & BFF Developer | **Last Updated:** 2026-09-14 | **Status:** Active
+> **Owner:** Project Team | **Last Updated:** 2026-10-20 | **Status:** Active
 
-The **CNMA Approval** BFF backend exposes a custom REST API mounted at `/api/cnma/APPROVAL_SRV` in [server.ts](file:///d:/learning/test/cnma_approval/srv/server.ts) for optimal payload sizing, security control, and integration flexibility.
+All paths below are relative to `/api/cnma/APPROVAL_SRV`. The [task router](../../../srv/handlers/inbox-handler.ts) mounts at `/tasks`; there is no second `/tasks` segment.
 
-All API routes below are relative to:
+## Mounted REST operations
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/tasks/notification/test-destination` | Resolve SAP_Notifications destination |
+| GET | `/tasks/notification/types` | List notification types |
+| POST | `/tasks/notification/create-type` | Register notification type |
+| DELETE | `/tasks/notification/type` | Delete notification type |
+| POST | `/tasks/notification/send-test` | Send test notification |
+| GET | `/tasks/debug/current-user` | Diagnostics for current identity |
+| GET | `/tasks/debug/jwt` | Inspect JWT diagnostics |
+| GET | `/tasks/debug/auth-summary` | Inspect authentication configuration |
+| GET | `/tasks/me/sap-user` | Resolve current SAP business user |
+| GET | `/tasks/me` | Resolved user profile |
+| GET | `/tasks/dashboard` | Dashboard aggregation |
+| GET | `/tasks/status-counts` | Task counts by workflow status |
+| GET | `/tasks/category-counts` | Task counts by category |
+| GET | `/tasks` | Active workflow tasks |
+| GET | `/tasks/approved` | Processed workflow tasks |
+| GET | `/tasks/{id}` | Raw business object and taskprocessing detail |
+| GET | `/tasks/{id}/overview` | Task overview |
+| GET | `/tasks/{id}/information` | Task information |
+| GET | `/tasks/{id}/workflow-approval-tree` | Workflow approval tree |
+| POST | `/tasks/{id}/comments` | Add document comment and optional mentions |
+| GET | `/tasks/attachments/{attachId}/content` | Stream attachment content |
+| GET | `/tasks/attachments/{attachId}/content/{fileName}` | Stream attachment content |
+| GET | `/tasks/{id}/attachments/{attId}/content` | Stream attachment content |
+| GET | `/tasks/{id}/attachments/{attId}/content/{fileName}` | Stream attachment content |
+| GET | `/tasks/pr/{docNum}` | Reference PR detail with actions disabled |
+| GET | `/tasks/pr/{docNum}/attachments` | Reference PR attachment metadata |
+| GET | `/tasks/pr/{docNum}/attachments/{attachId}/content` | Stream reference PR attachment |
+| GET | `/tasks/pr/{docNum}/attachments/{attachId}/content/{fileName}` | Stream reference PR attachment |
+| POST | `/tasks/{id}/decision` | Execute task decision |
+| POST | `/tasks/mass-decision` | Execute bulk decisions |
+| GET | `/tasks/search-users` | Search forwarding users |
+| GET | `/tasks/bus-users` | Search business users for mentions |
+| POST | `/tasks/{id}/forward` | Forward task to SAP user |
+| GET | `/health` | BFF health |
+| GET | `/debug-config` | Legacy mapping configuration notice |
+
+## Query parameters and responses
+
+- Active and approved lists accept `top`, `skip`, `category` (`PR`, `PO`, `RESERVATION`, `CLAIM`) and `search`. They return `{ items, total }`.
+- Dashboard accepts `top` (default 50), `skip` (default 0), `category`, `documentType`, and `status` (`In Approving` or `Completed`). It returns `{ statusCounts, docTypeCounts, items, total }`.
+- Status counts return `{ total, inApproval, completed }`. Category counts accept `scope=my|approved` and return category counts, `ALL` and `complete`; unavailable category counts are `null`.
+- Task detail returns a raw `businessObject` plus `taskprocessing`. It resolves the task id in the processor; the controller does not read historical `typeid`, `instid`, `businessObjectType` or `documentId` query hints for this route.
+- Workflow approval tree accepts `documentId` and `businessObjectType`.
+- User searches accept `SearchPattern`, `q` or `searchPattern` and return `{ value }`.
+- PR attachment metadata returns `{ attachments, count }`, not a bare array. PR detail returns its reference envelope with `normalTask: false`, disabled forward/comments, `task: null`, and empty `decisionOptions`.
+- Attachment downloads accept `disposition=inline|attachment`. General downloads accept `documentId` and object type aliases (`objectType`, `docCategory`, `type`); the task-specific route attempts to resolve missing context from task detail. Generic downloads without task id need document context.
+- `fileName` is optional in all three attachment route families. PR streaming accepts it for URL compatibility but uses the SAP filename; general streaming uses it as a fallback. Binary responses preserve MIME/disposition handling.
+
+## Action request contracts
+
+`POST /tasks/{id}/decision` requires `decisionKey` or `sapDecisionKey`. Optional fields are `comment`, `approverNumber` and `_context` (document/type/approver context). It returns `{ success: true, result }`.
+
+`POST /tasks/mass-decision` requires either decision key and a nonempty `items` array. Items supply `instanceId` and may carry `documentId`, `documentNumber`, `businessObjectType`, and `sapOrigin`. The response includes `success`, decision key, totals, succeeded/failed counts and per-item results.
+
+`POST /tasks/{id}/comments` requires nonempty `text` up to 255 characters and a document id in `_context.documentId` or the `documentId` query. Optional fields include `objectType`, `taskId`, `approverNumber`, and `taggedUsers`/`TAGGEDUSER` (username/email pairs). It returns `{ success: true, message: "Comment added successfully." }`.
+
+`POST /tasks/{id}/forward` requires `forwardTo` up to 12 characters. Optional `comment` and `_context` are passed to the processor. It returns `{ success: true, result }`.
+
+Normal-task/CC capability checks are performed by the existing processor/decision strategies. Do not infer approval rights from the presence of a documented API.
+
+## Notification REST administration
+
+All five REST actions call `NotificationController.isAdmin()`; its actual conditions are documented in [security architecture](../01-architecture/02-auth-security.md).
+
+- `test-destination` resolves `SAP_Notifications`; `types` lists registered types.
+- `create-type` accepts optional `key` and `version`.
+- `DELETE type` requires `id` in query/body, or body `key`; `version` defaults to `1.0`.
+- `send-test` accepts endpoint, origin/type identifiers, version, priority, title/subtitle/description, recipient, properties or a custom payload. Legacy `eventType`, `subject`, and `body` aliases are accepted.
+- Error responses from this controller use `{ success: false, message }`; diagnostic and global middleware errors have their own envelopes.
+
+## CAP notification actions
+
+[service.cds](../../../srv/service.cds) also defines `ApprovalService` at `/api/cnma/APPROVAL_SRV` and `NotificationService` at `/api/cnma/NotificationService`, each with `testNotificationDestination()` and `sendTestNotification(eventType, subject, body)`.
+Handlers are in [service.ts](../../../srv/service.ts). CAP owns their OData protocol/metadata; these actions are separate from the Express REST specification and REST admin guard.
+
+## Diagnostics, errors and validation
+
+Health returns `{ status, service, timestamp }`. `debug-config` returns a deprecated-mapping notice. JWT diagnostics can return HTTP 400 for missing/invalid tokens.
+Global REST error middleware returns `{ error: { message, code } }`. Binary-not-found responses are text; notification errors use the controller envelope described above.
+
+[Swagger UI](../04-reference/02-swagger-api-placeholder.md) runs at `/api/cnma/APPROVAL_SRV/api-docs`. Validate source route parity with:
+
+```powershell
+npx.cmd vitest run tests/unit/documentation/openapi.test.ts
 ```
-/api/cnma/APPROVAL_SRV
-```
-
----
-
-## 🛠️ Debug Endpoints
-These endpoints are designed for troubleshooting token bindings, user identities, and auth headers.
-
-### 1. GET `/tasks/debug/current-user`
-*   **Purpose**: Get details about the resolved SAP User and BTP Identity.
-*   **Response Headers Analyzed**: Reads incoming `x-sap-user` (for development mocks) and standard JWT authorization.
-*   **Response Payload Schema**:
-    ```json
-    {
-      "id": "MOCK_USER",
-      "sapUser": "MOCK_USER",
-      "isImpersonated": true,
-      "hasJwt": false,
-      "tokenSource": "header",
-      "jwt": null,
-      "claims": null
-    }
-    ```
-
-### 2. GET `/tasks/debug/jwt`
-*   **Purpose**: Read and decode the raw JWT authorization token payload.
-*   **Response Payload Schema**: Returns raw token preview, decoded claims, and raw claims envelope.
-
-### 3. GET `/tasks/debug/auth-summary`
-*   **Purpose**: Returns a diagnostic summary mapping BTP configuration variables, Cloud Connector destination links, and parsed authorization header presence.
-
----
-
-## 👤 Identity & Dashboard Endpoints
-
-### 4. GET `/tasks/me`
-*   **Purpose**: Resolves logged-in user profile, displaying name, email, and resolved role scope.
-*   **Response Payload Schema**:
-    ```json
-    {
-      "id": "MOCK_USER",
-      "sapUser": "MOCK_USER",
-      "displayName": "Mock Developer",
-      "firstName": "Mock",
-      "lastName": "Developer",
-      "role": "Admin",
-      "email": "mock_user@conarum.com"
-    }
-    ```
-
-### 5. GET `/tasks/dashboard`
-*   **Purpose**: Returns high-level metrics for dashboard cards (aggregates status counts, document type counts, items, total active amounts, currencies, and document numbers across PR, PO, Claim, and Reservation document types).
-*   **Response Payload Schema**:
-    ```json
-    {
-      "statusCounts": [
-        { "WorkflowTaskStatus": "IN PROCESSING", "statusLabel": "In Approving", "count": 10 },
-        { "WorkflowTaskStatus": "COMPLETED", "statusLabel": "Completed", "count": 25 }
-      ],
-      "docTypeCounts": [
-        { "DocCategory": "BUS2105", "count": 6 },
-        { "DocCategory": "BUS2012", "count": 4 }
-      ],
-      "items": [
-        {
-          "taskId": "000000021312",
-          "documentNumber": "10002341",
-          "taskType": "PR",
-          "documentType": "ZASS",
-          "documentTypeDesc": "Purchase Requisition",
-          "status": "IN_PROCESSING",
-          "currency": "VND",
-          "totalNetAmount": 12500000,
-          "displayCurrency": "VND",
-          "createdAt": "2026-07-01T08:00:00.000Z"
-        }
-      ],
-      "total": 1
-    }
-    ```
-
----
-
-## 📋 Task Details & Worklist Endpoints
-
-### 6. GET `/tasks/tasks`
-*   **Purpose**: Retrieve the current user's active approval queue (`IN PROCESSING` state).
-*   **Query Parameters**: `top` (Optional), `skip` (Optional).
-
-### 7. GET `/tasks/tasks/approved`
-*   **Purpose**: Retrieve historical queue containing tasks processed by the user (`COMPLETED` state).
-
-### 8. GET `/tasks/tasks/:id`
-*   **Purpose**: Fetch raw business object and taskprocessing details concurrently.
-    *   **Resolution Strategy**: Deterministic 2-step lookup. First locates the task in the active worklist (`CNMA_WFTASK`) by matching `WorkflowTaskInternalID`, `DocumentNumber`, or `TechnicalWrkflwObject` (normalizing `cleanId`, `padded10`, `padded12`). Then fetches the target document header.
-    *   **Claim 3-Part Composite Key**: For `CLAIM` objects, the backend invokes `GET /CNMA_CLAIMHEADER(DocCategory='CLAIM',DocumentNumber='...',ApproverNumber='...')` using the task's resolved `ApproverNumber`.
-    *   **CC & Completed Task Guard**: If the task is a Carbon Copy / Review-Only task (`NormalTask === false`) or is completed, `decisionOptions` is strictly populated as an empty array (`[]`) and `SupportsForward` is set to `false`.
-*   **URL Parameter**: `:id` represents the unique Task Instance ID.
-*   **Response Payload Schema (Raw Envelope Format)**:
-    ```json
-    {
-      "businessObject": {
-        "DocumentNumber": "0010001861",
-        "DocCategory": "BUS2105",
-        "DocumentType": "ZEXP",
-        "DocumentTypeText": "Expense PR",
-        "CreatedByUser": "MINHDT",
-        "UserName": "Do Tu Minh",
-        "CompanyCode": "1710",
-        "CompanyCodeName": "US TRADING COMPANY",
-        "TotalNetAmountLocalCrcy": 426.4,
-        "LocalCurrency": "USD",
-        "ReleaseStrategyName": "Release Strategy 1",
-        "CreationDate": "2026-07-27",
-        "CreationTime": "04:54:59",
-        "_Item": [
-          {
-            "PurchaseRequisitionItem": "00010",
-            "Plant": "1710",
-            "PlantName": "US TRADING PLANT",
-            "ShortText": "Office Supplies Requisition",
-            "MaterialGroup": "01",
-            "MaterialGroupName": "Material group 01",
-            "RequestedQuantity": 100,
-            "BaseUnit": "PC",
-            "ValuationPrice": 100000,
-            "TotalValue": 10000000,
-            "GLAccount": "65100000",
-            "GLAccountName": "Office Supplies"
-          }
-        ],
-        "_ApprovalStep": [
-          {
-            "ApprovalLevel": 1,
-            "ReleaseCode": "Z1",
-            "ReleaseText": "Manager Approval",
-            "ApproverName": "Hieu Lam Chi",
-            "ApprovalStatus": "PENDING"
-          }
-        ],
-        "_Comment": [],
-        "_Attachment": []
-      },
-      "taskprocessing": {
-        "task": {
-          "instanceId": "198820",
-          "sapOrigin": "LOCAL",
-          "title": "Please release purchase requisition 10001861",
-          "status": "READY",
-          "priority": "MEDIUM",
-          "createdOn": "2026-07-27T04:54:59.000Z",
-          "requestorName": "MINHDT",
-          "normalTask": true
-        },
-        "decisionOptions": [
-          { "decisionKey": "0001", "decisionText": "Approve", "nature": "POSITIVE" },
-          { "decisionKey": "0002", "decisionText": "Reject", "nature": "NEGATIVE" }
-        ]
-      }
-    }
-    ```
-
----
-
-## ✍️ Collaboration & Action Endpoints
-
-### 9. POST `/tasks/tasks/:id/decision`
-*   **Purpose**: Executes an approval or rejection decision on SAP Task Gateway and updates ERP document notes when comments are provided. Routed through [`DecisionStrategy`](file:///d:/learning/test/cnma_approval/srv/lib/processors/decision-strategy.ts) with payload validation via [`RequestValidator`](file:///d:/learning/test/cnma_approval/srv/lib/utils/request-validator.ts).
-*   **Security Guard**: Checks `getInstanceNormalTask(instanceId)`. If `normalTask === false` (Carbon Copy / review-only task), throws `403 Forbidden` (`Decisions (Approve/Reject) are not allowed for tagged/CC tasks`).
-*   **Claim Multi-Key Support**: Accepts `approverNumber` (in body or `_context`) to dispatch to `/CNMA_CLAIMHEADER(...)/SAP__self.approve` and `/CNMA_CLAIMHEADER(...)/SAP__self.comment`.
-*   **Request Payload Schema**:
-    ```json
-    {
-      "decisionKey": "0001",
-      "sapDecisionKey": "0001",
-      "comment": "Approved upon review.",
-      "approverNumber": "1",
-      "_context": {
-        "documentId": "10001861",
-        "businessObjectType": "PR",
-        "approverNumber": "1"
-      }
-    }
-    ```
-*   **Response Payload Schema**:
-    ```json
-    {
-      "success": true,
-      "result": {
-        "instanceId": "198820",
-        "decisionKey": "0001",
-        "status": "COMPLETED",
-        "message": "Decision 0001 executed successfully."
-      }
-    }
-    ```
-
-### 10. POST `/tasks/tasks/:id/comments`
-*   **Purpose**: Add a new timeline comment note to the SAP business document, supporting user tagging (`@mention`). Returns updated comment payload containing `ForwardedBy`, `ForwardedTo`, and `ToUser` metadata fields.
-*   **Claim Support**: Accepts `approverNumber` to bind comment directly to the 3-part composite key header (`CNMA_CLAIMHEADER(..., ApproverNumber='...')`).
-*   **Request Payload Schema**:
-    ```json
-    {
-      "text": "Please clarify specification on line 10 @DUNGNV.",
-      "objectType": "PR",
-      "taskId": "198820",
-      "approverNumber": "1",
-      "taggedUsers": [
-        {
-          "USERNAME": "DUNGNV",
-          "EMAIL": "dung.nguyen@conarum.com"
-        }
-      ],
-      "_context": {
-        "documentId": "10001861",
-        "approverNumber": "1"
-      }
-    }
-    ```
-
-### 11. GET `/tasks/tasks/:id/attachments/:attId/content/:filename`
-*   **Purpose**: Stream binary attachment content directly from SAP S/4HANA document attachment store while preserving original filename and MIME disposition.
-*   **Query Parameters**: 
-    *   `documentId` (Required) — SAP Document Number (e.g. `90000001` or `10000042`).
-    *   `objectType` (Optional) — Business Object Type (e.g. `CLAIM`, `PR`, `PO`, `RE`).
-*   **Attachment Lookup Strategy**: Executes dual-mode strategy resolution — attempts explicit object strategy first (e.g. `CLAIM` strategy via `CNMA_CLAIM_ATTA`), and if unspecified or returning 404/400, automatically falls back to GOS attachment strategy (`CNMA_ATTACH_CONTENT`).
-*   **Sanitization & Decoding**:
-    *   **RFC 5987 UTF-8 Decoding**: Decodes `filename*=UTF-8''` headers from S/4HANA OData responses.
-    *   **Case-Insensitive Deduplication (`cleanFileName`)**: Cleans duplicate extensions (e.g. `file.PDF.pdf` $\rightarrow$ `file.pdf`, `report.xls.xls` $\rightarrow$ `report.xls`) using case-insensitive regex in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts).
-    *   **Buffer Magic Bytes & OpenXML Inspection**: Uses `detectMimeFromBuffer` to identify PDF, PNG, JPEG, GIF, WebP, ZIP, and inspects binary slices for Microsoft Office OpenXML signatures (`xl/` -> `xlsx`, `word/` -> `docx`, `ppt/` -> `pptx`), ensuring correct MIME type and preventing file corruption warnings in Microsoft Office.
-
-### 12. GET `/tasks/search-users`
-*   **Purpose**: Search system users for task forwarding/delegation dialog autocompletion.
-*   **Query Parameters**: `SearchPattern` or `q` (Search text string e.g. `minh`).
-*   **Response Payload Schema**:
-    ```json
-    {
-      "value": [
-        {
-          "userId": "MINHDT",
-          "uniqueName": "MINHDT",
-          "displayName": "Do Tu Minh",
-          "email": "minh.do@conarum.com",
-          "department": "IT Procurement"
-        }
-      ]
-    }
-    ```
-
-### 13. GET `/tasks/bus-users`
-*   **Purpose**: Query `CNMA_BUSUSER` business users table for `@mention` user tagging and CC notification dialog autocompletion.
-*   **Query Parameters**: `q` or `SearchPattern` (Search query string e.g. `dung`).
-*   **Response Payload Schema**:
-    ```json
-    {
-      "value": [
-        {
-          "SAPUserName": "DUNGNV",
-          "FirstName": "Nguyen Van",
-          "LastName": "Dung",
-          "FullName": "Nguyen Van Dung",
-          "EmailAddress": "dung.nguyen@conarum.com"
-        }
-      ]
-    }
-    ```
-
-### 14. POST `/tasks/tasks/:id/forward`
-*   **Purpose**: Forwards a workflow task instance to another SAP user. Validates task capability flags via [`DecisionStrategy`](file:///d:/learning/test/cnma_approval/srv/lib/processors/decision-strategy.ts). Returns HTTP 403 Forbidden if executed on a Carbon Copy (CC) task (`TaskType == 'CC'`). On success, records a formatted audit comment `[Forwarded to ${forwardTo}] ${comment}` on the underlying document note in S/4HANA.
-*   **Request Payload Schema**:
-    ```json
-    {
-      "forwardTo": "DUNGNV",
-      "comment": "Please review technical line items before approval.",
-      "_context": {
-        "documentId": "10001861",
-        "businessObjectType": "PR"
-      }
-    }
-    ```
-*   **Response Payload Schema**:
-    ```json
-    {
-      "success": true,
-      "result": {
-        "instanceId": "198820",
-        "forwardTo": "DUNGNV",
-        "status": "FORWARDED"
-      }
-    }
-    ```
-
-### 15. POST `/tasks/mass-decision`
-*   **Purpose**: Executes mass approval or rejection across multiple task instances with bounded chunk concurrency (pool limit = 4) to protect SAP Gateway connection limits and avoid UI blocking.
-*   **Security Guards**: Automatically checks `getInstanceNormalTask` for each task. If a task is a Carbon Copy / Review-only task (`NormalTask === false`), the task is rejected with HTTP 403 Forbidden without calling SAP decision endpoints.
-*   **Request Payload Schema**:
-    ```json
-    {
-      "decisionKey": "0001",
-      "sapDecisionKey": "0001",
-      "comment": "Approved in bulk review.",
-      "items": [
-        {
-          "instanceId": "000000000001",
-          "documentId": "10000001",
-          "documentNumber": "10000001",
-          "businessObjectType": "PR",
-          "sapOrigin": "LOCAL"
-        },
-        {
-          "instanceId": "000000000002",
-          "documentId": "10000002",
-          "documentNumber": "10000002",
-          "businessObjectType": "PR",
-          "sapOrigin": "LOCAL"
-        }
-      ]
-    }
-    ```
-*   **Response Payload Schema**:
-    ```json
-    {
-      "decisionKey": "0001",
-      "total": 2,
-      "succeededCount": 2,
-      "failedCount": 0,
-      "results": [
-        {
-          "instanceId": "000000000001",
-          "documentNumber": "10000001",
-          "documentId": "10000001",
-          "status": "SUCCESS",
-          "message": "Decision processed successfully."
-        },
-        {
-          "instanceId": "000000000002",
-          "documentNumber": "10000002",
-          "documentId": "10000002",
-          "status": "SUCCESS",
-          "message": "Decision processed successfully."
-        }
-      ]
-    }
-    ```
-
----
-
-## 🔍 Purchase Requisition Reference Endpoints
-
-### 16. GET `/tasks/pr/:docNum`
-*   **Purpose**: Fetch comprehensive Purchase Requisition details by document number for native in-app inspection (`ReferencePrDetailView`).
-*   **Route**: `GET /api/cnma/APPROVAL_SRV/pr/:docNum`
-*   **Path Parameter**: `:docNum` (Required) — Purchase Requisition document number (e.g. `10001861`).
-*   **Resolution**: Invokes `InboxProcessor.getPrDetail` which queries `SapOdataAdapter.getDetail('PR', cleanDocId, sapUser, userJwt)`. Resolves `CNMA_PRHEADER` with full `$expand=_Item,_ApprovalStep,_HeaderText`.
-*   **Response Payload Schema**:
-    ```json
-    {
-      "instanceId": "10001861",
-      "taskId": "10001861",
-      "normalTask": false,
-      "objectType": "PR",
-      "documentId": "10001861",
-      "supports": {
-        "forward": false,
-        "comments": false
-      },
-      "businessObject": {
-        "DocumentNumber": "0010001861",
-        "DocCategory": "BUS2105",
-        "DocumentType": "ZNB1",
-        "DocumentTypeText": "Standard PR",
-        "CreatedByUser": "MINHDT",
-        "UserName": "Do Tu Minh",
-        "CompanyCode": "1710",
-        "TotalNetAmountLocalCrcy": 25000000,
-        "LocalCurrency": "VND",
-        "_Item": [ ... ],
-        "_ApprovalStep": [ ... ],
-        "_Comment": [ ... ]
-      },
-      "taskprocessing": {
-        "task": null,
-        "decisionOptions": []
-      }
-    }
-    ```
-
-### 17. GET `/tasks/pr/:docNum/attachments`
-*   **Purpose**: Query attachment metadata list for a referenced Purchase Requisition document.
-*   **Route**: `GET /api/cnma/APPROVAL_SRV/pr/:docNum/attachments`
-*   **Path Parameter**: `:docNum` (Required) — Purchase Requisition document number.
-*   **Response Payload Schema**: Returns array of attachment metadata objects:
-    ```json
-    [
-      {
-        "id": "FOL30000000000004",
-        "name": "requisition_quote.pdf",
-        "mimeType": "application/pdf",
-        "fileSize": 1048576,
-        "createdAt": "2026-07-27T04:54:59.000Z"
-      }
-    ]
-    ```
-
-### 18. GET `/tasks/pr/:docNum/attachments/:attachId/content/:fileName?`
-*   **Purpose**: Stream binary file content for a Purchase Requisition attachment with MIME type auto-detection and filename deduplication.
-*   **Route**: `GET /api/cnma/APPROVAL_SRV/pr/:docNum/attachments/:attachId/content/:fileName?`
-*   **Path Parameters**:
-    *   `:docNum` (Required) — Purchase Requisition document number.
-    *   `:attachId` (Required) — Attachment GUID / ID.
-    *   `:fileName` (Optional) — Preferred filename override.
-*   **Sanitization**: Applies `cleanFileName(fileName, detectedExt)` and `detectMimeFromBuffer` for accurate binary streaming. Sets `Content-Disposition` with RFC 5987 UTF-8 encoded filename header.
-
-

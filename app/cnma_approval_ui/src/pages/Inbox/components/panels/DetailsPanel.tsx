@@ -48,7 +48,7 @@ export function DetailsPanel({
     const [selectedRow, setSelectedRow] = useState<{
         tableTitle: string;
         rowId: string;
-        fields: Array<{ label: string; value: string }>;
+        fields: Array<{ key?: string; label: string; value: string }>;
     } | null>(null);
 
     const toggleCardCollapse = (rowId: string) => {
@@ -411,7 +411,7 @@ export function DetailsPanel({
                                                         {isDeleted && (
                                                             <Trash2
                                                                 className="size-4 text-destructive/90 inline-block align-middle shrink-0"
-                                                                title={t('task.itemDeleted', 'Item Deleted')}
+                                                                aria-label={t('task.itemDeleted', 'Item Deleted')}
                                                             />
                                                         )}
                                                     </TableCell>

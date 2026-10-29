@@ -7,23 +7,51 @@ import { handleSapError } from '../utils/error-handler';
 import { cleanFileName } from '../utils/file-helper';
 
 export class SapClient {
-    private http: AxiosInstance;
-    private useDestination: boolean;
-    private destinationName: string;
+    private directHttp?: AxiosInstance;
+    private readonly useDestination: boolean;
+    private readonly configuredDestinationName = process.env.SAP_TASK_DESTINATION?.trim();
+    private readonly directConfig = {
+        baseURL: process.env.SAP_TASK_BASE_URL?.trim(),
+        username: process.env.SAP_TASK_USER?.trim(),
+        password: process.env.SAP_TASK_PASSWORD,
+    };
     private logger = new Logger('SapClient');
 
     constructor() {
         this.useDestination = process.env.SAP_USE_DESTINATION === 'true';
-        this.destinationName = process.env.SAP_TASK_DESTINATION || 'SAP_ABAP_BACKEND';
+    }
 
-        const baseURL = process.env.SAP_TASK_BASE_URL || 'http://s4hanadev.ais-tech.vn:8000';
-        this.logger.info(`Initializing direct Axios instance. Base URL: ${baseURL}`);
+    private get destinationName(): string {
+        if (!this.configuredDestinationName) {
+            throw new Error('Missing SAP_TASK_DESTINATION for SAP destination mode.');
+        }
+        return this.configuredDestinationName;
+    }
 
-        const isHttps = baseURL.startsWith('https:');
+    private hasDirectConfiguration(): boolean {
+        const { baseURL, username, password } = this.directConfig;
+        return Boolean(baseURL && username && password);
+    }
+
+    private get http(): AxiosInstance {
+        if (this.directHttp) return this.directHttp;
+        const { baseURL, username, password } = this.directConfig;
+        const missing = [
+            !baseURL && 'SAP_TASK_BASE_URL',
+            !username && 'SAP_TASK_USER',
+            !password && 'SAP_TASK_PASSWORD',
+        ].filter(Boolean);
+        if (missing.length) {
+            throw new Error('Missing direct SAP configuration: ' + missing.join(', '));
+        }
+        if (!/^https?:\/\//i.test(baseURL!)) {
+            throw new Error('SAP_TASK_BASE_URL must be an absolute HTTP(S) URL.');
+        }
+
+        const isHttps = new URL(baseURL!).protocol === 'https:';
         const rejectUnauthorized = process.env.SAP_REJECT_UNAUTHORIZED === 'true';
         const agentOptions = { keepAlive: true, maxSockets: 50, rejectUnauthorized };
-
-        this.http = axios.create({
+        this.directHttp = axios.create({
             baseURL,
             timeout: 30000,
             httpAgent: isHttps ? undefined : new http.Agent(agentOptions),
@@ -35,14 +63,8 @@ export class SapClient {
                 'sap-language': process.env.SAP_LANGUAGE || 'en'
             }
         });
-
-        const username = process.env.SAP_TASK_USER || 'MINHDT';
-        const password = process.env.SAP_TASK_PASSWORD || 'Mdt@150503';
-        this.http.defaults.auth = { username, password };
-
-        if (this.useDestination) {
-            this.logger.info(`Destination mode active. Destination: ${this.destinationName}`);
-        }
+        this.directHttp.defaults.auth = { username: username!, password: password! };
+        return this.directHttp;
     }
 
     private useDirectCallFallback = false;
@@ -77,6 +99,9 @@ export class SapClient {
     }
 
     private shouldUseDestination(effectiveJwt?: string): boolean {
+        if (this.useDestination && !this.configuredDestinationName) {
+            throw new Error('Missing SAP_TASK_DESTINATION for SAP destination mode.');
+        }
         if (!this.useDestination || this.useDirectCallFallback) {
             return false;
         }
@@ -86,7 +111,7 @@ export class SapClient {
         if (process.env.SAP_DEV_OVERRIDE_DESTINATION === 'false') {
             return true;
         }
-        if (effectiveJwt) {
+        if (effectiveJwt || !this.hasDirectConfiguration()) {
             return true;
         }
 
@@ -98,7 +123,7 @@ export class SapClient {
     }
 
     private shouldFallbackToDirect(error: any): boolean {
-        if (process.env.NODE_ENV === 'production' || process.env.SAP_DEV_OVERRIDE_DESTINATION === 'false') {
+        if (process.env.NODE_ENV === 'production' || process.env.SAP_DEV_OVERRIDE_DESTINATION === 'false' || !this.hasDirectConfiguration()) {
             return false;
         }
         const message = error instanceof Error ? error.message : String(error);

@@ -1,0 +1,41 @@
+/* Shared session/recovery overrides for the library defaults. Keep outside
+   Tailwind layers so these component rules also override library utilities. */
+.status-dialog__content {
+    @apply gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-md;
+}
+
+.status-dialog__header {
+    @apply gap-4 px-6 pb-5 pt-6 text-left;
+}
+
+.status-dialog__title {
+    @apply flex items-center gap-3 text-lg;
+}
+
+.status-dialog__icon {
+    @apply size-6 shrink-0 text-destructive;
+}
+
+.status-dialog__icon--warning {
+    @apply text-warning;
+}
+
+.status-dialog__description {
+    @apply text-sm leading-relaxed text-muted-foreground;
+}
+
+.status-dialog__code {
+    @apply w-fit max-w-full whitespace-normal break-words font-mono;
+}
+
+.status-dialog__footer {
+    @apply gap-3 border-t border-border bg-muted/50 px-6 py-4 sm:justify-center;
+}
+
+.status-dialog__footer button {
+    @apply min-h-11;
+}
+
+.status-dialog__footer svg {
+    @apply size-4;
+}

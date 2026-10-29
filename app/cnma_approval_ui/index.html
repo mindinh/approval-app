@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="./sap-favicon.png" />
-    <link rel="apple-touch-icon" href="./sap-apple-touch-icon.png" sizes="180x180" />
+    <link rel="icon" type="image/png" href="./sap-favicon-v4.png" />
+    <link rel="apple-touch-icon" href="./sap-apple-touch-icon-v3.png" sizes="180x180" />
     <link rel="manifest" href="./web-manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#8B0000" />
@@ -20,12 +20,15 @@
             height: 100%;
             margin: 0;
         }
+
     </style>
 </head>
 
 <body class="font-sans antialiased">
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <div id="startup-recovery-root"></div>
+    <script src="./startup.js" data-service-worker="%PROD%" data-development="%DEV%"></script>
     <script type="module" src="./src/main.tsx"></script>
 </body>
 

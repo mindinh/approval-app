@@ -29,7 +29,7 @@ The codebase is highly structured and clean. The recent changes successfully res
 ### 🔵 LOW
 
 #### 1. Replaced buggy Radix ScrollArea with standard scrollable container
-- **Function/Component**: [TaskDetailView](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx#L311-L321)
+- **Function/Component**: [TaskDetailView](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx#L311-L321)
 - **Before Flow -> Need Optimize Flow**:
 ```mermaid
 graph TD
@@ -44,7 +44,7 @@ graph TD
 - **Description**: Replaced the `<ScrollArea>` component with a standard CSS scrollable container (`flex-1 min-h-0 overflow-y-auto overflow-x-hidden`) which allows browser scrollbars to display naturally without Radix layout calculations clipping them.
 
 #### 2. Consolidated Config Registry Path Resolution
-- **Class**: [ConfigRegistry](file:///d:/learning/test/cnma_approval/srv/lib/mapping/config-registry.ts#L102-L131)
+- **Class**: ConfigRegistry (historical path: `srv/lib/mapping/config-registry.ts`)
 - **Description**: Abstracted the path resolution logic into a unified `getConfigDir()` helper. This uses `process.cwd()` to find `/srv/configuration` relative to the running workspace root (both locally and inside the BTP `/home/vcap/app` runtime) with a relative `__dirname` fallback for tests. This avoids duplication and fixes the production 500 error where configurations were not found.
 
 ---

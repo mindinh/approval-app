@@ -11,7 +11,7 @@
 
 Three concrete defects in `/api/cnma/APPROVAL_SRV/tasks/{id}` (and its `/overview`, `/information` aliases):
 
-1. **Doubled routing prefix.** The router is mounted at `/api/cnma/APPROVAL_SRV/tasks` and every handler route inside it also starts with `/tasks/...`, so the resulting URL is `/api/cnma/APPROVAL_SRV/tasks/tasks/10000001`. The frontend (`inbox.api.ts:14`) intentionally constructs the same shape (`BASE_URL = 'api/cnma/APPROVAL_SRV/tasks'` + `'/tasks'`), so the duplication is symmetric on both sides. The same doubled path is also embedded in the attachment download URL inside the response body. Fix: move the BE mount to `/api/cnma/APPROVAL_SRV` (one place, no FE change needed).
+1. **Doubled routing prefix.** The router is mounted at `/api/cnma/APPROVAL_SRV/tasks` and every handler route inside it also starts with `/tasks/...`, so the resulting URL is `/api/cnma/APPROVAL_SRV/tasks/10000001`. The frontend (`inbox.api.ts:14`) intentionally constructs the same shape (`BASE_URL = 'api/cnma/APPROVAL_SRV/tasks'` + `'/tasks'`), so the duplication is symmetric on both sides. The same doubled path is also embedded in the attachment download URL inside the response body. Fix: move the BE mount to `/api/cnma/APPROVAL_SRV` (one place, no FE change needed).
 2. **Bloated, hard-to-maintain response.** `srv/lib/processors/inbox-processor.ts` is 707 lines, with `getTaskDetail` doing parallel-vs-sequential branch logic, mapping, projection, action decoration, comment/attachment shaping, and fieldSchema construction in one ~300-line body. It nests `header/items/workflow/attachments` under an `object` wrapper that adds an unnecessary indirection, and inlines ad-hoc logic that overlaps with the controller (`buildFieldSchema`) and with the task-card builder (`_buildTaskCard`).
 3. **Garbage comments.** The comment list shows `System`-authored entries with empty text, plus duplicate text entries when a decision is made. The BFF forwards SAP's raw `_Comment` array without filtering.
 
@@ -177,15 +177,15 @@ export function filterComments(raw: any[]): Comment[] {
 
 ### 4.6 Routing fix (3 edits, no behavior change on either side)
 
-The doubled `/tasks/tasks/` prefix is currently produced by the BE handler's `'/tasks'` route + the BE mount point also being `'/api/cnma/APPROVAL_SRV/tasks'`. The FE (`inbox.api.ts:14`) already constructs `BASE_URL = 'api/cnma/APPROVAL_SRV/tasks'` and appends `'/tasks'`, so the URL the user sees is `…/tasks/tasks/...`.
+The doubled `/tasks/` prefix is currently produced by the BE handler's `'/tasks'` route + the BE mount point also being `'/api/cnma/APPROVAL_SRV/tasks'`. The FE (`inbox.api.ts:14`) already constructs `BASE_URL = 'api/cnma/APPROVAL_SRV/tasks'` and appends `'/tasks'`, so the URL the user sees is `…/tasks/...`.
 
 **Approach:** change the BE mount point, not the routes. The FE stays untouched.
 
 Three edits:
 
 1. `srv/server.ts:100` — change `app.use('/api/cnma/APPROVAL_SRV/tasks', createInboxRouter())` to `app.use('/api/cnma/APPROVAL_SRV', createInboxRouter())`. The handler's `/tasks/...` routes now match directly. **Auth and body-parser middleware at `server.ts:78` and `server.ts:91` stay scoped to `/api/cnma/APPROVAL_SRV/tasks`** — Express middleware path matching is a prefix match, so they continue to cover the inner `/tasks/...` paths. This preserves the exact same auth boundary as today.
-2. `srv/controllers/inbox-controller.ts` — update JSDoc `* /tasks/tasks/...` → `* /tasks/...` (cosmetic; Swagger annotations).
-3. `srv/lib/processors/inbox-processor.ts` (or its replacement utility) — fix the hard-coded download URL inside `decorateAttachments` from `/api/cnma/APPROVAL_SRV/tasks/tasks/...` to `/api/cnma/APPROVAL_SRV/tasks/...`.
+2. `srv/controllers/inbox-controller.ts` — update JSDoc `* /tasks/...` → `* /tasks/...` (cosmetic; Swagger annotations).
+3. `srv/lib/processors/inbox-processor.ts` (or its replacement utility) — fix the hard-coded download URL inside `decorateAttachments` from `/api/cnma/APPROVAL_SRV/tasks/...` to `/api/cnma/APPROVAL_SRV/tasks/...`.
 
 No FE change. `app/cnma_approval_ui/src/services/inbox/inbox.api.ts` `BASE_URL` already produces the correct single-prefix URL once the BE mount moves.
 
@@ -327,7 +327,7 @@ All `AppError` instances flow through the existing global error handler in `srv/
 
 ### 7.3 Manual smoke
 
-- `curl http://localhost:4004/api/cnma/APPROVAL_SRV/tasks/10000001` → expect flat shape, no doubled `/tasks/tasks/`, no null/System comments.
+- `curl http://localhost:4004/api/cnma/APPROVAL_SRV/tasks/10000001` → expect flat shape, no doubled `/tasks/`, no null/System comments.
 - `curl http://localhost:4004/api/cnma/APPROVAL_SRV/tasks` → unchanged list response.
 - `curl http://localhost:4004/api/cnma/APPROVAL_SRV/tasks/{id}/attachments/{id}/content?documentId=...` → expect 200, correct MIME, correct filename.
 
@@ -335,8 +335,8 @@ All `AppError` instances flow through the existing global error handler in `srv/
 
 ## 8. Documentation Updates
 
-- [docs/technical/02-implementation/03-backend-bff-endpoints.md](docs/technical/02-implementation/03-backend-bff-endpoints.md) — replace the `/tasks/{id}` example with the new flat shape; add a "filterComments" note.
-- [docs/releases/CHANGELOG.md](docs/releases/CHANGELOG.md) — one-line entry: "Refactor inbox task-detail: flat slim response, comment filtering, routing prefix fix; split `inbox-processor.ts` into orchestrator + utils."
+- [docs/technical/02-implementation/03-backend-bff-endpoints.md](../../technical/02-implementation/03-backend-bff-endpoints.md) — replace the `/tasks/{id}` example with the new flat shape; add a "filterComments" note.
+- [docs/releases/CHANGELOG.md](../../releases/CHANGELOG.md) — one-line entry: "Refactor inbox task-detail: flat slim response, comment filtering, routing prefix fix; split `inbox-processor.ts` into orchestrator + utils."
 
 ---
 
@@ -350,8 +350,8 @@ All `AppError` instances flow through the existing global error handler in `srv/
 6. Update `srv/controllers/inbox-controller.ts` (`getObjectConfigs`) to import `buildFieldSchema` from `inbox-utils.ts`; remove the inline loop.
 7. Apply the routing fix (3 edits, see §4.6):
    - `srv/server.ts:100` — change the mount from `/api/cnma/APPROVAL_SRV/tasks` to `/api/cnma/APPROVAL_SRV`. Auth + body-parser middleware stay scoped to `/api/cnma/APPROVAL_SRV/tasks` (preserves the existing auth boundary).
-   - `srv/controllers/inbox-controller.ts` — update JSDoc `* /tasks/tasks/...` → `* /tasks/...`.
-   - `srv/lib/processors/inbox-processor.ts` (in `decorateAttachments`) — fix hard-coded download URL from `/api/cnma/APPROVAL_SRV/tasks/tasks/...` to `/api/cnma/APPROVAL_SRV/tasks/...`.
+   - `srv/controllers/inbox-controller.ts` — update JSDoc `* /tasks/...` → `* /tasks/...`.
+   - `srv/lib/processors/inbox-processor.ts` (in `decorateAttachments`) — fix hard-coded download URL from `/api/cnma/APPROVAL_SRV/tasks/...` to `/api/cnma/APPROVAL_SRV/tasks/...`.
 8. Update React frontend destructure sites + `inbox.types.ts` (4 small edits: `TaskDetailView.tsx` L86-88, `inbox.types.ts` add `_meta`, `TaskDetailSections.registry.ts` L28 + L29-31).
 9. Run the full check suite per `CLAUDE.md` §"Verification & Quality Commands":
    - `npm test` (backend)

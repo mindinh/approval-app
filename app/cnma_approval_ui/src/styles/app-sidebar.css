@@ -1,0 +1,22 @@
+.app-sidebar__header { @apply flex h-20 shrink-0 flex-row items-center gap-3 px-5 py-4; }
+.app-sidebar__header--collapsed { @apply justify-center px-2; }
+.app-sidebar__logo { @apply size-8 shrink-0 rounded-lg; }
+.app-sidebar__brand { @apply min-w-0 truncate text-base font-semibold tracking-tight text-sidebar-foreground; }
+.app-sidebar__content { @apply flex-1 overflow-x-hidden overflow-y-auto px-3 py-2; }
+.app-sidebar__content--collapsed { @apply px-2; }
+.app-sidebar__menu { @apply gap-1; }
+.app-sidebar__link { @apply relative h-9 w-full cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring; }
+.app-sidebar__link[data-active="true"] { @apply bg-primary/10 text-primary font-semibold shadow-none hover:bg-primary/15; }
+.app-sidebar__link .app-sidebar__icon { @apply size-5 shrink-0; }
+.app-sidebar__link--collapsed { @apply justify-center; }
+/* Override the library's important size-8 collapse rule without shrinking menu rows. */
+@layer utilities {
+    .group[data-collapsible="icon"] .app-sidebar__link--collapsed { @apply h-9! w-full!; }
+}
+.app-sidebar__admin-item { @apply mt-4 border-t border-sidebar-border/60 pt-3; }
+.app-sidebar__toggle { @apply absolute -right-3 top-6 z-30 hidden size-6 min-w-0 cursor-pointer items-center justify-center rounded-full border border-sidebar-border bg-sidebar p-0 text-sidebar-foreground shadow-sm hover:bg-sidebar-accent md:flex; }
+.app-sidebar__footer { @apply shrink-0 border-t border-sidebar-border/60 p-3; }
+.app-sidebar__footer--collapsed { @apply items-center p-2; }
+.app-sidebar__account { @apply flex h-auto min-w-0 w-full cursor-pointer items-center justify-start gap-3 rounded-xl p-2 text-start text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground; }
+.app-sidebar__account--collapsed { @apply justify-center p-0 size-8; }
+.app-shell { --sidebar-width-icon: calc(var(--spacing) * 16); }

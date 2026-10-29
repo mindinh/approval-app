@@ -1,20 +1,9 @@
 import { Download, FileText, X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button, Card, CardContent, Badge } from '@cnma/react-ui';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { toast } from '@cnma/react-ui';
-import { DocxViewer } from './DocxViewer';
-import { ExcelViewer } from './ExcelViewer';
 import { TextViewer } from './TextViewer';
-
-// Lazy-load react-doc-viewer to avoid bundling it upfront
-const DocViewer = lazy(() => import('@cyntler/react-doc-viewer'));
-
-// We need to import renderers separately
-let DocViewerRenderers: unknown[] = [];
-import('@cyntler/react-doc-viewer').then((mod) => {
-    DocViewerRenderers = mod.DocViewerRenderers || [];
-});
 
 interface AttachmentPreviewCardProps {
     instanceId: string;
@@ -32,7 +21,6 @@ interface AttachmentPreviewCardProps {
  * Features:
  * - Native <img> for images with zoom/rotate controls
  * - Native <iframe> for PDF and plain text
- * - react-doc-viewer for Office documents (docx, xlsx, pptx)
  * - Fallback download prompt for unsupported types
  */
 export function AttachmentPreviewCard({
@@ -70,24 +58,12 @@ export function AttachmentPreviewCard({
                     <TextViewer url={previewUrl} fileName={displayName} />
                 )}
 
-                {(previewKind === 'pdf' || previewKind === 'iframe') && (
+                {previewKind === 'pdf' && (
                     <iframe
                         src={`${previewUrl}#filename=${encodeURIComponent(displayName)}&title=${encodeURIComponent(displayName)}`}
                         title={displayName}
                         className="w-full h-full border-0 bg-white"
                     />
-                )}
-
-                {previewKind === 'docx' && (
-                    <DocxViewer url={previewUrl} />
-                )}
-
-                {previewKind === 'xlsx' && (
-                    <ExcelViewer url={previewUrl} />
-                )}
-
-                {previewKind === 'docviewer' && (
-                    <DocViewerPreview url={previewUrl} fileName={displayName} mimeType={mimeType} />
                 )}
 
                 {previewKind === 'none' && (
@@ -178,48 +154,6 @@ function ImagePreview({ src, alt, downloadUrl }: { src: string; alt: string; dow
     );
 }
 
-/* ─── DocViewer for Office documents ───────────────────────────── */
-
-function DocViewerPreview({
-    url,
-    fileName,
-    mimeType,
-}: {
-    url: string;
-    fileName: string;
-    mimeType?: string;
-}) {
-    const docs = [
-        {
-            uri: url,
-            fileName: fileName,
-            fileType: mimeTypeToFileType(mimeType),
-        },
-    ];
-
-    return (
-        <Suspense
-            fallback={
-                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                    Loading document viewer…
-                </div>
-            }
-        >
-            <DocViewer
-                documents={docs}
-                pluginRenderers={DocViewerRenderers as never}
-                config={{
-                    header: {
-                        disableHeader: true,
-                        disableFileName: true,
-                    },
-                }}
-                className="w-full h-full bg-white"
-            />
-        </Suspense>
-    );
-}
-
 /* ─── Fallback for unsupported types ───────────────────────────── */
 
 function FallbackPreview({
@@ -266,7 +200,7 @@ function FallbackPreview({
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
-type PreviewKind = 'image' | 'pdf' | 'txt' | 'iframe' | 'docx' | 'xlsx' | 'docviewer' | 'none';
+type PreviewKind = 'image' | 'pdf' | 'txt' | 'none';
 
 function getMimeTypeFromExtension(fileName?: string): string | undefined {
     if (!fileName) return undefined;
@@ -366,30 +300,4 @@ function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
 export function isPreviewableType(mimeType?: string, fileName?: string): boolean {
     const kind = getPreviewKind(mimeType, fileName);
     return kind === 'pdf' || kind === 'image' || kind === 'txt';
-}
-
-/**
- * Maps a MIME type to a simple file extension for react-doc-viewer.
- */
-function mimeTypeToFileType(mimeType?: string): string | undefined {
-    if (!mimeType) return undefined;
-    const map: Record<string, string> = {
-        'application/pdf': 'pdf',
-        'application/msword': 'doc',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-        'application/vnd.ms-excel': 'xls',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-        'application/vnd.ms-powerpoint': 'ppt',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
-        'application/vnd.oasis.opendocument.text': 'odt',
-        'application/vnd.oasis.opendocument.spreadsheet': 'ods',
-        'application/vnd.oasis.opendocument.presentation': 'odp',
-        'text/csv': 'csv',
-        'image/png': 'png',
-        'image/jpeg': 'jpg',
-        'image/gif': 'gif',
-        'image/webp': 'webp',
-        'image/svg+xml': 'svg',
-    };
-    return map[mimeType.toLowerCase()];
 }

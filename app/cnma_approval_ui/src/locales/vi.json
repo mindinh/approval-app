@@ -1,4 +1,21 @@
 {
+    "startupRecovery": {
+        "title": "Chưa thể mở My Approval",
+        "message": "Kiểm tra kết nối và thử lại. Nếu vẫn gặp lỗi, gửi mã bên dưới cho bộ phận hỗ trợ.",
+        "supportCode": "Mã hỗ trợ: {{code}}",
+        "retry": "Thử lại",
+        "reset": "Đặt lại cache app và thử lại",
+        "resetting": "Đang đặt lại…"
+    },
+    "sessionTimeout": {
+        "warningTitle": "Lưu ý",
+        "expiredTitle": "Phiên đã hết hạn",
+        "warningMessage": "Bạn sẽ được đăng xuất sau {{count}} giây do không có hoạt động.",
+        "expiredMessage": "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.",
+        "continueWorking": "Tiếp tục làm việc",
+        "signOut": "Đăng xuất",
+        "signInAgain": "Đăng nhập lại"
+    },
     "app": {
         "name": "Approval App",
         "title": "Hộp thư đến"
@@ -67,12 +84,18 @@
         "openMenu": "Mở danh mục điều hướng",
         "substitutionInbox": "Hộp thư thay thế",
         "collapseSidebar": "Thu gọn thanh bên",
-        "logOut": "Đăng xuất"
+        "logOut": "Đăng xuất",
+        "account": "Menu tài khoản",
+        "applicationName": "prorequest",
+        "navigation": "Điều hướng chính",
+        "notificationConsole": "Quản lý thông báo",
+        "expandSidebar": "Mở rộng thanh bên"
     },
     "profile": {
         "title": "Thông tin cá nhân",
         "email": "Email",
-        "sapUser": "Tài khoản SAP",
+        "sapUser": "Tên đăng nhập SAP",
+        "sapUserUnavailable": "Chưa xác định",
         "language": "Ngôn ngữ"
     },
     "home": {
@@ -204,6 +227,8 @@
         "view": "Xem",
         "hide": "Thu gọn",
         "noTasksInCategory": "Không có tác vụ nào trong danh mục này",
+        "categoryLoadFailed": "Không thể tải danh mục này.",
+        "loadMoreTasks": "Tải thêm tác vụ",
         "filteredSubtypeCount": "Hiển thị {{count}} trên {{total}}",
         "totalSubtypeCount": "{{count}} yêu cầu",
         "noTasksInSubtype": "Không tìm thấy công việc cho loại này",
@@ -287,7 +312,9 @@
         "loadingDetails": "Đang tải chi tiết...",
         "loadingAttachments": "Đang tải tệp đính kèm...",
         "loadingComments": "Đang tải bình luận...",
-        "loadingActivity": "Đang tải hoạt động..."
+        "loadingActivity": "Đang tải hoạt động...",
+        "backToList": "Quay lại danh sách",
+        "detailTitle": "Chi tiết công việc"
     },
     "comments": {
         "title": "Bình luận",
@@ -301,7 +328,21 @@
         "typeToSearch": "Nhập để tìm kiếm theo tên, mã SAP, hoặc email...",
         "tagUser": "CC / Gắn thẻ",
         "taggedUsers": "Người dùng được gắn thẻ",
-        "suggestions": "Gợi ý"
+        "suggestions": "Gợi ý",
+        "empty": "Bắt đầu cuộc trò chuyện",
+        "today": "Hôm nay",
+        "unknownDate": "Không rõ ngày",
+        "unknownAuthor": "Người dùng không xác định",
+        "forwardedTo": "Đã chuyển đến {{recipient}}",
+        "noRecipient": "Chưa có người nhận",
+        "placeholder": "Nhập tin nhắn…",
+        "sending": "Đang gửi tin nhắn",
+        "send": "Gửi bình luận",
+        "submitHint": "Ctrl / ⌘ + Enter để gửi",
+        "characterCount": "{{count}} ký tự",
+        "characterLimitCount": "{{count}}/{{max}}",
+        "characterLimitHint": "Giới hạn ký tự bao gồm định dạng nhắc tên.",
+        "characterLimitExceeded": "Tối đa {{max}} ký tự."
     },
     "decision": {
         "approve": "Phê duyệt",

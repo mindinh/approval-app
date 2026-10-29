@@ -120,6 +120,22 @@ export function parseError(error: unknown): AppError {
     }
 
     // 2. Authentication & Authorization Errors (401, 403)
+    const isSapAuthOrMappingError =
+        code === 'SAP_AUTH_ERROR' ||
+        code === 'SAP_USER_MAPPING_MISSING' ||
+        Boolean(errObj.isSapUserMappingMissing) ||
+        rawMessage.includes('SAP authentication failure');
+
+    if (isSapAuthOrMappingError) {
+        return {
+            title: 'SAP User Mapping / Authorization Error',
+            message: 'Your account is signed in, but could not be mapped or authorized in SAP S/4HANA. Please contact IT support to verify your SAP user mapping.',
+            category: 'auth',
+            details,
+            canRetry: false,
+        };
+    }
+
     if (statusCode === 401) {
         return {
             title: 'Session Expired',

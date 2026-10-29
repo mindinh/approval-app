@@ -44,6 +44,9 @@ export function useTaskSelection(options: UseTaskSelectionOptions = {}) {
 
     const updateSelectedIds = useCallback(
         (newIds: Set<string>) => {
+            const previous = selectedIdsRef.current;
+            if (previous.size === newIds.size && [...newIds].every(id => previous.has(id))) return;
+            selectedIdsRef.current = newIds;
             _setInternalIds(newIds);
             options.onSelectedIdsChange?.(newIds);
         },

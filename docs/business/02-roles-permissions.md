@@ -1,50 +1,27 @@
-# Roles & Permissions
+﻿# Roles and Permissions
 
-> **Owner:** Lead Business Analyst | **Last Updated:** 2026-09-03 | **Status:** Active
+> **Owner:** Business Analyst | **Last Updated:** 2026-10-20 | **Status:** Active
 
-This document outlines the user roles, business capabilities, and security matrix governing access to the **CNMA Approval** portal.
+## Business responsibilities
 
----
+Business approvers review requests, inspect details and attachments, comment, mention colleagues and act on tasks assigned to them.
+Solution administrators manage operational diagnostics and notification testing. Administrative access does not replace the ERP authorization needed for a task.
 
-## 👥 Role Descriptions
+| Capability | Actionable task | CC / review-only task | Reference PR |
+| --- | --- | --- | --- |
+| Read document and attachments | Yes | Yes | Yes |
+| Comment / mention | When enabled | When enabled | No |
+| Approve / reject | Subject to task capability and ERP authorization | No | No |
+| Bulk decision | Eligible selected tasks | Excluded | No |
+| Forward | Subject to task capability and ERP authorization | No | No |
 
-The application defines two principal user roles that control the capabilities available in the user interface and REST endpoints:
+Completed tasks are presented as history. Available actions depend on the document, task state and backend result.
 
-### 1. Business Approver (Standard User)
-*   **Target Audience**: Managers, Department Heads, Executives, Procurement Officers.
-*   **Core Purpose**: Reviewing pending items, reading detail grids, viewing attachments, posting comments, tagging business users, executing approval/rejection decisions, and forwarding tasks.
-*   **Restrictions**: Cannot access developer utility screens or raw security tokens.
-*   **CC Task Restrictions**: When viewing Carbon Copy (CC) tasks, business approvers can view document details and add comments/tags, but cannot perform Approve, Reject, Mass Decision, or Forward actions (prohibited and excluded at both UI and backend levels).
+## Access boundaries
 
-### 2. Solution Administrator (Admin User)
-*   **Target Audience**: IT Support, System Administrators, DevOps Engineers.
-*   **Core Purpose**: Monitoring connections, debugging JWT structures, performing health checks, and accessing technical connection parameters.
-*   **Additional Capabilities**: Access to authentication debugger dashboards.
+The deployed application uses BTP sign-in through the application router. Task capability checks in the backend block decisions and forwarding for CC tasks.
+Notification REST administration has an administrator check, with development and mock-identity exceptions described in the technical security reference.
+The current task REST router does not enforce a universal per-route user/admin scope matrix. Health, Swagger and diagnostic access should not be described as administrator-only when that restriction is absent in the server.
 
----
-
-## 📊 Business Security Matrix
-
-The table below maps business functions to the respective user roles, task classifications, and required system authorization scopes:
-
-| Business Feature / Function | Standard Task | CC Task | Solution Admin | Required BTP Security Scope |
-| :--- | :---: | :---: | :---: | :--- |
-| **View Dashboard Metrics** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **Read Active Inbox Tasks** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **View Task Details & Items** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **Post Comments & Tag Users** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **Stream & Preview Attachments** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **Approve / Reject Single Task** | ✅ | ❌ | ✅ | `.user` or `.admin` |
-| **Mass Approve / Reject Tasks** | ✅ | ❌ | ✅ | `.user` or `.admin` |
-| **Forward / Delegate Task** | ✅ | ❌ | ✅ | `.user` or `.admin` |
-| **View Historical Approvals** | ✅ | ✅ | ✅ | `.user` or `.admin` |
-| **View Debugger Dashboard** | ❌ | ❌ | ✅ | `.admin` |
-| **Access Connection Health Checks**| ❌ | ❌ | ✅ | `.admin` |
-
----
-
-## 🛠️ Security Enforcement Principles
-
-*   **BTP IAS / XSUAA Authentication**: Every request made from the frontend to the backend BFF must be signed with a valid JSON Web Token (JWT) issued by the BTP Identity Authentication Service (IAS) or Extended Services for User Account and Authentication (XSUAA).
-*   **Scope & Task Type Checking**: Endpoint routers and the decision strategy engine verify both BTP security scope (`.user` / `.admin`) and task capability flags (`isCcTask` / `canForward`) before executing decisions or forwarding requests.
-*   **Mock Fallback**: In local development environments, when the SAP backend profile is mocked, authentication checks fallback to a development username claim (`MOCK_USER` with local admin scopes) to facilitate offline testing.
+Local mocked authentication does not provide offline SAP business data. SAP-side authorization and configured connection identity remain relevant.
+See [security architecture](../technical/01-architecture/02-auth-security.md) for implementation boundaries and [user guide](../product/02-user-guide.md) for task interactions.

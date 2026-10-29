@@ -339,6 +339,23 @@ export class SapOdataAdapter {
         return null;
     }
 
+    /** Strict count path: never turn an unsupported/truncated aggregate into zero. */
+    async getCategorySummary(sapUser: string, statuses: string[], userJwt?: string): Promise<Pick<CnmaTaskByDocTypeEntity, 'DocCategory' | 'Status' | 'RequestCount'>[]> {
+        const response = await this.sapClient.get<{
+            value?: Pick<CnmaTaskByDocTypeEntity, 'DocCategory' | 'Status' | 'RequestCount'>[];
+            '@odata.nextLink'?: string;
+        }>(ODATA_SERVICES.INSTANCE_LIST.servicePath, '/CNMA_TASKBYDOCTYPE', {
+            $format: 'json',
+            $filter: statuses.map(status => `Status eq '${status.replace(/'/g, "''")}'`).join(' or '),
+            $select: 'DocCategory,Status,RequestCount,DocumentType,MovementType',
+        }, sapUser, userJwt);
+        if (!Array.isArray(response?.value) || response['@odata.nextLink'] || response.value.some(row =>
+            typeof row.DocCategory !== 'string' || !statuses.includes(row.Status) ||
+            !Number.isSafeInteger(row.RequestCount) || row.RequestCount < 0
+        )) throw new Error('Incomplete or invalid category summary');
+        return response.value;
+    }
+
     async getDocTypeCounts(sapUser: string, userJwt?: string): Promise<CnmaTaskByDocTypeEntity[]> {
         try {
             const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
@@ -375,20 +392,45 @@ export class SapOdataAdapter {
         }
     }
 
+    async getCurrentSapUser(sapUser: string, userJwt?: string): Promise<{ sapUsername: string }> {
+        // SAP returns the user resulting from Principal Propagation, not the IAS login email.
+        const profile = await this.sapClient.get<{ id?: string }>('/sap/bc/ui2', '/start_up', {}, sapUser, userJwt);
+        const username = typeof profile?.id === 'string' ? profile.id.trim() : '';
+        if (!username || username.length > 12 || /[@\s<>]/.test(username)) {
+            throw new Error('SAP session did not return a valid SAP username');
+        }
+        return { sapUsername: username };
+    }
+
     async searchBusUsers(searchPattern: string, sapUser: string, userJwt?: string): Promise<any[]> {
         try {
             const path = ODATA_SERVICES.INSTANCE_LIST.servicePath;
-            const params: Record<string, string> = { $format: 'json', $top: '500' };
-
-            const response: any = await this.sapClient.get(
-                path,
-                '/CNMA_BUSUSER',
-                params,
-                sapUser,
-                userJwt
-            );
-            const value = response?.value || response?.d?.results || response?.d || response;
-            const list = Array.isArray(value) ? value : [];
+            let params: Record<string, string> = { $format: 'json', $top: '500' };
+            const list: any[] = [];
+            const seenPages = new Set<string>();
+            while (true) {
+                const response: any = await this.sapClient.get(path, '/CNMA_BUSUSER', params, sapUser, userJwt);
+                const value = response?.value || response?.d?.results || response?.d || response;
+                if (!Array.isArray(value)) throw new Error('Invalid CNMA_BUSUSER response');
+                if (!value.length) break;
+                const fingerprint = JSON.stringify(value);
+                if (seenPages.has(fingerprint)) throw new Error('CNMA_BUSUSER pagination did not advance');
+                seenPages.add(fingerprint);
+                list.push(...value);
+                const nextLink = response?.['@odata.nextLink'] || response?.d?.__next;
+                if (nextLink) {
+                    // Follow continuation parameters only; keep the destination and entity fixed.
+                    const next = new URL(nextLink, 'https://odata.invalid').searchParams;
+                    const skip = next.get('$skip');
+                    const token = next.get('$skiptoken');
+                    if (!skip && !token) throw new Error('Unsupported CNMA_BUSUSER continuation');
+                    params = { $format: 'json', $top: '500', ...(token ? { $skiptoken: token } : { $skip: skip! }) };
+                } else {
+                    const count = response?.['@odata.count'] ?? response?.d?.__count;
+                    if ((count != null && list.length >= Number(count)) || value.length < 500) break;
+                    params = { $format: 'json', $top: '500', $skip: String(list.length) };
+                }
+            }
 
             if (!searchPattern || !searchPattern.trim()) {
                 return list;
@@ -400,7 +442,7 @@ export class SapOdataAdapter {
                 const firstName = (u.FirstName || u.firstName || '').toLowerCase();
                 const lastName = (u.LastName || u.lastName || '').toLowerCase();
                 const fullName = (u.FullName || u.fullName || '').toLowerCase();
-                const email = (u.EmailAddress || u.emailAddress || u.Email || '').toLowerCase();
+                const email = (u.EmailAddress || u.emailAddress || u.Email || u.email || '').toLowerCase();
 
                 return (
                     sapUserName.includes(term) ||
@@ -412,7 +454,7 @@ export class SapOdataAdapter {
             });
         } catch (err: any) {
             console.error(`[SapOdataAdapter] Failed to fetch CNMA_BUSUSER from SAP backend:`, err.message);
-            return [];
+            throw err;
         }
     }
 

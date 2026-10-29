@@ -32,7 +32,6 @@ modules:
       SAP_USE_DESTINATION: "true"
       SAP_TASK_DESTINATION: "VJ_PS4"
       SAP_TASK_CLIENT: "900"
-      USE_MOCK_SAP: "false"
     build-parameters:
       builder: npm
       ignore:
@@ -58,6 +57,7 @@ modules:
       disk-quota: 512M
     properties:
       DYNAMIC_IDENTITY_PROVIDER: true
+      SESSION_TIMEOUT: 28800
     requires:
       - name: cnma-prorequest-s4h-auth
       - name: srv-api
@@ -70,6 +70,8 @@ modules:
     build-parameters:
       ignore:
         - "node_modules/"
+        # Standalone serves the extracted UI; its ZIP belongs only to the HTML5 deployer.
+        - "resources/cnma/cnma_approval_ui.zip"
       requires:
         - name: cnma-prorequest-s4h-ui
           artifacts:

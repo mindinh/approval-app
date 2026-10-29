@@ -3,6 +3,7 @@ import { useFLPSyncDirect, getInitialFLPRoute, subscribeFLPRoute } from './hooks
 import { useRef, useEffect, lazy, Suspense } from 'react';
 import { MainLayout } from './components/layouts/MainLayout';
 import { Toaster } from '@cnma/react-ui';
+import { prefetchRouteData } from './utils/routePrefetch';
 
 // Lazy load pages for code-splitting
 const HomePage = lazy(() => import('./pages/Home/HomePage'));
@@ -14,6 +15,13 @@ const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 import HomeSkeleton from './components/skeletons/HomeSkeleton';
 import InboxSkeleton from './components/skeletons/InboxSkeleton';
 import DashboardSkeleton from './components/skeletons/DashboardSkeleton';
+
+// Fire initial route API & chunk prefetch immediately at module evaluation time
+// so network requests run concurrently with React mount and lazy chunk evaluation.
+if (typeof window !== 'undefined') {
+    const startupRoute = getInitialFLPRoute() || window.location.hash || '/';
+    prefetchRouteData(startupRoute);
+}
 
 // Component to sync React Router with FLP shell URL
 function ShellSync() {
@@ -33,6 +41,7 @@ function InitialRouteNavigator() {
         const initialRoute = getInitialFLPRoute();
         console.log('[App] Initial FLP route on mount:', initialRoute);
         if (initialRoute && initialRoute !== '/' && initialRoute !== currentPathRef.current) {
+            prefetchRouteData(initialRoute);
             navigate(initialRoute, { replace: true });
         }
 
@@ -40,6 +49,7 @@ function InitialRouteNavigator() {
         const unsubscribe = subscribeFLPRoute((route) => {
             if (!route || route === '/' || route === currentPathRef.current) return;
             console.log('[App] External address bar or FLP route changed to:', route);
+            prefetchRouteData(route);
             navigate(route);
         });
 

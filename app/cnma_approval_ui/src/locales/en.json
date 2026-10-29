@@ -1,4 +1,22 @@
 {
+    "startupRecovery": {
+        "title": "Unable to open My Approval",
+        "message": "Check your connection and try again. If this continues, send the code below to support.",
+        "supportCode": "Support code: {{code}}",
+        "retry": "Try again",
+        "reset": "Reset app cache and retry",
+        "resetting": "Resetting…"
+    },
+    "sessionTimeout": {
+        "warningTitle": "Attention",
+        "expiredTitle": "Session Expired",
+        "warningMessage_one": "Due to inactivity, you are going to be signed out in {{count}} second.",
+        "warningMessage_other": "Due to inactivity, you are going to be signed out in {{count}} seconds.",
+        "expiredMessage": "Your session has expired. Please sign in again to continue working.",
+        "continueWorking": "Continue Working",
+        "signOut": "Sign Out",
+        "signInAgain": "Sign In Again"
+    },
     "app": {
         "name": "Approval App",
         "title": "prorequest"
@@ -67,12 +85,18 @@
         "logOut": "Log Out",
         "openMenu": "Open navigation menu",
         "substitutionInbox": "Substitution Inbox",
-        "collapseSidebar": "Collapse sidebar"
+        "collapseSidebar": "Collapse sidebar",
+        "account": "Account menu",
+        "applicationName": "prorequest",
+        "navigation": "Main navigation",
+        "notificationConsole": "Notification Console",
+        "expandSidebar": "Expand sidebar"
     },
     "profile": {
         "title": "User Profile",
         "email": "Email",
-        "sapUser": "SAP User",
+        "sapUser": "SAP Username",
+        "sapUserUnavailable": "Not identified",
         "language": "Language"
     },
     "home": {
@@ -204,6 +228,8 @@
         "view": "View",
         "hide": "Hide",
         "noTasksInCategory": "No tasks in this category",
+        "categoryLoadFailed": "Unable to load this category.",
+        "loadMoreTasks": "Load more tasks",
         "filteredSubtypeCount": "Showing {{count}} of {{total}}",
         "totalSubtypeCount": "{{count}} requests",
         "noTasksInSubtype": "No tasks found for this subtype",
@@ -287,7 +313,9 @@
         "loadingDetails": "Loading details...",
         "loadingAttachments": "Loading attachments...",
         "loadingComments": "Loading comments...",
-        "loadingActivity": "Loading activity..."
+        "loadingActivity": "Loading activity...",
+        "backToList": "Back to task list",
+        "detailTitle": "Task details"
     },
     "comments": {
         "title": "Comments",
@@ -301,7 +329,21 @@
         "typeToSearch": "Type to search users by name, user ID, or email...",
         "tagUser": "CC / Tag Users",
         "taggedUsers": "Tagged Users",
-        "suggestions": "Suggestions"
+        "suggestions": "Suggestions",
+        "empty": "Start the conversation",
+        "today": "Today",
+        "unknownDate": "Unknown date",
+        "unknownAuthor": "Unknown user",
+        "forwardedTo": "Forwarded to {{recipient}}",
+        "noRecipient": "No recipient",
+        "placeholder": "Write a message…",
+        "sending": "Sending message",
+        "send": "Send comment",
+        "submitHint": "Ctrl / ⌘ + Enter to send",
+        "characterCount": "{{count}} characters",
+        "characterLimitCount": "{{count}}/{{max}}",
+        "characterLimitHint": "Character limit includes mention formatting.",
+        "characterLimitExceeded": "Maximum {{max}} characters."
     },
     "decision": {
         "approve": "Approve",

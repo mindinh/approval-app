@@ -222,7 +222,7 @@ export function buildItemsTable(rawItems?: any[], parentCurrency?: string): Deta
 
 export function buildDefaultBusinessModel(detail: TaskDetail) {
     const attrIndex = createAttributeIndex(detail.customAttributes);
-    const businessType = (detail.objectType || detail.businessContext?.type || detail.task?.TaskDefinitionID || 'UNKNOWN').toUpperCase();
+    const businessType = (detail.objectType || detail.businessContext?.type || detail.task?.taskDefinitionId || detail.task?.TaskDefinitionID || 'UNKNOWN').toUpperCase();
     const isPo = businessType === 'PO' || businessType === 'BUS2012';
 
     const documentId =

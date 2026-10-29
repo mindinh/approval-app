@@ -76,8 +76,9 @@ export function normalizeDetailForView(detail: any) {
     const comments = Array.isArray(rawComments) ? rawComments.map((c: any, idx: number) => ({
         id: c.id || c.DocId || `comment-${idx}`,
         text: c.NoteText || c.noteText || c.text || '',
-        createdBy: c.UserComment || c.author || c.createdBy || 'User',
-        createdAt: c.PostedOn ? `${c.PostedOn} ${c.PostedTime || ''}` : c.createdAt || new Date().toISOString(),
+        createdBy: c.createdBy || c.UserComment || c.author || '',
+        createdByName: c.createdByName || c.authorName || '',
+        createdAt: c.PostedOn ? `${c.PostedOn}T${c.PostedTime || '00:00:00'}` : c.createdAt || '',
         forward: c.Forward === true || c.forward === true,
         toUser: c.ToUser || c.toUser || ''
     })) : [];
@@ -172,6 +173,7 @@ export function normalizeDetailForView(detail: any) {
         supports,
         task: {
             instanceId,
+            createdByName: tp?.task?.CreatedByName || detail.task?.createdByName,
             title,
             status: tp?.task?.Status || detail.task?.status || 'READY',
             priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',

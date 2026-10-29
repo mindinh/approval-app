@@ -4,40 +4,72 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ## [Unreleased]
 
+### Fixed
+- Remove embedded SAP host/user/password and destination-name fallbacks, unused mock/IAS flags, obsolete frontend proxy/localhost branch and unused token-expiry env writes. Require explicit settings for direct calls and allow local fallback only with complete direct configuration.
+- Synchronize REST OpenAPI paths and action inputs with mounted routes, repair annotation discovery for compiled deployments, and refresh configuration, setup, architecture and documentation links. Record unused URL/env candidates without changing SAP connection settings.
+- Use the white card surface for desktop task/reference-PR headers, including their integrated tabs, to distinguish them from the page background.
+- Restore the selected desktop tab's rounded top/side border and keep keyboard focus inside the trigger so the horizontally scrolling row cannot clip it.
+- Place desktop task-detail/reference-PR tab triggers inside their header and align navigation with header content; keep mobile pill navigation separate.
+- Blend desktop task/reference-PR tabs into their header surface, removing the intervening frame/divider while preserving the bottom underline and mobile pill navigation.
+- Keep desktop task-detail/reference-PR tabs compact: round only the top corners, restore the active underline and remove outer/vertical padding. Remove six unused public icons/SLA images and move icon source artwork into scripts. Use transparent v4 favicon/general-purpose PWA icons to remove the white tile in desktop browser/PWA branding, while retaining opaque maskable and Apple install assets.
+- Address Comments review findings: require verified SAP identity for ownership/profile, remove obsolete directory helpers, refresh relative dates at midnight/resume, fix tag-picker selection and mobile tab scroll refs, and make the full frontend application typecheck pass through the explicit `typecheck` command.
+- Separate consecutive comment days with localized Today/date dividers. Preserve missing dates instead of replacing them with the current time; cover grouping and mobile/desktop rendering with regression tests.
+- Display persisted SAP usernames in Comments and resolve the current SAP session principal through the caller's propagated identity for right alignment and User Profile. Remove directory downloads from this flow.
+- Share lazy SAP identity resolution between Comments and User Profile. Display the verified SAP username separately from the login email, using SAP 72 and localized loading/unresolved states.
+- Restore the Comments tab's outer spacing and rounded card container to match the other detail tabs while keeping history scrolling and the composer docked inside.
+- Increase sidebar navigation icons consistently in expanded and collapsed states using the shared size scale.
+- Support complete paginated SAP directory reads for mentions and user pickers, propagating lookup failures for retry.
+- Widen the collapsed sidebar using the shared spacing scale and center its icons, logo, and neutral account avatar without resizing them.
+- Keep sidebar navigation row height and icon spacing stable when collapsing, overriding the UI library's smaller collapsed row size.
+- Refresh the desktop sidebar with compact navigation, translucent primary selection without a left accent, separated administration, the original floating collapse/expand control, and a compact account footer. Extract navigation and consolidate sidebar styling while preserving mobile and Work Zone behavior.
+- Wait for the refreshed conversation before reporting comment success and unlocking the composer. Remove duplicate task refetches from the comment invalidation policy and detail view.
+- Standardize all user avatars on a shared neutral treatment across account menus, profiles, conversations, mentions, and user pickers.
+- Restore the branded mobile Home header with its welcome message and compact account menu, scoped to Home only.
+- Remove the desktop chat composer's outer surface and full-width divider, retaining the centered input shell and character counter.
+- Center the desktop chat input with a bounded width and compact single row for the editor, character counter, and send action; preserve the mobile layout and 255-character validation.
+- Restore the always-visible 255-character comment counter and block oversized submissions, including keyboard shortcuts and mention markup. Place the full-width chat editor above its counter/send footer.
+- Bound long message widths and composer height, wrap unbroken content, and preserve multiline drafts when sending.
+- Use a docked composer and internally scrolling conversation, preserving mentions and read-only behavior. Compact mobile headers and expose logout through the shared account menu.
+- Give clean SAP install icons versioned filenames in both HTML entry points and manifests so the next deployment does not reuse old icon URLs.
+- Prevent mobile startup failures caused by caching login HTML as JavaScript or CSS; retire the legacy PWA cache and update the worker independently of the main application bundle.
+- Use a shared `@cnma/react-ui` status dialog for startup recovery and session timeout, with application theme tokens and English/Vietnamese translations. Recovery supports retry and resetting only this app's cache.
+- Exclude the redundant UI ZIP from the standalone approuter while retaining the extracted UI and the Work Zone deployer ZIP. Remove unreachable Office preview engines, unused frontend dependency declarations, and unreferenced legacy images.
+- Follow the existing component/utility/style directories for startup recovery and share its dialog stylesheet with session timeout. Remove the baked-in checkerboard from SAP install artwork, regenerate mobile icons, and allow icon metadata to refresh outside the worker cache.
+
 ## [1.0.17] - 2026-09-14
 
 ### Added
 *   **In-App Reference Purchase Requisition Navigation (`ReferencePrDetailView.tsx`, `inbox-controller.ts`, `inbox-processor.ts`, `useReferencePrDetail`)**:
-    *   Created dedicated native component [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx) enabling in-app inspection of referenced PR details directly from PO line item tables and Overview cards without navigating out to external SAP Fiori Launchpad.
+    *   Created dedicated native component [`ReferencePrDetailView.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx) enabling in-app inspection of referenced PR details directly from PO line item tables and Overview cards without navigating out to external SAP Fiori Launchpad.
     *   Added backend BFF endpoint `GET /tasks/pr/:docNum` to fetch full `CNMA_PRHEADER` entities with `$expand=_Item,_ApprovalStep,_HeaderText` and attachment streaming endpoints (`GET /tasks/pr/:docNum/attachments`, `GET /tasks/pr/:docNum/attachments/:attachId/content/:fileName?`).
     *   Implemented nested PR navigation history stack (`prHistory`) with breadcrumbs for recursive PR cross-references and error/retry states.
 *   **Friendly SLA Status Indicators & Modernized Avatars (`SlaIcons.tsx`, `TaskCard.tsx`, `sla-happy.svg`, `sla-overdue.svg`)**:
     *   Replaced aggressive Lucide icons with friendly, custom SVG avatars (`sla-happy.svg` for pending < 5 days and `sla-overdue.svg` for pending > 5 days).
-    *   Redesigned [`TaskCard.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskCard.tsx) layout with an icon avatar box, softer background shades (`bg-emerald-100/70`, `bg-rose-100/70`), and helpful aging tooltips.
+    *   Redesigned [`TaskCard.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskCard.tsx) layout with an icon avatar box, softer background shades (`bg-emerald-100/70`, `bg-rose-100/70`), and helpful aging tooltips.
 *   **Category Accordion Grouping & Subtype Multi-Select Filtering (`CategoryAccordionGroup.tsx`, `TaskList.tsx`, `categoryUtils.ts`)**:
     *   Grouped inbox tasks into collapsible category accordions (`PR`, `PO`, `CLAIM`, `RESERVATION`) displaying item count badges.
-    *   Added desktop "Expand all" / "Collapse all" toggle button (`ChevronsUpDown`, `ChevronsDownUp`) in [`TaskList.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskList.tsx).
+    *   Added desktop "Expand all" / "Collapse all" toggle button (`ChevronsUpDown`, `ChevronsDownUp`) in [`TaskList.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskList.tsx).
     *   Integrated interactive `CategorySubtypeFilter` popover supporting multi-select checkbox filtering for document subtypes (e.g., `ZNB1`, `ZMAK`, `ZASS`), "Select All", and "Clear" actions.
-    *   Added `extractSubtypeCounts` and `getTaskSubtype` helpers in [`categoryUtils.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/categoryUtils.ts).
+    *   Added `extractSubtypeCounts` and `getTaskSubtype` helpers in [`categoryUtils.ts`](../../app/cnma_approval_ui/src/pages/Inbox/utils/categoryUtils.ts).
 *   **4-Eyes Code Review Report 260914 (`docs/code-review/Code-Review-260914.md`)**:
     *   Completed 4-Eyes audit report scoring 96/100 across SOLID, DRY, YAGNI, and KISS principles with all actionable findings resolved.
 
 ### Refactored & Changed
 *   **Case-Insensitive Filename Deduplication & OpenXML Magic Inspection (`file-helper.ts`, `sap-client.ts`, `inbox-controller.ts`)**:
-    *   Updated `cleanFileName` in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts) with case-insensitive regex `/\.([a-zA-Z0-9]+)(?:\.\1)+$/i` ensuring mixed-case extensions (e.g. `report.PDF.pdf`) are properly deduplicated to lowercase `.pdf`.
+    *   Updated `cleanFileName` in [`file-helper.ts`](../../srv/lib/utils/file-helper.ts) with case-insensitive regex `/\.([a-zA-Z0-9]+)(?:\.\1)+$/i` ensuring mixed-case extensions (e.g. `report.PDF.pdf`) are properly deduplicated to lowercase `.pdf`.
     *   Enhanced `detectMimeFromBuffer` to scan binary slices for OpenXML signatures (`xl/` -> `.xlsx`, `word/` -> `.docx`, `ppt/` -> `.pptx`), aligning extensions and preventing Excel corrupt file alerts.
-    *   Added RFC 5987 UTF-8 `filename*=UTF-8''...` decoding in [`sap-client.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-client.ts).
-    *   Cleaned up redundant null-byte buffer trimming loops across integration strategies ([`po.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/po.ts), [`pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/pr.ts), [`claim.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/claim.ts), [`re.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/re.ts)).
+    *   Added RFC 5987 UTF-8 `filename*=UTF-8''...` decoding in [`sap-client.ts`](../../srv/lib/integrations/sap-client.ts).
+    *   Cleaned up redundant null-byte buffer trimming loops across integration strategies ([`po.ts`](../../srv/lib/integrations/po.ts), [`pr.ts`](../../srv/lib/integrations/pr.ts), [`claim.ts`](../../srv/lib/integrations/claim.ts), [`re.ts`](../../srv/lib/integrations/re.ts)).
 *   **Clean Architecture & DRY Refactoring (Report 260914)**:
-    *   Extracted shared `formatVendorCodeAndName` in [`formatters.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/formatters.ts) and reused across `po.fields.ts` and `claim.fields.ts`.
+    *   Extracted shared `formatVendorCodeAndName` in [`formatters.ts`](../../app/cnma_approval_ui/src/renderers/core/formatters.ts) and reused across `po.fields.ts` and `claim.fields.ts`.
     *   Introduced declarative `excludeColumns(base, ...keys)` helper in `po.views.ts` and `pr.views.ts`, eliminating >60 lines of duplicate column definitions.
     *   Reused `cleanFileName` from `utils/shared` in `inbox.api.ts` for attachment downloads.
     *   Declaratively gated task forwarding in `TaskActionPanel.tsx` via `supportsForward = false`.
 *   **PWA Cleanup & MTA Parameter Simplification**:
     *   Purged legacy PWA installation banner (`PwaInstallBanner.tsx`), utilities (`pwa.ts`), and unused locale keys.
-    *   Removed obsolete launchpad navigation environment variables (`SAP_LAUNCHPAD_BASE_URL`, `SAP_PR_APP_ID_HINT`, `SAP_PR_INTENT_PATTERN`) from [`mta.yaml`](file:///d:/learning/test/cnma_approval/mta.yaml) and simplified [`launchpad.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/launchpad.ts) to `isWorkZone()`.
+    *   Removed obsolete launchpad navigation environment variables (`SAP_LAUNCHPAD_BASE_URL`, `SAP_PR_APP_ID_HINT`, `SAP_PR_INTENT_PATTERN`) from [`mta.yaml`](../../mta.yaml) and simplified [`launchpad.ts`](../../app/cnma_approval_ui/src/utils/launchpad.ts) to `isWorkZone()`.
 *   **Dashboard Category Drill-Down**:
-    *   Updated [`use-dashboard-data.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Dashboard/use-dashboard-data.ts) to support category drill-downs and aligned donut chart data.
+    *   Updated [`use-dashboard-data.ts`](../../app/cnma_approval_ui/src/pages/Dashboard/use-dashboard-data.ts) to support category drill-downs and aligned donut chart data.
 
 ---
 
@@ -46,8 +78,8 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 ### Added
 *   **Mobile Bottom Navigation Architecture (`MobileNavContext`, `MobileBottomBar`, `MobileTopBar`)**:
     *   Replaced the mobile drawer sidebar with a thumb-friendly 4-tab **`MobileBottomBar`** (`Home`, `My Tasks` with live badge counter, `Approved`, `Dashboard`) featuring Framer Motion spring transition indicators.
-    *   Introduced [`MobileNavContext`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/contexts/MobileNavContext.tsx) with pure `matchPath` route resolution (`isTaskDetailPath`, `resolveNavTab`) managing mutual exclusivity (bottom bar automatically hides during task detail inspection or mass selection mode).
-    *   Created [`MobileTopBar`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/layouts/MobileTopBar.tsx) supporting embedded mode (in `HomePage` gradient banner) and standalone mode (in `DashboardPage` and `InboxPage` list view) with user initials avatar, user ID, and one-tap logout.
+    *   Introduced [`MobileNavContext`](../../app/cnma_approval_ui/src/contexts/MobileNavContext.tsx) with pure `matchPath` route resolution (`isTaskDetailPath`, `resolveNavTab`) managing mutual exclusivity (bottom bar automatically hides during task detail inspection or mass selection mode).
+    *   Created [`MobileTopBar`](../../app/cnma_approval_ui/src/components/layouts/MobileTopBar.tsx) supporting embedded mode (in `HomePage` gradient banner) and standalone mode (in `DashboardPage` and `InboxPage` list view) with user initials avatar, user ID, and one-tap logout.
     *   Defined standardized layout CSS variables in `theme.css`: `--mobile-bottom-nav-height` and `--mobile-bottom-nav-clearance` to dynamically adapt container bottom padding without magic numbers.
 *   **SAP S/4HANA Claim Composite Key Support (`claim.ts`, `decision-strategy.ts`, `sap-odata-adapter.ts`)**:
     *   Implemented full 3-part composite key integration for `CNMA_CLAIMHEADER`: `(DocCategory='CLAIM', DocumentNumber='<id>', ApproverNumber='<step>')`.
@@ -70,7 +102,7 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ### Added
 *   **Mass Approve & Reject Engine (`POST /tasks/mass-decision`)**:
-    *   Added dedicated backend BFF endpoint [`POST /tasks/mass-decision`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts#L271-L325) supporting bulk decisions with bounded concurrency (pool limit = 4) via `Promise.allSettled`.
+    *   Added dedicated backend BFF endpoint [`POST /tasks/mass-decision`](../../srv/lib/processors/inbox-processor.ts#L271-L325) supporting bulk decisions with bounded concurrency (pool limit = 4) via `Promise.allSettled`.
     *   Introduced `MassDecisionDialog` component with non-blocking UX: modal dismisses immediately upon confirmation while task processing continues in the background.
     *   Implemented Sonner toast orchestration: single aggregated summary toast for successful tasks (e.g. `18/18 tasks approved successfully`) plus individual error toasts for each failed document ID.
 *   **Mass Selection Excluded Tasks Breakdown (`MassSelectionView.tsx`)**:
@@ -98,21 +130,21 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 ### Added
 *   **Comments Forward Log Indicator (`CommentsPanel.tsx` & `normalizeTaskDetail.ts`)**:
     *   Plumbed `ForwardedBy`, `ForwardedTo`, and `ToUser` fields through `_Comment` OData mapper into task comment detail payloads.
-    *   Rendered inline visual indicator strip with directional arrow (`User A -> User B`) in [`CommentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx) for Forward audit entries merged into the comment log.
+    *   Rendered inline visual indicator strip with directional arrow (`User A -> User B`) in [`CommentsPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx) for Forward audit entries merged into the comment log.
 *   **Backend Decision Strategy Pattern (`srv/lib/processors/decision-strategy.ts`)**:
     *   Introduced `DecisionStrategy` pattern encapsulating validation, authorization rules, and execution for task decisions (Approve, Reject, Forward, Mass Actions).
-    *   Integrated request validation via [`request-validator.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/request-validator.ts) to enforce payload parameter contracts before executing OData actions.
+    *   Integrated request validation via [`request-validator.ts`](../../srv/lib/utils/request-validator.ts) to enforce payload parameter contracts before executing OData actions.
 
 ### Refactored & Changed
 *   **Carbon Copy (CC) Task Action Restrictions (`TaskActionPanel.tsx`, `MassActionBar.tsx`, `predicates.ts`)**:
-    *   Updated `isCcTask` / `canForward` predicate checks in [`predicates.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/predicates.ts).
-    *   Disabled and hid the Forward action button for CC tasks (`TaskType == 'CC'`) in [`TaskActionPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx), [`MassActionBar.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/MassActionBar.tsx), and [`MassSelectionView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/MassSelectionView.tsx).
+    *   Updated `isCcTask` / `canForward` predicate checks in [`predicates.ts`](../../app/cnma_approval_ui/src/pages/Inbox/utils/predicates.ts).
+    *   Disabled and hid the Forward action button for CC tasks (`TaskType == 'CC'`) in [`TaskActionPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx), [`MassActionBar.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/MassActionBar.tsx), and [`MassSelectionView.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/MassSelectionView.tsx).
     *   Enforced CC task forward action prohibition in backend `DecisionStrategy`.
 *   **Reference PR Drawer Cleanup**:
-    *   Purged legacy embedded iframe drawer [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx), [`useReferencePr.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useReferencePr.ts), and backend module [`reference-pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/reference-pr.ts).
-    *   Consolidated detail fetching into generic detail integration strategy ([`detail.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/detail.ts)) and direct Fiori Launchpad deep linking.
+    *   Purged legacy embedded iframe drawer [`ReferencePrDetailView.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx), `useReferencePr.ts` (historical path: `app/cnma_approval_ui/src/pages/Inbox/hooks/useReferencePr.ts`), and backend module `reference-pr.ts` (historical path: `srv/lib/integrations/reference-pr.ts`).
+    *   Consolidated detail fetching into generic detail integration strategy ([`detail.ts`](../../srv/lib/integrations/detail.ts)) and direct Fiori Launchpad deep linking.
 *   **Mobile Sonner Toast & Modal UI Enhancements (`theme.css`)**:
-    *   Fixed Sonner toast width, margin, close button placement, and swipe actions on small screens in [`theme.css`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/styles/theme.css).
+    *   Fixed Sonner toast width, margin, close button placement, and swipe actions on small screens in [`theme.css`](../../app/cnma_approval_ui/src/styles/theme.css).
 
 ---
 
@@ -122,11 +154,11 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 *   **Workflow Approval Panel Rejection Visual Highlights (`WorkflowApprovalPanel.tsx`)**:
     *   Enhanced rejection step rendering with red/destructive badges (`Rejected`), red timeline icons (X-circle icon with pulse effect), red status text (`Rejected`), "Rejected Date:" labels, and red comment highlight containers (`bg-destructive/10 border-destructive/25 text-destructive`).
 *   **Approval Status Predicate Suite (`predicates.ts` & `predicates.test.ts`)**:
-    *   Added `isRejectedApprovalStatus` and `isApprovedApprovalStatus` predicate helper functions in [`predicates.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/utils/predicates.ts) with full Vitest test suite coverage in [`predicates.test.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/tests/pages/Inbox/utils/predicates.test.ts).
+    *   Added `isRejectedApprovalStatus` and `isApprovedApprovalStatus` predicate helper functions in [`predicates.ts`](../../app/cnma_approval_ui/src/pages/Inbox/utils/predicates.ts) with full Vitest test suite coverage in [`predicates.test.ts`](../../app/cnma_approval_ui/tests/pages/Inbox/utils/predicates.test.ts).
 *   **Modularized Claim Field Definitions (`claim.fields.ts`)**:
-    *   Extracted declarative claim overview fields (`CLAIM_OVERVIEW_FIELDS`) and line item table columns (`CLAIM_TABLE_COLUMNS`) into [`claim.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/claim/claim.fields.ts) for clean architecture compliance.
+    *   Extracted declarative claim overview fields (`CLAIM_OVERVIEW_FIELDS`) and line item table columns (`CLAIM_TABLE_COLUMNS`) into [`claim.fields.ts`](../../app/cnma_approval_ui/src/renderers/objects/claim/claim.fields.ts) for clean architecture compliance.
 *   **4-Eyes Code Review Audit Report (`Code-Review-260825.md`)**:
-    *   Added [`Code-Review-260825.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260825.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance.
+    *   Added [`Code-Review-260825.md`](../code-review/Code-Review-260825.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance.
 
 ### Refactored & Changed
 *   **TaskCard Header Title Optimization (`TaskCard.tsx`)**:
@@ -146,23 +178,23 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ### Added
 *   **Expense Claim (`CLAIM`) Document Type Integration**:
-    *   Added full support for Expense Claim headers (`CNMA_CLAIMHEADER`) and line items (`CNMA_CLAIMITEM`) across backend strategies ([`claim.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/claim.ts)), type resolvers ([`object-type-resolver.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/object-type-resolver.ts), [`odata-config.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/odata-config.ts)), and declarative frontend views ([`claim.view.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/claim/claim.view.ts)).
+    *   Added full support for Expense Claim headers (`CNMA_CLAIMHEADER`) and line items (`CNMA_CLAIMITEM`) across backend strategies ([`claim.ts`](../../srv/lib/integrations/claim.ts)), type resolvers ([`object-type-resolver.ts`](../../srv/lib/processors/object-type-resolver.ts), [`odata-config.ts`](../../srv/lib/processors/odata-config.ts)), and declarative frontend views ([`claim.view.ts`](../../app/cnma_approval_ui/src/renderers/objects/claim/claim.view.ts)).
     *   Updated `METADATA.xml` with OData EDMX definitions for `CNMA_CLAIMHEADER` and `CNMA_CLAIMITEM` entities.
 *   **Buffer Magic Bytes MIME & Extension Detector (`file-helper.ts`)**:
-    *   Added `detectMimeFromBuffer` in [`file-helper.ts`](file:///d:/learning/test/cnma_approval/srv/lib/utils/file-helper.ts) for binary magic header inspection (PDF, PNG, JPEG, GIF, WebP, ZIP) and fallback lookup maps (`MIME_TYPE_MAP`, `EXT_FROM_MIME`).
+    *   Added `detectMimeFromBuffer` in [`file-helper.ts`](../../srv/lib/utils/file-helper.ts) for binary magic header inspection (PDF, PNG, JPEG, GIF, WebP, ZIP) and fallback lookup maps (`MIME_TYPE_MAP`, `EXT_FROM_MIME`).
 *   **Declarative Task Card Renderer (`taskCardView.ts`)**:
-    *   Created [`taskCardView.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/taskCardView.ts) under `src/renderers/core/` to drive TaskCard titles, badges, document numbers, and total amounts via [`ObjectView.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/ObjectView.registry.ts).
+    *   Created [`taskCardView.ts`](../../app/cnma_approval_ui/src/renderers/core/taskCardView.ts) under `src/renderers/core/` to drive TaskCard titles, badges, document numbers, and total amounts via [`ObjectView.registry.ts`](../../app/cnma_approval_ui/src/renderers/ObjectView.registry.ts).
 *   **Code Review Audit Report (`Code-Review-260824.md`)**:
-    *   Added [`Code-Review-260824.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260824.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance.
+    *   Added [`Code-Review-260824.md`](../code-review/Code-Review-260824.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance.
 
 ### Refactored & Changed
 *   **Purged Legacy Task Card Mapper**:
     *   Removed `app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts` in favor of declarative renderer architecture.
 *   **Enhanced Object Type Resolver & Task Processing**:
-    *   Updated `resolveObjectTypeFromInstance` in [`object-type-resolver.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/object-type-resolver.ts) to evaluate `DocCategory`, `TechnicalWrkflwObjectType`, or `typeid`/`TaskDefinitionID`.
+    *   Updated `resolveObjectTypeFromInstance` in [`object-type-resolver.ts`](../../srv/lib/processors/object-type-resolver.ts) to evaluate `DocCategory`, `TechnicalWrkflwObjectType`, or `typeid`/`TaskDefinitionID`.
     *   Bypassed TASKPROCESSING decision runtime fetching for `CLAIM` tasks (`SupportsForward: false`).
 *   **Streamlined Inbox Query Hooks**:
-    *   Refactored and simplified state invalidation and queries in [`inboxInvalidation.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/inboxInvalidation.ts), [`inboxQueries.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/inboxQueries.ts), and [`inboxMutations.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/inboxMutations.ts).
+    *   Refactored and simplified state invalidation and queries in [`inboxInvalidation.ts`](../../app/cnma_approval_ui/src/pages/Inbox/hooks/inboxInvalidation.ts), [`inboxQueries.ts`](../../app/cnma_approval_ui/src/pages/Inbox/hooks/inboxQueries.ts), and [`inboxMutations.ts`](../../app/cnma_approval_ui/src/pages/Inbox/hooks/inboxMutations.ts).
 
 ---
 
@@ -170,43 +202,43 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ### Added
 *   **Mobile Multi-Select Filter Bottom-Sheet Overlay (`MobileMultiSelectFilter.tsx`)**:
-    *   Created [`MobileMultiSelectFilter.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/filterbar/MobileMultiSelectFilter.tsx) rendering a touch-optimized bottom-sheet sub-drawer for mobile multi-select filtering via `createPortal`. Includes live search, "Select All" / Clear action buttons, count badges, custom touch checkboxes, and async `optionsLoader` cleanup.
-    *   Added `MobileDateRangeFilter` in [`FilterBarField.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/filterbar/FilterBarField.tsx) providing an inline touch-friendly date range calendar for mobile filter bars.
+    *   Created [`MobileMultiSelectFilter.tsx`](../../app/cnma_approval_ui/src/components/filterbar/MobileMultiSelectFilter.tsx) rendering a touch-optimized bottom-sheet sub-drawer for mobile multi-select filtering via `createPortal`. Includes live search, "Select All" / Clear action buttons, count badges, custom touch checkboxes, and async `optionsLoader` cleanup.
+    *   Added `MobileDateRangeFilter` in [`FilterBarField.tsx`](../../app/cnma_approval_ui/src/components/filterbar/FilterBarField.tsx) providing an inline touch-friendly date range calendar for mobile filter bars.
 *   **Detail Table View Mode Switcher (`table` vs `grid`)**:
-    *   Added view mode toggle to [`DetailsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx) allowing desktop and tablet users to toggle between standard table view and collapsible card grid view for line items.
+    *   Added view mode toggle to [`DetailsPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx) allowing desktop and tablet users to toggle between standard table view and collapsible card grid view for line items.
 *   **Code Review Audit Report (`Code-Review-260820.md`)**:
-    *   Added [`Code-Review-260820.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260820.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance (Code Score: 95/100).
+    *   Added [`Code-Review-260820.md`](../code-review/Code-Review-260820.md) evaluating code quality, SOLID, DRY, YAGNI, KISS, and 4-Eyes principle compliance (Code Score: 95/100).
 
 ### Refactored & Changed
 *   **Callback Ref Architecture for Mobile Pull-to-Refresh (`usePullToRefresh.ts`)**:
-    *   Re-architected touch gesture event handling in [`usePullToRefresh.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/hooks/usePullToRefresh.ts) using callback refs (`setRef`) for dynamic DOM node binding across tab remounts.
+    *   Re-architected touch gesture event handling in [`usePullToRefresh.ts`](../../app/cnma_approval_ui/src/hooks/usePullToRefresh.ts) using callback refs (`setRef`) for dynamic DOM node binding across tab remounts.
     *   Strictly scoped passive touch listeners to container elements to enable 100% native momentum touch scrolling without gesture interference.
 *   **Generic OData Deletion Indicator String Trimming**:
-    *   Updated `checkIsDeleted` in [`DetailsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx) to trim string values (`String(delVal).trim() !== ''`) before non-empty evaluation, preventing space-padded strings (`" "`) from triggering false-positive deleted indicators on active line items across all SAP document types.
+    *   Updated `checkIsDeleted` in [`DetailsPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx) to trim string values (`String(delVal).trim() !== ''`) before non-empty evaluation, preventing space-padded strings (`" "`) from triggering false-positive deleted indicators on active line items across all SAP document types.
 *   **Non-Normal Task Task Forwarding Guard**:
-    *   Updated [`inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts) and [`object-type-resolver.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/object-type-resolver.ts) to restrict forwarding capabilities (`SupportsForward: false`) on non-normal tasks (e.g., info/notification tasks).
+    *   Updated [`inbox-processor.ts`](../../srv/lib/processors/inbox-processor.ts) and [`object-type-resolver.ts`](../../srv/lib/processors/object-type-resolver.ts) to restrict forwarding capabilities (`SupportsForward: false`) on non-normal tasks (e.g., info/notification tasks).
 *   **Standardized Business Chip Mapper & Amount Resolution**:
-    *   Refactored [`taskCard.mapper.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts) to resolve primary total amounts from live detail cache and map document type fallback chips.
+    *   Refactored `taskCard.mapper.ts` (historical path: `app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts`) to resolve primary total amounts from live detail cache and map document type fallback chips.
 
 ---
 
 ### Added
 *   **Unified Comment Payload Interface (`comment.types.ts`)**:
-    *   Created [`comment.types.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/comment.types.ts) to define a standardized `CommentPayload` contract across all integration strategies (`po.ts`, `pr.ts`, `re.ts`, `reference-pr.ts`, `claim.ts`, `sap-odata-adapter.ts`).
+    *   Created [`comment.types.ts`](../../srv/lib/integrations/comment.types.ts) to define a standardized `CommentPayload` contract across all integration strategies (`po.ts`, `pr.ts`, `re.ts`, `reference-pr.ts`, `claim.ts`, `sap-odata-adapter.ts`).
     *   Supported structured tagged users (`taggedUsers` / `TAGGEDUSER`) and document context in comment requests.
 *   **Dynamic Launchpad App ID & Base URL Resolution (`launchpad.ts`)**:
-    *   Updated [`launchpad.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/launchpad.ts) to support dynamic Fiori Launchpad App ID and URL resolution, allowing cross-app navigation without UI redeployment.
+    *   Updated [`launchpad.ts`](../../app/cnma_approval_ui/src/utils/launchpad.ts) to support dynamic Fiori Launchpad App ID and URL resolution, allowing cross-app navigation without UI redeployment.
 *   **Code Review Audit Report (`Code-Review-260817.md`)**:
-    *   Added [`Code-Review-260817.md`](file:///d:/learning/test/cnma_approval/docs/code-review/Code-Review-260817.md) documenting code quality verification and architectural compliance.
+    *   Added [`Code-Review-260817.md`](../code-review/Code-Review-260817.md) documenting code quality verification and architectural compliance.
 
 ### Refactored & Changed
 *   **Streamlined Backend Comment API & Controller**:
-    *   Simplified `addComment` handling in [`inbox-controller.ts`](file:///d:/learning/test/cnma_approval/srv/controllers/inbox-controller.ts) and [`inbox-processor.ts`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts), eliminating redundant body field extractions.
+    *   Simplified `addComment` handling in [`inbox-controller.ts`](../../srv/controllers/inbox-controller.ts) and [`inbox-processor.ts`](../../srv/lib/processors/inbox-processor.ts), eliminating redundant body field extractions.
 *   **Declarative Raw OData Frontend Renderers**:
-    *   Refactored panel components ([`OverviewPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/OverviewPanel.tsx), [`DetailsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx), [`TaskDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx)) to render raw OData responses directly using field primitives.
+    *   Refactored panel components ([`OverviewPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/OverviewPanel.tsx), [`DetailsPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/DetailsPanel.tsx), [`TaskDetailView.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailView.tsx)) to render raw OData responses directly using field primitives.
 *   **Dead Code Cleanup**:
     *   Purged deprecated `mock-data-provider.ts` (1,922 lines of unused mock code removed from `srv/lib/integrations/`).
-    *   Removed redundant `comments.mapper.ts` and its corresponding test file [`comments.mapper.test.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/tests/pages/Inbox/mappers/comments.mapper.test.ts) from the frontend codebase.
+    *   Removed redundant `comments.mapper.ts` and its corresponding test file `comments.mapper.test.ts` (historical path: `app/cnma_approval_ui/tests/pages/Inbox/mappers/comments.mapper.test.ts`) from the frontend codebase.
 
 ---
 
@@ -215,27 +247,27 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 ### Added
 *   **Task Forwarding & Delegation (`POST /tasks/:id/forward`)**:
     *   Added backend controller endpoint `POST /tasks/:id/forward` and user search route `GET /tasks/search-users`.
-    *   Integrated forwarding logic in [`InboxProcessor`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-processor.ts), [`TaskProcessingAdapter`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/taskprocessing-adapter.ts), [`SapOdataAdapter`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts), and [`MockDataProvider`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/mock-data-provider.ts).
-    *   Created frontend modal [`ForwardTaskDialog.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ForwardTaskDialog.tsx) and custom search hook [`useSearchUsers.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useSearchUsers.ts).
+    *   Integrated forwarding logic in [`InboxProcessor`](../../srv/lib/processors/inbox-processor.ts), [`TaskProcessingAdapter`](../../srv/lib/integrations/taskprocessing-adapter.ts), [`SapOdataAdapter`](../../srv/lib/integrations/sap-odata-adapter.ts), and `MockDataProvider` (historical path: `srv/lib/integrations/mock-data-provider.ts`).
+    *   Created frontend modal [`ForwardTaskDialog.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/ForwardTaskDialog.tsx) and custom search hook [`useSearchUsers.ts`](../../app/cnma_approval_ui/src/pages/Inbox/hooks/useSearchUsers.ts).
     *   Automatically records a formatted audit comment `[Forwarded to ${forwardTo}] ${comment}` on the underlying document history in S/4HANA when forwarding with a comment note.
 *   **Business User Tagging & Rich Mentions (`@mention`)**:
     *   Added backend endpoint `GET /tasks/bus-users` to query `CNMA_BUSUSER` business users table for CC user tagging.
-    *   Created frontend components [`RichMentionInput.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx), [`TeamsMentionDropdown.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TeamsMentionDropdown.tsx), [`TagUserDialog.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TagUserDialog.tsx), and hook [`useBusUsers.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useBusUsers.ts).
-    *   Integrated `@mention` inline autocomplete into [`CommentsPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx).
+    *   Created frontend components [`RichMentionInput.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/RichMentionInput.tsx), [`TeamsMentionDropdown.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TeamsMentionDropdown.tsx), [`TagUserDialog.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TagUserDialog.tsx), and hook [`useBusUsers.ts`](../../app/cnma_approval_ui/src/pages/Inbox/hooks/useBusUsers.ts).
+    *   Integrated `@mention` inline autocomplete into [`CommentsPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/panels/CommentsPanel.tsx).
 *   **Unified Task Action Panel (`TaskActionPanel.tsx`)**:
-    *   Replaced legacy decision bar with [`TaskActionPanel.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx), consolidating **Approve**, **Reject**, **Forward**, and **Tag User** actions with confirmation dialogs and rich mention text input.
+    *   Replaced legacy decision bar with [`TaskActionPanel.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskActionPanel.tsx), consolidating **Approve**, **Reject**, **Forward**, and **Tag User** actions with confirmation dialogs and rich mention text input.
 *   **Reservation Declarative Field Primitives**:
-    *   Added [`reservation.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/reservation/reservation.fields.ts) and updated [`reservation.view.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/reservation/reservation.view.ts) for declarative raw rendering of Material Reservation objects.
+    *   Added [`reservation.fields.ts`](../../app/cnma_approval_ui/src/renderers/objects/reservation/reservation.fields.ts) and updated [`reservation.view.ts`](../../app/cnma_approval_ui/src/renderers/objects/reservation/reservation.view.ts) for declarative raw rendering of Material Reservation objects.
 *   **Launchpad Deep-Linking & Task Loading Skeletons**:
-    *   Added [`launchpad.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/launchpad.ts) utility for cross-app navigation in SAP Fiori Launchpad environments.
-    *   Added [`TaskDetailSkeletons.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailSkeletons.tsx) for smooth skeleton loading states in master-detail view.
+    *   Added [`launchpad.ts`](../../app/cnma_approval_ui/src/utils/launchpad.ts) utility for cross-app navigation in SAP Fiori Launchpad environments.
+    *   Added [`TaskDetailSkeletons.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskDetailSkeletons.tsx) for smooth skeleton loading states in master-detail view.
 
 ### Changed
 *   **Centralized Total Amount Resolution (`resolveTaskTotalAmount`)**:
-    *   Created centralized amount helper [`resolveTaskTotalAmount`](file:///d:/learning/test/cnma_approval/srv/lib/processors/inbox-utils.ts) to standardize total net amount resolution order across ZUB Stock Transfer Purchase Orders, standard Purchase Orders (BUS2012), Purchase Requisitions, and Reservation objects.
-    *   Updated [`taskCard.mapper.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts) and [`TaskList.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskList.tsx) to consume standardized amount fields.
+    *   Created centralized amount helper [`resolveTaskTotalAmount`](../../srv/lib/processors/inbox-utils.ts) to standardize total net amount resolution order across ZUB Stock Transfer Purchase Orders, standard Purchase Orders (BUS2012), Purchase Requisitions, and Reservation objects.
+    *   Updated `taskCard.mapper.ts` (historical path: `app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts`) and [`TaskList.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/TaskList.tsx) to consume standardized amount fields.
 *   **Inbox Filter & Quick Status Tabs**:
-    *   Updated [`inboxFilterConfig.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/inboxFilterConfig.ts) and [`useTaskFilters.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useTaskFilters.ts) to support tab status filtering ("All", "Pending", "Approved", "Rejected") and enhanced search predicates.
+    *   Updated [`inboxFilterConfig.ts`](../../app/cnma_approval_ui/src/pages/Inbox/components/inboxFilterConfig.ts) and [`useTaskFilters.ts`](../../app/cnma_approval_ui/src/pages/Inbox/hooks/useTaskFilters.ts) to support tab status filtering ("All", "Pending", "Approved", "Rejected") and enhanced search predicates.
 
 ---
 
@@ -243,19 +275,19 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 
 ### Added
 *   **Reference Purchase Requisition Drawer Lookup (`/reference-pr/:prNumber`)**:
-    *   Added backend service module [`reference-pr.ts`](file:///d:/learning/test/cnma_approval/srv/lib/integrations/reference-pr.ts) and controller route `GET /reference-pr/:prNumber` to query SAP `API_PURCHASEREQ_PROCESS_SRV` or local mock provider for referenced PR header and line item details.
-    *   Created frontend hook [`useReferencePr.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/hooks/useReferencePr.ts) and slide-over component [`ReferencePrDetailView.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx) to inspect referenced PR details directly from PO line item tables.
+    *   Added backend service module `reference-pr.ts` (historical path: `srv/lib/integrations/reference-pr.ts`) and controller route `GET /reference-pr/:prNumber` to query SAP `API_PURCHASEREQ_PROCESS_SRV` or local mock provider for referenced PR header and line item details.
+    *   Created frontend hook `useReferencePr.ts` (historical path: `app/cnma_approval_ui/src/pages/Inbox/hooks/useReferencePr.ts`) and slide-over component [`ReferencePrDetailView.tsx`](../../app/cnma_approval_ui/src/pages/Inbox/components/ReferencePrDetailView.tsx) to inspect referenced PR details directly from PO line item tables.
 *   **Purchase Order Comment Navigation Sync (`_Comment`)**:
     *   Updated `srv/lib/integrations/po.ts` and `inbox-processor.ts` to fetch `_Comment` navigation items from S/4HANA OData service and map them into top-level task comments.
 *   **Touch Swipe Mobile Pull-to-Refresh (`usePullToRefresh.ts`)**:
-    *   Created [`usePullToRefresh.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/hooks/usePullToRefresh.ts) hook and attached touch gesture handling to `TaskList.tsx` for mobile inbox refresh.
+    *   Created [`usePullToRefresh.ts`](../../app/cnma_approval_ui/src/hooks/usePullToRefresh.ts) hook and attached touch gesture handling to `TaskList.tsx` for mobile inbox refresh.
 
 ### Changed
 *   **PO Subtype Layout Builders & Config Standardization**:
     *   Refactored all 10 Purchase Order subtype layout builders in `app/cnma_approval_ui/src/renderers/modules/po/`: `ZASS`, `ZCON`, `ZCOR`, `ZEXP`, `ZMAK`, `ZNB1`, `ZNB2`, `ZNBR`, `ZTOL`, and `ZUB`.
-    *   Standardized header fields, card chips, table columns, and data display structures in [`srv/configuration/object-types/po/config.json`](file:///d:/learning/test/cnma_approval/srv/configuration/object-types/po/config.json).
+    *   Standardized header fields, card chips, table columns, and data display structures in `srv/configuration/object-types/po/config.json` (historical path: `srv/configuration/object-types/po/config.json`).
 *   **Structured OData V4 Error Parsing (`ErrorModal.tsx`)**:
-    *   Enhanced [`parseError.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/utils/parseError.ts) to parse inner error objects, SAP message containers, status codes, and HTTP network error details for display in [`ErrorModal.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/components/common/ErrorModal.tsx).
+    *   Enhanced [`parseError.ts`](../../app/cnma_approval_ui/src/utils/parseError.ts) to parse inner error objects, SAP message containers, status codes, and HTTP network error details for display in [`ErrorModal.tsx`](../../app/cnma_approval_ui/src/components/common/ErrorModal.tsx).
 *   **Contextual Data Formatters (`formatters.ts`)**:
     *   Added rich formatting functions: `formatQuantityWithUnit`, `formatBadge`, `formatCurrency`, `formatDate`, and standardized null/undefined fallback handling (`-`).
 
@@ -311,9 +343,9 @@ All notable changes to the **CNMA Approval** project will be documented in this 
 *   **Modular BFF Processor Architecture**:
     *   Decomposed `srv/lib/processors/inbox-processor.ts` into a slim orchestrator, extracting comment filtering logic into `inbox-utils.ts` and object-type determination into `object-type-resolver.ts`.
 *   **BFF Router Prefix Normalization**:
-    *   Cleaned Express router mount point in `srv/handlers/inbox-handler.ts` and `srv/server.ts` to mount directly at `/api/cnma/APPROVAL_SRV`, eliminating doubled URL prefixes (`/tasks/tasks/` -> `/tasks/`).
+    *   Cleaned Express router mount point in `srv/handlers/inbox-handler.ts` and `srv/server.ts` to mount directly at `/api/cnma/APPROVAL_SRV`, eliminating doubled URL prefixes (`/tasks/` -> `/tasks/`).
 *   **Frontend Renderers Directory Promotion**:
-    *   Relocated dynamic section renderers from `app/cnma_approval_ui/src/pages/Inbox/components/renderers/` to top-level src module [`app/cnma_approval_ui/src/renderers/`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/).
+    *   Relocated dynamic section renderers from `app/cnma_approval_ui/src/pages/Inbox/components/renderers/` to top-level src module [`app/cnma_approval_ui/src/renderers/`](../../app/cnma_approval_ui/src/renderers).
     *   Updated import paths across `OverviewPanel.tsx`, `DetailsPanel.tsx`, `AttachmentsPanel.tsx`, `TaskDetailView.tsx`, and vitest test specs to import directly from `@/renderers`.
 
 ---
@@ -327,7 +359,7 @@ All notable changes to the **CNMA Approval** project will be documented in this 
     *   Refactored `srv/lib/processors/inbox-processor.ts` into a slim orchestrator, pure utility module (`inbox-utils.ts`), and resolution component (`object-type-resolver.ts`).
 
 ### Fixed
-*   **Duplicated Routing Prefix**: Moved Express router mount point in `srv/server.ts` from `/api/cnma/APPROVAL_SRV/tasks` to `/api/cnma/APPROVAL_SRV`, removing the doubled `/tasks/tasks/` URL path.
+*   **Duplicated Routing Prefix**: Moved Express router mount point in `srv/server.ts` from `/api/cnma/APPROVAL_SRV/tasks` to `/api/cnma/APPROVAL_SRV`, removing the doubled `/tasks/` URL path.
 *   **Comment Cleaning**: Implemented `filterComments()` in `inbox-utils.ts` to automatically filter out empty text, null values, and System noise entries.
 
 ---

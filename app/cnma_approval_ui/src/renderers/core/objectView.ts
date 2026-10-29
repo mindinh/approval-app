@@ -1,5 +1,5 @@
 import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
-import type { ObjectViewDefinition, FieldDefinition, TableColumnDefinition } from './renderer.types';
+import type { ObjectViewDefinition, FieldDefinition, TableColumnDefinition, CardDefinition } from './renderer.types';
 import type { BusinessSectionModel, DetailCardModel, DetailTableModel, DetailField, DetailTableColumn, DetailTableRow } from '../TaskDetailSections.types';
 import { formatCodeText, formatRawAmount, formatRawQuantity, formatRawValue } from './formatters';
 
@@ -49,10 +49,10 @@ export function evalField(fieldDef: FieldDefinition, record: RawODataEntity): De
     };
 }
 
-export function evalColumn(colDef: TableColumnDefinition, rowRecord: RawODataEntity): string {
+export function evalColumn(colDef: TableColumnDefinition, rowRecord: RawODataEntity, headerRecord?: RawODataEntity): string {
     if (colDef.formatter) {
         const rawVal = colDef.source ? getRecordVal(rowRecord, colDef.source) : (colDef.value ? getRecordVal(rowRecord, colDef.value) : undefined);
-        return colDef.formatter(rawVal, rowRecord);
+        return colDef.formatter(rawVal, rowRecord, headerRecord);
     }
     if (colDef.code || colDef.text) {
         return formatCodeText(getRecordVal(rowRecord, colDef.code), getRecordVal(rowRecord, colDef.text));
@@ -122,7 +122,7 @@ export function resolveObjectView(
         const rows: DetailTableRow[] = itemsArray.map((rowRecord: RawODataEntity, idx: number) => {
             const rowValues: Record<string, string> = {};
             for (const colDef of validCols) {
-                rowValues[colDef.key] = evalColumn(colDef, rowRecord);
+                rowValues[colDef.key] = evalColumn(colDef, rowRecord, businessObject);
             }
             const rowId = String(rowRecord.ItemNumber || rowRecord.PurchaseRequisitionItem || rowRecord.PurchaseOrderItem || rowRecord.ItemNo || idx + 1);
             const deletedVal = getRecordVal(rowRecord, 'Deleted|deleted|LOEKZ|DeletedFlag|deletionFlag');

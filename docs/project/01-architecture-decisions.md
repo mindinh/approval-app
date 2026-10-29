@@ -1,6 +1,6 @@
 # Architectural Decision Records (ADRs)
 
-> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-08-10 | **Status:** Active
+> **Owner:** Enterprise Solution Architect | **Last Updated:** 2026-10-20 | **Status:** Active
 
 This document logs critical architectural choices made during the development of the **CNMA Approval** application, detailing context, options considered, and consequences.
 
@@ -44,6 +44,8 @@ We chose **Option B (Custom Express REST endpoints)**.
 
 ## ADR 02: In-Memory TTL/LRU Cache for Detail Queries
 
+> **Current status (2026-10-20):** Historical decision, superseded for business-object detail payloads. The current adapter has no detail cache and `clearDetailCache` is a compatibility no-op. See [current caching behavior](../technical/01-architecture/03-caching-strategy.md).
+
 ### Context
 When the frontend loads the dashboard or active list, it must display the currency, values, and priority for each task. Because these fields live across multiple backend tables, we encounter an **N+1 query** issue where loading 20 items requires 20 separate detail fetches to S/4HANA. This results in slow load times and heavy ERP request traffic.
 
@@ -74,13 +76,13 @@ Outbound integration calls to SAP S/4HANA OData services were historically split
 ### Options Considered
 1. **Option A**: Keep current unstructured adapter files, branching queries using extensive `if-else` / `switch` structures.
 2. **Option B**: Extract strategies into a nested subfolder hierarchy (e.g., `srv/lib/integrations/strategies/`).
-3. **Option C**: Merge base query operations into a single integration facade ([sap-odata-adapter.ts](file:///d:/learning/test/cnma_approval/srv/lib/integrations/sap-odata-adapter.ts)) and implement flat, kebab-case entity strategies under the existing integrations directory conforming to a common strategy interface.
+3. **Option C**: Merge base query operations into a single integration facade ([sap-odata-adapter.ts](../../srv/lib/integrations/sap-odata-adapter.ts)) and implement flat, kebab-case entity strategies under the existing integrations directory conforming to a common strategy interface.
 
 ### Decision
 We chose **Option C**.
 
 ### Rationale
-* **Open-Closed Principle (OCP)**: New document types (e.g., Request for Quotation) can be supported by writing a new strategy implementing `DetailStrategy` and registering it, without editing existing code.
+* **Open-Closed Principle (OCP)**: New document types (e.g., Request for Quotation) can be supported by writing a new strategy implementing `Detail` / extending `BaseRawDetail` and registering it, without editing existing code.
 * **Single Responsibility Principle (SRP)**: Facade routes requests, registries store mappings, and strategies perform OData-specific payloads/calls.
 * **Simplicity**: Direct flat folder layout matches Conarum standards while avoiding nested directory bloat.
 * **Resource Optimization**: A single `SapClient` instance is instantiated once in the adapter constructor and injected into all strategies, resolving multiple warning logs and optimizing connection pools.
