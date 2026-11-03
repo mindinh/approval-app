@@ -1,25 +1,13 @@
-import type { ObjectViewDefinition } from '../../core/renderer.types';
+import type { ObjectTypeModule, ObjectViewDefinition } from '../../core/types';
+import { amount, chip, text } from '../../core/fields';
 import { RESERVATION_OVERVIEW_FIELDS, RESERVATION_TABLE_COLUMNS } from './reservation.fields';
-import { text, codeText, amount, chip } from '../../core/fields';
 
 export const RESERVATION_VIEW: ObjectViewDefinition = {
-    docCategory: 'ZBUS2093',
-    cardConfig: {
-        colorKey: 'warning',
-        textClass: 'text-warning font-semibold',
-        stripeClass: 'before:bg-warning'
-    },
     cardChips: [
         chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalAmount', currency: 'LocalCurrency|DocumentCurrency', label: 'Total' }), true),
         chip(text({ source: 'DocumentTypeText', label: 'Type' })),
     ],
-
-
-
-
-
     overviewCard: {
-
         id: 'reservation-summary',
         title: 'Document Summary',
         fields: [
@@ -30,8 +18,8 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
             RESERVATION_OVERVIEW_FIELDS.totalAmount,
             RESERVATION_OVERVIEW_FIELDS.plant,
             RESERVATION_OVERVIEW_FIELDS.movementType,
-            RESERVATION_OVERVIEW_FIELDS.costCenter
-        ]
+            RESERVATION_OVERVIEW_FIELDS.costCenter,
+        ],
     },
     lineItemTable: {
         id: 'reservation-items',
@@ -47,7 +35,15 @@ export const RESERVATION_VIEW: ObjectViewDefinition = {
             RESERVATION_TABLE_COLUMNS.plant,
             RESERVATION_TABLE_COLUMNS.storageLocation,
             RESERVATION_TABLE_COLUMNS.requirementDate,
-            RESERVATION_TABLE_COLUMNS.glAccount
-        ]
-    }
+            RESERVATION_TABLE_COLUMNS.glAccount,
+        ],
+    },
+};
+
+export const reservationModule: ObjectTypeModule = {
+    category: 'RESERVATION',
+    label: 'Reservation',
+    aliases: ['ZBUS2093', 'BUS2093', 'RE', 'RESV'],
+    tone: 'warning',
+    resolveView: () => RESERVATION_VIEW,
 };

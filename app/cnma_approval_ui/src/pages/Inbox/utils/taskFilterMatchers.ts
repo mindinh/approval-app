@@ -22,8 +22,8 @@ export const TEXT_TO_DOC_TYPE_MAP: Record<string, { code: string; isPR?: boolean
 };
 
 export function getDocumentCreationTimestamp(task: InboxTask): number | null {
-    const creationDate = task.creationDate || (task as any).CreationDate;
-    const creationTime = task.creationTime || (task as any).CreationTime;
+    const creationDate = task.creationDate || task.CreationDate;
+    const creationTime = task.creationTime || task.CreationTime;
     if (!creationDate) return null;
 
     const datePart = String(creationDate).slice(0, 10);
@@ -31,6 +31,13 @@ export function getDocumentCreationTimestamp(task: InboxTask): number | null {
     const timestamp = new Date(`${datePart}T${timePart}`).getTime();
     return Number.isNaN(timestamp) ? null : timestamp;
 }
+
+/** Loose two-way containment match used for document type display texts. */
+function textsOverlap(text: string, target: string): boolean {
+    return !!text && (text === target || text.includes(target) || target.includes(text));
+}
+
+const RESERVATION_OBJECT_CODES = ['RE', 'ZBUS2093', 'BUS2093'];
 
 /**
  * Matches a task against a selected document type filter target.
@@ -60,10 +67,7 @@ export function matchTaskDocumentType(task: InboxTask, target: string): boolean 
         if (docType === mapped.code || bType === mapped.code || objType === mapped.code || taskDefId.includes(mapped.code)) {
             return true;
         }
-        if (docDisplay && (docDisplay === targetUpper || docDisplay.includes(targetUpper) || targetUpper.includes(docDisplay))) {
-            return true;
-        }
-        if (docDesc && (docDesc === targetUpper || docDesc.includes(targetUpper) || targetUpper.includes(docDesc))) {
+        if (textsOverlap(docDisplay, targetUpper) || textsOverlap(docDesc, targetUpper)) {
             return true;
         }
     }
@@ -75,14 +79,10 @@ export function matchTaskDocumentType(task: InboxTask, target: string): boolean 
     if (targetUpper === 'PO') {
         return taskIsPO || docType === 'PO';
     }
-    if (targetUpper === 'ZBUS2093' || targetUpper === 'RE' || targetUpper === 'BUS2093') {
+    if (RESERVATION_OBJECT_CODES.includes(targetUpper)) {
         return (
-            bType === 'RE' ||
-            bType === 'ZBUS2093' ||
-            bType === 'BUS2093' ||
-            objType === 'RE' ||
-            objType === 'ZBUS2093' ||
-            objType === 'BUS2093' ||
+            RESERVATION_OBJECT_CODES.includes(bType) ||
+            RESERVATION_OBJECT_CODES.includes(objType) ||
             taskDefId.includes('BUS2093') ||
             docType === 'RESV' ||
             docType === 'RE'
@@ -93,10 +93,7 @@ export function matchTaskDocumentType(task: InboxTask, target: string): boolean 
     }
 
     // 3. Direct text match against task's documentTypeDisplay or documentTypeDesc
-    if (docDisplay && (docDisplay === targetUpper || docDisplay.includes(targetUpper) || targetUpper.includes(docDisplay))) {
-        return true;
-    }
-    if (docDesc && (docDesc === targetUpper || docDesc.includes(targetUpper) || targetUpper.includes(docDesc))) {
+    if (textsOverlap(docDisplay, targetUpper) || textsOverlap(docDesc, targetUpper)) {
         return true;
     }
 
@@ -110,16 +107,8 @@ export function matchTaskDocumentType(task: InboxTask, target: string): boolean 
     if (targetIsPR && !taskIsPR) return false;
     if (targetIsPO && !taskIsPO) return false;
 
-    if (docType && docType === targetCode) {
-        return true;
-    }
-    if (bType && bType === targetCode) {
-        return true;
-    }
-    if (objType && objType === targetCode) {
-        return true;
-    }
-    if (taskDefId && taskDefId.includes(targetCode)) {
+    const matchesCode = (code: string) => !!code && code === targetCode;
+    if (matchesCode(docType) || matchesCode(bType) || matchesCode(objType) || (!!taskDefId && taskDefId.includes(targetCode))) {
         return true;
     }
 

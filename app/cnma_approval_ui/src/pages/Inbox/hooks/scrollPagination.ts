@@ -1,3 +1,6 @@
+/** Distance from the bottom (px) within which a downward gesture loads the next page. */
+const LOAD_MORE_THRESHOLD_PX = 100;
+
 /** Load at most one page per downward user gesture, never from layout changes. */
 export function bindScrollPagination(container: HTMLDivElement, load: () => void, getContext: () => string = () => ''): () => void {
     let armed = false;
@@ -28,7 +31,7 @@ export function bindScrollPagination(container: HTMLDivElement, load: () => void
         lastTop = top;
         if (inputContext !== getContext()) { armed = false; return; }
         if (!armed || !movingDown) return;
-        if (container.scrollHeight - top - container.clientHeight > 100) return;
+        if (container.scrollHeight - top - container.clientHeight > LOAD_MORE_THRESHOLD_PX) return;
         armed = false;
         load();
     };

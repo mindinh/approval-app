@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@cnma/react-ui';
 import { FileText, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,7 @@ import {
     WorkflowApprovalPanel,
     makeTabDefinitions,
 } from './panels';
-import { resolveBusinessSectionModel } from '@/renderers';
+import { resolveBusinessSectionModel, type DetailInput } from '@/renderers';
 import { useTranslation } from 'react-i18next';
 import { normalizeDetailForView } from '../utils/normalizeTaskDetail';
 import { TaskActionPanel } from './TaskActionPanel';
@@ -27,7 +27,7 @@ import { TaskDetailTabContent } from './TaskDetailTabContent';
 import { useMobileTabGestures } from '../hooks/useMobileTabGestures';
 
 export interface TaskDetailViewProps {
-    detail: any;
+    detail: DetailInput | null | undefined;
     isLoading: boolean;
     isError?: boolean;
     error?: unknown;
@@ -80,9 +80,10 @@ export function TaskDetailView({
     });
     const [activeSubView, setActiveSubView] = useState<{ type: 'reference-pr'; prNumber: string } | null>(null);
 
-    const prevTabIndexRef = useRef(0);
+    // Slide direction of the mobile tab transition (1 = forward, -1 = back).
+    const [animationDirection, setAnimationDirection] = useState<1 | -1>(1);
 
-    const ptr = usePullToRefresh({
+    const { containerRef: pullContainerRef, scrollContainerRef, pullDistance, isRefreshing: isPullRefreshing } = usePullToRefresh({
         onRefresh: onRetry ? () => void onRetry() : () => { },
         isRefreshing: isSecondaryLoading || isLoading,
         disabled: !isMobile || !onRetry,
@@ -91,9 +92,12 @@ export function TaskDetailView({
     const activeTaskId = viewData?.instanceId || '';
     const activeTab = viewData && tabState.taskId === activeTaskId ? tabState.tab : 'overview';
 
-    useEffect(() => {
+    // Switching to another task closes an open reference-PR view (state adjusted during render, no effect).
+    const [subViewTaskId, setSubViewTaskId] = useState(activeTaskId);
+    if (subViewTaskId !== activeTaskId) {
+        setSubViewTaskId(activeTaskId);
         setActiveSubView(null);
-    }, [activeTaskId]);
+    }
 
     const handleSelectReferencePr = useCallback((prNumber: string) => {
         setActiveSubView({ type: 'reference-pr', prNumber });
@@ -106,11 +110,8 @@ export function TaskDetailView({
     const workflowError = undefined;
 
     const detailsCount = useMemo(() => {
-        if (!businessModel || !Array.isArray(businessModel.tables)) return 0;
-        const filteredTables = businessModel.tables.filter(
-            (table) => table && !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title)
-        );
-        return filteredTables.reduce((acc, t) => acc + (Array.isArray(t?.rows) ? t.rows.length : 0), 0);
+        if (!businessModel) return 0;
+        return businessModel.tables.reduce((acc, table) => acc + table.rows.length, 0);
     }, [businessModel]);
 
     const tabs = useMemo(
@@ -144,7 +145,9 @@ export function TaskDetailView({
     }, [isError, error, showError, onRetry, onBack]);
 
     const handleMobileTabChange = useCallback((nextTab: string) => {
-        prevTabIndexRef.current = tabs.findIndex((t) => t.value === activeTab);
+        const fromIndex = tabs.findIndex((t) => t.value === activeTab);
+        const toIndex = tabs.findIndex((t) => t.value === nextTab);
+        setAnimationDirection(toIndex >= fromIndex ? 1 : -1);
         setTabState({ taskId: viewData?.instanceId || '', tab: nextTab });
     }, [activeTab, tabs, viewData?.instanceId]);
 
@@ -163,12 +166,9 @@ export function TaskDetailView({
         isMobile,
         tabs,
         activeTab,
-        containerRef: ptr.scrollContainerRef,
+        containerRef: scrollContainerRef,
         onTabChange: handleMobileTabChange,
     });
-
-    // Compute mobile animation direction
-    const animationDirection = currentTabIndex >= prevTabIndexRef.current ? 1 : -1;
 
     // ── Early returns (All hooks strictly declared above this line) ───────────
 
@@ -286,7 +286,6 @@ export function TaskDetailView({
                                     businessModel && (
                                         <DetailsPanel
                                             model={businessModel}
-                                            detail={viewData}
                                             isMobile={false}
                                             isSecondaryLoading={isSecondaryLoading}
                                             onSelectReferencePr={handleSelectReferencePr}
@@ -421,7 +420,7 @@ export function TaskDetailView({
                     )}
 
                     <div
-                        ref={ptr.containerRef}
+                        ref={pullContainerRef}
                         onTouchStart={activeTab === 'comments' ? undefined : handleContainerTouchStart}
                         onTouchMove={activeTab === 'comments' ? undefined : handleContainerTouchMove}
                         onTouchEnd={activeTab === 'comments' ? undefined : handleContainerTouchEnd}
@@ -430,15 +429,15 @@ export function TaskDetailView({
                         className={cn("flex-1 min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden relative bg-background", activeTab === 'comments' && "flex flex-col overflow-hidden")}
                     >
                         {/* ── Mobile Pull-to-Refresh Indicator ── */}
-                        {(ptr.pullDistance > 0 || ptr.isRefreshing) && (
+                        {(pullDistance > 0 || isPullRefreshing) && (
                             <div
                                 className="flex items-center justify-center overflow-hidden transition-all duration-150 py-1"
                                 style={{
-                                    height: ptr.isRefreshing ? 48 : Math.min(ptr.pullDistance, 60),
-                                    opacity: ptr.isRefreshing ? 1 : Math.min(ptr.pullDistance / 50, 1),
+                                    height: isPullRefreshing ? 48 : Math.min(pullDistance, 60),
+                                    opacity: isPullRefreshing ? 1 : Math.min(pullDistance / 50, 1),
                                 }}
                             >
-                                {ptr.isRefreshing ? (
+                                {isPullRefreshing ? (
                                     <div className="flex items-center gap-2 text-xs font-medium text-primary">
                                         <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                         <span>{t('common.refreshing', 'Refreshing...')}</span>
@@ -447,12 +446,12 @@ export function TaskDetailView({
                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                         <span
                                             className="transition-transform duration-200"
-                                            style={{ transform: `rotate(${ptr.pullDistance > 50 ? 180 : 0}deg)` }}
+                                            style={{ transform: `rotate(${pullDistance > 50 ? 180 : 0}deg)` }}
                                         >
                                             ↓
                                         </span>
                                         <span>
-                                            {ptr.pullDistance > 50
+                                            {pullDistance > 50
                                                 ? t('common.releaseToRefresh', 'Release to refresh')
                                                 : t('common.pullToRefresh', 'Pull down to refresh')}
                                         </span>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBusinessSectionModel } from '@/renderers/ObjectView.registry';
+import { resolveBusinessSectionModel } from '@/renderers';
 
 describe('Internal Order Column Visibility for PO & PR', () => {
     it('includes Internal Order column for Marketing PO (ZMAK)', () => {

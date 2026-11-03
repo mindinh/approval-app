@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBusinessSectionModel } from '@/renderers/ObjectView.registry';
+import { resolveBusinessSectionModel } from '@/renderers';
 
 describe('Reservation ObjectView', () => {
     it('splits material number and material text into two separate columns', () => {

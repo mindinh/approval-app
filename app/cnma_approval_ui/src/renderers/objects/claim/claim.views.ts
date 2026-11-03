@@ -1,16 +1,10 @@
-import type { ObjectViewDefinition } from '../../core/renderer.types';
+import type { ObjectTypeModule, ObjectViewDefinition } from '../../core/types';
 import { amount, text, chip } from '../../core/fields';
-import { CLAIM_OVERVIEW_FIELDS, CLAIM_TABLE_COLUMNS } from './claim.fields';
+import { CLAIM_AMOUNT_LOCALE, CLAIM_OVERVIEW_FIELDS, CLAIM_TABLE_COLUMNS } from './claim.fields';
 
 export const CLAIM_VIEW: ObjectViewDefinition = {
-    docCategory: 'CLAIM',
-    cardConfig: {
-        colorKey: 'success',
-        textClass: 'text-success font-semibold',
-        stripeClass: 'before:bg-success'
-    },
     cardChips: [
-        chip(amount({ value: 'PaymentAmountLocalCrcy|PaymentAmount|TotalNetAmountLocalCrcy|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total', locale: 'vi-VN' }), true),
+        chip(amount({ value: 'PaymentAmountLocalCrcy|PaymentAmount|TotalNetAmountLocalCrcy|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total', locale: CLAIM_AMOUNT_LOCALE }), true),
         chip(text({ source: 'DocumentTypeText|doctyp_desc|ClaimTypeText|documentTypeDisplay|DocumentType|DocCategory', label: 'Type' })),
     ],
     overviewCard: {
@@ -59,4 +53,13 @@ export const CLAIM_VIEW: ObjectViewDefinition = {
             CLAIM_TABLE_COLUMNS.fiscalYear,
         ]
     }
+};
+
+export const claimModule: ObjectTypeModule = {
+    category: 'CLAIM',
+    label: 'Claim',
+    aliases: ['ZCLAIM', 'CLAIM'],
+    tone: 'success',
+    chipAmountLocale: CLAIM_AMOUNT_LOCALE,
+    resolveView: () => CLAIM_VIEW,
 };

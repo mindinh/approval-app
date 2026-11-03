@@ -35,4 +35,17 @@ export default tseslint.config(
             ],
         },
     },
+    {
+        // Document renderers stay UI-agnostic so they can be shared with the mobile app.
+        files: ['src/renderers/**/*.ts'],
+        rules: {
+            'no-restricted-imports': ['error', {
+                patterns: [
+                    { group: ['react', 'react-dom', 'react-*', '@cnma/react-ui', 'lucide-react', 'framer-motion'], message: 'Renderers must not depend on UI libraries.' },
+                    { group: ['@/pages/*', '@/components/*', '@/hooks/*', '@/lib/*'], message: 'Renderers must not depend on the web app layers.' },
+                ],
+            }],
+            'no-restricted-globals': ['error', 'window', 'document', 'localStorage', 'sessionStorage'],
+        },
+    },
 )

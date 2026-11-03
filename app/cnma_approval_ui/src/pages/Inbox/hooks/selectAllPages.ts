@@ -1,5 +1,5 @@
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import type { ObjectCategory } from '../utils/categoryUtils';
+import { MAIN_CATEGORIES, type ObjectCategory } from '../utils/categoryUtils';
 
 /** Advance an explicitly requested Select All; failures require a user retry. */
 export function advanceSelectAllPages(options: {
@@ -17,6 +17,6 @@ export function advanceSelectAllPages(options: {
     if (options.hasError || !options.hasNextPage) {
         options.stop();
     } else if (!options.isFetchingNextPage) {
-        options.loadMore?.(['PR', 'PO', 'CLAIM', 'RESERVATION']);
+        options.loadMore?.([...MAIN_CATEGORIES]);
     }
 }

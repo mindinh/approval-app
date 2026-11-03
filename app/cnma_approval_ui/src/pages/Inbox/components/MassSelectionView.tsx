@@ -122,8 +122,8 @@ export function MassSelectionView({
                                     const typeText =
                                         task.documentTypeDisplay ||
                                         task.documentTypeDesc ||
-                                        (task as any).DocumentTypeText ||
-                                        (task as any).doctyp_desc ||
+                                        task.DocumentTypeText ||
+                                        task.doctyp_desc ||
                                         task.businessContext?.type ||
                                         task.objectType ||
                                         '-';

@@ -29,6 +29,17 @@ const CATEGORY_PILL_CLASS: Record<CategoryType, string> = {
     OTHER: 'bg-muted text-muted-foreground border-border',
 };
 
+/** Rows per server-side page of the detail table. */
+const TABLE_PAGE_SIZE = 50;
+
+function createEmptyFilters(): FilterValues {
+    return {
+        status: [],
+        documentType: '',
+        category: '',
+    };
+}
+
 // ═══════════════════════════════════════════════════════════
 // Refetch Overlay — shown over each chart card while refreshing
 // ═══════════════════════════════════════════════════════════
@@ -42,8 +53,6 @@ function RefetchOverlay() {
     );
 }
 
-
-
 // ═══════════════════════════════════════════════════════════
 // Dashboard Page Component
 // ═══════════════════════════════════════════════════════════
@@ -52,18 +61,14 @@ export default function DashboardPage() {
     const isMobile = useIsMobile();
 
     // ── Filter & View States ──
-    const [appliedFilters, setAppliedFilters] = useState<FilterValues>(() => ({
-        status: [],
-        documentType: '',
-        category: '',
-    }));
+    const [appliedFilters, setAppliedFilters] = useState<FilterValues>(createEmptyFilters);
     const [tablePage, setTablePage] = useState(1);
     const [isManualRefresh, setIsManualRefresh] = useState(false);
-    const tablePageSize = 50;
+
     // Fetch master tasks data
     const { data: dashboardData, isLoading, isError, refetch, isRefetching } = useDashboardQuery({
-        top: tablePageSize,
-        skip: (tablePage - 1) * tablePageSize,
+        top: TABLE_PAGE_SIZE,
+        skip: (tablePage - 1) * TABLE_PAGE_SIZE,
         category: appliedFilters.category || undefined,
         documentType: appliedFilters.documentType || undefined,
         status: appliedFilters.status?.[0],
@@ -93,18 +98,16 @@ export default function DashboardPage() {
     } = useDashboardData(tasks, appliedFilters, dashboardData?.statusCounts, dashboardData?.docTypeCounts);
 
     const tableTotal = dashboardData?.total ?? tableRows.length;
-    const tablePageCount = Math.max(1, Math.ceil(tableTotal / tablePageSize));
+    const tablePageCount = Math.max(1, Math.ceil(tableTotal / TABLE_PAGE_SIZE));
     const currentTablePage = Math.min(tablePage, tablePageCount);
-    const paginatedTableRows = tableRows;
+    /** Number of rows on the pages before the current one (drives the row numbering). */
+    const tableRowOffset = (currentTablePage - 1) * TABLE_PAGE_SIZE;
+    const tableRangeEnd = Math.min(currentTablePage * TABLE_PAGE_SIZE, tableTotal);
 
     // ── Handlers ─────────────────────────────────────────
     const handleFilterClear = useCallback(() => {
         setTablePage(1);
-        setAppliedFilters({
-            status: [],
-            documentType: '',
-            category: '',
-            });
+        setAppliedFilters(createEmptyFilters());
     }, []);
 
     const handleCategorySelect = useCallback((category: CategoryType | '') => {
@@ -117,18 +120,12 @@ export default function DashboardPage() {
         setAppliedFilters((prev) => ({ ...prev, documentType }));
     }, []);
 
-
     // Status is a single choice: the donut reports one slice at a time, and picking
     // both statuses would be indistinguishable from picking none.
     const handleStatusSelect = useCallback((status: string | null) => {
         setTablePage(1);
         setAppliedFilters((prev) => ({ ...prev, status: status ? [status] : [] }));
     }, []);
-
-    const clearAllFilters = useCallback(() => {
-        handleFilterClear();
-    }, [handleFilterClear]);
-
 
     const hasFilters = useMemo(() => {
         return (
@@ -176,7 +173,7 @@ export default function DashboardPage() {
                             <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={clearAllFilters}
+                                onClick={handleFilterClear}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-error-bg text-destructive border border-destructive hover:bg-destructive/10 cursor-pointer"
                             >
                                 <X size={12} />
@@ -305,11 +302,11 @@ export default function DashboardPage() {
                                 </div>
                             ) : isMobile ? (
                                 <div className="flex flex-col border-t border-border divide-y divide-border bg-white">
-                                    {paginatedTableRows.map((row, idx) => (
+                                    {tableRows.map((row, idx) => (
                                         <div key={`${row.docNumber}-${idx}`} className="flex relative items-center p-4 hover:bg-muted/50 transition-colors">
                                             {/* Left - Index */}
                                             <div className="w-8 text-xs font-bold text-muted-foreground shrink-0 mt-0.5">
-                                                {(currentTablePage - 1) * tablePageSize + idx + 1}
+                                                {tableRowOffset + idx + 1}
                                             </div>
 
                                             {/* Middle - Doc Number & Type */}
@@ -361,10 +358,10 @@ export default function DashboardPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {paginatedTableRows.map((row, idx) => (
+                                        {tableRows.map((row, idx) => (
                                             <TableRow key={`${row.docNumber}-${idx}`} className="bg-white">
                                                 <TableCell className="px-5 py-3.5 text-xs md:text-sm font-semibold text-muted-foreground">
-                                                    {(currentTablePage - 1) * tablePageSize + idx + 1}
+                                                    {tableRowOffset + idx + 1}
                                                 </TableCell>
                                                 <TableCell className="px-5 py-3.5 text-xs md:text-sm font-bold text-primary">
                                                     {row.docNumber}
@@ -390,10 +387,10 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 text-xs text-muted-foreground">
                                 <span>
                                     {t('dashboard.pagination.showing', {
-                                        start: (currentTablePage - 1) * tablePageSize + 1,
-                                        end: Math.min(currentTablePage * tablePageSize, tableTotal),
+                                        start: tableRowOffset + 1,
+                                        end: tableRangeEnd,
                                         total: tableTotal,
-                                        defaultValue: `Showing ${(currentTablePage - 1) * tablePageSize + 1} to ${Math.min(currentTablePage * tablePageSize, tableTotal)} of ${tableTotal}`,
+                                        defaultValue: `Showing ${tableRowOffset + 1} to ${tableRangeEnd} of ${tableTotal}`,
                                     })}
                                 </span>
                                 <div className="flex items-center gap-2">

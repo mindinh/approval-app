@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTaskCardConfigForTask } from '@/renderers/ObjectView.registry';
+import { resolveTaskCardConfigForTask } from '@/renderers';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 
 function mapBusinessChips(task: InboxTask, cachedDetail?: any) {

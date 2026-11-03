@@ -32,28 +32,21 @@ Data fields flow end-to-end through a **Raw OData & Declarative Renderer Pipelin
 ## 📋 1. Task Card Worklist (Left Sidebar) — Field Source & Modification Guide
 
 ### Where Task Card Fields (Chips) Come From:
-Each card in the left sidebar worklist (`TaskCard.tsx`) displays key summary info chips (Total Amount, Document Type, Supplier/Vendor, Company Code, Department...).
-The data for these chips is produced by **[`mapBusinessChips`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts)** located in `app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts`.
+Each card in the left sidebar worklist (`TaskCard.tsx`) displays key summary info chips (Total Amount, Document Type...).
+`TaskCard.tsx` calls `resolveTaskCardConfigForTask(task)` from `@/renderers`, which returns `{ tone, chips, viewDef, module }`:
+- If the BFF sends `task.businessChips`, those are formatted and shown as-is (`core/taskCardView.ts`).
+- Otherwise the `cardChips` of the matching view in `objects/[type]/[type].views.ts` are evaluated against the task record (empty values are dropped).
 
 ### How to Add or Modify Task Card Fields:
-1. Open [`taskCard.mapper.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts).
-2. Update `mapBusinessChips(task: InboxTask)` to extract raw properties directly from `task.businessObject` (or `task.rawBusinessObject` / `task.businessChips`):
+1. Open `objects/[type]/[type].views.ts` and edit its `cardChips` (e.g. `standardCardChips` / `zubCardChips` in `po.views.ts`):
    ```typescript
-   // Example for PO / PR / RE / CLAIM:
-   const rawObj = (task.rawBusinessObject || task.businessObject || {}) as Record<string, any>;
-   
-   if (ctx.type === 'PO') {
-       const vendorName = (rawObj.SupplierName || rawObj.VendorName1 || rawObj.Supplier || '').trim();
-       if (vendorName) {
-           chips.push({
-               label: 'Vendor',
-               value: vendorName,
-               isPrimary: false
-           });
-       }
-   }
+   const standardCardChips: TaskCardChipDefinition[] = [
+       chip(amount({ value: 'TotalOrderValue|TotalNetAmountLocalCrcy', currency: 'LocalCurrency|DocumentCurrency', label: 'Total' }), true), // primary chip
+       chip(text({ source: 'DocumentTypeText|DocumentType', label: 'Type' })),
+       chip(text({ source: 'SupplierName', label: 'Vendor' })),
+   ];
    ```
-3. To adjust chip badge colors or icon styles on the card, inspect `getObjectTypeStyle()` in [`TaskCard.tsx`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/components/TaskCard.tsx).
+2. Card accent colour comes from the module `tone` (`primary` | `info` | `warning` | `success`) in `[type].views.ts`. `TaskCard.tsx` maps tone → Tailwind classes in `TONE_CLASSES`; never put CSS classes in `src/renderers/`.
 
 ---
 
@@ -63,8 +56,13 @@ Task Detail panels use the **Declarative Raw OData Object Renderer**:
 - **Field Primitive Catalogs**: [`app/cnma_approval_ui/src/renderers/objects/[type]/[type].fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.fields.ts)
 - **View & Table Layouts**: [`app/cnma_approval_ui/src/renderers/objects/[type]/[type].views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.views.ts)
 - **Master View Registry**: [`app/cnma_approval_ui/src/renderers/ObjectView.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/ObjectView.registry.ts)
-- **Core Field Primitives & Helpers**: [`app/cnma_approval_ui/src/renderers/core/fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/fields.ts) (provides `text()`, `codeText()`, `amount()`, `date()`, `quantity()`, `tableCol()`)
+- **Core Field Primitives & Helpers**: [`app/cnma_approval_ui/src/renderers/core/fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/fields.ts) (provides `text()`, `codeText()`, `amount()`, `date()`, `quantity()`, `tableCol()`, `excludeColumns()`, `chip()`)
 - **Visibility Predicates**: [`app/cnma_approval_ui/src/renderers/core/predicates.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/core/predicates.ts) (provides `when.exists`, `when.eq`, `when.in`, `when.notEmpty`, `when.all`, `when.not`)
+- **Other core files**: `core/types.ts` (definitions, `Tone`, `ObjectTypeModule`), `core/model.ts` (output model, `EMPTY_VALUE`), `core/record.ts` (`getRecordVal`: `A|B` fallbacks + cached case-insensitive lookup), `core/formatters.ts` (pure formatters, cached `Intl`), `core/objectView.ts` (evaluation), `objects/generic/` (fallback view for unknown types).
+
+> ⚠️ **RENDERER RULES**
+> - `src/renderers/` is UI-agnostic (shared later with the mobile app): no React, DOM, CSS classes or imports from `@/pages`, `@/components`, `@/hooks`, `@/lib` (enforced by ESLint). Consumers import from `@/renderers` only.
+> - Display output is locked by golden snapshots in `app/cnma_approval_ui/tests/renderers/golden/`. A failing snapshot means the UI changed: only update it (`npx vitest run tests/renderers -u`) when the change is intended, and review the snapshot diff.
 
 ### How to Modify Fields or Formatting in Overview/Details:
 1. Open `[type].fields.ts` (e.g. [`po.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.fields.ts) or [`pr.fields.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/pr/pr.fields.ts)).
@@ -88,7 +86,7 @@ Task Detail panels use the **Declarative Raw OData Object Renderer**:
 
    // Example 5: Line item table column definition
    materialCol: tableCol({
-       id: 'material',
+       key: 'material',
        header: 'Material Number',
        source: 'Material',
        align: 'left'
@@ -99,9 +97,9 @@ Task Detail panels use the **Declarative Raw OData Object Renderer**:
 
 ### How to Change Field Layout or Column Order:
 1. Open `[type].views.ts` (e.g. [`po.views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/po/po.views.ts) or [`pr.views.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/objects/pr/pr.views.ts)).
-2. **Overview Grid Fields Order**: Rearrange items in the card's `fields` array (e.g. `standardPoOverviewCard.fields` or subtype card variants `ZASS`, `ZUB`, `ZEXP`):
+2. **Overview Grid Fields Order**: Rearrange items in the card's `fields` array (e.g. `standardOverviewCard.fields` or `zubOverviewCard.fields` in `po.views.ts`):
    ```typescript
-   export const standardPoOverviewCard: CardDefinition = {
+   const standardOverviewCard: CardDefinition = {
        id: 'po-overview-card',
        title: 'Overview',
        fields: [
@@ -117,7 +115,7 @@ Task Detail panels use the **Declarative Raw OData Object Renderer**:
        ]
    };
    ```
-3. **Table Columns Order**: Rearrange columns array in table definitions (e.g. `standardPoTable` or subtype table variants). The order in the `columns` array dictates left-to-right table column order.
+3. **Table Columns Order**: Rearrange columns array in table definitions (e.g. `standardColumns` or subtype variants such as `columnsMarketing` in `po.views.ts`). The order in the `columns` array dictates left-to-right table column order.
    > 💡 **DRY Column Derivation**: Use `excludeColumns(standardColumns, 'key1', 'key2')` helper to derive subtype-specific column variations dynamically without repeating full column definitions.
 4. **Multiline vs Full-Width Card vs Top Grid**:
    - Fields in grid display **3 columns per row** on desktop.
@@ -150,13 +148,21 @@ Follow this step-by-step checklist to onboard a new business object type end-to-
 1. Create `app/cnma_approval_ui/src/renderers/objects/[newType]/[newType].fields.ts`:
    Define overview fields, detail fields, and table columns using `text()`, `codeText()`, `amount()`, `date()`, `tableCol()`.
 2. Create `app/cnma_approval_ui/src/renderers/objects/[newType]/[newType].views.ts`:
-   Define overview card definitions, detail card definitions, and item table definitions.
-3. Register in [`ObjectView.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/ObjectView.registry.ts):
-   Add document category / document type resolver mapping in `resolveObjectViewDefinition()`.
+   Define the overview card(s), item table and `cardChips` (task card chips), then export an `ObjectTypeModule`:
+   ```typescript
+   export const contractModule: ObjectTypeModule = {
+       category: 'CONTRACT',
+       label: 'Contract',               // short name on task cards
+       aliases: ['BUS2014', 'CONTRACT'],// upper-case category codes from SAP/BFF
+       tone: 'info',
+       resolveView: (documentType) => CONTRACT_VIEWS[documentType] || CONTRACT_VIEWS.DEFAULT,
+   };
+   ```
+3. Register the module in `OBJECT_TYPE_MODULES` in [`ObjectView.registry.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/renderers/ObjectView.registry.ts). No other renderer code changes are needed.
+4. Add a fixture for each document type to `tests/renderers/golden/fixtures.ts` and a golden case to `renderers.golden.test.ts`.
 
-### Step 3: Frontend Task Card & Translations
-1. Update [`taskCard.mapper.ts`](file:///d:/learning/test/cnma_approval/app/cnma_approval_ui/src/pages/Inbox/mappers/taskCard.mapper.ts) to map task summary chips for `[newType]`.
-2. Add i18n keys in `app/cnma_approval_ui/src/locales/en.json` and `vi.json`.
+### Step 3: Frontend Translations
+1. Add i18n keys in `app/cnma_approval_ui/src/locales/en.json` and `vi.json`.
 
 ---
 

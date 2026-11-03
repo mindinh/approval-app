@@ -1,3 +1,8 @@
+import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
+import type { BusinessContextType, DecisionNature } from '@/services/inbox/inbox.types';
+import { DECISION_KEYS } from './constants';
+import { resolveDetailInstanceId } from './instanceId';
+
 const MIME_TYPE_MAP: Record<string, string> = {
     pdf: 'application/pdf',
     png: 'image/png',
@@ -46,11 +51,110 @@ const EXT_FROM_MIME_MAP: Record<string, string> = {
     'application/zip': 'zip',
 };
 
+const DEFAULT_MIME_TYPE = 'application/octet-stream';
+/** MIME types that carry no information about the real file format. */
+const GENERIC_MIME_TYPES = new Set([DEFAULT_MIME_TYPE, 'application/x-forcedownload']);
+
+function mapArray<T>(value: unknown, mapper: (item: RawODataEntity, index: number) => T): T[] {
+    return Array.isArray(value) ? value.map(mapper) : [];
+}
+
+function mapApprovalStep(step: RawODataEntity, documentId: string) {
+    return {
+        documentId: step.ObjectKey || step.DocumentNumber || documentId,
+        level: Number(step.ApprovalLevel ?? step.level ?? 0),
+        releaseCode: step.ReleaseCode || step.releaseCode || '',
+        releaseText: step.ReleaseText || step.releaseText || step.ReleaseCode || '',
+        approver: step.ApproverName || step.approver || '',
+        approverUserId: step.ApproverUserId || step.approverUserId || '',
+        status: step.ApprovalStatus || step.status || '',
+        noteText: step.CommentText || step.noteText || '',
+        postedOn: step.CommentDate || step.postedOn || '',
+        postedTime: step.CommentTime || step.postedTime || ''
+    };
+}
+
+function mapComment(comment: RawODataEntity, index: number) {
+    return {
+        id: comment.id || comment.DocId || `comment-${index}`,
+        text: comment.NoteText || comment.noteText || comment.text || '',
+        createdBy: comment.createdBy || comment.UserComment || comment.author || '',
+        createdByName: comment.createdByName || comment.authorName || '',
+        createdAt: comment.PostedOn ? `${comment.PostedOn}T${comment.PostedTime || '00:00:00'}` : comment.createdAt || '',
+        forward: comment.Forward === true || comment.forward === true,
+        toUser: comment.ToUser || comment.toUser || ''
+    };
+}
+
+/** Appends an extension inferred from the SAP file type or the MIME type when the name has none. */
+function withInferredExtension(rawFileName: string, fallbackName: string, rawType: string, mimeType: string): string {
+    const fileName = rawFileName || fallbackName;
+    const hasExtension = rawFileName.includes('.') && rawFileName.split('.').pop()!.length >= 2;
+    if (hasExtension) return fileName;
+
+    if (rawType && /^[a-z0-9]+$/.test(rawType)) {
+        return `${fileName}.${rawType}`;
+    }
+    if (mimeType && mimeType !== DEFAULT_MIME_TYPE) {
+        const extension = EXT_FROM_MIME_MAP[mimeType.split(';')[0].toLowerCase()];
+        if (extension) return `${fileName}.${extension}`;
+    }
+    return fileName;
+}
+
+function mapAttachment(att: RawODataEntity, index: number) {
+    const id = att.DocId || att.Docid || att.docId || att.id || att.ID || att.AttachId || att.attachId || `attach-${index}`;
+    const rawFileName = String(
+        att.FileName || att.fileName || att.FileDisplayName || att.fileDisplayName || att.Name || att.name || att.Filename || att.filename || att.Title || att.title || att.Description || att.description || ''
+    ).trim()
+        // Remove trailing dots
+        .replace(/\.+$/, '').trim();
+
+    let mimeType = String(att.MimeType || att.mimeType || att.ContentType || att.contentType || att.Mimetype || att.mimetype || '').trim();
+    const rawType = String(
+        att.FileType || att.fileType || att.FileExtension || att.fileExtension || att.DocType || att.docType || att.Ext || att.ext || att.Format || att.format || att.Type || att.type || att.DocClass || att.docClass || att.Component || att.component || ''
+    ).toLowerCase().trim();
+
+    // Infer MIME if generic/missing and rawType is known
+    if ((!mimeType || GENERIC_MIME_TYPES.has(mimeType)) && rawType && MIME_TYPE_MAP[rawType]) {
+        mimeType = MIME_TYPE_MAP[rawType];
+    }
+
+    const fileName = withInferredExtension(rawFileName, id, rawType, mimeType);
+
+    return {
+        id,
+        fileName,
+        fileDisplayName: att.FileDisplayName || att.fileDisplayName || fileName,
+        mimeType: mimeType || DEFAULT_MIME_TYPE,
+        fileSize: Number(att.Length || att.fileSize || att.FileSize || att.length || 0),
+        createdBy: att.CreatedBy || att.createdBy || att.CreatedByName || att.createdByName || '',
+        createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : att.createdAt || new Date().toISOString()
+    };
+}
+
+function decisionNature(decision: RawODataEntity): DecisionNature {
+    if (decision.Nature) return decision.Nature;
+    const key = String(decision.DecisionKey || decision.key);
+    if (key === DECISION_KEYS.APPROVE) return 'POSITIVE';
+    if (key === DECISION_KEYS.REJECT) return 'NEGATIVE';
+    return 'NEUTRAL';
+}
+
+function mapDecision(decision: RawODataEntity) {
+    return {
+        key: String(decision.DecisionKey || decision.key || ''),
+        text: String(decision.DecisionText || decision.text || ''),
+        nature: decisionNature(decision),
+        commentMandatory: decision.CommentMandatory === true
+    };
+}
+
 /**
  * Utility function to normalize raw SAP OData / CAP BFF task detail payloads
  * into structured domain objects consumable by TaskDetailView.
  */
-export function normalizeDetailForView(detail: any) {
+export function normalizeDetailForView(detail: RawODataEntity | null | undefined) {
     if (!detail) return null;
     const bo = detail.businessObject || (detail.header ? { ...detail.header, _Item: detail.items } : detail);
     const tp = detail.taskprocessing;
@@ -58,92 +162,14 @@ export function normalizeDetailForView(detail: any) {
     const docCategory = String(bo?.DocCategory || detail.objectType || detail.task?.businessContext?.type || 'PR').toUpperCase();
     const documentId = String(bo?.DocumentNumber || bo?.PurchaseRequisition || bo?.PurchaseOrder || bo?.ReservationNumber || bo?.ClaimNumber || bo?.DocumentId || detail.documentId || '');
 
-    const rawSteps = bo?._ApprovalStep || detail.approvalSteps || detail.approvalTree || [];
-    const steps = Array.isArray(rawSteps) ? rawSteps.map((s: any) => ({
-        documentId: s.ObjectKey || s.DocumentNumber || documentId,
-        level: Number(s.ApprovalLevel ?? s.level ?? 0),
-        releaseCode: s.ReleaseCode || s.releaseCode || '',
-        releaseText: s.ReleaseText || s.releaseText || s.ReleaseCode || '',
-        approver: s.ApproverName || s.approver || '',
-        approverUserId: s.ApproverUserId || s.approverUserId || '',
-        status: s.ApprovalStatus || s.status || '',
-        noteText: s.CommentText || s.noteText || '',
-        postedOn: s.CommentDate || s.postedOn || '',
-        postedTime: s.CommentTime || s.postedTime || ''
-    })) : [];
+    const steps = mapArray(bo?._ApprovalStep || detail.approvalSteps || detail.approvalTree || [], (step) => mapApprovalStep(step, documentId));
+    const comments = mapArray(bo?._Comment || detail.comments || [], mapComment);
+    const attachments = mapArray(bo?._Attachment || detail.attachments || [], mapAttachment);
 
-    const rawComments = bo?._Comment || detail.comments || [];
-    const comments = Array.isArray(rawComments) ? rawComments.map((c: any, idx: number) => ({
-        id: c.id || c.DocId || `comment-${idx}`,
-        text: c.NoteText || c.noteText || c.text || '',
-        createdBy: c.createdBy || c.UserComment || c.author || '',
-        createdByName: c.createdByName || c.authorName || '',
-        createdAt: c.PostedOn ? `${c.PostedOn}T${c.PostedTime || '00:00:00'}` : c.createdAt || '',
-        forward: c.Forward === true || c.forward === true,
-        toUser: c.ToUser || c.toUser || ''
-    })) : [];
-
-    const rawAttachments = bo?._Attachment || detail.attachments || [];
-    const attachments = Array.isArray(rawAttachments) ? rawAttachments.map((att: any, idx: number) => {
-        const id = att.DocId || att.Docid || att.docId || att.id || att.ID || att.AttachId || att.attachId || `attach-${idx}`;
-        let rawFileName = String(
-            att.FileName || att.fileName || att.FileDisplayName || att.fileDisplayName || att.Name || att.name || att.Filename || att.filename || att.Title || att.title || att.Description || att.description || ''
-        ).trim();
-
-        // Remove trailing dots
-        rawFileName = rawFileName.replace(/\.+$/, '').trim();
-
-        let mimeType = String(att.MimeType || att.mimeType || att.ContentType || att.contentType || att.Mimetype || att.mimetype || '').trim();
-        const rawType = String(
-            att.FileType || att.fileType || att.FileExtension || att.fileExtension || att.DocType || att.docType || att.Ext || att.ext || att.Format || att.format || att.Type || att.type || att.DocClass || att.docClass || att.Component || att.component || ''
-        ).toLowerCase().trim();
-
-        // Infer MIME if generic/missing and rawType is present
-        if ((!mimeType || mimeType === 'application/octet-stream' || mimeType === 'application/x-forcedownload') && rawType) {
-            if (MIME_TYPE_MAP[rawType]) {
-                mimeType = MIME_TYPE_MAP[rawType];
-            }
-        }
-
-        // Determine extension from filename or rawType
-        let hasExtension = rawFileName.includes('.') && rawFileName.split('.').pop()!.length >= 2;
-        let fileName = rawFileName || id;
-
-        if (!hasExtension && rawType && /^[a-z0-9]+$/.test(rawType)) {
-            fileName = `${fileName}.${rawType}`;
-            hasExtension = true;
-        } else if (!hasExtension && mimeType && mimeType !== 'application/octet-stream') {
-            const cleanM = mimeType.split(';')[0].toLowerCase();
-            if (EXT_FROM_MIME_MAP[cleanM]) {
-                fileName = `${fileName}.${EXT_FROM_MIME_MAP[cleanM]}`;
-            }
-        }
-
-
-        const fileDisplayName = att.FileDisplayName || att.fileDisplayName || fileName;
-
-        return {
-            id,
-            fileName,
-            fileDisplayName,
-            mimeType: mimeType || 'application/octet-stream',
-            fileSize: Number(att.Length || att.fileSize || att.FileSize || att.length || 0),
-            createdBy: att.CreatedBy || att.createdBy || att.CreatedByName || att.createdByName || '',
-            createdAt: att.CreatedOnDate && att.CreatedOnTime ? `${att.CreatedOnDate}T${att.CreatedOnTime}` : att.createdAt || new Date().toISOString()
-        };
-    }) : [];
-
-
-
-    const instanceId = tp?.task?.InstanceID || detail.instanceId || detail.taskId || detail.task?.instanceId || '';
+    const instanceId = resolveDetailInstanceId(detail) || '';
     const isNormalTask = (detail.normalTask ?? detail.task?.normalTask) !== false;
     const rawDecisions = !isNormalTask ? [] : (tp?.decisionOptions || detail.decisions || detail.task?.decisions || []);
-    const decisions = Array.isArray(rawDecisions) ? rawDecisions.map((d: any) => ({
-        key: String(d.DecisionKey || d.key || ''),
-        text: String(d.DecisionText || d.text || ''),
-        nature: (d.Nature || (String(d.DecisionKey || d.key) === '0001' ? 'POSITIVE' : String(d.DecisionKey || d.key) === '0002' ? 'NEGATIVE' : 'NEUTRAL')) as any,
-        commentMandatory: d.CommentMandatory === true
-    })) : [];
+    const decisions = mapArray(rawDecisions, mapDecision);
     const isCompleted = (tp?.task?.Status || detail.task?.status || detail.status) === 'COMPLETED';
     const typeDisplay = bo?.DocumentTypeText || bo?.DocumentTypeDisplay || bo?.doctyp_desc || detail.documentTypeDisplay || detail.documentTypeText || (docCategory === 'CLAIM' ? 'Claim' : docCategory);
 
@@ -156,7 +182,10 @@ export function normalizeDetailForView(detail: any) {
         forward: !isClaim && isNormalTask && (tp?.task?.SupportsForward ?? detail.supports?.forward ?? detail.task?.supports?.forward) !== false,
         comments: (tp?.task?.SupportsComments ?? detail.supports?.comments ?? detail.task?.supports?.comments) !== false
     };
-
+    const status = tp?.task?.Status || detail.task?.status || 'READY';
+    const priority = tp?.task?.Priority || detail.task?.priority || 'MEDIUM';
+    const createdByName = tp?.task?.CreatedByName || detail.task?.createdByName;
+    const normalTask = detail.normalTask ?? detail.task?.normalTask ?? true;
 
     return {
         rawDetail: detail,
@@ -165,23 +194,23 @@ export function normalizeDetailForView(detail: any) {
         documentId,
         instanceId,
         title,
-        status: tp?.task?.Status || detail.task?.status || 'READY',
-        priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',
+        status,
+        priority,
         createdOn: tp?.task?.CreatedOn || detail.task?.createdOn,
-        createdByName: tp?.task?.CreatedByName || detail.task?.createdByName,
-        normalTask: detail.normalTask ?? detail.task?.normalTask ?? true,
+        createdByName,
+        normalTask,
         supports,
         task: {
             instanceId,
-            createdByName: tp?.task?.CreatedByName || detail.task?.createdByName,
+            createdByName,
             title,
-            status: tp?.task?.Status || detail.task?.status || 'READY',
-            priority: tp?.task?.Priority || detail.task?.priority || 'MEDIUM',
-            normalTask: detail.normalTask ?? detail.task?.normalTask ?? true,
+            status,
+            priority,
+            normalTask,
             sapOrigin: tp?.task?.SAP__Origin || detail.task?.sapOrigin || 'LOCAL',
             supports,
             businessContext: {
-                type: docCategory as any,
+                type: docCategory as BusinessContextType,
                 documentId
             }
         },

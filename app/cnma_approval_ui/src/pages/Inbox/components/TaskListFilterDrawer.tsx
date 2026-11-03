@@ -1,10 +1,17 @@
 import { Drawer, DrawerContent } from '@cnma/react-ui';
 import { FilterBar } from '@/components/filterbar';
+import type { useTaskFilters } from '@/pages/Inbox/hooks/useTaskFilters';
+
+/** The subset of the task filter state the drawer renders. */
+type DrawerFilters = Pick<
+    ReturnType<typeof useTaskFilters>,
+    'filterConfig' | 'allFilterConfig' | 'filterValues' | 'setFilterValues' | 'handleFilterApply' | 'handleFilterClear' | 'handleAdaptFilter'
+>;
 
 export interface TaskListFilterDrawerProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    filters: any;
+    filters: DrawerFilters;
     isRefreshing: boolean;
 }
 

@@ -11,9 +11,9 @@
  *   - Contain rendering logic
  *   - Trigger API calls (filtering is purely client-side on the current page)
  */
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { InboxTask } from '@/services/inbox/inbox.types';
-import type { FilterFieldConfig, FilterValues, FilterSettingItem } from '@/components/filterbar/types';
+import type { DateRange, FilterFieldConfig, FilterValues, FilterSettingItem } from '@/components/filterbar/types';
 import { initializeFilterValues } from '@/components/filterbar';
 import { INBOX_FILTER_CONFIG } from '@/pages/Inbox/components/inboxFilterConfig';
 import {
@@ -23,17 +23,26 @@ import {
 } from '../utils/categoryUtils';
 
 import {
-    TEXT_TO_DOC_TYPE_MAP,
     getDocumentCreationTimestamp,
     matchTaskDocumentType,
 } from '../utils/taskFilterMatchers';
 
 export {
-    TEXT_TO_DOC_TYPE_MAP,
     getDocumentCreationTimestamp,
     matchTaskDocumentType,
 };
 
+const SEARCH_DEBOUNCE_MS = 350;
+
+/** Whether a non-search filter value (multi-select, date range, select/text) narrows the list. */
+function isFilterValueActive(value: unknown): boolean {
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object' && value !== null) {
+        const range = value as Partial<DateRange>;
+        return Boolean(range.from || range.to);
+    }
+    return Boolean(value);
+}
 
 export function useTaskFilters(tasks: InboxTask[], scope?: string, activeCategory?: ObjectCategory | null) {
     // ── Filter configuration ─────────────────────────────
@@ -52,7 +61,7 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string, activeCategor
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             setAppliedValues((current) => ({ ...current, search: filterValues.search }));
-        }, 350);
+        }, SEARCH_DEBOUNCE_MS);
 
         return () => clearTimeout(timeoutId);
     }, [filterValues.search]);
@@ -60,16 +69,15 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string, activeCategor
     // Live counts for 4 categories
     const categoryCounts = useMemo(() => computeCategoryCounts(tasks), [tasks]);
 
-    // Auto-clear filters whenever scope changes (e.g., My Tasks <-> Approved Tasks)
-    const prevScopeRef = useRef(scope);
-    useEffect(() => {
-        if (prevScopeRef.current !== scope) {
-            prevScopeRef.current = scope;
-            const cleared = initializeFilterValues(INBOX_FILTER_CONFIG);
-            setFilterValues(cleared);
-            setAppliedValues(cleared);
-        }
-    }, [scope]);
+    // Auto-clear filters whenever scope changes (e.g., My Tasks <-> Approved Tasks).
+    // Adjusted during render so the new scope never renders with stale filters.
+    const [filterScope, setFilterScope] = useState(scope);
+    if (filterScope !== scope) {
+        setFilterScope(scope);
+        const cleared = initializeFilterValues(INBOX_FILTER_CONFIG);
+        setFilterValues(cleared);
+        setAppliedValues(cleared);
+    }
 
     // ── Mobile filter drawer ─────────────────────────────
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -181,23 +189,14 @@ export function useTaskFilters(tasks: InboxTask[], scope?: string, activeCategor
     }, [tasks, appliedValues, activeCategory]);
 
     // ── Derived: has active filter ───────────────────────
+    const mobileActiveFilterCount = Object.entries(appliedValues)
+        .filter(([key, value]) => key !== 'search' && isFilterValueActive(value))
+        .length;
+
     const hasLocalFilter =
         (!!activeCategory && activeCategory !== 'ALL') ||
         !!appliedValues.search?.trim() ||
-        Object.entries(appliedValues).some(([key, value]) => {
-            if (key === 'search') return false;
-            if (Array.isArray(value)) return value.length > 0;
-            if (typeof value === 'object' && value !== null)
-                return Boolean((value as any).from || (value as any).to);
-            return Boolean(value);
-        });
-
-    const mobileActiveFilterCount = Object.entries(appliedValues).filter(([k, v]) => {
-        if (k === 'search') return false;
-        if (Array.isArray(v)) return v.length > 0;
-        if (typeof v === 'object' && v !== null) return (v as any).from || (v as any).to;
-        return !!v;
-    }).length;
+        mobileActiveFilterCount > 0;
 
     return {
         // Config

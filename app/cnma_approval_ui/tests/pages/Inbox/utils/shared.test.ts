@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { cleanFileName, friendlyFileType } from '@/pages/Inbox/utils/shared';
-import { isPreviewableType } from '@/pages/Inbox/components/AttachmentPreviewModal';
+import { cleanFileName, friendlyFileType } from '@/pages/Inbox/utils/fileNames';
+import { isPreviewableType } from '@/pages/Inbox/components/attachmentPreview';
 
 describe('cleanFileName', () => {
     it('returns undefined for undefined', () => {

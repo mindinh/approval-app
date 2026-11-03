@@ -1,28 +1,21 @@
-import type { ObjectViewDefinition, TaskCardStyleConfig } from '../../core/renderer.types';
+import type { CardDefinition, ObjectTypeModule, ObjectViewDefinition, TableColumnDefinition, TaskCardChipDefinition } from '../../core/types';
+import { amount, chip, excludeColumns, text } from '../../core/fields';
 import { PO_OVERVIEW_FIELDS, PO_TABLE_COLUMNS } from './po.fields';
-import { text, codeText, amount, chip } from '../../core/fields';
 
-const standardPoCardConfig: TaskCardStyleConfig = {
-    colorKey: 'info',
-    textClass: 'text-info font-semibold',
-    stripeClass: 'before:bg-info'
-};
+const typeChip = chip(text({ source: 'DocumentTypeText|doctyp_desc|purchaseOrderTypeText|documentTypeDisplay|DocumentType', label: 'Type' }));
 
-const standardPoCardChips = [
+const standardCardChips: TaskCardChipDefinition[] = [
     chip(amount({ value: 'TotalOrderValue|TotalNetAmountLocalCrcy|purchaseOrderNetAmount|TotalAmount|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total' }), true),
-    chip(text({ source: 'DocumentTypeText|doctyp_desc|purchaseOrderTypeText|documentTypeDisplay|DocumentType', label: 'Type' })),
+    typeChip,
 ];
 
-const zubPoCardChips = [
+// Stock transfers (ZUB) carry their value in local currency.
+const zubCardChips: TaskCardChipDefinition[] = [
     chip(amount({ value: 'TotalNetAmountLocalCrcy|TotalOrderValue|total', currency: 'LocalCurrency|DocumentCurrency|documentCurrency', label: 'Total' }), true),
-    chip(text({ source: 'DocumentTypeText|doctyp_desc|purchaseOrderTypeText|documentTypeDisplay|DocumentType', label: 'Type' })),
+    typeChip,
 ];
 
-
-
-
-
-const standardPoOverviewCard = {
+const standardOverviewCard: CardDefinition = {
     id: 'po-summary',
     title: 'Document Summary',
     fields: [
@@ -38,11 +31,11 @@ const standardPoOverviewCard = {
         PO_OVERVIEW_FIELDS.vat,
         PO_OVERVIEW_FIELDS.total,
         PO_OVERVIEW_FIELDS.headerText,
-        PO_OVERVIEW_FIELDS.headerNote
-    ]
+        PO_OVERVIEW_FIELDS.headerNote,
+    ],
 };
 
-const zubPoOverviewCard = {
+const zubOverviewCard: CardDefinition = {
     id: 'po-summary-zub',
     title: 'Document Summary',
     fields: [
@@ -54,12 +47,12 @@ const zubPoOverviewCard = {
         PO_OVERVIEW_FIELDS.companyCode,
         PO_OVERVIEW_FIELDS.creationDate,
         PO_OVERVIEW_FIELDS.zubTotalAmount,
-        PO_OVERVIEW_FIELDS.zubHeaderText,
-        PO_OVERVIEW_FIELDS.headerNote
-    ]
+        PO_OVERVIEW_FIELDS.headerText,
+        PO_OVERVIEW_FIELDS.headerNote,
+    ],
 };
 
-const standardPoTableColumns = [
+const standardColumns: TableColumnDefinition[] = [
     PO_TABLE_COLUMNS.item,
     PO_TABLE_COLUMNS.material,
     PO_TABLE_COLUMNS.shortText,
@@ -73,79 +66,68 @@ const standardPoTableColumns = [
     PO_TABLE_COLUMNS.referencePr,
     PO_TABLE_COLUMNS.glAccount,
     PO_TABLE_COLUMNS.fundsCenter,
-    PO_TABLE_COLUMNS.commitmentItem
+    PO_TABLE_COLUMNS.commitmentItem,
 ];
 
-/** Helper to exclude specific columns from the standard set declaratively */
-function excludeColumns(base: typeof standardPoTableColumns, ...keysToExclude: string[]) {
-    return base.filter((col) => !keysToExclude.includes(col.key));
+// ZASS, ZEXP: material number removed per requirements
+const columnsNoMaterial = excludeColumns(standardColumns, 'material');
+// ZCOR: reference PR removed per requirements
+const columnsNoRefPr = excludeColumns(standardColumns, 'referencePr');
+// ZNB1, ZNB2: G/L account removed per requirements
+const columnsNoGlAccount = excludeColumns(standardColumns, 'glAccount');
+// ZNBR: reference PR and G/L account removed per requirements
+const columnsNoRefPrNoGlAccount = excludeColumns(standardColumns, 'referencePr', 'glAccount');
+// ZMAK (marketing): no material; internal order inserted before funds center and commitment item
+const columnsMarketing = [
+    ...excludeColumns(standardColumns, 'material', 'fundsCenter', 'commitmentItem'),
+    PO_TABLE_COLUMNS.internalOrder,
+    PO_TABLE_COLUMNS.fundsCenter,
+    PO_TABLE_COLUMNS.commitmentItem,
+];
+// ZUB (stock transfer): values in local currency, no reference PR / G/L account
+const columnsStockTransfer = [
+    PO_TABLE_COLUMNS.item,
+    PO_TABLE_COLUMNS.material,
+    PO_TABLE_COLUMNS.shortText,
+    PO_TABLE_COLUMNS.quantity,
+    PO_TABLE_COLUMNS.zubValuationPrice,
+    PO_TABLE_COLUMNS.zubTotalValue,
+    PO_TABLE_COLUMNS.deliveryDate,
+    PO_TABLE_COLUMNS.materialGroup,
+    PO_TABLE_COLUMNS.plant,
+    PO_TABLE_COLUMNS.storageLocation,
+    PO_TABLE_COLUMNS.fundsCenter,
+    PO_TABLE_COLUMNS.commitmentItem,
+];
+
+function poView(subtype: string, columns: TableColumnDefinition[], overrides: Partial<ObjectViewDefinition> = {}): ObjectViewDefinition {
+    return {
+        cardChips: standardCardChips,
+        overviewCard: standardOverviewCard,
+        lineItemTable: { id: `po-items-${subtype}`, title: 'Line Items', sourcePath: '_Item', columns },
+        ...overrides,
+    };
 }
 
-// ZASS, ZEXP: Matnr (material) removed per requirements
-const poColumnsNoMaterial = excludeColumns(standardPoTableColumns, 'material');
-
-// ZCOR: reference PR removed per requirements
-const poColumnsNoRefPr = excludeColumns(standardPoTableColumns, 'referencePr');
-
-// ZNB1, ZNB2: G/L account removed per requirements
-const poColumnsNoGlAccount = excludeColumns(standardPoTableColumns, 'glAccount');
-
-// ZNBR: reference PR and G/L account removed per requirements
-const poColumnsNoRefPrNoGlAccount = excludeColumns(standardPoTableColumns, 'referencePr', 'glAccount');
-
+/** PO layouts by document type (`DocumentType`). Unlisted types use DEFAULT. */
 export const PO_VIEWS: Record<string, ObjectViewDefinition> = {
-    ZASS: { docCategory: 'BUS2012', documentType: 'ZASS', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-zass', title: 'Line Items', sourcePath: '_Item', columns: poColumnsNoMaterial } },
-    ZCON: { docCategory: 'BUS2012', documentType: 'ZCON', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-zcon', title: 'Line Items', sourcePath: '_Item', columns: standardPoTableColumns } },
-    ZCOR: { docCategory: 'BUS2012', documentType: 'ZCOR', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-zcor', title: 'Line Items', sourcePath: '_Item', columns: poColumnsNoRefPr } },
-    ZEXP: { docCategory: 'BUS2012', documentType: 'ZEXP', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-zexp', title: 'Line Items', sourcePath: '_Item', columns: poColumnsNoMaterial } },
-    ZMAK: {
-        docCategory: 'BUS2012',
-        documentType: 'ZMAK',
-        cardConfig: standardPoCardConfig,
-        cardChips: standardPoCardChips,
-        overviewCard: standardPoOverviewCard,
-        lineItemTable: {
-            id: 'po-items-zmak',
-            title: 'Line Items',
-            sourcePath: '_Item',
-            columns: [
-                ...excludeColumns(standardPoTableColumns, 'material').filter(c => c.key !== 'fundsCenter' && c.key !== 'commitmentItem'),
-                PO_TABLE_COLUMNS.internalOrder,
-                PO_TABLE_COLUMNS.fundsCenter,
-                PO_TABLE_COLUMNS.commitmentItem
-            ]
-        }
-    },
-    ZNB1: { docCategory: 'BUS2012', documentType: 'ZNB1', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-znb1', title: 'Line Items', sourcePath: '_Item', columns: poColumnsNoGlAccount } },
-    ZNB2: { docCategory: 'BUS2012', documentType: 'ZNB2', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-znb2', title: 'Line Items', sourcePath: '_Item', columns: poColumnsNoGlAccount } },
-    ZNBR: { docCategory: 'BUS2012', documentType: 'ZNBR', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-znbr', title: 'Line Items', sourcePath: '_Item', columns: poColumnsNoRefPrNoGlAccount } },
-    ZTOL: { docCategory: 'BUS2012', documentType: 'ZTOL', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-ztol', title: 'Line Items', sourcePath: '_Item', columns: standardPoTableColumns } },
-    ZUB: {
-        docCategory: 'BUS2012',
-        documentType: 'ZUB',
-        cardConfig: standardPoCardConfig,
-        cardChips: zubPoCardChips,
-        overviewCard: zubPoOverviewCard,
-        lineItemTable: {
-            id: 'po-items-zub',
-            title: 'Line Items',
-            sourcePath: '_Item',
-            columns: [
-                PO_TABLE_COLUMNS.item,
-                PO_TABLE_COLUMNS.material,
-                PO_TABLE_COLUMNS.shortText,
-                PO_TABLE_COLUMNS.quantity,
-                PO_TABLE_COLUMNS.zubValuationPrice,
-                PO_TABLE_COLUMNS.zubTotalValue,
-                PO_TABLE_COLUMNS.deliveryDate,
-                PO_TABLE_COLUMNS.materialGroup,
-                PO_TABLE_COLUMNS.plant,
-                PO_TABLE_COLUMNS.storageLocation,
-                PO_TABLE_COLUMNS.fundsCenter,
-                PO_TABLE_COLUMNS.commitmentItem
-            ]
-        }
-    },
-    DEFAULT: { docCategory: 'BUS2012', documentType: 'DEFAULT', cardConfig: standardPoCardConfig, cardChips: standardPoCardChips, overviewCard: standardPoOverviewCard, lineItemTable: { id: 'po-items-default', title: 'Line Items', sourcePath: '_Item', columns: standardPoTableColumns } }
+    ZASS: poView('zass', columnsNoMaterial),
+    ZCON: poView('zcon', standardColumns),
+    ZCOR: poView('zcor', columnsNoRefPr),
+    ZEXP: poView('zexp', columnsNoMaterial),
+    ZMAK: poView('zmak', columnsMarketing),
+    ZNB1: poView('znb1', columnsNoGlAccount),
+    ZNB2: poView('znb2', columnsNoGlAccount),
+    ZNBR: poView('znbr', columnsNoRefPrNoGlAccount),
+    ZTOL: poView('ztol', standardColumns),
+    ZUB: poView('zub', columnsStockTransfer, { cardChips: zubCardChips, overviewCard: zubOverviewCard }),
+    DEFAULT: poView('default', standardColumns),
 };
 
+export const poModule: ObjectTypeModule = {
+    category: 'PO',
+    label: 'PO',
+    aliases: ['BUS2012', 'PO'],
+    tone: 'info',
+    resolveView: (documentType) => PO_VIEWS[documentType] || PO_VIEWS.DEFAULT,
+};

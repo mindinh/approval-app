@@ -1,12 +1,15 @@
+import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
 import { text, codeText, amount, date, tableCol } from '../../core/fields';
 import { formatRawAmount, formatRawDate, formatVendorCodeAndName, formatNoteText } from '../../core/formatters';
-import { getRecordVal } from '../../core/objectView';
+import { getRecordCode } from '../../core/record';
 
+/** Claims are settled in Vietnam, so their amounts use Vietnamese number formatting. */
+export const CLAIM_AMOUNT_LOCALE = 'vi-VN';
+
+/** Item amount whose currency falls back to the header when the item has none. */
 const formatItemAmount = (currencySource: 'DocumentCurrency' | 'LocalCurrency') =>
-    (value: unknown, record: Record<string, any>, headerRecord?: Record<string, any>) =>
-        formatRawAmount(value,
-            getRecordVal(record, currencySource) ?? getRecordVal(headerRecord || {}, currencySource),
-            'vi-VN');
+    (value: unknown, record: RawODataEntity, headerRecord?: RawODataEntity) =>
+        formatRawAmount(value, getRecordCode(record, currencySource) ?? getRecordCode(headerRecord, currencySource), CLAIM_AMOUNT_LOCALE);
 
 export const CLAIM_OVERVIEW_FIELDS = {
     claimNumber: text({ source: 'DocumentNumber|ClaimNumber', label: 'Claim Form Number' }),
@@ -24,8 +27,8 @@ export const CLAIM_OVERVIEW_FIELDS = {
         label: 'Vendor',
         formatter: (_val, record) => formatVendorCodeAndName(record)
     }),
-    paymentAmount: amount({ value: 'PaymentAmount', currency: 'DocumentCurrency', label: 'Payment Amount', locale: 'vi-VN' }),
-    totalAmount: amount({ value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', label: 'Total Amount', locale: 'vi-VN' }),
+    paymentAmount: amount({ value: 'PaymentAmount', currency: 'DocumentCurrency', label: 'Payment Amount', locale: CLAIM_AMOUNT_LOCALE }),
+    totalAmount: amount({ value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', label: 'Total Amount', locale: CLAIM_AMOUNT_LOCALE }),
     note: text({
         source: 'Note|Notes',
         label: 'Note',

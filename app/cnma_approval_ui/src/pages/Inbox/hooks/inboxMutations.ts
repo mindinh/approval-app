@@ -13,15 +13,33 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import type { DecisionRequest, ForwardRequest, DecisionRequestContext, TaggedUser, MassDecisionPayload } from '@/services/inbox/inbox.types';
+import type { DecisionRequest, DecisionRequestContext, TaggedUser, MassDecisionPayload } from '@/services/inbox/inbox.types';
 import { toast } from '@cnma/react-ui';
 import { extractErrorMessage } from '@/pages/Inbox/utils/predicates';
+import { DECISION_KEYS } from '@/pages/Inbox/utils/constants';
 import {
     invalidateAfterDecision,
     invalidateAfterMassDecision,
-    invalidateAfterForward,
     invalidateAfterComment,
 } from './inboxInvalidation';
+
+const FAILED_TASK_TOAST_DURATION_MS = 7000;
+
+function dismissLoadingToast(mutationContext?: { toastId?: string | number }) {
+    if (mutationContext?.toastId) {
+        toast.dismiss(mutationContext.toastId);
+    }
+}
+
+/** Some BFF actions nest the user-facing message under `result`. */
+function actionResponseMessage(data: unknown): string | undefined {
+    const response = data as { message?: string; result?: { message?: string } } | undefined;
+    return response?.message || response?.result?.message;
+}
+
+function isRejectDecisionKey(decisionKey: string): boolean {
+    return decisionKey === DECISION_KEYS.REJECT;
+}
 
 // ─── useDecision ───────────────────────────────────────────
 export function useDecision() {
@@ -41,17 +59,13 @@ export function useDecision() {
             return { toastId };
         },
         onSuccess: (data, variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
-            const successMsg = data?.message || (data as any)?.result?.message || 'Decision processed successfully.';
+            dismissLoadingToast(mutationContext);
+            const successMsg = actionResponseMessage(data) || 'Decision processed successfully.';
             toast.success(successMsg);
             invalidateAfterDecision(queryClient, variables.instanceId);
         },
-        onError: (error: any, _variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
+        onError: (error, _variables, mutationContext) => {
+            dismissLoadingToast(mutationContext);
             toast.error(extractErrorMessage(error, 'Decision failed'));
         },
     });
@@ -66,18 +80,16 @@ export function useMassDecision() {
 
         onMutate: (variables) => {
             const count = variables.items.length;
-            const isReject = variables.decisionKey === '0002' || String(variables.decisionKey).toLowerCase().includes('reject');
+            const isReject = isRejectDecisionKey(variables.decisionKey) || String(variables.decisionKey).toLowerCase().includes('reject');
             const actionText = isReject ? 'Rejecting' : 'Approving';
             const toastId = toast.loading(`${actionText} ${count} task${count !== 1 ? 's' : ''} in background...`);
             return { toastId, count, isReject };
         },
 
         onSuccess: (data, variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
+            dismissLoadingToast(mutationContext);
 
-            const isReject = mutationContext?.isReject ?? (variables.decisionKey === '0002');
+            const isReject = mutationContext?.isReject ?? isRejectDecisionKey(variables.decisionKey);
             const actionWord = isReject ? 'rejected' : 'approved';
             const total = data.total || variables.items.length;
             const succeeded = data.succeededCount ?? 0;
@@ -94,7 +106,7 @@ export function useMassDecision() {
                     const identifier = failed.documentNumber || failed.documentId || failed.instanceId;
                     const errorMsg = failed.error || failed.message || 'Decision failed';
                     toast.error(`Failed to ${isReject ? 'reject' : 'approve'} ${identifier}: ${errorMsg}`, {
-                        duration: 7000,
+                        duration: FAILED_TASK_TOAST_DURATION_MS,
                     });
                 });
             }
@@ -103,48 +115,13 @@ export function useMassDecision() {
             invalidateAfterMassDecision(queryClient, instanceIds);
         },
 
-        onError: (error: any, variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
-            const isReject = mutationContext?.isReject ?? (variables.decisionKey === '0002');
+        onError: (error, variables, mutationContext) => {
+            dismissLoadingToast(mutationContext);
+            const isReject = mutationContext?.isReject ?? isRejectDecisionKey(variables.decisionKey);
             const action = isReject ? 'Mass rejection' : 'Mass approval';
             toast.error(extractErrorMessage(error, `${action} failed.`));
             const instanceIds = variables.items.map((i) => i.instanceId);
             invalidateAfterMassDecision(queryClient, instanceIds);
-        },
-    });
-}
-
-// ─── useForward ────────────────────────────────────────────
-export function useForward() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({
-            instanceId,
-            request,
-        }: {
-            instanceId: string;
-            request: ForwardRequest;
-        }) => inboxApi.forwardTask(instanceId, request),
-        onMutate: () => {
-            const toastId = toast.loading('Forwarding task...');
-            return { toastId };
-        },
-        onSuccess: (data, variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
-            const successMsg = data?.message || (data as any)?.result?.message || 'Task forwarded successfully.';
-            toast.success(successMsg);
-            invalidateAfterForward(queryClient, variables.instanceId);
-        },
-        onError: (error: any, _variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
-            toast.error(extractErrorMessage(error, 'Forward failed'));
         },
     });
 }
@@ -171,15 +148,11 @@ export function useAddComment() {
         },
         onSuccess: async (data, variables, mutationContext) => {
             await invalidateAfterComment(queryClient, variables.instanceId);
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
+            dismissLoadingToast(mutationContext);
             toast.success(data.message || 'Comment added.');
         },
-        onError: (error: any, _variables, mutationContext) => {
-            if (mutationContext?.toastId) {
-                toast.dismiss(mutationContext.toastId);
-            }
+        onError: (error, _variables, mutationContext) => {
+            dismissLoadingToast(mutationContext);
             toast.error(extractErrorMessage(error, 'Failed to add comment'));
         },
     });

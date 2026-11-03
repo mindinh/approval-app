@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskCard } from './TaskCard';
+import { normalizeInstanceId } from '../utils/instanceId';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import {
     getTaskObjectCategory,
@@ -27,6 +28,9 @@ import {
     PopoverTrigger,
     PopoverContent,
 } from '@cnma/react-ui';
+
+/** Subtype names that only repeat the category itself (no real subtype distinction). */
+const GENERIC_SUBTYPE_NAMES = ['CLAIM', 'RESERVATION', 'ZBUS2093'];
 
 interface CategoryAccordionGroupProps {
     tasks: InboxTask[];
@@ -149,22 +153,11 @@ export function CategoryAccordionGroup({
                 const shouldShowSubtypeFilter =
                     subtypes.length > 1 &&
                     (!isClaimOrReservation ||
-                        subtypes.some(
-                            (s) =>
-                                s.name.toUpperCase() !== 'CLAIM' &&
-                                s.name.toUpperCase() !== 'RESERVATION' &&
-                                s.name.toUpperCase() !== 'ZBUS2093'
-                        ));
+                        subtypes.some((s) => !GENERIC_SUBTYPE_NAMES.includes(s.name.toUpperCase())));
 
                 const displayedTasks = selectedCount > 0
                     ? catTasks.filter((t) => activeSubtypeSet.has(getTaskSubtype(t)))
                     : catTasks;
-
-                const triggerLabel = selectedCount === 0
-                    ? t('common.allTypes', 'All Types')
-                    : selectedCount === 1
-                    ? Array.from(activeSubtypeSet)[0]
-                    : t('common.nTypesSelected', '{{count}} types', { count: selectedCount });
 
                 return (
                     <div key={section.key} className="flex flex-col w-full">
@@ -340,7 +333,7 @@ export function CategoryAccordionGroup({
                                                             isSelected={
                                                                 task.instanceId === selectedTaskId ||
                                                                 (!!normSelectedId &&
-                                                                    String(task.instanceId).replace(/^0+/, '') === normSelectedId)
+                                                                    normalizeInstanceId(task.instanceId) === normSelectedId)
                                                             }
                                                             onClick={handleCardClick}
                                                             variant={isMobile ? 'mobile' : 'desktop'}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBusinessSectionModel } from '@/renderers/ObjectView.registry';
+import { resolveBusinessSectionModel } from '@/renderers';
 import { PO_OVERVIEW_FIELDS } from '@/renderers/objects/po/po.fields';
 
 describe('PR & PO Object Type Column Visibility & PO Vendor Formatter', () => {

@@ -1,86 +1,13 @@
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import {
-    ShoppingCart,
     Package,
-    BookmarkCheck,
     Receipt,
-    Layers,
     FileText,
     CalendarCheck,
     type LucideIcon,
 } from 'lucide-react';
 
 export type ObjectCategory = 'ALL' | 'PR' | 'PO' | 'RESERVATION' | 'CLAIM';
-
-export interface CategoryMeta {
-    key: ObjectCategory;
-    title: string;
-    shortCode: string;
-    description: string;
-    icon: LucideIcon;
-    bgGradient: string;
-    textColor: string;
-    borderColor: string;
-    badgeBg: string;
-}
-
-export const CATEGORY_CONFIG: Record<ObjectCategory, CategoryMeta> = {
-    ALL: {
-        key: 'ALL',
-        title: 'All Tasks',
-        shortCode: 'ALL',
-        description: 'All pending approval tasks',
-        icon: Layers,
-        bgGradient: 'from-muted/40 to-muted/10',
-        textColor: 'text-foreground',
-        borderColor: 'border-border',
-        badgeBg: 'bg-muted text-muted-foreground',
-    },
-    PR: {
-        key: 'PR',
-        title: 'Purchase Requisition',
-        shortCode: 'PR',
-        description: 'Material & service purchase requests',
-        icon: ShoppingCart,
-        bgGradient: 'from-primary/15 to-primary/5',
-        textColor: 'text-primary',
-        borderColor: 'border-primary/20',
-        badgeBg: 'bg-primary/10 text-primary',
-    },
-    PO: {
-        key: 'PO',
-        title: 'Purchase Order',
-        shortCode: 'PO',
-        description: 'Purchase orders & vendor contracts',
-        icon: Package,
-        bgGradient: 'from-info/15 to-info/5',
-        textColor: 'text-info',
-        borderColor: 'border-info/20',
-        badgeBg: 'bg-info/10 text-info',
-    },
-    RESERVATION: {
-        key: 'RESERVATION',
-        title: 'Reservation',
-        shortCode: 'RESV',
-        description: 'Warehouse & material reservations',
-        icon: BookmarkCheck,
-        bgGradient: 'from-warning/15 to-warning/5',
-        textColor: 'text-warning',
-        borderColor: 'border-warning/20',
-        badgeBg: 'bg-warning/10 text-warning',
-    },
-    CLAIM: {
-        key: 'CLAIM',
-        title: 'Claim',
-        shortCode: 'CLAIM',
-        description: 'Expense reimbursement & claims',
-        icon: Receipt,
-        bgGradient: 'from-success/15 to-success/5',
-        textColor: 'text-success',
-        borderColor: 'border-success/20',
-        badgeBg: 'bg-success/10 text-success',
-    },
-};
 
 export interface CategorySectionDef {
     key: ObjectCategory;
@@ -131,83 +58,56 @@ export function getFirstTaskByCategoryOrder(tasks: InboxTask[]): InboxTask | und
     return tasks[0];
 }
 
+type MainCategory = Exclude<ObjectCategory, 'ALL'>;
+
+interface CategoryRule {
+    category: MainCategory;
+    /** Codes matched exactly against businessContext.type and objectType / DocCategory. */
+    objectCodes: readonly string[];
+    /** Substring of the SAP task definition ID. */
+    taskDefinitionMarker: string;
+    documentTypes: readonly string[];
+    titleMarkers: readonly string[];
+}
+
+/** Evaluated in order; the first matching rule wins. */
+const CATEGORY_RULES: readonly CategoryRule[] = [
+    // 1. PR (BUS2105, PR)
+    { category: 'PR', objectCodes: ['PR', 'BUS2105'], taskDefinitionMarker: 'BUS2105', documentTypes: ['PR'], titleMarkers: ['PR ', 'PURCHASE REQUISITION'] },
+    // 2. PO (BUS2012, PO)
+    { category: 'PO', objectCodes: ['PO', 'BUS2012'], taskDefinitionMarker: 'BUS2012', documentTypes: ['PO'], titleMarkers: ['PO ', 'PURCHASE ORDER'] },
+    // 3. Reservation (BUS2093, ZBUS2093, RE, RESV, RESERVATION)
+    {
+        category: 'RESERVATION',
+        objectCodes: ['RE', 'RESV', 'RESERVATION', 'BUS2093', 'ZBUS2093'],
+        taskDefinitionMarker: 'BUS2093',
+        documentTypes: ['RESV', 'RE'],
+        titleMarkers: ['RESERVATION'],
+    },
+    // 4. Claim (CLAIM, ZCLAIM)
+    { category: 'CLAIM', objectCodes: ['CLAIM', 'ZCLAIM'], taskDefinitionMarker: 'CLAIM', documentTypes: ['CLAIM'], titleMarkers: ['CLAIM'] },
+];
+
+const normalizeCode = (value: unknown): string => String(value || '').toUpperCase().trim();
+
 /**
  * Normalizes an InboxTask to one of the 4 main object categories.
  */
-export function getTaskObjectCategory(task: InboxTask): 'PR' | 'PO' | 'RESERVATION' | 'CLAIM' | 'OTHER' {
-    const bType = String(task.businessContext?.type || '').toUpperCase().trim();
-    const objType = String(
-        task.objectType ||
-        (task as any).DocCategory ||
-        (task as any).TechnicalWrkflwObjectType ||
-        ''
-    ).toUpperCase().trim();
-    const taskDefId = String(task.taskDefinitionId || '').toUpperCase().trim();
-    const docType = String((task as any).documentType || '').toUpperCase().trim();
-    const title = String(task.title || '').toUpperCase().trim();
+export function getTaskObjectCategory(task: InboxTask): MainCategory | 'OTHER' {
+    const bType = normalizeCode(task.businessContext?.type);
+    const objType = normalizeCode(task.objectType || task.DocCategory || task.TechnicalWrkflwObjectType);
+    const taskDefId = normalizeCode(task.taskDefinitionId);
+    const docType = normalizeCode(task.documentType);
+    const title = normalizeCode(task.title);
 
-    // 1. PR Check (BUS2105, PR)
-    if (
-        bType === 'PR' ||
-        bType === 'BUS2105' ||
-        objType === 'PR' ||
-        objType === 'BUS2105' ||
-        taskDefId.includes('BUS2105') ||
-        docType === 'PR' ||
-        title.includes('PR ') ||
-        title.includes('PURCHASE REQUISITION')
-    ) {
-        return 'PR';
-    }
-
-    // 2. PO Check (BUS2012, PO)
-    if (
-        bType === 'PO' ||
-        bType === 'BUS2012' ||
-        objType === 'PO' ||
-        objType === 'BUS2012' ||
-        taskDefId.includes('BUS2012') ||
-        docType === 'PO' ||
-        title.includes('PO ') ||
-        title.includes('PURCHASE ORDER')
-    ) {
-        return 'PO';
-    }
-
-    // 3. Reservation Check (BUS2093, ZBUS2093, RE, RESV, RESERVATION)
-    if (
-        bType === 'RE' ||
-        bType === 'RESV' ||
-        bType === 'RESERVATION' ||
-        bType === 'BUS2093' ||
-        bType === 'ZBUS2093' ||
-        objType === 'RE' ||
-        objType === 'RESV' ||
-        objType === 'RESERVATION' ||
-        objType === 'BUS2093' ||
-        objType === 'ZBUS2093' ||
-        taskDefId.includes('BUS2093') ||
-        docType === 'RESV' ||
-        docType === 'RE' ||
-        title.includes('RESERVATION')
-    ) {
-        return 'RESERVATION';
-    }
-
-    // 4. Claim Check (CLAIM, ZCLAIM)
-    if (
-        bType === 'CLAIM' ||
-        bType === 'ZCLAIM' ||
-        objType === 'CLAIM' ||
-        objType === 'ZCLAIM' ||
-        taskDefId.includes('CLAIM') ||
-        docType === 'CLAIM' ||
-        title.includes('CLAIM')
-    ) {
-        return 'CLAIM';
-    }
-
-    return 'OTHER';
+    const rule = CATEGORY_RULES.find((candidate) =>
+        candidate.objectCodes.includes(bType) ||
+        candidate.objectCodes.includes(objType) ||
+        taskDefId.includes(candidate.taskDefinitionMarker) ||
+        candidate.documentTypes.includes(docType) ||
+        candidate.titleMarkers.some((marker) => title.includes(marker))
+    );
+    return rule?.category ?? 'OTHER';
 }
 
 /**
@@ -244,28 +144,30 @@ export function computeCategoryCounts(tasks: InboxTask[]): Record<ObjectCategory
     return counts;
 }
 
+const FALLBACK_SUBTYPE: Record<MainCategory | 'OTHER', string> = {
+    PR: 'Standard PR',
+    PO: 'Standard PO',
+    RESERVATION: 'Reservation',
+    CLAIM: 'Claim',
+    OTHER: 'Other',
+};
+
 /**
  * Resolves the display subtype of a task.
  */
 export function getTaskSubtype(task: InboxTask): string {
     const raw =
         task.documentTypeDisplay ||
-        (task as any).DocumentTypeText ||
-        (task as any).doctyp_desc ||
-        (task as any).documentTypeDesc ||
-        (task as any).DocumentTypeDisplay ||
-        (task as any).documentType ||
+        task.DocumentTypeText ||
+        task.doctyp_desc ||
+        task.documentTypeDesc ||
+        task.DocumentTypeDisplay ||
+        task.documentType ||
         '';
     const trimmed = String(raw).trim();
     if (trimmed) return trimmed;
 
-    // Fallback based on category
-    const cat = getTaskObjectCategory(task);
-    if (cat === 'PR') return 'Standard PR';
-    if (cat === 'PO') return 'Standard PO';
-    if (cat === 'RESERVATION') return 'Reservation';
-    if (cat === 'CLAIM') return 'Claim';
-    return 'Other';
+    return FALLBACK_SUBTYPE[getTaskObjectCategory(task)];
 }
 
 /**

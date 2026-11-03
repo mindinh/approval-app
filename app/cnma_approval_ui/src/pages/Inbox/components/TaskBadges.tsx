@@ -57,7 +57,7 @@ export function StatusBadge({ status }: { status?: string }) {
         : rawTranslation;
 
     return (
-        <Badge variant={variant as any} className="px-2.5 py-0.5 text-xs font-normal">
+        <Badge variant={variant} className="px-2.5 py-0.5 text-xs font-normal">
             {finalLabel}
         </Badge>
     );

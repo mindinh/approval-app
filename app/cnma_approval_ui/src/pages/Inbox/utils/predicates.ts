@@ -119,34 +119,51 @@ export function formatApprovalStatus(value?: string): string {
 
 // ─── Error Classification ──────────────────────────────────
 
-/**
- * Detect the SAP user mapping error so we can disable polling / retry.
- */
-export function isSapUserMappingMissing(error: any): boolean {
-    return error?.response?.data?.code === 'SAP_USER_MAPPING_MISSING';
+/** The parts of an Axios-style error the helpers below read. */
+interface HttpErrorLike {
+    message?: unknown;
+    response?: { data?: unknown };
+}
+
+function asObject<T>(value: unknown): T | undefined {
+    return value && typeof value === 'object' ? (value as T) : undefined;
+}
+
+function nonEmptyText(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+/** A string, or the `message` of an object. */
+function messageOf(value: unknown): string | undefined {
+    return nonEmptyText(value) ?? nonEmptyText(asObject<{ message?: unknown }>(value)?.message);
 }
 
 /**
- * Extract a usable string error message from an Axios-style error object.
+ * Detect the SAP user mapping error so we can disable polling / retry.
  */
-export function extractErrorMessage(error: any, fallback: string): string {
-    if (!error) return fallback;
-    const responseErr = error?.response?.data?.error;
-    if (typeof responseErr === 'string' && responseErr.trim()) {
-        return responseErr.trim();
-    }
-    if (responseErr && typeof responseErr === 'object' && typeof responseErr.message === 'string' && responseErr.message.trim()) {
-        return responseErr.message.trim();
-    }
-    const responseData = error?.response?.data;
-    if (typeof responseData === 'string' && responseData.trim()) {
-        return responseData.trim();
-    }
-    if (responseData && typeof responseData === 'object' && typeof responseData.message === 'string' && responseData.message.trim()) {
-        return responseData.message.trim();
-    }
-    if (typeof error?.message === 'string' && error.message.trim()) {
-        return error.message.trim();
-    }
-    return fallback;
+export function isSapUserMappingMissing(error: unknown): boolean {
+    const data = asObject<{ code?: unknown }>(asObject<HttpErrorLike>(error)?.response?.data);
+    return data?.code === 'SAP_USER_MAPPING_MISSING';
+}
+
+/**
+ * Extract a usable string error message from an Axios-style error object:
+ * `response.data.error` → `response.data` → `error.message` → fallback.
+ */
+export function extractErrorMessage(error: unknown, fallback: string): string {
+    const httpError = asObject<HttpErrorLike>(error);
+    const data = httpError?.response?.data;
+    const responseError = asObject<{ error?: unknown }>(data)?.error;
+    return messageOf(responseError) ?? messageOf(data) ?? nonEmptyText(httpError?.message) ?? fallback;
+}
+
+// ─── Detail Fields ────────────────────────────────────────
+
+/**
+ * True when a detail field or column holds a reference PR number (rendered as a link to the PR).
+ */
+export function isReferencePrField(key: string, label: string): boolean {
+    const k = key.toLowerCase();
+    const l = label.toLowerCase();
+    return k === 'referencepr' || k === 'refpr' || l.includes('reference pr') || l.includes('ref pr');
 }

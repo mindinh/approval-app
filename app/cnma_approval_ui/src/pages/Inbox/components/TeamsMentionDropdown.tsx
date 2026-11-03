@@ -5,6 +5,15 @@ import { Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { useTranslation } from 'react-i18next';
 
+function getInitials(name: string): string {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+}
+
 interface TeamsMentionDropdownProps {
     isOpen: boolean;
     searchQuery: string;
@@ -25,10 +34,13 @@ export function TeamsMentionDropdown({
     const containerRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    // Follow the parent's query: restart the search and the highlight (adjusted during render instead of in an effect).
+    const [syncedQuery, setSyncedQuery] = useState(searchQuery);
+    if (searchQuery !== syncedQuery) {
+        setSyncedQuery(searchQuery);
         setSearchPattern(searchQuery);
         setSelectedIndex(0);
-    }, [searchQuery, setSearchPattern]);
+    }
 
     // Click outside handler to dismiss dropdown
     useEffect(() => {
@@ -90,15 +102,6 @@ export function TeamsMentionDropdown({
     }, [selectedIndex]);
 
     if (!isOpen) return null;
-
-    const getInitials = (name: string) => {
-        if (!name) return 'U';
-        const parts = name.trim().split(/\s+/);
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-        }
-        return name.slice(0, 2).toUpperCase();
-    };
 
     return (
         <div

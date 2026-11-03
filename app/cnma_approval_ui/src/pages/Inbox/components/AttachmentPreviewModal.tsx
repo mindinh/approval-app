@@ -4,8 +4,21 @@ import { inboxApi } from '@/services/inbox/inbox.api';
 import { useState } from 'react';
 import { toast } from '@cnma/react-ui';
 import { TextViewer } from './TextViewer';
+import { getPreviewKind } from './attachmentPreview';
+
+const MIN_ZOOM_PERCENT = 25;
+const MAX_ZOOM_PERCENT = 400;
+const ZOOM_STEP_PERCENT = 25;
+const DOWNLOAD_TOAST_DURATION_MS = 1500;
+
+/** Brief feedback while the browser starts the native download. */
+function showDownloadStartingToast() {
+    const toastId = toast.loading('Preparing file for download...');
+    window.setTimeout(() => toast.dismiss(toastId), DOWNLOAD_TOAST_DURATION_MS);
+}
 
 interface AttachmentPreviewCardProps {
+    /** Accepted for caller compatibility; content URLs are resolved by attachment ID. */
     instanceId: string;
     attachmentId: string;
     fileName?: string;
@@ -24,7 +37,6 @@ interface AttachmentPreviewCardProps {
  * - Fallback download prompt for unsupported types
  */
 export function AttachmentPreviewCard({
-    instanceId,
     attachmentId,
     fileName,
     mimeType,
@@ -93,7 +105,7 @@ function ImagePreview({ src, alt, downloadUrl }: { src: string; alt: string; dow
                     variant="ghost"
                     size="icon"
                     className="size-7 text-muted-foreground hover:text-foreground"
-                    onClick={() => setZoom((z) => Math.max(25, z - 25))}
+                    onClick={() => setZoom((z) => Math.max(MIN_ZOOM_PERCENT, z - ZOOM_STEP_PERCENT))}
                     title="Zoom out"
                 >
                     <ZoomOut className="size-3.5" />
@@ -105,7 +117,7 @@ function ImagePreview({ src, alt, downloadUrl }: { src: string; alt: string; dow
                     variant="ghost"
                     size="icon"
                     className="size-7 text-muted-foreground hover:text-foreground"
-                    onClick={() => setZoom((z) => Math.min(400, z + 25))}
+                    onClick={() => setZoom((z) => Math.min(MAX_ZOOM_PERCENT, z + ZOOM_STEP_PERCENT))}
                     title="Zoom in"
                 >
                     <ZoomIn className="size-3.5" />
@@ -124,10 +136,7 @@ function ImagePreview({ src, alt, downloadUrl }: { src: string; alt: string; dow
                 <a
                     href={downloadUrl}
                     download
-                    onClick={() => {
-                        const toastId = toast.loading('Preparing file for download...');
-                        window.setTimeout(() => toast.dismiss(toastId), 1500);
-                    }}
+                    onClick={showDownloadStartingToast}
                 >
                     <Button variant="ghost" size="icon" className="size-7" title="Download">
                         <Download className="size-3.5" />
@@ -184,10 +193,7 @@ function FallbackPreview({
             <a
                 href={downloadUrl}
                 download={fileName}
-                onClick={() => {
-                    const toastId = toast.loading('Preparing file for download...');
-                    window.setTimeout(() => toast.dismiss(toastId), 1500);
-                }}
+                onClick={showDownloadStartingToast}
             >
                 <Button size="sm" className="gap-1.5 mt-1">
                     <Download className="size-3.5" />
@@ -196,108 +202,4 @@ function FallbackPreview({
             </a>
         </div>
     );
-}
-
-/* ─── Helpers ──────────────────────────────────────────────────── */
-
-type PreviewKind = 'image' | 'pdf' | 'txt' | 'none';
-
-function getMimeTypeFromExtension(fileName?: string): string | undefined {
-    if (!fileName) return undefined;
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    const map: Record<string, string> = {
-        'pdf': 'application/pdf',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'doc': 'application/msword',
-        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'xls': 'application/vnd.ms-excel',
-        'csv': 'text/csv',
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'txt': 'text/plain',
-        'log': 'text/plain',
-        'md': 'text/plain',
-        'json': 'application/json',
-        'xml': 'application/xml',
-        'html': 'text/html',
-        'htm': 'text/html',
-    };
-    return map[ext || ''];
-}
-
-/**
- * Determines which preview strategy to use for a given MIME type or filename.
- * Restricted strictly to PDF, plain text, and simple images per requirements.
- */
-function getPreviewKind(mimeType?: string, fileName?: string): PreviewKind {
-    let mime = (mimeType || '').split(';')[0].toLowerCase().trim();
-    const cleanFileName = (fileName || '').toLowerCase().split('?')[0].split('#')[0];
-
-    // If mime is generic or empty, resolve it from the file name extension
-    if (!mime || mime === 'application/octet-stream' || mime === 'application/x-forcedownload') {
-        const resolvedMime = getMimeTypeFromExtension(cleanFileName);
-        if (resolvedMime) {
-            mime = resolvedMime;
-        }
-    }
-
-    // Simple Images → native <img>
-    if (
-        mime.startsWith('image/') ||
-        cleanFileName.endsWith('.png') ||
-        cleanFileName.endsWith('.jpg') ||
-        cleanFileName.endsWith('.jpeg') ||
-        cleanFileName.endsWith('.gif') ||
-        cleanFileName.endsWith('.webp') ||
-        cleanFileName.endsWith('.svg') ||
-        cleanFileName.endsWith('.bmp')
-    ) {
-        return 'image';
-    }
-
-    // PDF → native <iframe>
-    if (mime === 'application/pdf' || mime === 'application/x-pdf' || cleanFileName.endsWith('.pdf')) {
-        return 'pdf';
-    }
-
-    // Plain text, log, csv, json, xml, markdown → TextViewer
-    if (
-        mime === 'text/plain' ||
-        mime === 'text/csv' ||
-        mime === 'text/markdown' ||
-        mime === 'text/log' ||
-        mime === 'text/html' ||
-        mime === 'application/json' ||
-        mime === 'application/xml' ||
-        mime === 'text/xml' ||
-        cleanFileName.endsWith('.txt') ||
-        cleanFileName.endsWith('.csv') ||
-        cleanFileName.endsWith('.log') ||
-        cleanFileName.endsWith('.json') ||
-        cleanFileName.endsWith('.xml') ||
-        cleanFileName.endsWith('.md')
-    ) {
-        return 'txt';
-    }
-
-    // If cleanFileName has no extension and MIME is generic, default to 'pdf' so iframe can attempt stream preview
-    const ext = cleanFileName.replace(/\.+$/, '').split('.').pop()?.toLowerCase();
-    const hasKnownExt = ext && ext !== cleanFileName && ext.length >= 2;
-    if (!hasKnownExt && (!mime || mime === 'application/octet-stream' || mime === 'application/x-forcedownload')) {
-        return 'pdf';
-    }
-
-    // All other file types (Word, Excel, PowerPoint, ZIP, unknown) -> none
-    return 'none';
-}
-
-/**
- * Returns true ONLY if an attachment can be previewed (PDF, Plain Text, or Simple Images).
- */
-export function isPreviewableType(mimeType?: string, fileName?: string): boolean {
-    const kind = getPreviewKind(mimeType, fileName);
-    return kind === 'pdf' || kind === 'image' || kind === 'txt';
 }

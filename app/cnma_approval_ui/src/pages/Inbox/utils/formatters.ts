@@ -5,20 +5,13 @@
  * functions that were previously scattered across TaskDetailPanels, TaskCard,
  * MassSelectionView, and TaskDetail components.
  */
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
+import { formatAmountWithCurrency, formatDateShortLocale, parseDate } from '@/renderers/core/formatters';
+
+// Shared with the document renderers; re-exported so existing imports keep working.
+export { formatAmountWithCurrency, formatDateShortLocale, parseDate };
 
 // ─── Date Helpers ──────────────────────────────────────────
-
-/**
- * Parse a date string, handling SAP `/Date(…)/` format transparently.
- */
-export function parseDate(value: string): Date {
-    const sapMatch = value.match(/\/Date\((\d+)(?:[+-]\d+)?\)\//);
-    if (sapMatch) {
-        return new Date(Number(sapMatch[1]));
-    }
-    return new Date(value);
-}
 
 /**
  * Format a date string to `dd MMM yyyy, HH:mm`.
@@ -54,17 +47,6 @@ export function formatShortDate(value?: string): string {
     });
 }
 
-/**
- * Format a date string as a human-readable relative string (e.g. "3 hours ago").
- * Returns `undefined` for falsy or unparseable values.
- */
-export function formatRelative(value?: string): string | undefined {
-    if (!value) return undefined;
-    const date = parseDate(value);
-    if (Number.isNaN(date.getTime())) return undefined;
-    return formatDistanceToNow(date, { addSuffix: true });
-}
-
 // ─── Number / Amount Helpers ───────────────────────────────
 
 /**
@@ -79,65 +61,13 @@ export function formatAmount(value: string): string {
 }
 
 /**
- * Format an amount value with an optional trailing currency code.
- * Used primarily by PO/PR factsheet renderers.
- * Returns `'-'` for falsy or unparseable values.
+ * Human-readable file size (`512 B`, `1.5 KB`, `2.0 MB`).
  */
-export function formatAmountWithCurrency(value?: string | number, currency?: string, locale = 'en-US'): string {
-    if (value == null) return '-';
-    const num = Number(value);
-    if (Number.isNaN(num)) return currency ? `${value} ${currency}` : String(value);
-    
-    // VND does not use fractional denominations
-    const maxFractionDigits = currency?.toUpperCase() === 'VND' ? 0 : 2;
-    
-    const formatted = num.toLocaleString(locale, { maximumFractionDigits: maxFractionDigits });
-    return currency ? `${formatted} ${currency}` : formatted;
-}
-
-/**
- * Format a date as a short locale string (e.g. `09/04/2026`).
- * Handles SAP `/Date(…)/` format. Returns `'-'` for missing values.
- */
-export function formatDateShortLocale(value?: string): string {
-    if (!value) return '-';
-    const date = parseDate(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-GB');
-}
-
-/**
- * Format a time string or object (e.g. `PT10H24M18S`, `102418`, `{ ms: 37458000 }`)
- * into `HH:mm:ss` format.
- */
-export function formatTime(timeValue: unknown): string {
-    if (timeValue == null || timeValue === '') return '';
-    if (typeof timeValue === 'object' && (timeValue as any).ms !== undefined) {
-        const ms = Number((timeValue as any).ms);
-        if (!ms || ms === 0) return '';
-        const totalSecs = Math.floor(ms / 1000);
-        const hours = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
-        const mins = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
-        const secs = String(totalSecs % 60).padStart(2, '0');
-        const formatted = `${hours}:${mins}:${secs}`;
-        return formatted === '00:00:00' ? '' : formatted;
-    }
-    const str = String(timeValue).trim();
-    if (str === '00:00:00' || str === '00:00' || str === 'PT0S' || str === '000000') {
-        return '';
-    }
-    if (str.startsWith('PT')) {
-        const hours = str.match(/(\d+)H/)?.[1].padStart(2, '0') || '00';
-        const mins = str.match(/(\d+)M/)?.[1].padStart(2, '0') || '00';
-        const secs = str.match(/(\d+)S/)?.[1].padStart(2, '0') || '00';
-        const formatted = `${hours}:${mins}:${secs}`;
-        return formatted === '00:00:00' ? '' : formatted;
-    }
-    if (/^\d{6}$/.test(str)) {
-        const formatted = `${str.slice(0, 2)}:${str.slice(2, 4)}:${str.slice(4, 6)}`;
-        return formatted === '00:00:00' ? '' : formatted;
-    }
-    return str;
+export function formatFileSize(size?: number): string {
+    if (size == null || Number.isNaN(size)) return '-';
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /**
