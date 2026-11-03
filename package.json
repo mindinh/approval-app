@@ -22,7 +22,8 @@
     "xml2js": "^0.6.2"
   },
   "scripts": {
-    "dev:hybrid:watch": "npm run kill:ports && concurrently -k -n BE,FE -c cyan,green \"cds w --profile hybrid\" \"npm run dev:fe\"",
+    "dev:hybrid:watch": "npm run kill:ports && concurrently -k -n BE,FE -c cyan,green \"npm run dev:be:watch < NUL\" \"npm run dev:fe\"",
+    "dev:be:watch": "cds watch --profile hybrid --livereload false --exclude app,tests,docs,scripts",
     "kill:ports": "powershell -ExecutionPolicy Bypass -File ./kill-ports.ps1",
     "dev:all": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be\" \"npm run dev:fe\"",
     "dev:hybrid": "concurrently -k -n BE,FE -c cyan,green \"npm run dev:be:hybrid\" \"npm run dev:fe\"",
