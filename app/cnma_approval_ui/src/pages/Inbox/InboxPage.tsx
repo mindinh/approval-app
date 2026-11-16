@@ -217,6 +217,8 @@ export default function InboxPage() {
                             sapOrigin: task?.sapOrigin || 'LOCAL',
                             documentId: docNum,
                             businessObjectType: boType,
+                            // Claim bound actions are keyed by ApproverNumber; the BFF prefers the worklist value.
+                            approverNumber: bo?.ApproverNumber || task?.ApproverNumber || task?.approverNumber,
                         },
                     },
                 },

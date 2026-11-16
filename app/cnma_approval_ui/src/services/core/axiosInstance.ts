@@ -132,7 +132,11 @@ axiosInstance.interceptors.response.use(
     }
 
     // 403 on write operation -> likely CSRF token issue, retry once
-    if (error.response?.status === 403 && !originalRequest._retry && responseCode !== 'SAP_AUTH_ERROR') {
+    // Only a CSRF rejection (header `x-csrf-token: Required`, or a 403 without a structured
+    // BFF error code) is safe to replay. Business 403s must not resend a non-idempotent POST.
+    const csrfHeader = String(error.response?.headers?.['x-csrf-token'] || '').toLowerCase();
+    const isCsrfRejection = csrfHeader === 'required' || !responseCode;
+    if (error.response?.status === 403 && !originalRequest._retry && isCsrfRejection) {
       const method = originalRequest.method?.toLowerCase();
       const isWriteOp = method && ['post', 'put', 'patch', 'delete'].includes(method);
 

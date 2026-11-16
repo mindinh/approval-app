@@ -51,8 +51,42 @@ const TASK_CATEGORY_FILTER_BY_KEY: Record<TaskCategory, string> = {
     CLAIM: TASK_CATEGORY_FILTERS[3],
 };
 
+const MAX_SEARCH_WORDS = 5;
+
+/**
+ * Task titles are built from the category / document type and the document number
+ * ("Approve Purchase Order 4500000123"), so title words are matched through the category.
+ */
+const TITLE_KEYWORDS_BY_CATEGORY: Record<TaskCategory, readonly string[]> = {
+    PR: ['purchase requisition', 'requisition'],
+    PO: ['purchase order', 'order'],
+    RESERVATION: ['reservation'],
+    CLAIM: ['claim'],
+};
+
+const escapeODataString = (value: string): string => value.replace(/'/g, "''");
+
+/**
+ * OData condition for one search word: document number, creator (SAP user IDs are upper case),
+ * document type text (as typed and upper case) or a title keyword of a category.
+ */
+function buildSearchWordFilter(word: string): string {
+    const raw = escapeODataString(word);
+    const upper = escapeODataString(word.toUpperCase());
+    const lower = word.toLowerCase();
+    const alternatives = [`contains(DocumentNumber,'${raw}')`, `contains(CreatedByUser,'${upper}')`, `contains(DocumentTypeText,'${raw}')`];
+    if (upper !== raw) alternatives.push(`contains(DocumentTypeText,'${upper}')`);
+    for (const [category, keywords] of Object.entries(TITLE_KEYWORDS_BY_CATEGORY) as [TaskCategory, readonly string[]][]) {
+        if (lower.length >= 3 && keywords.some((keyword) => keyword.split(' ').some((part) => part.startsWith(lower)))) {
+            alternatives.push(TASK_CATEGORY_FILTER_BY_KEY[category]);
+        }
+    }
+    return `(${alternatives.join(' or ')})`;
+}
+
 interface CachedInstance {
     normalTask: boolean;
+    approverNumber?: string;
     inst?: any;
     cachedAt: number;
 }
@@ -306,9 +340,9 @@ export class InboxProcessor {
     ) {
         this.logger.info(`Executing decision ${decisionKey} on task ${instanceId}`);
         try {
-            const normalTask = await this.getInstanceNormalTask(instanceId, sapUser || '', userJwt);
-            if (normalTask === false) {
-                throw new AppError('Decisions (Approve/Reject) are not allowed for tagged/CC tasks', 403);
+            const taskInfo = await this.getInstanceTaskInfo(instanceId, sapUser || '', userJwt);
+            if (taskInfo.normalTask === false) {
+                throw new AppError('Decisions (Approve/Reject) are not allowed for tagged/CC tasks', 403, 'TASK_NOT_ACTIONABLE');
             }
 
             const ctxType = context?.businessObjectType || context?.objectType || context?.type;
@@ -329,7 +363,8 @@ export class InboxProcessor {
                     documentId: context?.documentId,
                     objectType: normalizedType,
                     sapOrigin: context?.sapOrigin,
-                    approverNumber: context?.approverNumber || (context as any)?.ApproverNumber,
+                    // SAP worklist is authoritative; the client value is only a fallback.
+                    approverNumber: taskInfo.approverNumber || context?.approverNumber || (context as any)?.ApproverNumber,
                 },
                 {
                     sapOdataAdapter: this.sapOdataAdapter,
@@ -568,6 +603,8 @@ export class InboxProcessor {
             category?: TaskCategory;
             documentType?: string;
             status?: 'In Approving' | 'Completed';
+            /** Part of a document number (mobile dashboard search). */
+            documentNumber?: string;
         }
     ) {
         this.logger.info(`Generating dashboard summary for user: ${sapUser}`);
@@ -581,6 +618,8 @@ export class InboxProcessor {
         if (options?.documentType) {
             detailFilters.push(`DocumentType eq '${options.documentType.replace(/'/g, "''")}'`);
         }
+        const documentNumber = options?.documentNumber?.trim().slice(0, 40);
+        if (documentNumber) detailFilters.push(`contains(DocumentNumber,'${escapeODataString(documentNumber)}')`);
 
         const now = Date.now();
         const cachedStatus = this.statusCountsCache.get(sapUser);
@@ -686,11 +725,11 @@ export class InboxProcessor {
     private _buildTaskFilter(filters?: { category?: TaskCategory; search?: string }): string | undefined {
         const conditions: string[] = [];
         if (filters?.category) conditions.push(TASK_CATEGORY_FILTER_BY_KEY[filters.category]);
-        const search = filters?.search?.trim().replace(/'/g, "''");
+        const search = filters?.search?.trim();
         if (search) {
-            conditions.push(
-                `(contains(DocumentNumber,'${search}') or contains(CreatedByUser,'${search}') or contains(DocumentTypeText,'${search}'))`
-            );
+            // Every word must match (e.g. "reservation 964"); each word may hit any searchable field.
+            const words = search.split(/\s+/).filter(Boolean).slice(0, MAX_SEARCH_WORDS);
+            conditions.push(...words.map(buildSearchWordFilter));
         }
         return conditions.length > 0 ? conditions.join(' and ') : undefined;
     }
@@ -814,7 +853,7 @@ export class InboxProcessor {
                 throw new AppError('Target user (forwardTo) is required', 400);
             }
 
-            const normalTask = await this.getInstanceNormalTask(instanceId, sapUser || '', userJwt);
+            const { normalTask } = await this.getInstanceTaskInfo(instanceId, sapUser || '', userJwt);
             if (normalTask === false) {
                 throw new AppError('Forward is not allowed for tagged/CC tasks', 403);
             }
@@ -868,14 +907,20 @@ export class InboxProcessor {
 
     // ─── Private Helper Methods ────────────────────────────────
 
-    private async getInstanceNormalTask(
+    /**
+     * Resolves the CC flag and the Claim approver sequence (`ApproverNumber`) of a task
+     * from `CNMA_WFTASK`. The approver number is part of the `CNMA_CLAIMHEADER` key, so
+     * bound actions sent with the wrong one are rejected by SAP ("not approver").
+     */
+    private async getInstanceTaskInfo(
         instanceId: string,
         sapUser: string,
         userJwt?: string
-    ): Promise<boolean> {
+    ): Promise<{ normalTask: boolean; approverNumber?: string }> {
         const cached = this.getCachedInstance(sapUser, instanceId);
         if (cached) {
-            return cached.normalTask;
+            const cachedApprover = cached.approverNumber || cached.inst?.ApproverNumber || cached.inst?.approverNumber;
+            return { normalTask: cached.normalTask, approverNumber: cachedApprover ? String(cachedApprover) : undefined };
         }
 
         try {
@@ -885,7 +930,7 @@ export class InboxProcessor {
                 '/CNMA_WFTASK',
                 {
                     $format: 'json',
-                    $select: 'NormalTask',
+                    $select: 'NormalTask,ApproverNumber',
                     $filter: `WorkflowTaskInternalID eq '${instanceId}'`,
                     $top: '1',
                 },
@@ -895,11 +940,12 @@ export class InboxProcessor {
             const items = response?.value || response?.d?.results || response?.d || [];
             const item = items[0];
             const normalTask = item ? item.NormalTask !== false : true;
-            this.setCachedInstance(sapUser, instanceId, { normalTask, cachedAt: Date.now() });
-            return normalTask;
+            const approverNumber = item?.ApproverNumber ? String(item.ApproverNumber) : undefined;
+            this.setCachedInstance(sapUser, instanceId, { normalTask, approverNumber, cachedAt: Date.now() });
+            return { normalTask, approverNumber };
         } catch (error: any) {
-            this.logger.warn(`Failed to fetch NormalTask for instance ${instanceId}: ${error.message}`);
-            return false;
+            this.logger.warn(`Failed to fetch task info for instance ${instanceId}: ${error.message}`);
+            return { normalTask: false };
         }
     }
 

@@ -1,0 +1,44 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/assets/*": [
+        "./assets/*"
+      ],
+      "@approval-core/renderers": [
+        "../cnma_approval_ui/src/renderers/index.ts"
+      ],
+      "@approval-core/inbox-types": [
+        "../cnma_approval_ui/src/services/inbox/inbox.types.ts"
+      ],
+      "@/services/inbox/inbox.types": [
+        "../cnma_approval_ui/src/services/inbox/inbox.types.ts"
+      ],
+      "@/services/inbox/inbox.contracts": [
+        "../cnma_approval_ui/src/services/inbox/inbox.contracts.ts"
+      ],
+      "@approval-core/status-predicates": [
+        "../cnma_approval_ui/src/pages/Inbox/utils/predicates.ts"
+      ],
+      "@approval-core/instance-id": [
+        "../cnma_approval_ui/src/pages/Inbox/utils/instanceId.ts"
+      ],
+      "@approval-core/file-names": [
+        "../cnma_approval_ui/src/pages/Inbox/utils/fileNames.ts"
+      ],
+      "@approval-core/task-filters": [
+        "../cnma_approval_ui/src/pages/Inbox/utils/taskFilterMatchers.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}

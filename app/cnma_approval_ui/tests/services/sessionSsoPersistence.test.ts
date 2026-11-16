@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+    logout,
     pingSessionKeepAlive,
     reauthenticateSession,
+    startSuspendDetector,
     triggerSessionExpiredGlobal,
 } from '@/components/providers/SessionTimeoutProvider';
 import axiosInstance from '@/services/core/axiosInstance';
@@ -59,6 +61,14 @@ describe('SSO Session Persistence & Silent Re-authentication (Standalone + WorkZ
             const config = JSON.parse(raw);
             expect(config.sessionTimeout).toBe(28800);
             expect(config.sessionTimeout * 60 * 1000).toBeLessThanOrEqual(2147483647);
+        });
+
+        it('does not force an identity provider on WorkZone routes (reuses the WorkZone IAS session instead of a second login in the iframe)', () => {
+            const raw = fs.readFileSync(path.join(repoRoot, 'app/cnma_approval_ui/public/xs-app.json'), 'utf8');
+            const config = JSON.parse(raw);
+            for (const route of config.routes) {
+                expect(route.identityProvider).toBeUndefined();
+            }
         });
 
         it('configures XSUAA (xs-security.json) with 12h access token and 30-day refresh token validity', () => {
@@ -159,10 +169,13 @@ describe('SSO Session Persistence & Silent Re-authentication (Standalone + WorkZ
 
     describe('4. Session Keep-Alive Heartbeat', () => {
         it('pings the health endpoint with credentials included and throttles duplicate calls within 5 minutes', async () => {
-            const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+            const fetchMock = vi.fn().mockResolvedValue(new Response('{}', {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            }));
             vi.stubGlobal('fetch', fetchMock);
 
-            await pingSessionKeepAlive(true);
+            await expect(pingSessionKeepAlive(true)).resolves.toBe(true);
             expect(fetchMock).toHaveBeenCalledTimes(1);
             expect(fetchMock).toHaveBeenCalledWith(
                 'api/cnma/APPROVAL_SRV/health',
@@ -180,6 +193,76 @@ describe('SSO Session Persistence & Silent Re-authentication (Standalone + WorkZ
             // Forced call (e.g. clicking "Continue Working") executes immediately
             await pingSessionKeepAlive(true);
             expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+
+        it('reports a dead session on 401 or login HTML, but not on network errors', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 401 })));
+            await expect(pingSessionKeepAlive(true)).resolves.toBe(false);
+
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html></html>', {
+                status: 200,
+                headers: { 'Content-Type': 'text/html' },
+            })));
+            await expect(pingSessionKeepAlive(true)).resolves.toBe(false);
+
+            vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+            await expect(pingSessionKeepAlive(true)).resolves.toBe(true);
+        });
+    });
+
+    describe('6. Background Resume Detection', () => {
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('fires once when timers were frozen for more than 5 minutes, not during normal ticking', () => {
+            vi.useFakeTimers();
+            const onResume = vi.fn();
+            const detector = startSuspendDetector(onResume);
+
+            // Normal foreground ticking for 10 minutes
+            vi.advanceTimersByTime(10 * 60 * 1000);
+            expect(onResume).not.toHaveBeenCalled();
+
+            // WebView suspended: wall clock jumps 2 hours, then one late tick runs
+            vi.setSystemTime(Date.now() + 2 * 60 * 60 * 1000);
+            vi.advanceTimersByTime(30 * 1000);
+            expect(onResume).toHaveBeenCalledTimes(1);
+
+            vi.advanceTimersByTime(60 * 1000);
+            expect(onResume).toHaveBeenCalledTimes(1);
+            detector.stop();
+        });
+
+        it('skips a resume already handled by visibilitychange (reset)', () => {
+            vi.useFakeTimers();
+            const onResume = vi.fn();
+            const detector = startSuspendDetector(onResume);
+
+            vi.setSystemTime(Date.now() + 2 * 60 * 60 * 1000);
+            detector.reset();
+            vi.advanceTimersByTime(30 * 1000);
+            expect(onResume).not.toHaveBeenCalled();
+            detector.stop();
+        });
+    });
+
+    describe('7. Explicit Logout', () => {
+        it('runs /do/logout in the top WorkZone window, never inside the iframe', () => {
+            const topWindow = { location: { href: 'https://workzone.example/site#cnma-approve' } };
+            const iframeWindow: Record<string, any> = {
+                parent: topWindow,
+                top: topWindow,
+                location: { href: 'https://workzone.example/cnma/index.html' },
+            };
+            vi.stubGlobal('window', iframeWindow);
+            mockStorage.setItem('session_active', 'true');
+
+            logout();
+
+            expect(topWindow.location.href).toBe('/do/logout');
+            expect(iframeWindow.location.href).toBe('https://workzone.example/cnma/index.html');
+            expect(mockStorage.getItem('session_active')).toBeNull();
         });
     });
 

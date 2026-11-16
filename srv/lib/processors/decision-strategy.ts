@@ -134,9 +134,10 @@ export class TaskprocessingDecisionStrategy implements DecisionStrategy {
 
 /**
  * Claim-specific strategy: invokes the entity-bound `/SAP__self.approve` OR
- * `/SAP__self.reject` action (depending on the user's decision) plus
- * `/SAP__self.comment` when a user comment is present, in parallel — both best-effort — and reports partial
- * success when any leg fails. SAP exposes these as two distinct bound actions
+ * `/SAP__self.reject` action (depending on the user's decision). The decision is
+ * fatal: if it fails the error is returned and no comment is posted. Only after it
+ * succeeds is `/SAP__self.comment` sent (when a user comment is present), best-effort;
+ * a failed comment is reported as partial success. SAP exposes these as two distinct bound actions
  * on `CNMA_CLAIMHEADER` per METADATA.xml, so callers must dispatch to the
  * correct one.
  */
@@ -173,40 +174,53 @@ export class ClaimDecisionStrategy implements DecisionStrategy {
 
         const approverNumber = ctx.approverNumber || '1';
 
-        const [actionResult, commentResult] = await Promise.allSettled([
-            actionMethod(
+        const actionName = decisionCode === 'R' ? 'reject' : 'approve';
+
+        // 1. The decision action is authoritative. Each SAP call is its own LUW, so a
+        //    comment posted alongside a failed decision would still be saved and every
+        //    user retry would add another orphan comment row. Fail fast instead.
+        try {
+            await actionMethod(
                 ctx.objectType || 'CLAIM',
                 ctx.documentId,
                 { decision: decisionCode, comment: zcomment, approverNumber },
                 ctx.sapUser || '',
                 ctx.userJwt,
-            ),
-            ...(trimmedComment ? [deps.addComment(ctx.documentId, trimmedComment, ctx.sapUser || '', {
-                userJwt: ctx.userJwt,
-                decision: decisionCode,
-                objectType: ctx.objectType || 'CLAIM',
-                taskId: ctx.instanceId,
-                approverNumber,
-            })] : []),
-        ]);
-
-        if (actionResult.status === 'rejected') {
-            deps.logger.warn(`Non-fatal: Claim entity-bound ${decisionCode === 'R' ? 'reject' : 'approve'} failed for ${ctx.documentId}: ${(actionResult as PromiseRejectedResult).reason?.message || (actionResult as PromiseRejectedResult).reason}`);
-        }
-        if (commentResult?.status === 'rejected') {
-            deps.logger.warn(`Non-fatal: Claim entity-bound comment failed for ${ctx.documentId}: ${(commentResult as PromiseRejectedResult).reason?.message || (commentResult as PromiseRejectedResult).reason}`);
+            );
+        } catch (error: any) {
+            deps.logger.warn(`Claim entity-bound ${actionName} failed for ${ctx.documentId} (approver ${approverNumber}): ${error?.message || error}`);
+            throw error instanceof AppError
+                ? error
+                : new AppError(`Claim ${actionName} failed: ${error?.message || error}`, 502, 'SAP_BUSINESS_ERROR');
         }
 
-        const approve = actionResult.status === 'fulfilled' ? 'fulfilled' : 'rejected';
-        const comment = commentResult?.status;
-        const partialSuccess = approve === 'rejected' || comment === 'rejected';
+        // 2. Only after the decision succeeded, record the user's comment (best-effort).
+        let comment: 'fulfilled' | 'rejected' | undefined;
+        if (trimmedComment) {
+            try {
+                await deps.addComment(ctx.documentId, trimmedComment, ctx.sapUser || '', {
+                    userJwt: ctx.userJwt,
+                    decision: decisionCode,
+                    objectType: ctx.objectType || 'CLAIM',
+                    taskId: ctx.instanceId,
+                    approverNumber,
+                });
+                comment = 'fulfilled';
+            } catch (error: any) {
+                comment = 'rejected';
+                deps.logger.warn(`Non-fatal: Claim entity-bound comment failed for ${ctx.documentId}: ${error?.message || error}`);
+            }
+        }
+
+        const partialSuccess = comment === 'rejected';
+        const verb = decisionCode === 'A' ? 'approved' : 'rejected';
 
         return {
             status: partialSuccess ? 'PARTIAL_SUCCESS' : 'SUCCESS',
             message: partialSuccess
-                ? `Claim ${decisionCode === 'A' ? 'approved' : 'rejected'}, but one endpoint failed. See server logs.`
-                : `Claim ${decisionCode === 'A' ? 'approved' : 'rejected'}.`,
-            approve,
+                ? `Claim ${verb}, but the comment could not be saved.`
+                : `Claim ${verb}.`,
+            approve: 'fulfilled',
             comment,
             partialSuccess,
         };

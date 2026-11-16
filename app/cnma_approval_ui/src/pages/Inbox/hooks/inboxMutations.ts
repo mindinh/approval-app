@@ -37,6 +37,11 @@ function actionResponseMessage(data: unknown): string | undefined {
     return response?.message || response?.result?.message;
 }
 
+function isPartialSuccess(data: unknown): boolean {
+    const response = data as { result?: { partialSuccess?: boolean; status?: string } } | undefined;
+    return response?.result?.partialSuccess === true || response?.result?.status === 'PARTIAL_SUCCESS';
+}
+
 function isRejectDecisionKey(decisionKey: string): boolean {
     return decisionKey === DECISION_KEYS.REJECT;
 }
@@ -61,7 +66,12 @@ export function useDecision() {
         onSuccess: (data, variables, mutationContext) => {
             dismissLoadingToast(mutationContext);
             const successMsg = actionResponseMessage(data) || 'Decision processed successfully.';
-            toast.success(successMsg);
+            // The decision went through but a best-effort step (e.g. the comment) failed.
+            if (isPartialSuccess(data)) {
+                toast.warning(successMsg, { duration: FAILED_TASK_TOAST_DURATION_MS });
+            } else {
+                toast.success(successMsg);
+            }
             invalidateAfterDecision(queryClient, variables.instanceId);
         },
         onError: (error, _variables, mutationContext) => {

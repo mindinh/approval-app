@@ -41,6 +41,7 @@ modules:
       - name: cnma-prorequest-s4h-identity
       - name: cnma-prorequest-s4h-destination
       - name: cnma-prorequest-s4h-connectivity
+      - name: cnma-prorequest-s4h-entra
     provides:
       - name: srv-api
         properties:
@@ -116,6 +117,7 @@ modules:
         - ".agent/"
         - ".agents/"
         - "app/cnma_approval_ui/"
+        - "app/cnma_approval_mobile/"
         - "app/router/"
         - "srv/"
         - "db/"
@@ -216,6 +218,15 @@ resources:
     parameters:
       service: connectivity
       service-plan: lite
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Microsoft Entra ID settings for the mobile app (user-provided, created manually per space):
+  #   cf cups cnma-prorequest-s4h-entra -p '{"tenantId":"…","apiClientId":"…","clientSecret":"…","samlScope":"…","xsuaaTokenAlias":"…"}'
+  # Optional: spaces without it deploy normally and only accept XSUAA (web) tokens.
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cnma-prorequest-s4h-entra
+    type: org.cloudfoundry.existing-service
+    optional: true
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Identity Service (for mobile IAS OIDC support)

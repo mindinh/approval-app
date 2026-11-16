@@ -315,11 +315,11 @@ describe('ClaimDecisionStrategy', () => {
         );
     });
 
-    it('reports PARTIAL_SUCCESS when approve fails', async () => {
+    it('throws and does NOT post the comment when approve fails', async () => {
         const deps = makeDeps({
-            sapOdataAdapter: { approveOnHeader: vi.fn().mockRejectedValue(new Error('500')) },
+            sapOdataAdapter: { approveOnHeader: vi.fn().mockRejectedValue(new Error('not approver')) },
         });
-        const outcome = await strategy.execute(
+        await expect(strategy.execute(
             {
                 instanceId: '212',
                 decisionKey: '0001',
@@ -330,18 +330,39 @@ describe('ClaimDecisionStrategy', () => {
                 objectType: 'CLAIM',
             },
             deps
-        );
-        expect(outcome.status).toBe('PARTIAL_SUCCESS');
-        expect(outcome.partialSuccess).toBe(true);
-        expect(outcome.approve).toBe('rejected');
-        expect(outcome.comment).toBe('fulfilled');
+        )).rejects.toMatchObject({ statusCode: 502, message: expect.stringContaining('not approver') });
+        expect(deps.addComment).not.toHaveBeenCalled();
     });
 
-    it('reports PARTIAL_SUCCESS when rejectOnHeader fails', async () => {
+    it('rethrows SAP AppErrors from rejectOnHeader unchanged and skips the comment', async () => {
+        const sapError = new AppError('SAP business/gateway error: not approver', 400, 'SAP_BUSINESS_ERROR');
         const deps = makeDeps({
-            sapOdataAdapter: { rejectOnHeader: vi.fn().mockRejectedValue(new Error('500')) },
+            sapOdataAdapter: { rejectOnHeader: vi.fn().mockRejectedValue(sapError) },
         });
-        const outcome = await strategy.execute(
+        await expect(strategy.execute(
+            {
+                instanceId: '212',
+                decisionKey: '0002',
+                sapDecisionKey: '0002',
+                comment: 'reject',
+                sapUser: 'MOCK_USER',
+                documentId: '212',
+                objectType: 'CLAIM',
+            },
+            deps
+        )).rejects.toBe(sapError);
+        expect(deps.sapOdataAdapter.rejectOnHeader).toHaveBeenCalled();
+        expect(deps.sapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
+        expect(deps.addComment).not.toHaveBeenCalled();
+    });
+
+    it('posts the comment only after the decision action has completed', async () => {
+        const order: string[] = [];
+        const deps = makeDeps({
+            sapOdataAdapter: { rejectOnHeader: vi.fn(async () => { order.push('reject'); }) },
+            addComment: vi.fn(async () => { order.push('comment'); }),
+        });
+        await strategy.execute(
             {
                 instanceId: '212',
                 decisionKey: '0002',
@@ -353,12 +374,7 @@ describe('ClaimDecisionStrategy', () => {
             },
             deps
         );
-        expect(outcome.status).toBe('PARTIAL_SUCCESS');
-        expect(outcome.partialSuccess).toBe(true);
-        expect(outcome.approve).toBe('rejected');
-        expect(outcome.comment).toBe('fulfilled');
-        expect(deps.sapOdataAdapter.rejectOnHeader).toHaveBeenCalled();
-        expect(deps.sapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
+        expect(order).toEqual(['reject', 'comment']);
     });
 
     it('reports PARTIAL_SUCCESS when comment fails', async () => {

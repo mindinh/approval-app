@@ -109,14 +109,24 @@ export const hasHeaderValue = (value: string | string[] | undefined): boolean =>
     return false;
 };
 
+/**
+ * The `x-sap-user` impersonation header is a local-development aid only. In production any caller
+ * could otherwise act as another SAP user, so the header is ignored there.
+ */
+export const isImpersonationAllowed = (): boolean => process.env.NODE_ENV !== 'production';
+
+/** True when the request is using the (development-only) `x-sap-user` impersonation header. */
+export const isImpersonatedRequest = (req: Request): boolean =>
+    isImpersonationAllowed() && hasHeaderValue(req.headers['x-sap-user']);
+
 export const resolveIdentity = (req: Request): { sapUser: string; userJwt?: string } => {
     const jwtInfo = extractJwtFromRequest(req);
     const userJwt = jwtInfo.token;
-    
+
     let sapUser = 'MOCK_USER';
-    
-    // 1. Impersonation header check (dev)
-    const headerOverride = req.headers['x-sap-user'];
+
+    // 1. Impersonation header check (dev only)
+    const headerOverride = isImpersonationAllowed() ? req.headers['x-sap-user'] : undefined;
     if (headerOverride) {
         sapUser = Array.isArray(headerOverride) ? (headerOverride[0] || '').toUpperCase() : String(headerOverride).toUpperCase();
     } else if (userJwt) {

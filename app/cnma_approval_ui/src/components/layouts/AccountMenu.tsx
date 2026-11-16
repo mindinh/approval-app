@@ -5,6 +5,7 @@ import { Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, Dropdow
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { useCurrentUser } from '@/pages/Inbox/hooks/inboxQueries';
 import { isWorkZone } from '@/utils/launchpad';
+import { logout } from '@/components/providers/SessionTimeoutProvider';
 
 /** Account details stay available without occupying a separate header row. */
 export function AccountMenu({ children, onViewProfile }: { children?: ReactNode; onViewProfile?: () => void }) {
@@ -27,7 +28,7 @@ export function AccountMenu({ children, onViewProfile }: { children?: ReactNode;
                 {onViewProfile && <DropdownMenuItem className="min-h-11" onSelect={onViewProfile}>
                     <UserRound className="size-4" />{t('profile.title')}
                 </DropdownMenuItem>}
-                <DropdownMenuItem className="min-h-11" onSelect={() => { window.location.href = '/do/logout'; }}>
+                <DropdownMenuItem className="min-h-11" onSelect={() => logout()}>
                     <LogOut className="size-4" />{t('nav.logOut')}
                 </DropdownMenuItem>
             </DropdownMenuContent>

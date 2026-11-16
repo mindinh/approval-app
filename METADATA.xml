@@ -114,7 +114,7 @@
                 <Property Name="ReleaseStrategyText" Type="Edm.String" Nullable="false" MaxLength="20"/>
                 <Property Name="FundsCenter" Type="Edm.String" Nullable="false" MaxLength="16"/>
                 <Property Name="FundsCenterName" Type="Edm.String" Nullable="false" MaxLength="20"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="31" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType)"/>
                 <NavigationProperty Name="_Attachment" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_ATTACHType)"/>
@@ -212,7 +212,7 @@
                 <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/>
                 <Property Name="DocumentNumber" Type="Edm.String" Nullable="false" MaxLength="70"/>
                 <Property Name="PaymentAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="13"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="31" Scale="variable"/>
                 <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="TotalVatAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
@@ -358,7 +358,7 @@
                 <Property Name="SupplyingPlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
                 <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/>
                 <Property Name="PlantName" Type="Edm.String" Nullable="false" MaxLength="30"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="31" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="TotalNetValueBeforeTax" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
                 <Property Name="TotalFreightAmount" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
@@ -406,7 +406,7 @@
                 <Property Name="CostCenterName" Type="Edm.String" Nullable="false" MaxLength="20"/>
                 <Property Name="CompanyCode" Type="Edm.String" Nullable="false" MaxLength="1"/>
                 <Property Name="CompanyCodeName" Type="Edm.String" Nullable="false" MaxLength="1"/>
-                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="variable"/>
+                <Property Name="TotalNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="31" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
                 <Property Name="ReleaseStrategyText" Type="Edm.String" Nullable="false" MaxLength="60"/>
                 <NavigationProperty Name="_ApprovalStep" Type="Collection(com.sap.gateway.srvd_a2x.za_cnma_prorequest.v0001.ZI_CNMA_APPROVAL_STEPType)"/>
@@ -502,7 +502,7 @@
                 <Property Name="DocumentTypeText" Type="Edm.String" Nullable="false" MaxLength="20"/>
                 <Property Name="MovementTypeName" Type="Edm.String" Nullable="false" MaxLength="1"/>
                 <Property Name="RequestCount" Type="Edm.Int32" Nullable="false"/>
-                <Property Name="SumNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="SumNetAmountLocalCrcy" Type="Edm.Decimal" Nullable="false" Precision="31" Scale="variable"/>
                 <Property Name="LocalCurrency" Type="Edm.String" Nullable="false" MaxLength="5"/>
             </EntityType>
             <ComplexType Name="zd_cnma_forward_rs">
