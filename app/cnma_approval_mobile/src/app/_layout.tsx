@@ -6,23 +6,26 @@ import { useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SessionProvider, useSession, type SessionStatus } from '@/lib/auth/session';
-import { config, missingConfig } from '@/lib/config/env';
+import { config, features, missingConfig } from '@/lib/config/env';
 import { takePendingLink } from '@/lib/navigation/pending-link';
 import { createQueryClient, subscribeAppStateFocus, subscribeNetworkStatus } from '@/lib/query/query-client';
 import { ConfigMissingScreen } from '@/screens/config-missing';
-import { restoreAppearance, useColors } from '@/theme';
+import { restoreAppearance, restoreBrandTheme, useColors } from '@/theme';
 import { commentDrafts } from '@/hooks/mutations/comment-drafts';
+import { massSelection } from '@/hooks/mutations/mass-selection';
 import { pendingComments } from '@/hooks/mutations/pending-comments';
 import { usePendingDecisionCheck } from '@/hooks/mutations/use-pending-decision-check';
 import { clearDownloadedAttachments } from '@/lib/api/attachments';
 import { pendingDecisions } from '@/lib/api/pending-decisions';
 import { useNavigationTheme } from '@/theme/navigation-theme';
 import { AppLockGate, useOfferAppLock } from '@/components/app-lock-gate';
+import { ToastHost } from '@/components/toast';
 import { appLock, useAppLock } from '@/lib/security/app-lock';
 
 void SplashScreen.preventAutoHideAsync();
 // Apply the saved Light/Dark choice while the splash is still up, so the first frame is already themed.
 void restoreAppearance();
+void restoreBrandTheme();
 // Read the Face ID lock choice while the splash is up: a locked app must open locked.
 void appLock.restore();
 
@@ -99,6 +102,7 @@ function useClearCacheOnSignOut(status: SessionStatus) {
         // Unconfirmed decisions belong to the signed-out user; never show them to the next one.
         void pendingDecisions.clear();
         pendingComments.clear();
+        massSelection.end();
         commentDrafts.clear();
         // The next user chooses their own lock.
         appLock.reset();
@@ -150,10 +154,13 @@ function AppStack() {
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="account" dangerouslySingular options={{ ...PROFILE_SHEET, contentStyle: { backgroundColor: colors.groupedBackground } }} />
                 <Stack.Screen name="tasks/[id]" dangerouslySingular={taskIdOf} options={TASK_DETAIL} />
+                <Stack.Screen name="reference-pr/[number]" options={TASK_DETAIL} />
                 <Stack.Screen name="decision" dangerouslySingular options={{ ...DECISION_SHEET, contentStyle: { backgroundColor: colors.groupedBackground } }} />
-                <Stack.Screen name="tag-people" dangerouslySingular options={{ ...TAG_SHEET, contentStyle: { backgroundColor: colors.groupedBackground } }} />
+                <Stack.Screen name="mass-decision" dangerouslySingular options={{ ...DECISION_SHEET, contentStyle: { backgroundColor: colors.groupedBackground } }} />
+                <Stack.Protected guard={features.mentions}>
+                    <Stack.Screen name="tag-people" dangerouslySingular options={{ ...TAG_SHEET, contentStyle: { backgroundColor: colors.groupedBackground } }} />
+                </Stack.Protected>
                 <Stack.Screen name="filters" dangerouslySingular options={{ ...FILTER_SHEET, contentStyle: { backgroundColor: colors.groupedBackground } }} />
-                <Stack.Screen name="diagnostics" dangerouslySingular options={{ title: 'Diagnostics', headerLargeTitleEnabled: false, headerBackButtonDisplayMode: 'minimal' }} />
                 <Stack.Screen name="attachment-viewer" dangerouslySingular options={IMAGE_VIEWER} />
             </Stack.Protected>
             <Stack.Protected guard={!signedIn}>
@@ -162,6 +169,7 @@ function AppStack() {
             <Stack.Screen name="auth" options={{ headerShown: false, animation: 'none' }} />
         </Stack>
         <AppLockGate signedIn={signedIn} onSignOut={() => void signOut()} />
+        <ToastHost />
         </>
     );
 }

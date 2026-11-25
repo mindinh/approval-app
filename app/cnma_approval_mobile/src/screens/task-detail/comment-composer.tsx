@@ -12,6 +12,7 @@ import { useAddComment } from '@/hooks/mutations/use-add-comment';
 import { useMentionDirectory } from '@/hooks/queries/use-user-queries';
 import { useIsOnline } from '@/hooks/use-is-online';
 import type { WriteContext } from '@/lib/api/bff-api';
+import { features } from '@/lib/config/env';
 import { haptics } from '@/lib/haptics';
 import { duration, radius, spacing, type, useColors } from '@/theme';
 import {
@@ -46,6 +47,7 @@ export const COMPOSER_HEIGHT = 64;
  * - tagged people show as chips (× removes them); deleting or editing a name un-tags that person
  * - the @ button opens the Tag people sheet to tick several people at once
  * The draft (text and tags) is kept per task, so leaving the task and coming back keeps it.
+ * Tagging is left out entirely when the build turns it off (features.mentions).
  */
 export function CommentComposer({
     instanceId,
@@ -70,11 +72,11 @@ export function CommentComposer({
     const [selection, setSelection] = useState({ start: draft.text.length, end: draft.text.length });
 
     const text = draft.text;
-    const tagged = activeTags(text, draft.tagged);
-    const mention = focused && selection.start === selection.end ? activeMention(text, selection.start) : null;
+    const tagged = features.mentions ? activeTags(text, draft.tagged) : [];
+    const mention = features.mentions && focused && selection.start === selection.end ? activeMention(text, selection.start) : null;
 
     // The directory loads once the user starts writing, so the first "@" already has people to show.
-    const directory = useMentionDirectory(focused || tagged.length > 0);
+    const directory = useMentionDirectory(features.mentions && (focused || tagged.length > 0));
     const index = useMemo(() => buildSearchIndex(directory.data ?? []), [directory.data]);
     const suggestions = mention ? searchMentionUsers(index, mention.query, SUGGESTION_LIMIT) : [];
 
@@ -172,28 +174,30 @@ export function CommentComposer({
                 {tagged.length > 0 ? <TaggedChips users={tagged} onRemove={untag} /> : null}
 
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, paddingHorizontal: spacing.md }}>
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Tag people"
-                        accessibilityHint="Choose people to copy on this comment"
-                        hitSlop={4}
-                        onPress={openTagSheet}
-                        style={({ pressed }) => ({ width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? colors.fillBackground : 'transparent' })}
-                    >
-                        <Icon name={{ ios: 'at', android: 'alternate_email' }} size={20} color={colors.accent} />
-                    </Pressable>
+                    {features.mentions ? (
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Tag people"
+                            accessibilityHint="Choose people to copy on this comment"
+                            hitSlop={4}
+                            onPress={openTagSheet}
+                            style={({ pressed }) => ({ width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? colors.fillBackground : 'transparent' })}
+                        >
+                            <Icon name={{ ios: 'at', android: 'alternate_email' }} size={20} color={colors.accent} />
+                        </Pressable>
+                    ) : null}
                     <TextInput
                         ref={inputRef}
                         onChangeText={changeText}
                         onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
                         onFocus={() => setFocused(true)}
                         onBlur={() => setFocused(false)}
-                        placeholder={online ? 'Write a comment… (@ to tag)' : 'Offline: sending needs a connection'}
+                        placeholder={online ? (features.mentions ? 'Write a comment… (@ to tag)' : 'Write a comment…') : 'Offline: sending needs a connection'}
                         placeholderTextColor={colors.tertiaryLabel}
                         multiline
                         maxLength={COMMENT_LIMIT}
                         accessibilityLabel="Comment"
-                        accessibilityHint="Type @ to tag someone"
+                        accessibilityHint={features.mentions ? 'Type @ to tag someone' : undefined}
                         style={[
                             type.callout,
                             {
@@ -231,7 +235,7 @@ export function CommentComposer({
                             borderRadius: radius.full,
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: canSend ? colors.accent : colors.fillBackground,
+                            backgroundColor: canSend ? colors.accentFill : colors.fillBackground,
                             opacity: pressed ? 0.75 : 1,
                         })}
                     >

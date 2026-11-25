@@ -1,8 +1,8 @@
 import { FlashList, type FlashListRef, type ViewToken } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { BackHandler, Pressable, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import Animated, { FadeIn, FadeOut, useSharedValue } from 'react-native-reanimated';
 import { Button } from '@/components/button';
 import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
@@ -11,10 +11,12 @@ import { ErrorState, InlineErrorRow } from '@/components/error-state';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { BrandRefreshControl, TopWash, useScreenContentInsets } from '@/components/screen-scroll-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Section } from '@/components/section';
 import { TaskCardSkeleton } from '@/components/task-card';
 import { TaskCardLink } from '@/components/task-card-link';
+import { useTabBarInset } from '@/components/floating-tab-bar';
+import { massSelection, useMassSelection } from '@/hooks/mutations/mass-selection';
 import { useCategoryCounts } from '@/hooks/queries/use-task-queries';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useWorklistFilters } from '@/hooks/use-worklist-filters';
@@ -25,6 +27,7 @@ import { radius, shadows, spacing, useColors } from '@/theme';
 import { activeFilterCount } from '@/utils/task-filters';
 import type { TaskSummary } from '@/utils/task-summary';
 import { CATEGORY_GROUPS, CategoryGroupFooter, CategoryGroupHeader, useCategoryGroup, type CategoryGroupData } from './category-group';
+import { MASS_BAR_HEIGHT, MassActionBar, SelectableTaskCard } from './mass-select';
 import { SEARCH_FIELD_HEIGHT, SearchField } from '@/components/search-field';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -81,7 +84,22 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
     const colors = useColors();
     const copy = COPY[scope];
     const wide = useWindowClass() === 'expanded';
-    const { paddingTop, paddingBottom, refreshOffset } = useScreenContentInsets(true);
+    const { paddingTop, paddingBottom: basePaddingBottom, refreshOffset } = useScreenContentInsets(true);
+    const tabBarInset = useTabBarInset();
+
+    // Mass approve / reject (Inbox only): selection mode replaces opening a task with selecting it.
+    const selection = useMassSelection();
+    const selecting = scope === 'open' && selection.active;
+    const paddingBottom = basePaddingBottom + (selecting ? MASS_BAR_HEIGHT : 0);
+    useEffect(() => {
+        if (!selecting) return;
+        // Android Back leaves selection mode first (like Gmail / Files), instead of leaving the tab.
+        const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+            massSelection.end();
+            return true;
+        });
+        return () => subscription.remove();
+    }, [selecting]);
 
     const router = useRouter();
     const { filters, reset: resetFilters } = useWorklistFilters(scope);
@@ -120,9 +138,11 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
     };
 
     const anyOpen = CATEGORY_GROUPS.some((group) => openGroups.has(group.key));
-    const collapseAll = () => {
+    // While selecting for a mass decision the groups stay open (the selection is spread over them): only scroll up.
+    const keepGroupsOpen = searching || selecting;
+    const backToTop = () => {
         haptics.light();
-        if (!searching) setExpanded(new Set());
+        if (!keepGroupsOpen) setExpanded(new Set());
         listRef.current?.scrollToOffset({ offset: 0, animated: true });
     };
 
@@ -139,7 +159,10 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
         }
     }, []);
 
+    // Scroll position for the top wash (0 at rest; iOS reports the status-bar inset as a negative offset).
+    const washScroll = useSharedValue(0);
     const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        washScroll.set(event.nativeEvent.contentOffset.y + (event.nativeEvent.contentInset?.top ?? 0));
         const next = event.nativeEvent.contentOffset.y > SHOW_TOP_PILL_AFTER;
         if (next !== showTopPill) setShowTopPill(next);
     };
@@ -179,6 +202,7 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
         }
     }
     const searchEmpty = searching && !searchPending && searchResults === 0;
+    const candidates = rows.flatMap((row) => (row.type === 'task' ? [row.task] : []));
     const total = counts.data ? CATEGORY_GROUPS.reduce((sum, group) => sum + (counts.data?.[group.key] ?? 0), 0) : undefined;
     const allDone = counts.data !== undefined && total === 0 && !searching && !filtered;
     const indent = wide ? spacing.lg : spacing.xs;
@@ -210,7 +234,11 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
             case 'task':
                 return (
                     <View style={{ paddingTop: spacing.smd, paddingLeft: indent }}>
-                        <TaskCardLink task={item.task} now={item.now} />
+                        {selecting ? (
+                            <SelectableTaskCard task={item.task} now={item.now} selected={selection.tasks.has(item.task.instanceId)} />
+                        ) : (
+                            <TaskCardLink task={item.task} now={item.now} />
+                        )}
                     </View>
                 );
             case 'loading':
@@ -276,12 +304,30 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
                 <ThemedText variant="footnote" style={{ flex: 1 }}>
                     {searching ? (searchPending ? 'Searching…' : searchResults === 1 ? '1 matching task' : `${searchResults} matching tasks`) : 'Categories'}
                 </ThemedText>
-                {!searching && anyOpen ? (
+                {scope === 'open' && !allDone ? (
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={selecting ? 'Cancel selection' : 'Select requests to approve or reject together'}
+                        hitSlop={8}
+                        onPress={() => {
+                            haptics.selection();
+                            if (selecting) massSelection.end();
+                            else massSelection.start();
+                        }}
+                        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: !searching && anyOpen && !selecting ? spacing.md : 0, opacity: pressed ? 0.6 : 1 })}
+                    >
+                        <Icon name={selecting ? { ios: 'xmark', android: 'close' } : { ios: 'checkmark.circle', android: 'checklist' }} size={14} color={colors.accent} />
+                        <ThemedText variant="footnote" style={{ color: colors.accent, fontWeight: '600' }}>
+                            {selecting ? 'Cancel' : 'Select'}
+                        </ThemedText>
+                    </Pressable>
+                ) : null}
+                {!searching && anyOpen && !selecting ? (
                     <Pressable
                         accessibilityRole="button"
                         accessibilityLabel="Collapse all categories"
                         hitSlop={8}
-                        onPress={collapseAll}
+                        onPress={backToTop}
                         style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, opacity: pressed ? 0.6 : 1 })}
                     >
                         <Icon name={{ ios: 'rectangle.compress.vertical', android: 'unfold_less' }} size={14} color={colors.accent} />
@@ -309,7 +355,7 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
     ) : allDone ? (
         <EmptyState
             icon={scope === 'open' ? { ios: 'checkmark.seal', android: 'verified' } : { ios: 'tray', android: 'inbox' }}
-            tint={{ foreground: colors.accent, background: colors.accentSoft }}
+            tint={{ foreground: colors.secondaryLabel, background: colors.fillBackground }}
             title={copy.empty}
             message={copy.emptyMessage}
         />
@@ -317,7 +363,7 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.groupedBackground }}>
-            <TopWash />
+            <TopWash scrollY={washScroll} />
             <FlashList
                 ref={listRef}
                 data={emptyContent ? [] : rows}
@@ -331,7 +377,8 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={VIEWABILITY}
                 onScroll={onScroll}
-                scrollEventThrottle={64}
+                // Every frame: the top wash follows the scroll position.
+                scrollEventThrottle={16}
                 keyboardDismissMode="on-drag"
                 keyboardShouldPersistTaps="handled"
                 contentInsetAdjustmentBehavior="automatic"
@@ -339,14 +386,32 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
                 contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop, paddingBottom }}
                 refreshControl={<BrandRefreshControl refreshing={pulling} onRefresh={refresh} offset={refreshOffset} />}
             />
-            {showTopPill ? <TopPill label={searching || !anyOpen ? 'Back to top' : 'Collapse all'} onPress={collapseAll} /> : null}
+            {selecting ? <SelectionBar selected={selection.tasks} candidates={candidates} tabBarInset={tabBarInset} /> : null}
+            {showTopPill ? <TopPill label={keepGroupsOpen || !anyOpen ? 'Back to top' : 'Collapse all'} onPress={backToTop} /> : null}
         </View>
     );
 }
 
 /**
- * Floating pill at the top of the screen once the list is scrolled far down: collapses the groups and
- * scrolls up. It sits under the status bar (where the list scrolls back to), so it never depends on the
+ * Positions the mass action bar above the tab bar. iOS: a native SafeAreaView inside the tab screen reads
+ * the real tab bar height (NativeTabs); Android: the floating tab bar's own inset.
+ */
+function SelectionBar({ selected, candidates, tabBarInset }: { selected: ReadonlyMap<string, TaskSummary>; candidates: readonly TaskSummary[]; tabBarInset: number }) {
+    const bar = <MassActionBar selected={selected} candidates={candidates} />;
+    return process.env.EXPO_OS === 'ios' ? (
+        <SafeAreaView edges={['bottom']} pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+            {bar}
+        </SafeAreaView>
+    ) : (
+        <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: Math.max(0, tabBarInset - spacing.md) }}>
+            {bar}
+        </View>
+    );
+}
+
+/**
+ * Floating pill at the top of the screen once the list is scrolled far down: collapses the groups (not while
+ * searching or selecting) and scrolls up. It sits under the status bar (where the list scrolls back to), so it never depends on the
  * height of the platform tab bar.
  */
 function TopPill({ label, onPress }: { label: string; onPress: () => void }) {
@@ -398,7 +463,7 @@ function FilterButton({ count, onPress }: { count: number; onPress: () => void }
                 borderRadius: radius.full,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: active ? colors.accent : colors.cardBackground,
+                backgroundColor: active ? colors.accentFill : colors.cardBackground,
                 borderWidth: active ? 0 : 1,
                 borderColor: colors.cardBorder,
                 boxShadow: shadows.card,

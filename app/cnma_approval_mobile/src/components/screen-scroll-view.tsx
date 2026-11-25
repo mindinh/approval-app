@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { RefreshControl, ScrollView, View, type RefreshControlProps } from 'react-native';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { layout, spacing, useColors } from '@/theme';
 import { useTabBarInset } from './floating-tab-bar';
 
-/** Height of the brand wash below the status bar; it fades out completely by then. */
-const WASH_HEIGHT = 340;
 const IS_IOS = process.env.EXPO_OS === 'ios';
+/** How far the brand wash reaches below the status bar: only the header area. */
+const WASH_HEIGHT = 180;
 
 /**
  * Content padding of a scrolling screen. With `headerless` (tab roots that draw a ScreenHeader), iOS
@@ -25,25 +26,64 @@ export function useScreenContentInsets(headerless: boolean) {
     };
 }
 
+/** Solid wash above the content, so an iOS pull-down (rubber band) never shows a white gap. */
+const WASH_OVERSCROLL = 400;
+
 /**
- * Faint brand wash pinned to the very top of the screen: it starts under the status bar, notch,
- * Dynamic Island or camera cutout, so the background runs edge to edge instead of stopping at the
- * safe area. Place it as the first child of a full-screen container, behind transparent content.
+ * Short brand wash at the top of the four tab screens (Home, Inbox, Approved, Dashboard). It is part of the
+ * scroll content, so it covers the area under the status bar / Dynamic Island and the header, then scrolls
+ * away with them: the rest of the screen stays a plain off-white.
+ *
+ * Put it first inside the ScrollView's content (absolutely positioned, behind the rest). Lists use TopWash.
  */
-export function TopWash() {
+function ScrollingWash() {
     const colors = useColors();
     const { top } = useSafeAreaInsets();
+    // iOS insets the content below the status bar (contentInsetAdjustmentBehavior); Android pads instead.
+    const underStatusBar = IS_IOS ? top : 0;
+    const height = WASH_OVERSCROLL + top + WASH_HEIGHT;
+    const solidUntil = Math.round((WASH_OVERSCROLL / height) * 100);
     return (
         <View
             pointerEvents="none"
             style={{
                 position: 'absolute',
-                top: 0,
+                top: -(WASH_OVERSCROLL + underStatusBar),
                 left: 0,
                 right: 0,
-                height: WASH_HEIGHT + top,
-                experimental_backgroundImage: `linear-gradient(180deg, ${colors.accent}1F 0%, ${colors.accent}0A 45%, ${colors.accent}00 100%)`,
+                height,
+                experimental_backgroundImage: `linear-gradient(180deg, ${colors.accent}24 0%, ${colors.accent}24 ${solidUntil}%, ${colors.accent}0D ${solidUntil + Math.round((100 - solidUntil) * 0.55)}%, ${colors.accent}00 100%)`,
             }}
+        />
+    );
+}
+
+/**
+ * The same short wash for virtualized lists (Inbox, Approved): a list header cannot draw above the content
+ * (FlashList clips it at the header's top edge, so the status bar area stayed plain). This one sits behind
+ * the list, fixed to the top of the screen, and moves up with the list's scroll offset on the UI thread, so it
+ * still scrolls away with the header. Pulling down past the top keeps it in place (no gap above).
+ *
+ * @param scrollY the list's content offset from the top of its content (0 at rest), e.g. from onScroll
+ */
+export function TopWash({ scrollY }: { scrollY: SharedValue<number> }) {
+    const colors = useColors();
+    const { top } = useSafeAreaInsets();
+    const follow = useAnimatedStyle(() => ({ transform: [{ translateY: -Math.max(0, scrollY.get()) }] }));
+    return (
+        <Animated.View
+            pointerEvents="none"
+            style={[
+                {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: top + WASH_HEIGHT,
+                    experimental_backgroundImage: `linear-gradient(180deg, ${colors.accent}24 0%, ${colors.accent}0D 55%, ${colors.accent}00 100%)`,
+                },
+                follow,
+            ]}
         />
     );
 }
@@ -61,9 +101,10 @@ export function BrandRefreshControl({ offset, ...props }: RefreshControlProps & 
 /**
  * Grouped-background scroll screen. Centers content on wide screens, clears a floating tab bar, and
  * optionally supports pull-to-refresh.
+ * The background is the plain off-white grouped background; tab screens add a short brand wash at the top.
  *
  * @param headerless the screen has no native header (tab roots draw a ScreenHeader)
- * @param wash       a faint brand wash pinned behind the top of the screen, under the status bar
+ * @param wash       the short brand wash behind the header, scrolling with it (tab screens only)
  */
 export function ScreenScrollView({
     children,
@@ -83,7 +124,8 @@ export function ScreenScrollView({
     const colors = useColors();
     const { paddingTop, paddingBottom, refreshOffset } = useScreenContentInsets(headerless);
 
-    const scroll = (transparent: boolean) => (
+    // The ScrollView stays the root view: native form sheets (Profile, Filters) size their content from it.
+    return (
         <ScrollView
             contentInsetAdjustmentBehavior="automatic"
             // Sheets with inputs (decision comment): a tap on a button acts at once instead of only closing the
@@ -91,24 +133,12 @@ export function ScreenScrollView({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             automaticallyAdjustKeyboardInsets
-            style={transparent ? { flex: 1 } : { backgroundColor: colors.groupedBackground }}
+            style={{ backgroundColor: colors.groupedBackground }}
             contentContainerStyle={{ padding: spacing.md, paddingTop, paddingBottom }}
             refreshControl={onRefresh ? <BrandRefreshControl refreshing={!!refreshing} onRefresh={onRefresh} offset={refreshOffset} /> : undefined}
         >
+            {wash ? <ScrollingWash /> : null}
             <View style={{ width: '100%', maxWidth, alignSelf: 'center', gap: spacing.lg }}>{children}</View>
         </ScrollView>
-    );
-
-    return (
-        // Without a wash the ScrollView must stay the root view: native form sheets (Profile, Filters) size
-        // their content from it, and an extra wrapper collapses the sheet to an empty page.
-        wash ? (
-            <View style={{ flex: 1, backgroundColor: colors.groupedBackground }}>
-                <TopWash />
-                {scroll(true)}
-            </View>
-        ) : (
-            scroll(false)
-        )
     );
 }

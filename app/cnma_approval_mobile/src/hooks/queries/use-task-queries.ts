@@ -2,7 +2,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from '@t
 import { useCallback } from 'react';
 import { useBffApi } from '@/hooks/use-bff-api';
 import type { DashboardParams, TaskCategory, TaskListResponse, TaskScope } from '@/lib/api/bff-api';
-import { toTaskDetailView } from '@/utils/task-detail';
+import { toReferencePrView, toTaskDetailView } from '@/utils/task-detail';
 import { queryKeys } from './query-keys';
 
 /** Freshness per data kind (guide §7.2). */
@@ -21,6 +21,11 @@ const STALE_MS = {
     dashboard: 5 * 60_000,
 } as const;
 const PAGE_SIZE = 20;
+/**
+ * Page size while device-side filters (subtype, task type, date) are on: matches can be sparse (a few
+ * Marketing POs among 1000+ Asset POs), so the group is scanned in a few large pages instead of dozens of small ones.
+ */
+export const FILTERED_PAGE_SIZE = 100;
 
 /** Pending / completed / total counters (Home summary, Inbox badge). */
 export function useStatusCounts() {
@@ -47,15 +52,17 @@ function nextSkip(lastPage: TaskListResponse, pages: TaskListResponse[]): number
 
 /**
  * Paged worklist (20 per page) for a scope, category and search. While filters change, the previous
- * list stays visible until the new result arrives (no skeleton flash).
+ * list stays visible until the new result arrives (no skeleton flash). Pages continue from the number of
+ * tasks already loaded, so the page size may change between pages.
  *
  * @param enabled false for a collapsed worklist group: nothing is fetched until it opens
+ * @param pageSize tasks per request (FILTERED_PAGE_SIZE while device-side filters are on)
  */
-export function useTaskList(scope: TaskScope, category: TaskCategory | 'ALL', search: string, enabled = true) {
+export function useTaskList(scope: TaskScope, category: TaskCategory | 'ALL', search: string, enabled = true, pageSize = PAGE_SIZE) {
     const api = useBffApi();
     return useInfiniteQuery({
         queryKey: queryKeys.taskList(scope, category, search),
-        queryFn: ({ pageParam, signal }) => api.getTasks(scope, { top: PAGE_SIZE, skip: pageParam, category: category === 'ALL' ? undefined : category, search: search || undefined }, signal),
+        queryFn: ({ pageParam, signal }) => api.getTasks(scope, { top: pageSize, skip: pageParam, category: category === 'ALL' ? undefined : category, search: search || undefined }, signal),
         initialPageParam: 0,
         getNextPageParam: nextSkip,
         staleTime: STALE_MS.list,
@@ -81,6 +88,18 @@ export function useTaskDetailView(instanceId: string, { live = false }: { live?:
         staleTime: STALE_MS.detail,
         refetchInterval: live ? STALE_MS.liveThread : false,
         enabled: Boolean(instanceId),
+    });
+}
+
+/** A PO line's reference PR, opened read-only (web: ReferencePrDetailView). */
+export function useReferencePrView(prNumber: string) {
+    const api = useBffApi();
+    return useQuery({
+        queryKey: queryKeys.referencePr(prNumber),
+        queryFn: ({ signal }) => api.getPrDetail(prNumber, signal),
+        select: toReferencePrView,
+        staleTime: STALE_MS.detail,
+        enabled: Boolean(prNumber),
     });
 }
 

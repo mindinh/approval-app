@@ -4,6 +4,7 @@ import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProconarumLogo } from '@/components/brand';
 import { Button } from '@/components/button';
+import { CopyableText } from '@/components/copyable-text';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { haptics } from '@/lib/haptics';
@@ -62,9 +63,9 @@ export function SignInScreen() {
                                 <ThemedText variant="footnote" style={{ color: colors.danger }}>
                                     Check your connection and try again. If it keeps failing, contact IT and mention the details below.
                                 </ThemedText>
-                                <ThemedText variant="caption" selectable numberOfLines={2} style={{ color: colors.secondaryLabel }}>
+                                <CopyableText variant="caption" numberOfLines={2} label="error details" style={{ color: colors.secondaryLabel }}>
                                     {error}
-                                </ThemedText>
+                                </CopyableText>
                             </View>
                         </Animated.View>
                     ) : null}

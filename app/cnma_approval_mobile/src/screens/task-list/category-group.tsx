@@ -5,19 +5,24 @@ import Animated from 'react-native-reanimated';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
-import { CATEGORY_ICONS, moduleTile } from '@/components/task-card';
-import { useTaskList } from '@/hooks/queries/use-task-queries';
+import { CATEGORY_ICONS } from '@/components/task-card';
+import { categoryColor } from '@/components/tone-text';
+import { FILTERED_PAGE_SIZE, useTaskList } from '@/hooks/queries/use-task-queries';
 import type { TaskCategory, TaskScope } from '@/lib/api/bff-api';
 import { haptics } from '@/lib/haptics';
 import { cssEasing, duration, radius, shadows, spacing, useColors } from '@/theme';
 import { activeFilterCount, applyTaskFilters, type TaskFilters } from '@/utils/task-filters';
 import { toTaskSummary, type TaskSummary } from '@/utils/task-summary';
 
-/** With local filters active, a group keeps loading pages until at least this many matches are shown. */
-const MIN_FILTERED_RESULTS = 8;
+/** Width of the gradient border of group headers. */
+const BORDER = 1.5;
 
 /** Same groups, order, titles and tones as the web Inbox accordion (`CATEGORY_ACCORDION_SECTIONS`). */
-export const CATEGORY_GROUPS: readonly { key: TaskCategory; title: string; tone: Tone }[] = [
+export const CATEGORY_GROUPS: readonly {
+    key: TaskCategory;
+    title: string;
+    tone: Tone;
+}[] = [
     { key: 'PR', title: 'Purchase Requisition', tone: 'primary' },
     { key: 'PO', title: 'Purchase Order', tone: 'info' },
     { key: 'CLAIM', title: 'Claim', tone: 'success' },
@@ -36,6 +41,8 @@ export interface CategoryGroupData {
     total?: number;
     /** Tasks loaded so far (before local filters). */
     loaded: number;
+    /** Device-side filters are on: pages load on their own until the group is fully scanned. */
+    scanning: boolean;
     /** When the group was fetched: reference time for card ages. */
     fetchedAt: number;
     isPending: boolean;
@@ -51,28 +58,32 @@ export interface CategoryGroupData {
  * filters applied to the loaded tasks, like the web.
  */
 export function useCategoryGroup(scope: TaskScope, category: TaskCategory, search: string, enabled: boolean, filters: TaskFilters): CategoryGroupData {
-    const list = useTaskList(scope, category, search, enabled);
+    const filterCount = activeFilterCount(filters);
+    const list = useTaskList(scope, category, search, enabled, filterCount > 0 ? FILTERED_PAGE_SIZE : undefined);
     const pages = list.data?.pages;
     const fetchedAt = list.dataUpdatedAt;
-    const filterCount = activeFilterCount(filters);
 
     // $skip paging can return a task twice when the worklist shifts between pages (a new task arrives): keep the first.
     const loaded = useMemo(() => uniqueByInstanceId((pages ?? []).flatMap((page) => page.items)), [pages]);
     const summaries = useMemo(() => applyTaskFilters(loaded, filters).map((task) => toTaskSummary(task, fetchedAt, scope)), [loaded, filters, fetchedAt, scope]);
 
-    // Subtype / task-type / date filters run on loaded tasks (the API cannot filter them): load further
-    // pages until enough matches are visible or the group is exhausted.
-    // A failed page stops the auto-load (no request loop); the footer offers Retry.
+    // Subtype / task-type / date filters run on loaded tasks (the API cannot filter them). Matches can be
+    // sparse, so the group scans on in the background (large pages) until it is exhausted: found tasks show
+    // as they arrive and can be opened right away, instead of waiting for the next page to be scrolled into
+    // view — which never re-triggered while the footer stayed on screen.
+    // A failed page stops the scan (no request loop); the footer offers Retry.
     const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = list;
+    const scanning = enabled && filterCount > 0;
     useEffect(() => {
-        if (enabled && filterCount > 0 && summaries.length < MIN_FILTERED_RESULTS && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage();
-    }, [enabled, filterCount, summaries.length, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+        if (scanning && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage();
+    }, [scanning, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
     return {
         category,
         summaries,
         total: pages?.[0]?.total,
         loaded: loaded.length,
+        scanning,
         fetchedAt,
         isPending: enabled && list.isPending,
         isFetchingNextPage,
@@ -86,8 +97,9 @@ export function useCategoryGroup(scope: TaskScope, category: TaskCategory, searc
 }
 
 /**
- * Group header card (web accordion header, sized for touch): tone stripe, category icon, title, the
- * "N In Approving / M Total" (or "N Completed / M Total") badge and a rotating chevron.
+ * Group header (web accordion header, sized for touch): category icon in its color, title, the count as
+ * colored text ("N In Approving / M Total" in amber, or "N Completed / M Total" in green) and a rotating
+ * chevron, framed by a gradient border in the category color (Inbox and Approved).
  */
 export function CategoryGroupHeader({
     title,
@@ -109,17 +121,21 @@ export function CategoryGroupHeader({
     count?: number;
     /** In Approving + Completed. */
     total?: number;
-    /** While searching: number of matching tasks (replaces the count badge). */
+    /** While searching: number of matching tasks (replaces the count). */
     resultCount?: number;
     expanded: boolean;
     loading: boolean;
     onToggle: () => void;
 }) {
     const colors = useColors();
-    const tile = moduleTile(colors, tone);
-    const badge = scope === 'open' ? { tint: colors.warning, soft: colors.warningSoft, label: 'In Approving' } : { tint: colors.success, soft: colors.successSoft, label: 'Completed' };
+    const tint = categoryColor(colors, tone);
+    const countTone = scope === 'open' ? { color: colors.pending, label: 'In Approving' } : { color: colors.success, label: 'Completed' };
     const countLabel =
-        resultCount !== undefined ? `${resultCount} ${resultCount === 1 ? 'result' : 'results'}` : count !== undefined ? `${count} ${badge.label}${total !== undefined ? ` / ${total} Total` : ''}` : undefined;
+        resultCount !== undefined
+            ? `${resultCount} ${resultCount === 1 ? 'result' : 'results'}`
+            : count !== undefined
+              ? `${count} ${countTone.label}${total !== undefined ? ` / ${total} Total` : ''}`
+              : undefined;
 
     return (
         <PressableScale
@@ -132,42 +148,49 @@ export function CategoryGroupHeader({
             }}
             scale={0.985}
         >
+            {/* Gradient border in the category color: an outer gradient layer behind an inner card. */}
             <View
                 style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: spacing.smd,
-                    paddingVertical: spacing.smd,
-                    paddingLeft: spacing.md + 2,
-                    paddingRight: spacing.smd,
+                    padding: BORDER,
                     borderRadius: radius.card,
                     borderCurve: 'continuous',
-                    backgroundColor: colors.cardBackground,
-                    borderWidth: 1,
-                    borderColor: expanded ? `${tile.foreground}55` : colors.cardBorder,
                     boxShadow: shadows.card,
-                    overflow: 'hidden',
+                    experimental_backgroundImage: `linear-gradient(120deg, ${tint} 0%, ${tint}66 40%, ${tint}1A 100%)`,
                 }}
             >
-                <View style={{ position: 'absolute', left: 0, top: spacing.smd, bottom: spacing.smd, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4, backgroundColor: tile.foreground }} />
-                <View style={{ width: 42, height: 42, borderRadius: radius.md + 2, borderCurve: 'continuous', backgroundColor: tile.background, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name={CATEGORY_ICONS[category]} size={20} color={tile.foreground} />
-                </View>
-                <View style={{ flex: 1, gap: 4, alignItems: 'flex-start' }}>
-                    <ThemedText variant="headline" numberOfLines={1} style={{ fontWeight: '700' }}>
-                        {title}
-                    </ThemedText>
-                    {countLabel ? (
-                        <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: resultCount !== undefined ? colors.fillBackground : badge.soft }}>
-                            <ThemedText variant="caption" numberOfLines={1} style={{ color: resultCount !== undefined ? colors.secondaryLabel : badge.tint, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.smd,
+                        paddingVertical: spacing.smd,
+                        paddingHorizontal: spacing.md,
+                        borderRadius: radius.card - BORDER,
+                        borderCurve: 'continuous',
+                        backgroundColor: colors.cardBackground,
+                    }}
+                >
+                    <Icon name={CATEGORY_ICONS[category]} size={20} color={tint} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                        <ThemedText variant="headline" numberOfLines={1}>
+                            {title}
+                        </ThemedText>
+                        {countLabel ? (
+                            <ThemedText
+                                variant="caption"
+                                numberOfLines={1}
+                                style={{
+                                    color: resultCount !== undefined ? colors.secondaryLabel : countTone.color,
+                                    fontWeight: '600',
+                                    fontVariant: ['tabular-nums'],
+                                }}
+                            >
                                 {countLabel}
                             </ThemedText>
-                        </View>
-                    ) : null}
-                </View>
-                <View style={{ width: 32, height: 32, borderRadius: radius.full, backgroundColor: colors.fillBackground, alignItems: 'center', justifyContent: 'center' }}>
+                        ) : null}
+                    </View>
                     {loading ? (
-                        <ActivityIndicator size="small" color={colors.accent} />
+                        <ActivityIndicator size="small" color={colors.secondaryLabel} />
                     ) : (
                         <Animated.View
                             style={{
@@ -177,7 +200,7 @@ export function CategoryGroupHeader({
                                 transitionTimingFunction: cssEasing.out,
                             }}
                         >
-                            <Icon name={{ ios: 'chevron.down', android: 'expand_more' }} size={15} color={colors.secondaryLabel} />
+                            <Icon name={{ ios: 'chevron.down', android: 'expand_more' }} size={15} color={colors.tertiaryLabel} />
                         </Animated.View>
                     )}
                 </View>
@@ -194,10 +217,18 @@ export function CategoryGroupFooter({ group }: { group: CategoryGroupData }) {
     const colors = useColors();
     if (group.isFetchingNextPage) {
         return (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md }}>
-                <ActivityIndicator size="small" color={colors.accent} />
+            <View
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: spacing.sm,
+                    paddingVertical: spacing.md,
+                }}
+            >
+                <ActivityIndicator size="small" color={colors.secondaryLabel} />
                 <ThemedText variant="caption" style={{ fontVariant: ['tabular-nums'] }}>
-                    {group.total !== undefined ? `Loading more · ${group.loaded} of ${group.total}` : 'Loading more…'}
+                    {group.total === undefined ? 'Loading more…' : group.scanning ? `Finding matches · ${group.loaded} of ${group.total} checked` : `Loading more · ${group.loaded} of ${group.total}`}
                 </ThemedText>
             </View>
         );
@@ -210,7 +241,14 @@ export function CategoryGroupFooter({ group }: { group: CategoryGroupData }) {
                     haptics.light();
                     group.loadMore();
                 }}
-                style={({ pressed }) => ({ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2, paddingVertical: spacing.sm, opacity: pressed ? 0.6 : 1 })}
+                style={({ pressed }) => ({
+                    alignSelf: 'center',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.xs + 2,
+                    paddingVertical: spacing.sm,
+                    opacity: pressed ? 0.6 : 1,
+                })}
             >
                 <Icon name={{ ios: 'arrow.clockwise', android: 'refresh' }} size={14} color={colors.accent} />
                 <ThemedText variant="footnote" style={{ color: colors.accent, fontWeight: '600' }}>
@@ -225,8 +263,15 @@ export function CategoryGroupFooter({ group }: { group: CategoryGroupData }) {
     }
     if (group.loaded > 0) {
         return (
-            <ThemedText variant="caption" style={{ textAlign: 'center', color: colors.tertiaryLabel, paddingVertical: spacing.xs }}>
-                {group.loaded === 1 ? '1 task' : `All ${group.loaded} tasks loaded`}
+            <ThemedText
+                variant="caption"
+                style={{
+                    textAlign: 'center',
+                    color: colors.tertiaryLabel,
+                    paddingVertical: spacing.xs,
+                }}
+            >
+                {group.scanning ? `All ${group.loaded} tasks checked` : group.loaded === 1 ? '1 task' : `All ${group.loaded} tasks loaded`}
             </ThemedText>
         );
     }

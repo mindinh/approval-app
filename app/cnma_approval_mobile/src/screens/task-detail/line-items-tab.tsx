@@ -1,15 +1,14 @@
 import type { BusinessSectionModel, DetailTableColumn, DetailTableRow } from '@approval-core/renderers';
-import { isReferencePrField } from '@approval-core/status-predicates';
 import { Fragment, memo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
-import { Pill } from '@/components/pill';
+import { ToneText } from '@/components/tone-text';
 import { RowSeparator } from '@/components/section';
 import { ThemedText } from '@/components/themed-text';
 import { cardSurface, cssEasing, duration, radius, spacing, useColors } from '@/theme';
-import { FieldRow } from './field-row';
+import { FieldRow, useReferencePrLink } from './field-row';
 
 /** Columns shown on a collapsed item card (the first, highest-priority columns of the table). */
 const SUMMARY_COLUMNS = 3;
@@ -26,6 +25,7 @@ const ITEMS_PAGE = 20;
 const LineItemCard = memo(function LineItemCard({ index, row, columns, startExpanded }: { index: number; row: DetailTableRow; columns: readonly DetailTableColumn[]; startExpanded: boolean }) {
     const colors = useColors();
     const reduceMotion = useReducedMotion();
+    const referencePrLink = useReferencePrLink();
     const [expanded, setExpanded] = useState(startExpanded);
     const [toggled, setToggled] = useState(false);
     const summary = columns.slice(0, SUMMARY_COLUMNS);
@@ -33,11 +33,12 @@ const LineItemCard = memo(function LineItemCard({ index, row, columns, startExpa
     const shownColumns = expanded ? columns : summary;
 
     return (
-        <View style={{ ...cardSurface(colors), overflow: 'hidden' }}>
+        // Web: a deleted item gets a red-tinted card edge and an "Item Deleted" pill with a trash icon.
+        <View style={{ ...cardSurface(colors), overflow: 'hidden', ...(row.isDeleted ? { borderColor: `${colors.danger}66` } : null) }}>
             <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded }}
-                accessibilityLabel={`Item ${index + 1}${row.isDeleted ? ', deleted' : ''}`}
+                accessibilityLabel={`Item ${index + 1}${row.isDeleted ? ', item deleted' : ''}`}
                 disabled={rest.length === 0}
                 onPress={() => {
                     setToggled(true);
@@ -52,8 +53,8 @@ const LineItemCard = memo(function LineItemCard({ index, row, columns, startExpa
                     backgroundColor: pressed ? colors.fillBackground : 'transparent',
                 })}
             >
-                <Pill label={`Item ${index + 1}`} tone={row.isDeleted ? 'danger' : 'accent'} />
-                {row.isDeleted ? <Pill label="Item Deleted" tone="danger" /> : null}
+                <ToneText label={`Item ${index + 1}`} tone={row.isDeleted ? 'danger' : 'neutral'} />
+                {row.isDeleted ? <DeletedPill /> : null}
                 <View style={{ flex: 1 }} />
                 {rest.length > 0 ? (
                     <Animated.View
@@ -68,7 +69,12 @@ const LineItemCard = memo(function LineItemCard({ index, row, columns, startExpa
                 const content = (
                     <>
                         <RowSeparator />
-                        <FieldRow label={column.label} value={row.values[column.key] ?? ''} highlight={isReferencePrField(column.key, column.label)} />
+                        <FieldRow
+                            label={column.label}
+                            value={row.values[column.key] ?? ''}
+                            onOpen={referencePrLink(column.key, column.label, row.values[column.key] ?? '')}
+                            openLabel="View Reference PR"
+                        />
                     </>
                 );
                 return revealed && toggled && !reduceMotion ? (
@@ -82,6 +88,19 @@ const LineItemCard = memo(function LineItemCard({ index, row, columns, startExpa
         </View>
     );
 });
+
+/** Web "Item Deleted" pill: trash icon and label on a soft danger tint. */
+function DeletedPill() {
+    const colors = useColors();
+    return (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full, backgroundColor: colors.dangerSoft }}>
+            <Icon name={{ ios: 'trash', android: 'delete' }} size={11} color={colors.danger} />
+            <ThemedText variant="caption" style={{ color: colors.danger, fontWeight: '600' }}>
+                Item Deleted
+            </ThemedText>
+        </View>
+    );
+}
 
 /** Line-item tables from the shared renderers, one expandable card per row. */
 export function LineItemsTab({ model }: { model: BusinessSectionModel }) {

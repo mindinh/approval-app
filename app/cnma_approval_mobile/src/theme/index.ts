@@ -3,6 +3,7 @@ import type { ThemeColors } from './colors';
 
 export { useColors, type ThemeColors } from './colors';
 export { restoreAppearance, useAppearancePreference, type AppearancePreference } from './appearance';
+export { restoreBrandTheme, setBrandTheme, useBrandTheme, type BrandTheme } from './brand';
 export { cssEasing, duration, easing, fadeInContent, messageIn, riseIn } from './motion';
 
 /** 4-pt spacing grid. `smd` (12) is the vertical padding of list rows. */
@@ -48,8 +49,8 @@ export const secondaryTextVariants: ReadonlySet<TypeVariant> = new Set(['subhead
 export const shadows = {
     card: '0 1px 2px rgba(28, 31, 35, 0.04), 0 4px 12px rgba(28, 31, 35, 0.05)',
     raised: '0 10px 30px rgba(28, 31, 35, 0.12)',
-    /** Soft colored glow under the red hero surface. */
-    hero: '0 12px 28px rgba(176, 24, 16, 0.22)',
+    /** Soft neutral glow under the hero surface (works for every brand theme). */
+    hero: '0 12px 28px rgba(28, 31, 35, 0.16)',
 } as const;
 
 /**

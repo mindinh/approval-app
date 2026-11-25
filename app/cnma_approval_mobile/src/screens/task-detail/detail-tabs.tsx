@@ -104,19 +104,9 @@ export function DetailTabs({ tabs, active, onChange }: { tabs: readonly DetailTa
                                     {tab.label}
                                 </ThemedText>
                                 {tab.count ? (
-                                    <View
-                                        style={{
-                                            minWidth: 20,
-                                            paddingHorizontal: 6,
-                                            borderRadius: radius.full,
-                                            backgroundColor: selected ? colors.accentSoft : `${colors.secondaryLabel}1A`,
-                                            alignItems: 'center',
-                                        }}
-                                    >
-                                        <ThemedText variant="caption" style={{ color: selected ? colors.accent : colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
-                                            {tab.count}
-                                        </ThemedText>
-                                    </View>
+                                    <ThemedText variant="caption" style={{ color: selected ? colors.label : colors.tertiaryLabel, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
+                                        {tab.count}
+                                    </ThemedText>
                                 ) : null}
                             </Animated.View>
                         </Pressable>

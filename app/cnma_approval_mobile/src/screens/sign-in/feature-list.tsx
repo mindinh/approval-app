@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { radius, riseIn, spacing, useColors } from '@/theme';
+import { riseIn, spacing, useColors } from '@/theme';
 
 const FEATURES: readonly { icon: SymbolViewProps['name']; title: string; detail: string }[] = [
     { icon: { ios: 'checkmark.circle.fill', android: 'task_alt' }, title: 'Approve on the go', detail: 'Purchase requisitions, orders, reservations and claims.' },
@@ -23,18 +23,8 @@ export function FeatureList() {
         <View style={{ gap: spacing.md }}>
             {FEATURES.map((feature, index) => (
                 <Animated.View key={feature.title} entering={riseIn(FIRST_STEP + index, reduceMotion)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                    <View
-                        style={{
-                            width: ICON_TILE,
-                            height: ICON_TILE,
-                            borderRadius: radius.md,
-                            borderCurve: 'continuous',
-                            backgroundColor: colors.accentSoft,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Icon name={feature.icon} size={18} color={colors.accent} />
+                    <View style={{ width: ICON_TILE, alignItems: 'center' }}>
+                        <Icon name={feature.icon} size={22} color={colors.accent} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                         <ThemedText variant="headline">{feature.title}</ThemedText>

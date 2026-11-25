@@ -45,7 +45,7 @@ const ringOut = new Keyframe({
 export function DecisionSuccess({ positive, title, detail, onDone }: { positive: boolean; title: string; detail: string; onDone: () => void }) {
     const colors = useColors();
     const reduceMotion = useReducedMotion();
-    const tint = positive ? colors.success : colors.danger;
+    const tint = positive ? colors.successFill : colors.dangerFill;
     const fade = FadeIn.duration(duration.base).reduceMotion(ReduceMotion.Never);
 
     useEffect(() => {
@@ -67,7 +67,7 @@ export function DecisionSuccess({ positive, title, detail, onDone }: { positive:
                     style={{ width: BADGE, height: BADGE, borderRadius: radius.full, backgroundColor: tint, alignItems: 'center', justifyContent: 'center', boxShadow: `0 10px 24px ${tint}55` }}
                 >
                     <Animated.View entering={reduceMotion ? fade : markIn}>
-                        <Icon name={positive ? { ios: 'checkmark', android: 'check' } : { ios: 'xmark', android: 'close' }} size={40} color={positive ? colors.onSuccess : '#FFFFFF'} />
+                        <Icon name={positive ? { ios: 'checkmark', android: 'check' } : { ios: 'xmark', android: 'close' }} size={40} color={colors.onSuccess} />
                     </Animated.View>
                 </Animated.View>
             </View>

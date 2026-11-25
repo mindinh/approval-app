@@ -4,6 +4,7 @@ import { useOptionalSession } from '@/lib/auth/session';
 import { haptics } from '@/lib/haptics';
 import { layout, radius, shadows, spacing, useColors } from '@/theme';
 import { describeError, type AppErrorInfo } from '@/utils/app-error';
+import { CopyableText } from './copyable-text';
 import { Button } from './button';
 import { Icon } from './icon';
 import { ThemedText } from './themed-text';
@@ -38,9 +39,9 @@ function CodeChip({ code }: { code: string }) {
     const colors = useColors();
     return (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm, backgroundColor: colors.fillBackground }}>
-            <ThemedText variant="caption" selectable style={{ fontVariant: ['tabular-nums'], color: colors.secondaryLabel }}>
+            <CopyableText variant="caption" copyValue={code} label="error code" style={{ fontVariant: ['tabular-nums'], color: colors.secondaryLabel }}>
                 Error code {code}
-            </ThemedText>
+            </CopyableText>
         </View>
     );
 }

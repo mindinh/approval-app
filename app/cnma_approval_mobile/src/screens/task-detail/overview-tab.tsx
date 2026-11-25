@@ -1,12 +1,12 @@
 import type { BusinessSectionModel, DetailField } from '@approval-core/renderers';
-import { isReferencePrField } from '@approval-core/status-predicates';
 import { Fragment } from 'react';
 import { View } from 'react-native';
+import { CopyableText } from '@/components/copyable-text';
 import { EmptyState } from '@/components/empty-state';
 import { RowSeparator, Section } from '@/components/section';
 import { ThemedText } from '@/components/themed-text';
 import { radius, spacing, useColors } from '@/theme';
-import { FieldRow, isEmptyValue } from './field-row';
+import { FieldRow, isEmptyValue, useReferencePrLink } from './field-row';
 
 /** Labels the web always shows as long text, even without `isLongText`. */
 const LONG_TEXT_LABELS = new Set(['description', 'header note', 'header text', 'purpose', 'paid by', 'bank details', 'note', 'notes', 'remarks']);
@@ -23,9 +23,9 @@ function LongTextField({ field }: { field: DetailField }) {
         <View style={{ gap: spacing.xs + 2, padding: spacing.md }}>
             <ThemedText variant="footnote">{field.label}</ThemedText>
             <View style={{ padding: spacing.smd, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.fillBackground }}>
-                <ThemedText variant="subhead" selectable style={{ color: empty ? colors.tertiaryLabel : colors.label, lineHeight: 21 }}>
+                <CopyableText variant="subhead" label={field.label} copyValue={empty ? '' : field.value} style={{ color: empty ? colors.tertiaryLabel : colors.label, lineHeight: 21 }}>
                     {empty ? '—' : field.value}
-                </ThemedText>
+                </CopyableText>
             </View>
         </View>
     );
@@ -34,6 +34,7 @@ function LongTextField({ field }: { field: DetailField }) {
 /** Overview cards from the shared renderers: key–value rows, then long texts (notes, purpose…) in full. */
 export function OverviewTab({ model }: { model: BusinessSectionModel }) {
     const colors = useColors();
+    const referencePrLink = useReferencePrLink();
     if (model.cards.length === 0) {
         return (
             <EmptyState icon={{ ios: 'doc.text.magnifyingglass', android: 'find_in_page' }} tint={{ foreground: colors.secondaryLabel, background: colors.fillBackground }} title="No overview data" />
@@ -50,7 +51,7 @@ export function OverviewTab({ model }: { model: BusinessSectionModel }) {
                         {regular.map((field, index) => (
                             <Fragment key={field.key}>
                                 {index > 0 ? <RowSeparator /> : null}
-                                <FieldRow label={field.label} value={field.value} highlight={isReferencePrField(field.key, field.label)} />
+                                <FieldRow label={field.label} value={field.value} onOpen={referencePrLink(field.key, field.label, field.value)} openLabel="View Reference PR" />
                             </Fragment>
                         ))}
                         {long.map((field, index) => (

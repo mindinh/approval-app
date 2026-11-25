@@ -23,7 +23,7 @@ export function Button({
 }) {
     const colors = useColors();
     const inactive = disabled || loading;
-    const background = variant === 'primary' ? colors.accent : colors.fillBackground;
+    const background = variant === 'primary' ? colors.accentFill : colors.fillBackground;
     const foreground = variant === 'primary' ? colors.onAccent : variant === 'destructive' ? colors.danger : colors.label;
 
     return (

@@ -51,18 +51,8 @@ export function AttachmentsTab({ attachments, context }: { attachments: readonly
                             onPress={() => void open(attachment)}
                             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.smd, padding: spacing.md, backgroundColor: pressed ? colors.fillBackground : 'transparent' })}
                         >
-                            <View
-                                style={{
-                                    width: ICON_TILE,
-                                    height: ICON_TILE,
-                                    borderRadius: radius.md,
-                                    borderCurve: 'continuous',
-                                    backgroundColor: colors.accentSoft,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <Icon name={fileIcon(attachment.mimeType, attachment.fileName)} size={18} color={colors.accent} />
+                            <View style={{ width: ICON_TILE, alignItems: 'center' }}>
+                                <Icon name={fileIcon(attachment.mimeType, attachment.fileName)} size={22} color={colors.secondaryLabel} />
                             </View>
                             <View style={{ flex: 1, gap: 2 }}>
                                 <ThemedText variant="subhead" numberOfLines={2} style={{ color: colors.label, fontWeight: '500' }}>

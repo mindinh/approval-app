@@ -38,6 +38,10 @@ export interface TaskSummary {
     createdOn?: string;
     /** Open tasks only: days waiting and whether that is overdue. */
     aging: TaskAging | null;
+    /** Approved history or a task SAP reports as done: shown in the Completed green, without accents. */
+    completed: boolean;
+    /** What the BFF needs to send a decision without opening the task (mass approve / reject). */
+    decisionContext: { businessObjectType: string; sapOrigin: string };
 }
 
 /** Age of an open task in days since `createdOn`, or null when the date is missing or invalid. */
@@ -109,5 +113,11 @@ export function toTaskSummary(task: InboxTask, now: number, scope: TaskScope = '
         details: chips.filter((chip) => !chip.isPrimary),
         createdOn: task.createdOn,
         aging: completed ? null : getAging(task.createdOn, now),
+        completed,
+        // Same fields as the web mass decision (InboxPage handleConfirmMassDecision).
+        decisionContext: {
+            businessObjectType: task.businessContext?.type || (task as { businessObjectType?: string }).businessObjectType || task.DocCategory || '',
+            sapOrigin: task.sapOrigin || 'LOCAL',
+        },
     };
 }

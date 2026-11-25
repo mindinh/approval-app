@@ -105,7 +105,7 @@ export function FloatingTabButton({
             >
                 <View>
                     <Icon name={isFocused ? activeIcon : icon} size={22} color={tint} />
-                    {badge ? <CountBadge value={badge} color={colors.accent} textColor={colors.onAccent} ringColor={colors.cardBackground} /> : null}
+                    {badge ? <CountBadge value={badge} color={colors.accentFill} textColor={colors.onAccent} ringColor={colors.cardBackground} /> : null}
                 </View>
                 <ThemedText variant="caption" numberOfLines={1} maxFontSizeMultiplier={LABEL_MAX_FONT_SCALE} style={{ color: tint, fontSize: 11, fontWeight: isFocused ? '600' : '500' }}>
                     {label}

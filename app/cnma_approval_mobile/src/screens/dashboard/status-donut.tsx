@@ -22,7 +22,7 @@ const GAP = 4;
 export function StatusDonut({ totals, selected, onSelect }: { totals: StatusTotals; selected: DashboardStatus | null; onSelect: (status: DashboardStatus | null) => void }) {
     const colors = useColors();
     const segments: { status: DashboardStatus; value: number; color: string }[] = [
-        { status: 'In Approving', value: totals['In Approving'], color: colors.warning },
+        { status: 'In Approving', value: totals['In Approving'], color: colors.pending },
         { status: 'Completed', value: totals.Completed, color: colors.success },
     ];
     const total = totals.total;
@@ -91,8 +91,8 @@ export function StatusDonut({ totals, selected, onSelect }: { totals: StatusTota
                                     borderRadius: radius.md,
                                     borderCurve: 'continuous',
                                     borderWidth: 1,
-                                    borderColor: active ? segment.color : 'transparent',
-                                    backgroundColor: active ? colors.cardBackground : colors.fillBackground,
+                                    borderColor: active ? segment.color : colors.separator,
+                                    backgroundColor: 'transparent',
                                     transitionProperty: ['backgroundColor', 'borderColor'],
                                     transitionDuration: duration.fast,
                                     transitionTimingFunction: cssEasing.out,
@@ -100,7 +100,7 @@ export function StatusDonut({ totals, selected, onSelect }: { totals: StatusTota
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                     <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: segment.color }} />
-                                    <ThemedText variant="caption" style={{ flex: 1 }}>
+                                    <ThemedText variant="caption" style={{ flex: 1, color: segment.color, fontWeight: '600' }}>
                                         {segment.status}
                                     </ThemedText>
                                 </View>

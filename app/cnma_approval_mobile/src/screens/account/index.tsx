@@ -1,7 +1,6 @@
 import { FieldGroup } from '@expo/ui';
 import { SegmentedControl } from '@expo/ui/community/segmented-control';
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
 import { Alert, View } from 'react-native';
 import { InlineErrorRow } from '@/components/error-state';
 import { useBiometry } from '@/components/app-lock-gate';
@@ -16,13 +15,18 @@ import { useSession } from '@/lib/auth/session';
 import { config } from '@/lib/config/env';
 import { haptics } from '@/lib/haptics';
 import { appLock, useAppLock } from '@/lib/security/app-lock';
-import { spacing, useAppearancePreference, useColors, type AppearancePreference } from '@/theme';
+import { setBrandTheme, spacing, useAppearancePreference, useBrandTheme, useColors, type AppearancePreference, type BrandTheme } from '@/theme';
 import { ProfileHeader } from './profile-header';
 
 const APPEARANCE: { label: string; value: AppearancePreference }[] = [
     { label: 'System', value: 'system' },
     { label: 'Light', value: 'light' },
     { label: 'Dark', value: 'dark' },
+];
+
+const BRAND_THEMES: { label: string; value: BrandTheme }[] = [
+    { label: 'Red', value: 'conarum' },
+    { label: 'SAP Blue', value: 'sap' },
 ];
 
 const loading = <Skeleton width={96} height={16} />;
@@ -40,34 +44,46 @@ function serverLabel(apiBaseUrl: string | undefined): string {
     }
 }
 
-/** System / Light / Dark; applied app-wide immediately and remembered on this device. */
-function AppearancePicker() {
-    const colors = useColors();
-    const [preference, setPreference] = useAppearancePreference();
+/**
+ * A native segmented control (UISegmentedControl / Material segmented buttons) in its platform colors: the
+ * selected segment is a raised neutral surface with dark text, readable in light and dark mode. (A brand
+ * tint made the selected segment red with black text, which was hard to read.)
+ */
+function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: { label: string; value: T }[]; value: T; onChange: (value: T) => void }) {
     return (
         <View style={{ paddingVertical: spacing.xs }}>
             <SegmentedControl
-                values={APPEARANCE.map((option) => option.label)}
-                selectedIndex={APPEARANCE.findIndex((option) => option.value === preference)}
-                tintColor={colors.accent}
-                accessibilityLabel="Appearance"
+                values={options.map((option) => option.label)}
+                selectedIndex={options.findIndex((option) => option.value === value)}
+                accessibilityLabel={label}
                 onChange={(event) => {
-                    const next = APPEARANCE[event.nativeEvent.selectedSegmentIndex]?.value;
-                    if (!next || next === preference) return;
+                    const next = options[event.nativeEvent.selectedSegmentIndex]?.value;
+                    if (!next || next === value) return;
                     haptics.selection();
-                    setPreference(next);
+                    onChange(next);
                 }}
             />
         </View>
     );
 }
 
+/** System / Light / Dark; applied app-wide immediately and remembered on this device. */
+function AppearancePicker() {
+    const [preference, setPreference] = useAppearancePreference();
+    return <Segmented label="Appearance" options={APPEARANCE} value={preference} onChange={setPreference} />;
+}
+
+/** Conarum red or SAP blue accent; switches every screen at once and is remembered on this device. */
+function BrandThemePicker() {
+    const brand = useBrandTheme();
+    return <Segmented label="Theme color" options={BRAND_THEMES} value={brand} onChange={setBrandTheme} />;
+}
+
 /**
  * Profile sheet as a native settings list (@expo/ui: SwiftUI Form / Material 3 list): identity, SAP account,
- * appearance, session, app info, diagnostics and sign out.
+ * appearance, session, app info and sign out.
  */
 export function AccountScreen() {
-    const router = useRouter();
     const dismiss = useDismiss();
     const colors = useColors();
     const { user, signOut } = useSession();
@@ -87,12 +103,6 @@ export function AccountScreen() {
     const email = userNameOf(claims);
     const name = claims?.name || email || 'Signed in';
     const version = Constants.expoConfig?.version ?? '—';
-
-    const openDiagnostics = () => {
-        // Close the sheet first, then push onto the main stack.
-        router.back();
-        router.push('/diagnostics');
-    };
 
     const confirmSignOut = () =>
         Alert.alert('Sign out?', 'You will need to sign in with Microsoft again on this device.', [
@@ -137,7 +147,8 @@ export function AccountScreen() {
 
                 <FieldGroup.Section title="Appearance">
                     {contentRow(colors, 'appearance', <AppearancePicker />)}
-                    {sectionFooter(colors, 'System follows the light or dark setting of your device.')}
+                    {contentRow(colors, 'brand-theme', <BrandThemePicker />)}
+                    {sectionFooter(colors, 'System follows the light or dark setting of your device. Theme color sets the accent used for buttons and highlights.')}
                 </FieldGroup.Section>
 
                 {biometry?.available || lock.enabled ? (
@@ -156,7 +167,6 @@ export function AccountScreen() {
                 <FieldGroup.Section title="App">
                     {row(colors, { key: 'version', icon: { ios: 'info.circle', android: 'info' }, title: 'Version', value: `${version}${isExpoGo ? ' · Expo Go' : ''}` })}
                     {row(colors, { key: 'server', icon: { ios: 'server.rack', android: 'dns' }, title: 'Server', value: serverLabel(config?.apiBaseUrl) })}
-                    {row(colors, { key: 'diagnostics', icon: { ios: 'stethoscope', android: 'monitor_heart' }, title: 'Connection diagnostics', onPress: openDiagnostics })}
                 </FieldGroup.Section>
 
                 <FieldGroup.Section>

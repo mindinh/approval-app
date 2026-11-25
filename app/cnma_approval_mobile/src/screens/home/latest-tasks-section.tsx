@@ -76,7 +76,7 @@ export function LatestTasksSection({
                 <Animated.View entering={fadeInContent}>
                     <EmptyState
                         icon={{ ios: 'checkmark.seal.fill', android: 'verified' }}
-                        tint={{ foreground: colors.accent, background: colors.accentSoft }}
+                        tint={{ foreground: colors.secondaryLabel, background: colors.fillBackground }}
                         title="No pending tasks"
                         message="New approval requests from SAP will show up here."
                     />

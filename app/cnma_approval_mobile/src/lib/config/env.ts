@@ -32,3 +32,12 @@ export const config: AppConfig | null =
               entra: { tenantId: values.EXPO_PUBLIC_ENTRA_TENANT_ID!.trim(), clientId: values.EXPO_PUBLIC_ENTRA_CLIENT_ID!.trim(), apiScope: values.EXPO_PUBLIC_ENTRA_API_SCOPE!.trim() },
               apiBaseUrl: values.EXPO_PUBLIC_API_URL!.trim().replace(/\/+$/, ''),
           };
+
+/**
+ * Optional features, off unless the build sets the variable to `true`.
+ * - mentions: tagging people (CC) in comments. It lists the SAP user directory (names, e-mails) and the
+ *   tagged people get a real e-mail from SAP, so store-review and TestFlight builds leave it off.
+ */
+export const features = {
+    mentions: process.env.EXPO_PUBLIC_ENABLE_MENTIONS?.trim() === 'true',
+} as const;

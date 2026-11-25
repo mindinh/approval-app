@@ -172,7 +172,6 @@ function DateRow({
  */
 export function FilterSheetScreen({ scope }: { scope: TaskScope }) {
     const dismiss = useDismiss();
-    const colors = useColors();
     const { category, filters, setFilters } = useWorklistFilters(scope);
     const groups = subtypeGroupsFor(category);
     const active = activeFilterCount(filters) > 0;
@@ -204,7 +203,6 @@ export function FilterSheetScreen({ scope }: { scope: TaskScope }) {
                     <SegmentedControl
                         values={TASK_TYPE_OPTIONS.map((option) => option.label)}
                         selectedIndex={TASK_TYPE_OPTIONS.findIndex((option) => option.value === filters.taskType)}
-                        tintColor={colors.accent}
                         accessibilityLabel="Task type"
                         onChange={(event) => {
                             const next = TASK_TYPE_OPTIONS[event.nativeEvent.selectedSegmentIndex]?.value;

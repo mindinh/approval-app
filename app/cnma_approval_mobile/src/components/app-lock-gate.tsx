@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Modal, Pressable, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { ProconarumLogo } from '@/components/brand';
+import { ProconarumMark } from '@/components/brand';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -92,7 +92,7 @@ export function AppLockGate({ signedIn, onSignOut }: { signedIn: boolean; onSign
     return (
         <Modal visible={visible} animationType="none" presentationStyle="overFullScreen" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={() => undefined}>
             <View style={{ flex: 1, backgroundColor: colors.groupedBackground, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.lg }}>
-                <ProconarumLogo size={64} />
+                <ProconarumMark size={72} />
                 {showLock ? (
                     <Animated.View entering={fadeInContent} style={{ alignSelf: 'stretch', alignItems: 'center', gap: spacing.md }}>
                         <View style={{ alignItems: 'center', gap: spacing.xs }}>

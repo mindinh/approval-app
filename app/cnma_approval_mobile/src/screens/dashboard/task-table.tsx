@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
+import { CopyableText } from '@/components/copyable-text';
 import { Icon } from '@/components/icon';
-import { Pill } from '@/components/pill';
+import { ToneText } from '@/components/tone-text';
 import { RowSeparator } from '@/components/section';
 import { ThemedText } from '@/components/themed-text';
 import type { DashboardTask } from '@/lib/api/bff-api';
@@ -98,9 +99,9 @@ export function DashboardTaskTable({
                                             {offset + index + 1}
                                         </ThemedText>
                                         <View style={{ flex: 1, gap: 2 }}>
-                                            <ThemedText variant="subhead" selectable numberOfLines={1} style={{ color: colors.accent, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+                                            <CopyableText variant="subhead" numberOfLines={1} label="document number" style={{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
                                                 {task.documentNumber || task.taskId}
-                                            </ThemedText>
+                                            </CopyableText>
                                             <ThemedText variant="caption" numberOfLines={1}>
                                                 {docTypeLabel(task.documentType || task.taskType, task.documentTypeDesc)}
                                             </ThemedText>
@@ -109,7 +110,7 @@ export function DashboardTaskTable({
                                             <ThemedText variant="footnote" numberOfLines={1} style={{ color: colors.label, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
                                                 {formatDashboardAmount(dashboardAmount(task as DashboardTask & Record<string, unknown>), currency)}
                                             </ThemedText>
-                                            <Pill label={status} tone={status === 'Completed' ? 'success' : 'warning'} compact />
+                                            <ToneText label={status} tone={status === 'Completed' ? 'success' : 'pending'}  />
                                         </View>
                                     </View>
                                 </Fragment>
@@ -125,7 +126,7 @@ export function DashboardTaskTable({
                             <ThemedText variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
                                 {offset + 1}–{rangeEnd} of {total}
                             </ThemedText>
-                            {loading ? <ActivityIndicator size="small" color={colors.accent} /> : null}
+                            {loading ? <ActivityIndicator size="small" color={colors.secondaryLabel} /> : null}
                         </View>
                         <PagerButton direction="previous" disabled={page <= 1 || loading} onPress={() => onPageChange(page - 1)} />
                         <ThemedText variant="footnote" style={{ minWidth: 44, textAlign: 'center', color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }}>

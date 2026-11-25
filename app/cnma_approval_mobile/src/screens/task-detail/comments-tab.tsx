@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { Avatar } from '@/components/avatar';
+import { CopyableText } from '@/components/copyable-text';
 import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -38,12 +39,19 @@ function dayKey(value: string): string {
 }
 
 /** Comment text with tagged users and @mentions as highlighted spans (web: primary badges). */
-function MessageText({ text, own }: { text: string; own: boolean }) {
+function MessageText({ text, own, copyable }: { text: string; own: boolean; copyable: boolean }) {
     const colors = useColors();
     const foreground = own ? colors.onAccent : colors.label;
-    const parts = unescapeTags(text).split(MENTION);
+    const plain = unescapeTags(text);
+    const parts = plain.split(MENTION);
     return (
-        <ThemedText variant="callout" selectable style={{ color: foreground, lineHeight: 21 }}>
+        <CopyableText
+            variant="callout"
+            label="comment"
+            copyValue={copyable ? plain.replace(/<\/?tag>/g, '') : ''}
+            highlightColor={own ? `${colors.onAccent}33` : undefined}
+            style={{ color: foreground, lineHeight: 21 }}
+        >
             {parts.map((part, index) => {
                 const tag = part.startsWith('<tag>') && part.endsWith('</tag>');
                 if (tag || (part.startsWith('@') && part.length > 1)) {
@@ -55,7 +63,7 @@ function MessageText({ text, own }: { text: string; own: boolean }) {
                 }
                 return part;
             })}
-        </ThemedText>
+        </CopyableText>
     );
 }
 
@@ -188,7 +196,7 @@ function MessageRow({
         ]);
 
     const meta = failed ? 'Not sent · Tap to retry' : sending ? 'Sending…' : dayKey(message.createdAt) ? clock(message.createdAt) : message.createdAt;
-    const bubbleColor = failed ? colors.dangerSoft : own ? colors.accent : colors.cardBackground;
+    const bubbleColor = failed ? colors.dangerSoft : own ? colors.accentFill : colors.cardBackground;
     const textOnAccent = own && !failed;
 
     return (
@@ -237,7 +245,7 @@ function MessageRow({
                                 </ThemedText>
                             </View>
                         ) : null}
-                        <MessageText text={message.text} own={textOnAccent} />
+                        <MessageText text={message.text} own={textOnAccent} copyable={!failed} />
                     </Animated.View>
                 </Pressable>
                 {showMeta ? (

@@ -6,10 +6,10 @@ import { KeyboardEvents, useReanimatedKeyboardAnimation } from 'react-native-key
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { ErrorState, InlineErrorRow } from '@/components/error-state';
-import { BrandRefreshControl, TopWash, useScreenContentInsets } from '@/components/screen-scroll-view';
+import { BrandRefreshControl, useScreenContentInsets } from '@/components/screen-scroll-view';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
-import { useTaskDetailView } from '@/hooks/queries/use-task-queries';
+import { useReferencePrView, useTaskDetailView } from '@/hooks/queries/use-task-queries';
 import { ApiError } from '@/lib/api/http-client';
 import { haptics } from '@/lib/haptics';
 import { duration, easing, fadeInContent, layout, radius, shadows, spacing, useColors } from '@/theme';
@@ -34,6 +34,7 @@ const SWIPE_DISTANCE = 56;
 const SWIPE_VELOCITY = 600;
 /** A link without a task id (malformed deep link) reads as "not found" instead of loading forever. */
 const MISSING_TASK_ID = new ApiError('The link has no task id', 'HTTP_ERROR', 404);
+const MISSING_PR_NUMBER = new ApiError('The link has no PR number', 'HTTP_ERROR', 404);
 /** How far the stuck tab backdrop reaches above the tabs (covers sticky-header lag while flinging). */
 const STICKY_OVERDRAW = 48;
 /** Tab content swaps with a short crossfade — tabs are peers, so they never slide. */
@@ -83,12 +84,18 @@ function DetailSkeleton() {
  * tab, or (as on the web) pull past the end of a tab to open the next one. Pull down to refresh. The
  * decision buttons (Reject / Approve) sit under the tabs like the web and stick with them; the screen is
  * pushed above the tab bar, so the whole height goes to content and decisions.
+ *
+ * With `referencePr` it shows a PO line's reference PR instead (web: ReferencePrDetailView): same tabs,
+ * read-only — no decisions and no comment composer.
  */
-export function TaskDetailScreen({ instanceId }: { instanceId: string }) {
+export function TaskDetailScreen({ instanceId = '', referencePr }: { instanceId?: string; referencePr?: string }) {
     const colors = useColors();
     const [activeTab, setActiveTab] = useState<DetailTabKey>('overview');
+    const readOnly = referencePr !== undefined;
     // The open thread reloads by itself, so new comments arrive like in a chat.
-    const detail = useTaskDetailView(instanceId, { live: activeTab === 'comments' });
+    const taskDetail = useTaskDetailView(readOnly ? '' : instanceId, { live: activeTab === 'comments' });
+    const prDetail = useReferencePrView(referencePr ?? '');
+    const detail = readOnly ? prDetail : taskDetail;
     const view = detail.data ?? null;
     const [pulling, setPulling] = useState(false);
     const [armed, setArmed] = useState(false);
@@ -114,7 +121,7 @@ export function TaskDetailScreen({ instanceId }: { instanceId: string }) {
     const index = tabs.findIndex((candidate) => candidate.key === tab);
     const next = tabs[index + 1];
     // Open tasks can be commented on: the Comments tab then shows a composer pinned to the bottom.
-    const showComposer = tab === 'comments' && view !== null && view.status.tone !== 'success' && view.status.tone !== 'danger';
+    const showComposer = !readOnly && tab === 'comments' && view !== null && view.status.tone !== 'success' && view.status.tone !== 'danger';
     const [composerHeight, setComposerHeight] = useState(COMPOSER_HEIGHT + safeBottom);
     const paddingBottom = showComposer ? composerHeight + spacing.lg : restPadding;
 
@@ -213,7 +220,6 @@ export function TaskDetailScreen({ instanceId }: { instanceId: string }) {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.groupedBackground }}>
-            <TopWash />
             <View style={[contentWidth, { paddingTop: safeTop + spacing.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.xs }]}>
                 <DetailTopBar view={view} />
             </View>
@@ -260,7 +266,7 @@ export function TaskDetailScreen({ instanceId }: { instanceId: string }) {
                         />
                         <View style={{ gap: spacing.sm, paddingTop: spacing.sm, paddingBottom: spacing.md }}>
                             <DetailTabs tabs={tabs} active={tab} onChange={selectTab} />
-                            <DecisionBar instanceId={instanceId} decisions={view.decisions} />
+                            {readOnly ? null : <DecisionBar instanceId={instanceId} decisions={view.decisions} />}
                         </View>
                     </View>
                 ) : null}
@@ -274,9 +280,13 @@ export function TaskDetailScreen({ instanceId }: { instanceId: string }) {
                             {next ? <NextTabHint nextLabel={next.label} pull={pull} threshold={PULL_THRESHOLD} armed={armed} onPress={goNext} /> : null}
                         </View>
                     </GestureDetector>
-                ) : detail.error || !instanceId ? (
+                ) : detail.error || !(readOnly ? referencePr : instanceId) ? (
                     <View style={[contentWidth, { paddingTop: spacing.lg }]}>
-                        <ErrorState error={detail.error ?? MISSING_TASK_ID} context={`Opening task ${instanceId}`} onRetry={() => detail.refetch()} />
+                        <ErrorState
+                            error={detail.error ?? (readOnly ? MISSING_PR_NUMBER : MISSING_TASK_ID)}
+                            context={readOnly ? `Opening reference PR ${referencePr}` : `Opening task ${instanceId}`}
+                            onRetry={() => detail.refetch()}
+                        />
                     </View>
                 ) : (
                     <View style={contentWidth}>

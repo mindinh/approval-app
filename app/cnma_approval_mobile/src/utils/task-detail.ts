@@ -108,7 +108,7 @@ function firstText(record: Raw | undefined, ...keys: string[]): string {
 }
 
 function toStep(step: Raw, index: number): ApprovalStep {
-    const level = Number(step.ApprovalLevel ?? step.level ?? index + 1);
+    const level = Number(step.ApprovalLevel ?? step.level ?? 0);
     return {
         key: `${level}-${index}`,
         level,
@@ -247,5 +247,25 @@ export function toTaskDetailView(response: TaskDetailResponse): TaskDetailView {
         decisions,
         tabs,
         context,
+    };
+}
+
+/** A PR number as the web shows it: without SAP's leading zeros. */
+export function formatPrNumber(prNumber: string): string {
+    return prNumber.trim().replace(/^0+/, '') || prNumber.trim();
+}
+
+/**
+ * A reference PR opened from a PO (web: ReferencePrDetailView): the same tabs as a task, read-only. The BFF
+ * marks it as not a normal task, which must not turn it into a CC review; it has no decisions.
+ */
+export function toReferencePrView(response: TaskDetailResponse): TaskDetailView {
+    const view = toTaskDetailView(response);
+    return {
+        ...view,
+        isCc: false,
+        decisions: [],
+        title: `PR #${formatPrNumber(view.documentId)}`,
+        status: { label: 'Reference PR', tone: 'neutral' },
     };
 }

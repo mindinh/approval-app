@@ -107,27 +107,3 @@ export async function requestJson<T>(url: string, accessToken: string, { method 
 export function fetchJson<T>(url: string, accessToken: string, signal?: AbortSignal): Promise<T> {
     return requestJson<T>(url, accessToken, { signal });
 }
-
-/** Outcome of one BFF call, shaped for display in the connection diagnostics. */
-export interface ApiResult {
-    url: string;
-    ok: boolean;
-    /** HTTP status, or 0 when the request never got a response (network error, timeout). */
-    status: number;
-    durationMs: number;
-    data?: unknown;
-    error?: string;
-}
-
-/** Diagnostics variant of fetchJson: never throws, reports status and timing instead. */
-export async function getJson(baseUrl: string, path: string, accessToken: string): Promise<ApiResult> {
-    const url = `${baseUrl}${path}`;
-    const startedAt = Date.now();
-    try {
-        const data = await fetchJson<unknown>(url, accessToken);
-        return { url, ok: true, status: 200, durationMs: Date.now() - startedAt, data };
-    } catch (error) {
-        const apiError = error instanceof ApiError ? error : new ApiError(String(error), 'NETWORK_ERROR', 0);
-        return { url, ok: false, status: apiError.status, durationMs: Date.now() - startedAt, data: apiError.body, error: apiError.message };
-    }
-}

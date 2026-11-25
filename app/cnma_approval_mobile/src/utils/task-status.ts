@@ -1,8 +1,8 @@
 /**
  * Task status label and tone. Labels follow the web StatusBadge (`STATUS_CONFIG`); tones are the
- * web mapping: open states amber, done green, rejected red.
+ * web mapping: open states amber (fresh pending tone), done green, rejected red.
  */
-export type StatusTone = 'warning' | 'success' | 'danger' | 'neutral';
+export type StatusTone = 'pending' | 'success' | 'danger' | 'neutral';
 
 export interface TaskStatus {
     label: string;
@@ -10,15 +10,15 @@ export interface TaskStatus {
 }
 
 const STATUS: Record<string, TaskStatus> = {
-    NEW: { label: 'In Approving', tone: 'warning' },
-    READY: { label: 'In Approving', tone: 'warning' },
-    RESERVED: { label: 'In Approving', tone: 'warning' },
-    IN_PROGRESS: { label: 'In Approving', tone: 'warning' },
-    IN_PROCESSING: { label: 'In Approving', tone: 'warning' },
-    IN_APPROVING: { label: 'In Approving', tone: 'warning' },
-    PENDING_APPROVAL: { label: 'Pending Approval', tone: 'warning' },
-    PARTIALLY_APPROVED: { label: 'Partially Approved', tone: 'warning' },
-    PENDING_VERIFY: { label: 'Pending Verify', tone: 'warning' },
+    NEW: { label: 'In Approving', tone: 'pending' },
+    READY: { label: 'In Approving', tone: 'pending' },
+    RESERVED: { label: 'In Approving', tone: 'pending' },
+    IN_PROGRESS: { label: 'In Approving', tone: 'pending' },
+    IN_PROCESSING: { label: 'In Approving', tone: 'pending' },
+    IN_APPROVING: { label: 'In Approving', tone: 'pending' },
+    PENDING_APPROVAL: { label: 'Pending Approval', tone: 'pending' },
+    PARTIALLY_APPROVED: { label: 'Partially Approved', tone: 'pending' },
+    PENDING_VERIFY: { label: 'Pending Verify', tone: 'pending' },
     VERIFIED: { label: 'Verified', tone: 'success' },
     COMPLETED: { label: 'Completed', tone: 'success' },
     APPROVED: { label: 'Approved', tone: 'success' },

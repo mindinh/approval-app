@@ -1,8 +1,8 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackHandler, TextInput, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { Button } from '@/components/button';
+import { Notice } from '@/components/notice';
 import { Icon } from '@/components/icon';
 import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { Section } from '@/components/section';
@@ -15,7 +15,7 @@ import { useDismiss } from '@/hooks/use-dismiss';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { isTaskOpen } from '@/lib/api/write-outcome';
 import { haptics } from '@/lib/haptics';
-import { fadeInContent, layout, radius, spacing, type, useColors } from '@/theme';
+import { layout, radius, spacing, type, useColors } from '@/theme';
 import { describeError } from '@/utils/app-error';
 import { DecisionSuccess } from './decision-success';
 
@@ -171,24 +171,5 @@ export function DecisionSheetScreen({ instanceId, decisionKey }: { instanceId: s
                 </ThemedText>
             )}
         </ScreenScrollView>
-    );
-}
-
-function Notice({ tone, icon, title, message }: { tone: 'warning' | 'danger' | 'info'; icon: Parameters<typeof Icon>[0]['name']; title: string; message: string }) {
-    const colors = useColors();
-    const foreground = tone === 'danger' ? colors.danger : tone === 'warning' ? colors.warning : colors.info;
-    const background = tone === 'danger' ? colors.dangerSoft : tone === 'warning' ? colors.warningSoft : colors.infoSoft;
-    return (
-        <Animated.View entering={fadeInContent} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', gap: spacing.sm, padding: spacing.smd, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: background }}>
-            <Icon name={icon} size={16} color={foreground} />
-            <View style={{ flex: 1, gap: 2 }}>
-                <ThemedText variant="footnote" style={{ color: foreground, fontWeight: '600' }}>
-                    {title}
-                </ThemedText>
-                <ThemedText variant="footnote" style={{ color: colors.label }}>
-                    {message}
-                </ThemedText>
-            </View>
-        </Animated.View>
     );
 }

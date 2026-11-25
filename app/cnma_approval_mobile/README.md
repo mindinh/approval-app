@@ -8,8 +8,7 @@ Current scope (BA test build):
 |---|---|
 | **Sign in** | Microsoft Entra ID sign-in (Authorization Code + PKCE). The session is restored on the next launch. |
 | **Home** | Greeting, KPI counters (Pending · Completed · Total) and the **5 newest open tasks** (pull down to refresh). Task cards use the same renderers as the web app, so ids, chips and amounts match. |
-| **Profile** (avatar in the Home header, opens as a bottom sheet) | Name and email, SAP user, session, app version and server, connection diagnostics, sign out. |
-| **Diagnostics** (Profile → Connection diagnostics) | Raw BFF checks (`/tasks/me`, `/tasks/me/sap-user`, `/tasks?top=5`) with status, timing and response. |
+| **Profile** (avatar in the Home header, opens as a bottom sheet) | Name and email, SAP user, session, app version and server, sign out. |
 
 Bottom tabs: Home · Inbox · Approved · Dashboard (Inbox shows the pending count as a badge).
 
@@ -21,12 +20,11 @@ Not in this build yet: approve / reject (decision sheet), opening attachments, a
 
 ```text
 src/
-├── app/                      # routes only: _layout (auth gate), (tabs)/ NativeTabs + shared tab stack, account (sheet), diagnostics, sign-in, auth
+├── app/                      # routes only: _layout (auth gate), (tabs)/ NativeTabs + shared tab stack, account (sheet), tasks/[id], reference-pr/[number] (read-only PR from a PO line), sign-in, auth
 ├── screens/                  # screen bodies + their private parts
 │   ├── home/                 # summary-header, kpi-row, latest-tasks-section, task-row, task-summary (pure)
 │   ├── account/              # profile-header, sap-account-section
 │   ├── sign-in/
-│   ├── connection-test/      # diagnostics
 │   └── config-missing/
 ├── components/               # shared UI: Button, Section, ListRow, InfoRow, Skeleton, InlineError, Avatar…
 ├── hooks/                    # use-bff-api, queries/ (TanStack Query hooks + query keys)
@@ -35,6 +33,12 @@ src/
 ```
 
 Shared with the web app ("approval-core", alias in `tsconfig.json` + `metro.config.js`): `@approval-core/renderers` and `@approval-core/inbox-types` from `app/cnma_approval_ui/src`.
+
+## Optional features
+
+| Variable | Default | Effect |
+|---|---|---|
+| `EXPO_PUBLIC_ENABLE_MENTIONS` | off | `true` turns on tagging people (CC) in comments. It lists the SAP user directory (names, e-mails) and SAP e-mails the tagged people, so leave it off for store review and TestFlight builds (EAS environment `preview` / `production`). |
 
 ## Quick start
 
@@ -86,7 +90,6 @@ Both scripts check that the BFF answers and print a summary (target, BFF URL, re
 | Pull down on Home | Counters and tasks reload |
 | Stop the BFF and pull down | Old data stays, with "Could not refresh tasks" and Retry |
 | Tap the avatar (top right) | Profile bottom sheet (drag up for full height, swipe down or Done to close): name, email, SAP user, token time, version, server |
-| Profile → Connection diagnostics → Run all checks | 3 checks pass (200) |
 | Close and reopen the app | Goes straight to Home (still signed in) |
 | Profile → Sign out → confirm | Back to the sign-in screen; reopening the app asks to sign in |
 

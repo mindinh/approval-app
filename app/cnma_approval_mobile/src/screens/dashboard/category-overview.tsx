@@ -5,7 +5,8 @@ import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { RowSeparator, Section } from '@/components/section';
 import { findObjectTypeModule } from '@approval-core/renderers';
-import { CATEGORY_ICONS, DEFAULT_CATEGORY_ICON, moduleTile } from '@/components/task-card';
+import { CATEGORY_ICONS, DEFAULT_CATEGORY_ICON } from '@/components/task-card';
+import { categoryColor } from '@/components/tone-text';
 import { ThemedText } from '@/components/themed-text';
 import type { TaskCategory } from '@/lib/api/bff-api';
 import { haptics } from '@/lib/haptics';
@@ -16,7 +17,7 @@ const reflow = LinearTransition.duration(duration.base).easing(easing.out);
 
 /** Lead number of a card: the selected status, else what is still in approval (web rule). */
 function leadOf(split: CountSplit, status: DashboardStatus | null) {
-    return status === 'Completed' ? { value: split.completed, label: 'completed' } : { value: split.inApproving, label: 'in approving' };
+    return status === 'Completed' ? { value: split.completed, label: 'Completed' } : { value: split.inApproving, label: 'In Approving' };
 }
 
 /**
@@ -51,8 +52,9 @@ export function CategoryOverview({
                     const split = categoryOf(item.key);
                     const lead = leadOf(split, status);
                     const selected = category === item.key;
-                    // Same pastel tile as the category's task cards (PR red, PO blue, Claim green, Reservation amber).
-                    const tile = moduleTile(colors, findObjectTypeModule(item.key)?.tone ?? 'primary');
+                    // Same category color as the task cards and the web (PR red, PO blue, Claim green, Reservation amber).
+                    const tint = categoryColor(colors, findObjectTypeModule(item.key)?.tone ?? 'primary');
+                    const leadColor = status === 'Completed' ? colors.success : colors.pending;
                     return (
                         <PressableScale
                             key={item.key}
@@ -64,15 +66,18 @@ export function CategoryOverview({
                                 onSelectCategory(selected ? null : item.key);
                             }}
                             containerStyle={{ flexBasis: '47%', flexGrow: 1 }}
+                            // Fill the row height, so cards side by side are equally tall and their numbers line up.
+                            style={{ flex: 1 }}
                         >
                             <Animated.View
                                 style={{
+                                    flex: 1,
                                     gap: spacing.sm,
                                     padding: spacing.md,
                                     borderRadius: radius.card,
                                     borderCurve: 'continuous',
                                     borderWidth: 1.5,
-                                    borderColor: selected ? colors.accent : colors.cardBorder,
+                                    borderColor: selected ? tint : colors.cardBorder,
                                     backgroundColor: colors.cardBackground,
                                     boxShadow: shadows.card,
                                     transitionProperty: 'borderColor',
@@ -81,26 +86,19 @@ export function CategoryOverview({
                                 }}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                                    <View
-                                        style={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: radius.md,
-                                            borderCurve: 'continuous',
-                                            backgroundColor: tile.background,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <Icon name={CATEGORY_ICONS[item.key] ?? DEFAULT_CATEGORY_ICON} size={16} color={tile.foreground} />
-                                    </View>
+                                    <Icon name={CATEGORY_ICONS[item.key] ?? DEFAULT_CATEGORY_ICON} size={18} color={tint} />
                                     <ThemedText variant="footnote" numberOfLines={2} style={{ flex: 1, color: colors.label, fontWeight: '600' }}>
                                         {item.label}
                                     </ThemedText>
                                 </View>
-                                <ThemedText variant="stat">{lead.value}</ThemedText>
-                                <ThemedText variant="caption">
-                                    {lead.label} · {split.total} total
+                                {/* A two-line title (Purchase Requisition) must not push its number below the others. */}
+                                <View style={{ flex: 1 }} />
+                                <ThemedText variant="stat" numberOfLines={1}>
+                                    {lead.value}
+                                    <ThemedText variant="footnote" style={{ color: colors.secondaryLabel, fontWeight: '500' }}>{`  / ${split.total}`}</ThemedText>
+                                </ThemedText>
+                                <ThemedText variant="caption" numberOfLines={1} style={{ color: leadColor, fontWeight: '600' }}>
+                                    {lead.label}
                                 </ThemedText>
                             </Animated.View>
                         </PressableScale>
@@ -133,14 +131,14 @@ export function CategoryOverview({
                                             style={({ pressed }) => ({
                                                 gap: spacing.sm,
                                                 padding: spacing.md,
-                                                backgroundColor: selected ? colors.accentSoft : pressed ? colors.fillBackground : 'transparent',
+                                                backgroundColor: selected ? colors.fillBackground : pressed ? colors.fillBackground : 'transparent',
                                             })}
                                         >
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                                                 <ThemedText
                                                     variant="subhead"
                                                     numberOfLines={1}
-                                                    style={{ flex: 1, color: selected ? colors.accent : colors.label, fontWeight: selected ? '600' : '400' }}
+                                                    style={{ flex: 1, color: colors.label, fontWeight: selected ? '600' : '400' }}
                                                 >
                                                     {type.label}
                                                 </ThemedText>
@@ -154,7 +152,7 @@ export function CategoryOverview({
                                                         width: `${Math.round(ratio * 100)}%`,
                                                         height: '100%',
                                                         borderRadius: radius.full,
-                                                        backgroundColor: status === 'Completed' ? colors.success : colors.warning,
+                                                        backgroundColor: status === 'Completed' ? colors.success : colors.pending,
                                                     }}
                                                 />
                                             </View>

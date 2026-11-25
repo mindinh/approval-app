@@ -47,14 +47,15 @@ function ActiveFilters({ items, onClearAll }: { items: { key: string; label: str
                         paddingVertical: 4,
                         paddingHorizontal: spacing.smd,
                         borderRadius: radius.full,
-                        backgroundColor: colors.accentSoft,
+                        borderWidth: 1,
+                        borderColor: colors.separator,
                         opacity: pressed ? 0.7 : 1,
                     })}
                 >
-                    <ThemedText variant="footnote" style={{ color: colors.accent, fontWeight: '600' }}>
+                    <ThemedText variant="footnote" style={{ color: colors.label, fontWeight: '600' }}>
                         {item.label}
                     </ThemedText>
-                    <Icon name={{ ios: 'xmark', android: 'close' }} size={10} color={colors.accent} />
+                    <Icon name={{ ios: 'xmark', android: 'close' }} size={10} color={colors.secondaryLabel} />
                 </Pressable>
             ))}
             <Pressable accessibilityRole="button" hitSlop={8} onPress={onClearAll}>

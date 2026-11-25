@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native';
+import { CopyableText } from '@/components/copyable-text';
 import { Icon } from '@/components/icon';
-import { Pill } from '@/components/pill';
+import { ToneText } from '@/components/tone-text';
 import { ThemedText } from '@/components/themed-text';
 import { useDismiss } from '@/hooks/use-dismiss';
 import { haptics } from '@/lib/haptics';
@@ -49,13 +50,13 @@ export function DetailTopBar({ view }: { view: TaskDetailView | null }) {
                         <ThemedText variant="caption" numberOfLines={1} style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
                             {view.typeLabel}
                         </ThemedText>
-                        <ThemedText variant="subhead" numberOfLines={1} selectable style={{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
+                        <CopyableText variant="subhead" numberOfLines={1} label="document number" copyValue={view.documentId} style={{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
                             #{view.documentId}
-                        </ThemedText>
+                        </CopyableText>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
-                        {view.isCc ? <Pill label="CC" tone="warning" /> : null}
-                        <Pill label={view.status.label} tone={view.status.tone} />
+                        {view.isCc ? <ToneText label="CC" tone="warning" /> : null}
+                        <ToneText label={view.status.label} tone={view.status.tone} />
                     </View>
                 </>
             ) : (
@@ -72,9 +73,9 @@ export function DetailTopBar({ view }: { view: TaskDetailView | null }) {
 export function DetailHeader({ view }: { view: TaskDetailView }) {
     return (
         <View style={{ paddingHorizontal: spacing.xs }}>
-            <ThemedText variant="title" selectable accessibilityRole="header">
+            <CopyableText variant="title" label="title" accessibilityRole="header">
                 {view.title}
-            </ThemedText>
+            </CopyableText>
         </View>
     );
 }

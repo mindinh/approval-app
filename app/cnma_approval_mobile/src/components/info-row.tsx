@@ -1,10 +1,11 @@
 import type { SymbolViewProps } from 'expo-symbols';
 import { View } from 'react-native';
 import { spacing, useColors } from '@/theme';
+import { CopyableText } from './copyable-text';
 import { Icon } from './icon';
 import { ThemedText } from './themed-text';
 
-/** Label above a selectable value, with an optional leading icon. */
+/** Label above a value that copies on long press, with an optional leading icon. */
 export function InfoRow({ label, value, icon, mono = false }: { label: string; value?: string; icon?: SymbolViewProps['name']; mono?: boolean }) {
     const colors = useColors();
     return (
@@ -16,9 +17,9 @@ export function InfoRow({ label, value, icon, mono = false }: { label: string; v
             ) : null}
             <View style={{ flex: 1, gap: 2 }}>
                 <ThemedText variant="footnote">{label}</ThemedText>
-                <ThemedText variant={mono ? 'mono' : 'body'} selectable>
+                <CopyableText variant={mono ? 'mono' : 'body'} label={label} copyValue={value ?? ''}>
                     {value || '—'}
-                </ThemedText>
+                </CopyableText>
             </View>
         </View>
     );

@@ -15,7 +15,7 @@ export const DECISION_BUTTON_HEIGHT = 40;
 function decisionLook(colors: ThemeColors, nature: TaskDecision['nature']): { icon: SymbolViewProps['name']; foreground: string; background: string; border: string } {
     switch (nature) {
         case 'POSITIVE':
-            return { icon: { ios: 'checkmark.circle.fill', android: 'check_circle' }, foreground: colors.onSuccess, background: colors.success, border: colors.success };
+            return { icon: { ios: 'checkmark.circle.fill', android: 'check_circle' }, foreground: colors.onSuccess, background: colors.successFill, border: colors.successFill };
         case 'NEGATIVE':
             return { icon: { ios: 'xmark.circle', android: 'cancel' }, foreground: colors.danger, background: colors.cardBackground, border: `${colors.danger}55` };
         default:

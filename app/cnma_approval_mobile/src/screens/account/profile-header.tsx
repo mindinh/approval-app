@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { Avatar } from '@/components/avatar';
+import { CopyableText } from '@/components/copyable-text';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { radius, spacing, useColors } from '@/theme';
@@ -24,9 +25,9 @@ export function ProfileHeader({ name, email }: { name: string; email?: string })
                     {name}
                 </ThemedText>
                 {email ? (
-                    <ThemedText variant="subhead" numberOfLines={1} selectable>
+                    <CopyableText variant="subhead" numberOfLines={1} label="e-mail">
                         {email}
-                    </ThemedText>
+                    </CopyableText>
                 ) : null}
             </View>
             <View

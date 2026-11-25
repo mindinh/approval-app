@@ -9,6 +9,8 @@ import type {
     DocTypeCountItem,
     StatusCountItem,
     InboxTask,
+    MassDecisionPayload,
+    MassDecisionResponse,
     TaskDetailResponse,
     TaskListResponse,
     TaskStatusCountsResponse,
@@ -60,7 +62,14 @@ export interface BffApi {
     getCategoryCounts(scope: TaskScope, signal?: AbortSignal): Promise<CategoryCountsResponse>;
     getTasks(scope: TaskScope, params: TaskListParams, signal?: AbortSignal): Promise<TaskListResponse>;
     getTaskDetail(instanceId: string, signal?: AbortSignal): Promise<TaskDetailResponse>;
+    /** GET /tasks/pr/:docNum — a PR document by number (reference PR of a PO line), read-only, same envelope as a task. */
+    getPrDetail(prNumber: string, signal?: AbortSignal): Promise<TaskDetailResponse>;
     getDashboard(params: DashboardParams, signal?: AbortSignal): Promise<DashboardResponse>;
+    /**
+     * POST /tasks/mass-decision: one decision for many tasks (the BFF runs them four at a time and reports each).
+     * Not idempotent and never retried automatically.
+     */
+    decideTasks(input: MassDecisionPayload, timeoutMs: number): Promise<MassDecisionResponse>;
     /** POST /tasks/:id/decision. Not idempotent: never retried automatically (see hooks/mutations). */
     decideTask(instanceId: string, input: DecisionInput): Promise<WriteResult>;
     /** POST /tasks/:id/comments. */
@@ -154,7 +163,9 @@ export function createBffApi(baseUrl: string, getAccessToken: AccessTokenProvide
         getCategoryCounts: (scope, signal) => get(`/tasks/category-counts${toQuery({ scope: scope === 'approved' ? 'approved' : 'my' })}`, signal),
         getTasks: (scope, { top, skip, category, search }, signal) => get(`/tasks${scope === 'approved' ? '/approved' : ''}${toQuery({ top, skip, category, search })}`, signal),
         getTaskDetail: (instanceId, signal) => get(`/tasks/${encodeURIComponent(instanceId)}`, signal),
+        getPrDetail: (prNumber, signal) => get(`/tasks/pr/${encodeURIComponent(prNumber)}`, signal),
         getDashboard: ({ top, skip, category, status, documentType, documentNumber }, signal) => get(`/tasks/dashboard${toQuery({ top, skip, category, status, documentType, documentNumber })}`, signal),
+        decideTasks: (input, timeoutMs) => request('/tasks/mass-decision', { method: 'POST', body: input, timeoutMs }),
         decideTask: (instanceId, { decisionKey, comment, context }) => post(`/tasks/${encodeURIComponent(instanceId)}/decision`, { decisionKey, comment, _context: context }),
         getBusUsers: async (signal) => toMentionUsers(await get<{ value?: unknown[] }>('/tasks/bus-users', signal)),
         addComment: (instanceId, { text, context, taggedUsers = [] }) =>

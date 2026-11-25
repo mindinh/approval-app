@@ -8,12 +8,11 @@ import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { APPROVED_HREF, INBOX_HREF } from '@/constants/tabs';
 import type { TaskStatusCountsResponse } from '@/lib/api/bff-api';
-import { cardSurface, fadeInContent, radius, shadows, spacing, useColors } from '@/theme';
+import { fadeInContent, radius, shadows, spacing, useColors } from '@/theme';
 
 const HERO_RADIUS = 24;
 const HERO_VALUE_SIZE = 44;
 const TILE_VALUE_SIZE = 24;
-const ICON_BUBBLE = 36;
 const PROGRESS_HEIGHT = 6;
 
 function pendingCaption(pending: number): string {
@@ -105,8 +104,30 @@ function PendingHero({ counts }: { counts?: TaskStatusCountsResponse }) {
     );
 }
 
-/** Quiet stat tile: neutral icon bubble, number, label. With `onPress` it is a button (chevron, press scale). */
-function StatTile({ label, value, icon, onPress, hint }: { label: string; value?: number; icon: SymbolViewProps['name']; onPress?: () => void; hint?: string }) {
+/** Width of the gradient frame around a stat tile (same as the category accordions). */
+const TILE_BORDER = 1.5;
+
+/**
+ * Stat tile with its own color (Completed green, Total blue), kept light: a faint gradient frame, a barely
+ * visible glow behind the icon, the icon in the tile color, the number and the label.
+ * No filled shapes, so the red hero above stays the one strong surface. With `onPress` it is a button
+ * (chevron, press scale).
+ */
+function StatTile({
+    label,
+    value,
+    icon,
+    color,
+    onPress,
+    hint,
+}: {
+    label: string;
+    value?: number;
+    icon: SymbolViewProps['name'];
+    color: string;
+    onPress?: () => void;
+    hint?: string;
+}) {
     const colors = useColors();
     const Container = onPress ? PressableScale : View;
     // The flex wrapper sizes the tile in the row (PressableScale styles its inner, scaling surface).
@@ -118,25 +139,42 @@ function StatTile({ label, value, icon, onPress, hint }: { label: string; value?
                 accessibilityHint={hint}
                 accessibilityLabel={value === undefined ? `${label}, loading` : `${label}, ${value}`}
                 onPress={onPress}
-                style={{ flex: 1, gap: spacing.smd, padding: spacing.md, ...cardSurface(colors) }}
+                style={{
+                    flex: 1,
+                    padding: TILE_BORDER,
+                    borderRadius: radius.card,
+                    borderCurve: 'continuous',
+                    boxShadow: shadows.card,
+                    experimental_backgroundImage: `linear-gradient(135deg, ${color}66 0%, ${color}1F 45%, ${color}0A 100%)`,
+                }}
             >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View style={{ width: ICON_BUBBLE, height: ICON_BUBBLE, borderRadius: radius.full, backgroundColor: colors.fillBackground, alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon name={icon} size={17} color={colors.secondaryLabel} />
+                <View
+                    style={{
+                        flex: 1,
+                        gap: spacing.smd,
+                        padding: spacing.md,
+                        borderRadius: radius.card - TILE_BORDER,
+                        borderCurve: 'continuous',
+                        backgroundColor: colors.cardBackground,
+                        experimental_backgroundImage: `radial-gradient(ellipse at top left, ${color}12 0%, ${color}05 45%, ${color}00 70%)`,
+                    }}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Icon name={icon} size={20} color={color} />
+                        {onPress ? <Icon name={{ ios: 'chevron.right', android: 'chevron_right' }} size={13} color={colors.tertiaryLabel} /> : null}
                     </View>
-                    {onPress ? <Icon name={{ ios: 'chevron.right', android: 'chevron_right' }} size={13} color={colors.tertiaryLabel} /> : null}
-                </View>
-                <View style={{ gap: 2 }}>
-                    {value === undefined ? (
-                        <Skeleton width={40} height={TILE_VALUE_SIZE} />
-                    ) : (
-                        <Animated.View entering={fadeInContent}>
-                            <ThemedText style={{ fontSize: TILE_VALUE_SIZE, lineHeight: TILE_VALUE_SIZE + 4, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{value}</ThemedText>
-                        </Animated.View>
-                    )}
-                    <ThemedText variant="footnote" numberOfLines={1}>
-                        {label}
-                    </ThemedText>
+                    <View style={{ gap: 2 }}>
+                        {value === undefined ? (
+                            <Skeleton width={40} height={TILE_VALUE_SIZE} />
+                        ) : (
+                            <Animated.View entering={fadeInContent}>
+                                <ThemedText style={{ fontSize: TILE_VALUE_SIZE, lineHeight: TILE_VALUE_SIZE + 4, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{value}</ThemedText>
+                            </Animated.View>
+                        )}
+                        <ThemedText variant="footnote" numberOfLines={1}>
+                            {label}
+                        </ThemedText>
+                    </View>
                 </View>
             </Container>
         </View>
@@ -146,6 +184,7 @@ function StatTile({ label, value, icon, onPress, hint }: { label: string; value?
 /** Pending hero card + Completed / Total tiles from GET /tasks/status-counts. */
 export function KpiOverview({ counts }: { counts?: TaskStatusCountsResponse }) {
     const router = useRouter();
+    const colors = useColors();
     return (
         <View style={{ gap: spacing.smd }}>
             <PendingHero counts={counts} />
@@ -153,11 +192,17 @@ export function KpiOverview({ counts }: { counts?: TaskStatusCountsResponse }) {
                 <StatTile
                     label="Completed"
                     value={counts?.completed}
-                    icon={{ ios: 'checkmark.circle', android: 'task_alt' }}
+                    icon={{ ios: 'checkmark.circle.fill', android: 'task_alt' }}
+                    color={colors.success}
                     hint="Opens the Approved tab"
                     onPress={() => router.navigate(APPROVED_HREF)}
                 />
-                <StatTile label="Total requests" value={counts?.total} icon={{ ios: 'tray.full', android: 'inbox' }} />
+                <StatTile
+                    label="Total requests"
+                    value={counts?.total}
+                    icon={{ ios: 'tray.full.fill', android: 'inbox' }}
+                    color={colors.info}
+                />
             </View>
         </View>
     );
