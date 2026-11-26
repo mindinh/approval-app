@@ -10,7 +10,7 @@ import { CountBadge } from '@/components/count-badge';
 import { ErrorState, InlineErrorRow } from '@/components/error-state';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
-import { BrandRefreshControl, TopWash, useScreenContentInsets } from '@/components/screen-scroll-view';
+import { BrandRefreshControl, StatusBarWash, WashScrollView, useScreenContentInsets } from '@/components/screen-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Section } from '@/components/section';
 import { TaskCardSkeleton } from '@/components/task-card';
@@ -159,10 +159,10 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
         }
     }, []);
 
-    // Scroll position for the top wash (0 at rest; iOS reports the status-bar inset as a negative offset).
-    const washScroll = useSharedValue(0);
+    // Offset from the resting position (iOS rests at minus the status-bar inset): fades the status-bar wash.
+    const restOffset = useSharedValue(0);
     const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        washScroll.set(event.nativeEvent.contentOffset.y + (event.nativeEvent.contentInset?.top ?? 0));
+        restOffset.set(event.nativeEvent.contentOffset.y + (event.nativeEvent.contentInset?.top ?? 0));
         const next = event.nativeEvent.contentOffset.y > SHOW_TOP_PILL_AFTER;
         if (next !== showTopPill) setShowTopPill(next);
     };
@@ -363,7 +363,6 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.groupedBackground }}>
-            <TopWash scrollY={washScroll} />
             <FlashList
                 ref={listRef}
                 data={emptyContent ? [] : rows}
@@ -377,8 +376,8 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={VIEWABILITY}
                 onScroll={onScroll}
-                // Every frame: the top wash follows the scroll position.
                 scrollEventThrottle={16}
+                renderScrollComponent={WashScrollView}
                 keyboardDismissMode="on-drag"
                 keyboardShouldPersistTaps="handled"
                 contentInsetAdjustmentBehavior="automatic"
@@ -386,6 +385,7 @@ export function TaskListScreen({ scope }: { scope: TaskScope }) {
                 contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop, paddingBottom }}
                 refreshControl={<BrandRefreshControl refreshing={pulling} onRefresh={refresh} offset={refreshOffset} />}
             />
+            <StatusBarWash scrollY={restOffset} />
             {selecting ? <SelectionBar selected={selection.tasks} candidates={candidates} tabBarInset={tabBarInset} /> : null}
             {showTopPill ? <TopPill label={keepGroupsOpen || !anyOpen ? 'Back to top' : 'Collapse all'} onPress={backToTop} /> : null}
         </View>

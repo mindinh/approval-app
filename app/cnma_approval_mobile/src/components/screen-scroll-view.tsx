@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { RefreshControl, ScrollView, View, type RefreshControlProps } from 'react-native';
-import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import type { ReactNode, Ref } from 'react';
+import { RefreshControl, ScrollView, View, type RefreshControlProps, type ScrollViewInstance, type ScrollViewProps } from 'react-native';
+import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { layout, spacing, useColors } from '@/theme';
 import { useTabBarInset } from './floating-tab-bar';
@@ -34,7 +34,7 @@ const WASH_OVERSCROLL = 400;
  * scroll content, so it covers the area under the status bar / Dynamic Island and the header, then scrolls
  * away with them: the rest of the screen stays a plain off-white.
  *
- * Put it first inside the ScrollView's content (absolutely positioned, behind the rest). Lists use TopWash.
+ * Put it first inside the ScrollView's content (absolutely positioned, behind the rest). Lists use WashScrollView.
  */
 function ScrollingWash() {
     const colors = useColors();
@@ -59,17 +59,40 @@ function ScrollingWash() {
 }
 
 /**
- * The same short wash for virtualized lists (Inbox, Approved): a list header cannot draw above the content
- * (FlashList clips it at the header's top edge, so the status bar area stayed plain). This one sits behind
- * the list, fixed to the top of the screen, and moves up with the list's scroll offset on the UI thread, so it
- * still scrolls away with the header. Pulling down past the top keeps it in place (no gap above).
- *
- * @param scrollY the list's content offset from the top of its content (0 at rest), e.g. from onScroll
+ * Scroll view with the same short wash, for virtualized lists (Inbox, Approved): pass it as FlashList's
+ * `renderScrollComponent`. The wash lives in the scroll content like on Home and scrolls away with the header;
+ * on iOS add StatusBarWash for the strip under the status bar.
  */
-export function TopWash({ scrollY }: { scrollY: SharedValue<number> }) {
+export function WashScrollView({ children, ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance> }) {
+    return (
+        <ScrollView ref={ref} {...props}>
+            <ScrollingWash />
+            {children}
+        </ScrollView>
+    );
+}
+
+/** Wash opacity (0x24) at the top and (0x0D) where its fade ends, as two-digit hex alpha. */
+const WASH_ALPHA_TOP = 0x24;
+const WASH_ALPHA_FADED = 0x0d;
+const hexAlpha = (value: number) => Math.round(value).toString(16).padStart(2, '0');
+
+/**
+ * iOS only: the status-bar strip of the list wash, drawn over the list. On iOS 26 the system scroll-edge
+ * effect (a band ending in a line) sits on top of a FlashList under the status bar: react-native-screens
+ * turns it off only for a scroll view it finds when the screen mounts, which misses the list. This strip
+ * repeats the wash's own colors there, so the screen looks like Home; it fades out as the list scrolls,
+ * letting the content show under the status bar again.
+ *
+ * @param scrollY the list's offset from its resting position (0 at rest), e.g. from onScroll
+ */
+export function StatusBarWash({ scrollY }: { scrollY: SharedValue<number> }) {
     const colors = useColors();
     const { top } = useSafeAreaInsets();
-    const follow = useAnimatedStyle(() => ({ transform: [{ translateY: -Math.max(0, scrollY.get()) }] }));
+    const fade = useAnimatedStyle(() => ({ opacity: interpolate(scrollY.get(), [0, top], [1, 0], 'clamp') }));
+    if (!IS_IOS || top === 0) return null;
+    // Same colors as ScrollingWash at this height: it fades from 0x24 to 0x0D over 55% of (status bar + header).
+    const bottomAlpha = WASH_ALPHA_TOP - (WASH_ALPHA_TOP - WASH_ALPHA_FADED) * Math.min(1, top / ((top + WASH_HEIGHT) * 0.55));
     return (
         <Animated.View
             pointerEvents="none"
@@ -79,10 +102,11 @@ export function TopWash({ scrollY }: { scrollY: SharedValue<number> }) {
                     top: 0,
                     left: 0,
                     right: 0,
-                    height: top + WASH_HEIGHT,
-                    experimental_backgroundImage: `linear-gradient(180deg, ${colors.accent}24 0%, ${colors.accent}0D 55%, ${colors.accent}00 100%)`,
+                    height: top,
+                    backgroundColor: colors.groupedBackground,
+                    experimental_backgroundImage: `linear-gradient(180deg, ${colors.accent}${hexAlpha(WASH_ALPHA_TOP)} 0%, ${colors.accent}${hexAlpha(bottomAlpha)} 100%)`,
                 },
-                follow,
+                fade,
             ]}
         />
     );
