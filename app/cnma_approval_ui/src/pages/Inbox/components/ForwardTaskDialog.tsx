@@ -36,23 +36,33 @@ export function ForwardTaskDialog({
     const { searchPattern, setSearchPattern, users, isLoading } = useSearchUsers('', 250);
     const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
     const [comment, setComment] = useState('');
-    const [highlightedIndex, setHighlightedIndex] = useState<number>(0);
     const listRef = useRef<HTMLDivElement>(null);
 
-    // Reset state whenever the dialog is opened
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedUser(null);
-            setSearchPattern('');
-            setComment('');
-            setHighlightedIndex(0);
-        }
-    }, [isOpen, setSearchPattern]);
+    // The highlight belongs to one result list: whenever the user list changes it starts again at the first entry.
+    const [highlight, setHighlight] = useState<{ users: UserSearchResult[]; index: number }>({ users, index: 0 });
+    const highlightedIndex = highlight.users === users ? highlight.index : 0;
+    const setHighlightedIndex = (update: number | ((prev: number) => number)) => {
+        setHighlight((prev) => {
+            const prevIndex = prev.users === users ? prev.index : 0;
+            return { users, index: typeof update === 'function' ? update(prevIndex) : update };
+        });
+    };
 
-    // Keep highlighted index within bounds when user list updates
-    useEffect(() => {
+    const resetForm = () => {
+        setSelectedUser(null);
+        setSearchPattern('');
+        setComment('');
         setHighlightedIndex(0);
-    }, [users]);
+    };
+
+    // Reset state whenever the dialog is opened (adjusted during render, see react.dev/learn/you-might-not-need-an-effect)
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
+        if (isOpen) {
+            resetForm();
+        }
+    }
 
     // Scroll highlighted item into view
     useEffect(() => {
@@ -91,10 +101,7 @@ export function ForwardTaskDialog({
     };
 
     const handleClose = () => {
-        setSelectedUser(null);
-        setSearchPattern('');
-        setComment('');
-        setHighlightedIndex(0);
+        resetForm();
         onClose();
     };
 

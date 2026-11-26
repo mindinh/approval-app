@@ -31,6 +31,7 @@ import { useUserIdentity } from '@/pages/Inbox/hooks/useUserIdentity';
 import { MobileNavProvider } from '@/contexts/MobileNavContext';
 import { MobileBottomBar } from './MobileBottomBar';
 import { isWorkZone } from '@/utils/launchpad';
+import { logout } from '@/components/providers/SessionTimeoutProvider';
 
 // ── Reconstructed primitive Sidebar container with Style Bug Fix ───────────────────
 interface SidebarWrapperProps extends React.ComponentProps<"div"> {
@@ -305,7 +306,7 @@ function AppSidebar() {
                                 <Button
                                     variant="destructive"
                                     size="sm"
-                                    onClick={() => { window.location.href = '/do/logout'; }}
+                                    onClick={() => logout()}
                                     className="cursor-pointer flex items-center gap-1.5"
                                 >
                                     <LogOut className="h-3.5 w-3.5" />

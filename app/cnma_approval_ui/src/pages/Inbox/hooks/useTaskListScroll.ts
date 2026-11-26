@@ -2,10 +2,18 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { bindScrollPagination } from './scrollPagination';
 import {
+    MAIN_CATEGORIES,
     computeCategoryCounts,
     getTaskObjectCategory,
     type ObjectCategory,
 } from '../utils/categoryUtils';
+
+/** Wait for the category accordion expand animation before centering the selected card. */
+const SCROLL_INITIAL_DELAY_MS = 250;
+const SCROLL_RETRY_DELAY_MS = 80;
+const SCROLL_MAX_RETRIES = 12;
+/** A card closer than this to the container edge counts as not comfortably visible. */
+const CARD_VISIBILITY_MARGIN_PX = 30;
 
 export interface UseTaskListScrollOptions {
     tasks: InboxTask[];
@@ -119,7 +127,6 @@ export function useTaskListScroll({
         }
 
         let attempts = 0;
-        const maxAttempts = 12;
         let timeoutId: ReturnType<typeof setTimeout>;
 
         const attemptScroll = () => {
@@ -134,8 +141,8 @@ export function useTaskListScroll({
 
                 // If card is not already comfortably visible inside the scroll container, scroll to center it
                 const isFullyVisible =
-                    elRect.top >= containerRect.top + 30 &&
-                    elRect.bottom <= containerRect.bottom - 30;
+                    elRect.top >= containerRect.top + CARD_VISIBILITY_MARGIN_PX &&
+                    elRect.bottom <= containerRect.bottom - CARD_VISIBILITY_MARGIN_PX;
 
                 if (!isFullyVisible) {
                     const relativeTop = elRect.top - containerRect.top + container.scrollTop;
@@ -146,14 +153,13 @@ export function useTaskListScroll({
                     });
                 }
                 lastScrolledTaskIdRef.current = currentTask.instanceId;
-            } else if (attempts < maxAttempts) {
+            } else if (attempts < SCROLL_MAX_RETRIES) {
                 attempts++;
-                timeoutId = setTimeout(attemptScroll, 80);
+                timeoutId = setTimeout(attemptScroll, SCROLL_RETRY_DELAY_MS);
             }
         };
 
-        // Delay 250ms to allow category accordion expand animation to settle
-        timeoutId = setTimeout(attemptScroll, 250);
+        timeoutId = setTimeout(attemptScroll, SCROLL_INITIAL_DELAY_MS);
 
         return () => {
             clearTimeout(timeoutId);
@@ -183,7 +189,7 @@ export function useTaskListScroll({
             if (prev.size > 0) {
                 return new Set<ObjectCategory>();
             }
-            return new Set<ObjectCategory>(['PR', 'PO', 'CLAIM', 'RESERVATION']);
+            return new Set<ObjectCategory>(MAIN_CATEGORIES);
         });
     }, []);
 
@@ -191,40 +197,31 @@ export function useTaskListScroll({
 
     const loadedCategoryCounts = useMemo(() => computeCategoryCounts(tasks), [tasks]);
 
+    /** With authoritative totals, a category has more to load only while fewer tasks are loaded than its scope total. */
+    const hasUnloadedTasks = useCallback((category: ObjectCategory) => {
+        const loaded = loadedCategoryCounts[category] ?? 0;
+        const totals = categoryTotals?.[category];
+        const activeTotal =
+            scope === 'approved' ? totals?.completed ?? loaded : totals?.pending ?? loaded;
+        return loaded < activeTotal;
+    }, [categoryTotals, loadedCategoryCounts, scope]);
+
     const canLoadMoreForExpandedCategories = useMemo(() => {
         if (isAllCollapsed || !hasNextPage) return false;
         if (!categoryTotalsAreAuthoritative) return true;
 
-        return Array.from(expandedCategories).some((category) => {
-            if (category === 'ALL') return false;
-            const loaded = loadedCategoryCounts[category] ?? 0;
-            const totals = categoryTotals?.[category];
-            const activeTotal =
-                scope === 'approved' ? totals?.completed ?? loaded : totals?.pending ?? loaded;
-            return loaded < activeTotal;
-        });
-    }, [
-        categoryTotals,
-        categoryTotalsAreAuthoritative,
-        expandedCategories,
-        hasNextPage,
-        isAllCollapsed,
-        loadedCategoryCounts,
-        scope,
-    ]);
+        return Array.from(expandedCategories).some(
+            (category) => category !== 'ALL' && hasUnloadedTasks(category)
+        );
+    }, [categoryTotalsAreAuthoritative, expandedCategories, hasNextPage, hasUnloadedTasks, isAllCollapsed]);
 
     const loadableExpandedCategories = useMemo(
         () =>
             Array.from(expandedCategories).filter((category) => {
                 if (category === 'ALL') return false;
-                if (!categoryTotalsAreAuthoritative) return true;
-                const loaded = loadedCategoryCounts[category] ?? 0;
-                const totals = categoryTotals?.[category];
-                const activeTotal =
-                    scope === 'approved' ? totals?.completed ?? loaded : totals?.pending ?? loaded;
-                return loaded < activeTotal;
+                return !categoryTotalsAreAuthoritative || hasUnloadedTasks(category);
             }),
-        [categoryTotals, categoryTotalsAreAuthoritative, expandedCategories, loadedCategoryCounts, scope]
+        [categoryTotalsAreAuthoritative, expandedCategories, hasUnloadedTasks]
     );
 
     // ─── Infinite scroll sentinel ────────────────────────────

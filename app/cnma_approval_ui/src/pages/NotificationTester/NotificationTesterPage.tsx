@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile, Button, useConfirm } from '@cnma/react-ui';
@@ -10,6 +10,15 @@ import { NotificationCards } from './components/NotificationCards';
 import { NotificationDispatchForm } from './components/NotificationDispatchForm';
 import { NotificationTypesTable } from './components/NotificationTypesTable';
 import { NotificationDiagnostics } from './components/NotificationDiagnostics';
+
+// Defaults pre-filled in the dispatch form and used when a field is left blank.
+const DEFAULT_ENDPOINT = '/v2/Notification.svc/Notifications';
+const DEFAULT_TYPE_KEY = 'CNMA_TASK_NOTIFICATION';
+const DEFAULT_TYPE_VERSION = '1.0';
+const DEFAULT_TITLE = 'Test Push Notification from CNMA Approval App';
+const DEFAULT_DESCRIPTION = 'This is a test push notification sent via SAP_Notifications destination.';
+const ORIGIN_ID = 'CNMA_APPROVAL';
+const FALLBACK_RECIPIENT = 'CURRENT_USER';
 
 export default function NotificationTesterPage() {
     const { t } = useTranslation();
@@ -42,11 +51,11 @@ export default function NotificationTesterPage() {
     } = useNotificationTester();
 
     // Form inputs state
-    const [endpoint, setEndpoint] = useState('/v2/Notification.svc/Notifications');
-    const [notificationTypeKey, setNotificationTypeKey] = useState('CNMA_TASK_NOTIFICATION');
-    const [notificationTypeVersion, setNotificationTypeVersion] = useState('1.0');
-    const [title, setTitle] = useState('Test Push Notification from CNMA Approval App');
-    const [description, setDescription] = useState('This is a test push notification sent via SAP_Notifications destination.');
+    const [endpoint, setEndpoint] = useState(DEFAULT_ENDPOINT);
+    const [notificationTypeKey, setNotificationTypeKey] = useState(DEFAULT_TYPE_KEY);
+    const [notificationTypeVersion, setNotificationTypeVersion] = useState(DEFAULT_TYPE_VERSION);
+    const [title, setTitle] = useState(DEFAULT_TITLE);
+    const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
     const [recipientId, setRecipientId] = useState('');
     const [priority, setPriority] = useState<'Low' | 'Medium' | 'High' | 'Neutral'>('High');
 
@@ -64,8 +73,8 @@ export default function NotificationTesterPage() {
 
     const handleRegisterType = () => {
         createTypeMutation.mutate({
-            key: notificationTypeKey.trim() || 'CNMA_TASK_NOTIFICATION',
-            version: notificationTypeVersion.trim() || '1.0',
+            key: notificationTypeKey.trim() || DEFAULT_TYPE_KEY,
+            version: notificationTypeVersion.trim() || DEFAULT_TYPE_VERSION,
         });
     };
 
@@ -97,14 +106,14 @@ export default function NotificationTesterPage() {
     };
 
     const handleSendNotification = () => {
-        const effectiveRecipient = recipientId.trim() || defaultRecipient || 'CURRENT_USER';
+        const effectiveRecipient = recipientId.trim() || defaultRecipient || FALLBACK_RECIPIENT;
         sendMutation.mutate({
-            endpoint: endpoint.trim() || '/v2/Notification.svc/Notifications',
-            originId: 'CNMA_APPROVAL',
-            notificationTypeKey: notificationTypeKey.trim() || 'CNMA_TASK_NOTIFICATION',
-            notificationTypeVersion: notificationTypeVersion.trim() || '1.0',
+            endpoint: endpoint.trim() || DEFAULT_ENDPOINT,
+            originId: ORIGIN_ID,
+            notificationTypeKey: notificationTypeKey.trim() || DEFAULT_TYPE_KEY,
+            notificationTypeVersion: notificationTypeVersion.trim() || DEFAULT_TYPE_VERSION,
             priority,
-            title: title.trim() || 'Test Push Notification from CNMA Approval App',
+            title: title.trim() || DEFAULT_TITLE,
             description: `${description.trim()} (Sent at: ${new Date().toLocaleTimeString()})`,
             recipientId: effectiveRecipient,
         });

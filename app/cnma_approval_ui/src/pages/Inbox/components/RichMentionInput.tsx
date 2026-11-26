@@ -64,7 +64,7 @@ export const RichMentionInput = forwardRef<RichMentionInputRef, RichMentionInput
         };
 
         useImperativeHandle(ref, () => ({
-            insertMention: (user: BusUser, queryText: string) => {
+            insertMention: (user: BusUser) => {
                 if (!editorRef.current) return;
                 const fullName = user.FullName || `${user.FirstName || ''} ${user.LastName || ''}`.trim() || user.SAPUserName;
 

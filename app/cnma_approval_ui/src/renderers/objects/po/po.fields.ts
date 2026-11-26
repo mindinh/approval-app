@@ -1,5 +1,7 @@
+import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
 import { text, codeText, amount, date, tableCol } from '../../core/fields';
 import { formatRawDate, formatRawMultilineText, formatVendorCodeAndName } from '../../core/formatters';
+import { EMPTY_VALUE } from '../../core/model';
 
 export const PO_OVERVIEW_FIELDS = {
     poNumber: text({ source: 'DocumentNumber|PurchaseOrder', label: 'PO Number' }),
@@ -23,21 +25,18 @@ export const PO_OVERVIEW_FIELDS = {
     // ZUB specific
     zubRequester: codeText({ code: 'CreatedByUser', text: 'UserName', label: 'Requester' }),
     supplyingPlant: codeText({ code: 'SupplyingPlant', text: 'SupplyingPlantName', label: 'Supplying Plant' }),
-    plant: {
-        key: 'Plant_PlantName',
-        label: 'Receiving Plant',
-        code: 'Plant|ReceivingPlant',
-        text: 'PlantName|ReceivingPlantName',
-        formatter: (_val: unknown, record: any) => {
-            const c = (record?.Plant || record?.ReceivingPlant || record?._Item?.[0]?.Plant || record?._Item?.results?.[0]?.Plant || '').trim();
-            const t = (record?.PlantName || record?.ReceivingPlantName || record?._Item?.[0]?.PlantName || record?._Item?.results?.[0]?.PlantName || '').trim();
-            if (c && t && c !== t) return `${c} (${t})`;
-            return c || t || '-';
-        }
-    },
+    plant: text({ key: 'Plant_PlantName', source: 'Plant|ReceivingPlant', label: 'Receiving Plant', formatter: (_val, record) => formatReceivingPlant(record) }),
     zubTotalAmount: amount({ value: 'TotalNetAmountLocalCrcy', currency: 'LocalCurrency', label: 'Total Amount' }),
-    zubHeaderText: text({ source: 'HeaderText', label: 'Header Text', isLongText: true, formatter: (val, record) => formatRawMultilineText(val, record, '_HeaderText') })
 };
+
+/** ZUB receiving plant as `"code (name)"`; falls back to the first line item when the header has none. */
+function formatReceivingPlant(record: RawODataEntity): string {
+    const firstItem = record?._Item?.[0] ?? record?._Item?.results?.[0];
+    const code = String(record?.Plant || record?.ReceivingPlant || firstItem?.Plant || '').trim();
+    const name = String(record?.PlantName || record?.ReceivingPlantName || firstItem?.PlantName || '').trim();
+    if (code && name && code !== name) return `${code} (${name})`;
+    return code || name || EMPTY_VALUE;
+}
 
 export const PO_TABLE_COLUMNS = {
     item: tableCol({ key: 'item', header: 'Item', source: 'ItemNumber' }),
@@ -47,7 +46,6 @@ export const PO_TABLE_COLUMNS = {
     shortText: tableCol({ key: 'shortText', header: 'Short Text', source: 'MaterialText' }),
     materialGroup: tableCol({ key: 'materialGroup', header: 'Material Group', code: 'MaterialGroup', text: 'MaterialGroupName' }),
     quantity: tableCol({ key: 'quantity', header: 'Quantity', value: 'Quantity', unit: 'Unit', align: 'right' }),
-    unit: tableCol({ key: 'unit', header: 'UoM', source: 'Unit' }),
     deliveryDate: tableCol({ key: 'deliveryDate', header: 'Delivery Date', source: 'DeliveryDate', formatter: (val) => formatRawDate(val) }),
     valuationPrice: tableCol({ key: 'valuationPrice', header: 'Valuation Price', value: 'ValuationPrice', currency: 'DocumentCurrency', align: 'right' }),
     totalValue: tableCol({ key: 'totalValue', header: 'Total Value', value: 'TotalNetAmountDocCrcy', currency: 'DocumentCurrency', align: 'right' }),
@@ -56,10 +54,6 @@ export const PO_TABLE_COLUMNS = {
     internalOrder: tableCol({ key: 'internalOrder', header: 'Internal Order', code: 'OrderInternalID', text: 'OrderInternalName' }),
     fundsCenter: tableCol({ key: 'fundsCenter', header: 'Funds Center', code: 'FundsCenter', text: 'FundsCenterName' }),
     commitmentItem: tableCol({ key: 'commitmentItem', header: 'Commitment Item', code: 'CommitmentItem', text: 'CommitmentItemDescription' }),
-
-    // ZMAK Marketing specific columns
-    zMakOrder: tableCol({ key: 'OrderInternalID', header: 'Order Internal', source: 'OrderInternalID' }),
-    zMakOrderText: tableCol({ key: 'OrderInternalName', header: 'Order Internal Text', source: 'OrderInternalName' }),
 
     // ZUB specific columns
     zubValuationPrice: tableCol({ key: 'valuationPrice', header: 'Valuation Price', value: 'ValuationPricePRCD', currency: 'LocalCurrency|DocumentCurrency', align: 'right' }),

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { SessionTimeoutDialog } from './SessionTimeoutDialog';
 
 // ─── Configuration ────────────────────────────────────────────────
-// Match the 12-hour (720 min) Approuter sessionTimeout (warn at 11.5 hours of total inactivity)
+// Warn at 11.5 hours of total inactivity (XSUAA access token lives 12h; approuter session is 20 days)
 const IDLE_TIMEOUT_MS = 11.5 * 60 * 60 * 1000;
 const COUNTDOWN_SECONDS = 60;
 const KEEP_ALIVE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -67,28 +67,81 @@ export function reauthenticateSession(force = false): boolean {
 }
 
 /**
+ * Explicit sign-out. Inside WorkZone / Joule the logout chain (approuter → XSUAA → IAS → Entra)
+ * must run in the top window: in the iframe IAS cookies are third-party and get dropped by iOS
+ * WebViews, which leaves a half-terminated IAS session that breaks the next login.
+ */
+export function logout(): void {
+    try {
+        sessionStorage.removeItem('session_active');
+        sessionStorage.removeItem(REAUTH_STORAGE_KEY);
+    } catch { /* ignore */ }
+    if (typeof window !== 'undefined' && window.parent !== window) {
+        try {
+            if (window.top) {
+                window.top.location.href = '/do/logout';
+                return;
+            }
+        } catch {
+            // Cross-origin top window: fall back to the frame
+        }
+    }
+    window.location.href = '/do/logout';
+}
+
+/**
  * Lightweight keep-alive ping through Approuter to extend JSESSIONID and trigger
  * silent OAuth2 refresh token exchange before the session expires.
+ *
+ * @returns false only when the approuter session is confirmed gone (401 or login HTML).
  */
 let lastKeepAliveAt = Date.now();
-export async function pingSessionKeepAlive(force = false): Promise<void> {
+export async function pingSessionKeepAlive(force = false): Promise<boolean> {
     const now = Date.now();
     if (!force && now - lastKeepAliveAt < 5 * 60 * 1000) {
-        return;
+        return true;
     }
     lastKeepAliveAt = now;
     try {
-        await fetch('api/cnma/APPROVAL_SRV/health', {
+        const response = await fetch('api/cnma/APPROVAL_SRV/health', {
             method: 'GET',
             credentials: 'include',
             cache: 'no-store',
+            redirect: 'manual',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
             },
         });
+        if (response.status === 401 || response.type === 'opaqueredirect') return false;
+        const contentType = response.headers.get('Content-Type') || '';
+        return !contentType.includes('text/html');
     } catch {
-        // Ignore transient network errors during background keep-alive
+        // Transient network errors (offline, app resuming) are not proof of an expired session
+        return true;
     }
+}
+
+/** How long the app must have been in the background before a resume re-validates the session. */
+const RESUME_CHECK_AFTER_MS = 5 * 60 * 1000;
+const SUSPEND_TICK_MS = 30 * 1000;
+
+/**
+ * Suspended WebViews freeze timers, so a late tick proves the app was in the background.
+ * This covers containers that never deliver visibilitychange to the WorkZone iframe.
+ * `reset()` marks a resume as already handled elsewhere.
+ */
+export function startSuspendDetector(onResume: () => void): { stop: () => void; reset: () => void } {
+    let lastTickAt = Date.now();
+    const timer = setInterval(() => {
+        const now = Date.now();
+        const gap = now - lastTickAt;
+        lastTickAt = now;
+        if (gap > RESUME_CHECK_AFTER_MS) onResume();
+    }, SUSPEND_TICK_MS);
+    return {
+        stop: () => clearInterval(timer),
+        reset: () => { lastTickAt = Date.now(); },
+    };
 }
 
 // ─── Global ref for axiosInstance (outside React tree) ────────────
@@ -112,14 +165,11 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
     const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastActivityRef = useRef(Date.now());
+    const hiddenAtRef = useRef<number | null>(null);
 
     /** Explicit Sign Out: Only called when user deliberately clicks "Sign Out". */
     const handleLogout = useCallback(() => {
-        try {
-            sessionStorage.removeItem('session_active');
-            sessionStorage.removeItem(REAUTH_STORAGE_KEY);
-        } catch { /* ignore */ }
-        window.location.href = '/do/logout';
+        logout();
     }, []);
 
     /** Re-authenticate without destroying IAS / Azure Entra SSO session. */
@@ -201,12 +251,41 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
             }
         };
 
-        const handleVisibilityOrFocus = () => {
+        // Joule / Mobile Start keep the WebView suspended for hours. Re-validate on resume and,
+        // if the session is gone, restart login in the top window before the user taps anything,
+        // so the IAS redirect never happens inside the WorkZone iframe.
+        const revalidateAfterResume = () => {
+            lastActivityRef.current = Date.now();
+            startIdleTimer();
+            void pingSessionKeepAlive(true).then((alive) => {
+                if (!alive && !reauthenticateSession(false)) triggerSessionExpired();
+            });
+        };
+
+        const suspendDetector = startSuspendDetector(() => {
             if (document.visibilityState === 'visible' && dialogState === 'hidden') {
-                lastActivityRef.current = Date.now();
-                startIdleTimer();
-                void pingSessionKeepAlive(false);
+                hiddenAtRef.current = null;
+                revalidateAfterResume();
             }
+        });
+
+        const handleVisibilityOrFocus = () => {
+            if (document.visibilityState === 'hidden') {
+                hiddenAtRef.current = hiddenAtRef.current ?? Date.now();
+                return;
+            }
+            if (dialogState !== 'hidden') return;
+            const hiddenFor = hiddenAtRef.current === null ? 0 : Date.now() - hiddenAtRef.current;
+            hiddenAtRef.current = null;
+            // Handled here: keep the suspend detector from re-validating the same resume.
+            suspendDetector.reset();
+            if (hiddenFor >= RESUME_CHECK_AFTER_MS) {
+                revalidateAfterResume();
+                return;
+            }
+            lastActivityRef.current = Date.now();
+            startIdleTimer();
+            void pingSessionKeepAlive(false);
         };
 
         ACTIVITY_EVENTS.forEach(event => {
@@ -235,6 +314,7 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
             document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
             window.removeEventListener('focus', handleVisibilityOrFocus);
             clearInterval(keepAliveTimer);
+            suspendDetector.stop();
             clearAllTimers();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

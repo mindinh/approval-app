@@ -17,6 +17,7 @@ import { MassActionBar } from './MassActionBar';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 import { RefreshCw, Loader2, ArrowDown, ChevronsUp } from 'lucide-react';
 import { CategoryAccordionGroup } from './CategoryAccordionGroup';
+import { normalizeInstanceId } from '../utils/instanceId';
 import { cn } from '@/lib/utils';
 import { FilterBar } from '@/components/filterbar';
 import type { ObjectCategory } from '../utils/categoryUtils';
@@ -141,7 +142,7 @@ export function TaskList({
         disabled: !isMobile,
     });
 
-    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
+    const normSelectedId = normalizeInstanceId(selectedTaskId);
 
     const {
         scrollContainerRef,

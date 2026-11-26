@@ -9,8 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { inboxKeys } from '../hooks/inboxKeys';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { resolveTaskCardConfigForTask } from '@/renderers/ObjectView.registry';
-import type { BusinessChip } from '@/renderers/core/taskCardView';
+import { findObjectTypeModule, resolveTaskCardConfigForTask, type BusinessChip, type Tone } from '@/renderers';
 
 import { isApprovedApprovalStatus } from '../utils/predicates';
 
@@ -21,6 +20,26 @@ interface TaskCardProps {
     isSelected: boolean;
     onClick: (task: InboxTask) => void;
     variant?: 'desktop' | 'mobile';
+}
+
+/** Tailwind classes per renderer tone (literal strings so Tailwind can detect them). */
+const TONE_CLASSES: Record<Tone, { text: string; stripe: string }> = {
+    primary: { text: 'text-primary font-semibold', stripe: 'before:bg-primary' },
+    info: { text: 'text-info font-semibold', stripe: 'before:bg-info' },
+    warning: { text: 'text-warning font-semibold', stripe: 'before:bg-warning' },
+    success: { text: 'text-success font-semibold', stripe: 'before:bg-success' },
+};
+
+const DAY_MS = 1000 * 60 * 60 * 24;
+const OVERDUE_AFTER_DAYS = 5;
+
+/** Age of an open task (days since `createdOn`, measured now), or null when the date is missing or invalid. */
+function getAging(createdOn: string | undefined) {
+    if (!createdOn) return null;
+    const createdTime = new Date(createdOn).getTime();
+    if (Number.isNaN(createdTime)) return null;
+    const diffDays = (Date.now() - createdTime) / DAY_MS;
+    return { isOverdue: diffDays > OVERDUE_AFTER_DAYS, days: Math.floor(diffDays) };
 }
 
 /**
@@ -45,30 +64,9 @@ export const TaskCard = memo(function TaskCard({
         });
     }, [queryClient, task.instanceId]);
 
-
-    const rawTypeText =
-        (task as any).DocumentTypeText ||
-        (task as any).doctyp_desc ||
-        (task as any).documentTypeDisplay;
-
-    let typeText = rawTypeText;
-    if (!typeText) {
-        const cat = String(
-            task.objectType ||
-            (task as any).DocCategory ||
-            (task as any).TechnicalWrkflwObjectType ||
-            task.businessContext?.type ||
-            ''
-        ).toUpperCase();
-
-        if (cat === 'PR' || cat === 'BUS2105') typeText = 'PR';
-        else if (cat === 'PO' || cat === 'BUS2012') typeText = 'PO';
-        else if (cat === 'RE' || cat === 'RESV' || cat === 'BUS2093' || cat === 'ZBUS2093') typeText = 'Reservation';
-        else if (cat === 'CLAIM' || cat === 'ZCLAIM') typeText = 'Claim';
-        else typeText = task.objectType || 'Task';
-    }
-
-    const contextType = typeText;
+    const rawTypeText = task.DocumentTypeText || task.doctyp_desc || task.documentTypeDisplay;
+    const category = task.objectType || task.DocCategory || task.TechnicalWrkflwObjectType || task.businessContext?.type;
+    const contextType = rawTypeText || findObjectTypeModule(category)?.label || task.objectType || 'Task';
     const contextId = task.businessContext?.documentId || task.instid || task.instanceId;
 
     const isCompleted = isApprovedApprovalStatus(task.status) || task.status === 'COMPLETED' || task.status === 'APPROVED';
@@ -76,27 +74,12 @@ export const TaskCard = memo(function TaskCard({
 
     const hasBorCodeTitle = task.title && (task.title.includes('BUS2') || task.title.includes('ZBUS2'));
     const displayTitle = (task.title && !hasBorCodeTitle) ? task.title : `${actionPrefix} ${contextType} ${contextId}`;
-    const requesterName = task.requestorName || task.createdByName || (task as any).CreatedByUser || (task as any).CreatedByName || (task as any).createdByUser || (task as any).UserName || (task as any).UserFullName || '-';
+    const requesterName = task.requestorName || task.createdByName || task.CreatedByUser || task.CreatedByName || task.createdByUser || task.UserName || task.UserFullName || '-';
 
-    const aging = useMemo(() => {
-        if (isCompleted) return null;
-        if (!task.createdOn) return null;
-        const createdTime = new Date(task.createdOn).getTime();
-        if (isNaN(createdTime)) return null;
-        const diffDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
-        return {
-            isOverdue: diffDays > 5,
-            days: Math.floor(diffDays),
-        };
-    }, [task.createdOn, isCompleted]);
+    const aging = useMemo(() => (isCompleted ? null : getAging(task.createdOn)), [task.createdOn, isCompleted]);
 
-    const { style, chips } = useTaskCardConfig(task);
-    const colorKey = style.colorKey;
-    const typeStyle = {
-        text: style.textClass || 'text-muted-foreground',
-        stripe: style.stripeClass || 'before:bg-transparent',
-    };
-    const stripeClass = typeStyle.stripe;
+    const { tone, chips } = useTaskCardConfig(task);
+    const { text: toneTextClass, stripe: stripeClass } = TONE_CLASSES[tone];
 
     /* ─── Mobile variant ──────────────────────────────────────── */
     if (variant === 'mobile') {
@@ -124,13 +107,13 @@ export const TaskCard = memo(function TaskCard({
                     'shadow-xs hover:shadow-sm',
                     // Colour — selected
                     isSelected && {
-                        'border-info ring-2 ring-info/30 shadow-md bg-info/10': colorKey === 'info',
-                        'border-warning ring-2 ring-warning/30 shadow-md bg-warning/10': colorKey === 'warning',
-                        'border-success ring-2 ring-success/30 shadow-md bg-success/10': colorKey === 'success',
-                        'border-primary ring-2 ring-primary/30 shadow-md bg-primary/10': colorKey === 'primary',
+                        'border-info ring-2 ring-info/30 shadow-md bg-info/10': tone === 'info',
+                        'border-warning ring-2 ring-warning/30 shadow-md bg-warning/10': tone === 'warning',
+                        'border-success ring-2 ring-success/30 shadow-md bg-success/10': tone === 'success',
+                        'border-primary ring-2 ring-primary/30 shadow-md bg-primary/10': tone === 'primary',
                     },
                     // Priority accent stripe (left edge)
-                    !isSelected && stripeClass !== 'before:bg-transparent' &&
+                    !isSelected &&
                     cn('before:absolute before:inset-y-0 before:left-0 before:w-1 before:rounded-r-full', stripeClass),
                 )}
             >
@@ -146,10 +129,10 @@ export const TaskCard = memo(function TaskCard({
                                         : 'bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/50 shadow-xs'
                                     : (isSelected
                                         ? {
-                                            'bg-info/15 text-info border border-info/30': colorKey === 'info',
-                                            'bg-warning/15 text-warning border border-warning/30': colorKey === 'warning',
-                                            'bg-success/15 text-success border border-success/30': colorKey === 'success',
-                                            'bg-primary/15 text-primary border border-primary/30': colorKey === 'primary',
+                                            'bg-info/15 text-info border border-info/30': tone === 'info',
+                                            'bg-warning/15 text-warning border border-warning/30': tone === 'warning',
+                                            'bg-success/15 text-success border border-success/30': tone === 'success',
+                                            'bg-primary/15 text-primary border border-primary/30': tone === 'primary',
                                         }
                                         : 'bg-muted/80 text-muted-foreground border border-border/70'),
                             )}
@@ -167,7 +150,7 @@ export const TaskCard = memo(function TaskCard({
                         {/* ID + Badges */}
                         <div className="flex w-full items-start justify-between gap-1.5">
                             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                                <span className={cn('truncate text-xs font-semibold tracking-wide', typeStyle.text)}>
+                                <span className={cn('truncate text-xs font-semibold tracking-wide', toneTextClass)}>
                                     {contextId}
                                 </span>
                             </div>
@@ -279,10 +262,10 @@ export const TaskCard = memo(function TaskCard({
                 // Colour — selected
                 isSelected && [
                     'shadow-md ring-2',
-                    colorKey === 'info' && 'border-info ring-info/30 bg-info/10 before:bg-info',
-                    colorKey === 'warning' && 'border-warning ring-warning/30 bg-warning/10 before:bg-warning',
-                    colorKey === 'success' && 'border-success ring-success/30 bg-success/10 before:bg-success',
-                    colorKey === 'primary' && 'border-primary ring-primary/30 bg-primary/10 before:bg-primary',
+                    tone === 'info' && 'border-info ring-info/30 bg-info/10 before:bg-info',
+                    tone === 'warning' && 'border-warning ring-warning/30 bg-warning/10 before:bg-warning',
+                    tone === 'success' && 'border-success ring-success/30 bg-success/10 before:bg-success',
+                    tone === 'primary' && 'border-primary ring-primary/30 bg-primary/10 before:bg-primary',
                 ],
             )}
         >
@@ -298,10 +281,10 @@ export const TaskCard = memo(function TaskCard({
                                     : 'bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/50 shadow-xs'
                                 : (isSelected
                                     ? {
-                                        'bg-info/15 text-info border border-info/30': colorKey === 'info',
-                                        'bg-warning/15 text-warning border border-warning/30': colorKey === 'warning',
-                                        'bg-success/15 text-success border border-success/30': colorKey === 'success',
-                                        'bg-primary/15 text-primary border border-primary/30': colorKey === 'primary',
+                                        'bg-info/15 text-info border border-info/30': tone === 'info',
+                                        'bg-warning/15 text-warning border border-warning/30': tone === 'warning',
+                                        'bg-success/15 text-success border border-success/30': tone === 'success',
+                                        'bg-primary/15 text-primary border border-primary/30': tone === 'primary',
                                     }
                                     : 'bg-muted/80 text-muted-foreground border border-border/70'),
                         )}
@@ -319,7 +302,7 @@ export const TaskCard = memo(function TaskCard({
                     {/* ── Header: id + badges ── */}
                     <div className="flex w-full items-center justify-between gap-2">
                         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                            <span className={cn('truncate text-xs font-medium', typeStyle.text)}>
+                            <span className={cn('truncate text-xs font-medium', toneTextClass)}>
                                 {contextId}
                             </span>
                         </div>
@@ -400,10 +383,10 @@ export const TaskCard = memo(function TaskCard({
                 className={cn(
                     'absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100',
                     isSelected && {
-                        'text-info/60 opacity-100': colorKey === 'info',
-                        'text-warning/60 opacity-100': colorKey === 'warning',
-                        'text-success/60 opacity-100': colorKey === 'success',
-                        'text-primary/60 opacity-100': colorKey === 'primary',
+                        'text-info/60 opacity-100': tone === 'info',
+                        'text-warning/60 opacity-100': tone === 'warning',
+                        'text-success/60 opacity-100': tone === 'success',
+                        'text-primary/60 opacity-100': tone === 'primary',
                     },
                 )}
             />

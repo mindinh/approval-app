@@ -1,12 +1,16 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { TaskList, TaskDetailView, MassSelectionView, MassDecisionDialog } from '@/pages/Inbox/components';
+import type { TaskListProps } from '@/pages/Inbox/components/TaskList';
+import type { TaskDetailViewProps } from '@/pages/Inbox/components/TaskDetailView';
+import { normalizeInstanceId, resolveDetailInstanceId } from '@/pages/Inbox/utils/instanceId';
 import { useTaskDetail, useDecision, useMassDecision } from '@/pages/Inbox/hooks/useInbox';
 import { useInboxData } from '@/pages/Inbox/hooks/useInboxData';
 import type { InboxTask } from '@/services/inbox/inbox.types';
+import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
 import { useIsMobile } from '@cnma/react-ui';
 import { useErrorModal } from '@/contexts/useErrorModal';
 import { useMobileNav } from '@/contexts/MobileNavContext';
@@ -16,6 +20,26 @@ import {
 } from './utils/categoryUtils';
 
 type TaskScope = 'my' | 'approved';
+
+/** Legacy worklist payloads may still carry these un-normalized fields. */
+type LegacyInboxTask = InboxTask & {
+    documentNumber?: string;
+    businessObjectType?: string;
+    docCategory?: string;
+};
+
+const getScopeBasePath = (scope: TaskScope): string => (scope === 'approved' ? '/approved' : '/inbox');
+
+const getTaskPath = (basePath: string, instanceId: string): string =>
+    `${basePath}/${encodeURIComponent(instanceId)}`;
+
+/** The task to show after the current one is decided: the next one, or the previous one when it was last. */
+function getAdjacentTaskId(tasks: InboxTask[], currentId: string): string | null {
+    const currentIndex = tasks.findIndex((t) => t.instanceId === currentId);
+    if (currentIndex === -1 || tasks.length <= 1) return null;
+    const adjacentIndex = currentIndex < tasks.length - 1 ? currentIndex + 1 : currentIndex - 1;
+    return tasks[adjacentIndex].instanceId;
+}
 
 export default function InboxPage() {
     const { t } = useTranslation();
@@ -27,7 +51,9 @@ export default function InboxPage() {
     const selectedTaskId = taskId ? decodeURIComponent(taskId) : null;
     const scope: TaskScope = location.pathname.startsWith('/approved') ? 'approved' : 'my';
     const isMyScope = scope === 'my';
-    const showTaskActions = true;
+    const basePath = getScopeBasePath(scope);
+    // Decisions and mass actions are only offered in the "My Tasks" scope.
+    const canTakeActions = isMyScope;
 
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -59,12 +85,20 @@ export default function InboxPage() {
         };
     }, [isMobile, selectionMode, setHideBottomBar]);
 
-    // Reset selected category when switching between My Tasks and Approved Tasks on mobile
-    useEffect(() => {
+    // Adjust state during render when the scope or layout changes:
+    // - scope change: leave selection mode and clear the selection
+    // - mobile: reset the selected category (My Tasks <-> Approved Tasks, or entering mobile layout)
+    const [previousLayout, setPreviousLayout] = useState({ scope, isMobile });
+    if (previousLayout.scope !== scope || previousLayout.isMobile !== isMobile) {
+        setPreviousLayout({ scope, isMobile });
+        if (previousLayout.scope !== scope) {
+            setSelectionMode(false);
+            setSelectedIds(new Set());
+        }
         if (isMobile) {
             setSelectedCategory(null);
         }
-    }, [scope, isMobile]);
+    }
 
     // Multi-category data aggregation, deduplication, and counts hook
     const {
@@ -93,22 +127,10 @@ export default function InboxPage() {
         requestedCategories: requested.scope === scope && !(isMobile && selectedTaskId) ? requested.categories : [],
     });
 
-    // Query keys isolate each scope; fresh cached lists can be reused on return.
-    const prevScopeRef = useRef<TaskScope>(scope);
-    useEffect(() => {
-        if (prevScopeRef.current !== scope) {
-            prevScopeRef.current = scope;
-            setSelectionMode(false);
-            setSelectedIds(new Set());
-        }
-    }, [scope]);
-
-    const normSelectedId = selectedTaskId ? String(selectedTaskId).replace(/^0+/, '') : '';
+    const normSelectedId = normalizeInstanceId(selectedTaskId);
     const selectedTask = normSelectedId
         ? tasks.find(
-              (t) =>
-                  t.instanceId === selectedTaskId ||
-                  String(t.instanceId).replace(/^0+/, '') === normSelectedId
+              (t) => t.instanceId === selectedTaskId || normalizeInstanceId(t.instanceId) === normSelectedId
           )
         : undefined;
 
@@ -123,13 +145,10 @@ export default function InboxPage() {
     const decisionMutation = useDecision();
     const massDecisionMutation = useMassDecision();
 
-    const rawDetail = detailResponse as any;
-    const detailTaskId =
-        rawDetail?.taskprocessing?.task?.InstanceID ||
-        rawDetail?.instanceId ||
-        rawDetail?.taskId ||
-        rawDetail?.task?.instanceId;
-    const normDetailId = detailTaskId ? String(detailTaskId).replace(/^0+/, '') : '';
+    // The detail payload is either the raw-OData envelope ({ businessObject, taskprocessing }) or a legacy TaskDetail.
+    const rawDetail: RawODataEntity | undefined = detailResponse;
+    const detailTaskId = resolveDetailInstanceId(rawDetail);
+    const normDetailId = normalizeInstanceId(detailTaskId);
 
     const isDetailMatchingSelected =
         !!rawDetail &&
@@ -152,25 +171,19 @@ export default function InboxPage() {
 
     const handleSelectTask = useCallback(
         (task: InboxTask) => {
-            const basePath = scope === 'approved' ? '/approved' : '/inbox';
-            navigate(`${basePath}/${encodeURIComponent(task.instanceId)}`);
+            navigate(getTaskPath(basePath, task.instanceId));
         },
-        [navigate, scope]
+        [navigate, basePath]
     );
 
     const handleBack = useCallback(() => {
-        navigate(scope === 'approved' ? '/approved' : '/inbox');
-    }, [navigate, scope]);
+        navigate(basePath);
+    }, [navigate, basePath]);
 
     const handleLoadFirstTask = useCallback(() => {
-        const basePath = scope === 'approved' ? '/approved' : '/inbox';
         const firstTask = getFirstTaskByCategoryOrder(tasks);
-        if (firstTask) {
-            navigate(`${basePath}/${encodeURIComponent(firstTask.instanceId)}`, { replace: true });
-        } else {
-            navigate(basePath, { replace: true });
-        }
-    }, [navigate, scope, tasks]);
+        navigate(firstTask ? getTaskPath(basePath, firstTask.instanceId) : basePath, { replace: true });
+    }, [navigate, basePath, tasks]);
 
     const handleDecision = useCallback(
         (decisionKey: string, comment: string) => {
@@ -204,33 +217,16 @@ export default function InboxPage() {
                             sapOrigin: task?.sapOrigin || 'LOCAL',
                             documentId: docNum,
                             businessObjectType: boType,
+                            // Claim bound actions are keyed by ApproverNumber; the BFF prefers the worklist value.
+                            approverNumber: bo?.ApproverNumber || task?.ApproverNumber || task?.approverNumber,
                         },
                     },
                 },
                 {
                     onSuccess: () => {
-                        const basePath = scope === 'approved' ? '/approved' : '/inbox';
                         // On mobile, always return to the task list view instead of loading the next task detail
-                        if (isMobile) {
-                            navigate(basePath);
-                            return;
-                        }
-
-                        const currentIndex = tasks.findIndex((t) => t.instanceId === selectedTaskId);
-                        let nextTaskId = null;
-                        if (currentIndex !== -1 && tasks.length > 1) {
-                            if (currentIndex < tasks.length - 1) {
-                                nextTaskId = tasks[currentIndex + 1].instanceId;
-                            } else {
-                                nextTaskId = tasks[currentIndex - 1].instanceId;
-                            }
-                        }
-
-                        if (nextTaskId) {
-                            navigate(`${basePath}/${encodeURIComponent(nextTaskId)}`);
-                        } else {
-                            navigate(basePath);
-                        }
+                        const nextTaskId = isMobile ? null : getAdjacentTaskId(tasks, selectedTaskId);
+                        navigate(nextTaskId ? getTaskPath(basePath, nextTaskId) : basePath);
                     },
                     onError: (err) => {
                         showError(err, {
@@ -240,7 +236,7 @@ export default function InboxPage() {
                 }
             );
         },
-        [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, scope, showError, isMobile]
+        [selectedTaskId, activeDetail, decisionMutation, navigate, tasks, basePath, showError, isMobile]
     );
 
     const handleOpenMassDecision = useCallback(
@@ -271,10 +267,9 @@ export default function InboxPage() {
             setSelectedIds(new Set());
 
             // 2. Map items with full context (documentId, businessObjectType, sapOrigin)
-            const items = selectedTasks.map((t) => {
-                const docId = t.businessContext?.documentId || (t as any).documentNumber || t.instanceId;
-                const boType =
-                    t.businessContext?.type || (t as any).businessObjectType || (t as any).docCategory || '';
+            const items = selectedTasks.map((t: LegacyInboxTask) => {
+                const docId = t.businessContext?.documentId || t.documentNumber || t.instanceId;
+                const boType = t.businessContext?.type || t.businessObjectType || t.docCategory || '';
                 const origin = t.sapOrigin || 'LOCAL';
                 return {
                     instanceId: t.instanceId,
@@ -319,7 +314,68 @@ export default function InboxPage() {
         });
     }, [tasks]);
 
-    const showMassSelection = showTaskActions && isMyScope && selectionMode && selectedIds.size > 0;
+    const showMassSelection = canTakeActions && selectionMode && selectedIds.size > 0;
+
+    // Props shared by the mobile and desktop task list / detail views.
+    const taskListProps: TaskListProps = {
+        onRequestedCategoriesChange: handleRequestedCategories,
+        tasks,
+        selectedTaskId,
+        onSelectTask: handleSelectTask,
+        isLoading: isLoadingList,
+        categoryStates,
+        onRetryCategory: retryCategory,
+        isError: isListError,
+        error: listError,
+        onRefresh: handleRefreshTasks,
+        isRefreshing,
+        totalItems: totalTasks,
+        overallTotalItems: overallTotalTasks || totalTasks,
+        myTasksCount: myCategoryCountsQuery.data?.ALL,
+        approvedTasksCount: approvedCategoryCountsQuery.data?.ALL,
+        hasNextPage,
+        isFetchingNextPage,
+        onCancelLoadMore: cancelLoadMore,
+        onLoadMore: handleLoadMore,
+        onSearchChange: setServerSearch,
+        selectionMode,
+        selectedIds,
+        onSelectionModeChange: setSelectionMode,
+        onSelectedIdsChange: setSelectedIds,
+        onMassDecision: canTakeActions ? handleOpenMassDecision : undefined,
+        isExecutingMass: canTakeActions && massDecisionMutation.isPending,
+        showTaskActions: canTakeActions,
+        scope,
+        categoryTotals,
+        categoryTotalsAreAuthoritative: categoryCountsQuery.data?.complete === true,
+    };
+
+    const taskDetailProps: TaskDetailViewProps = {
+        detail: activeDetail,
+        isLoading: isDetailLoading,
+        isError: isErrorDetail,
+        error: errorDetail,
+        onRetry: handleRefreshTasks,
+        onLoadFirstTask: handleLoadFirstTask,
+        hasTasks: tasks.length > 0,
+        isSecondaryLoading,
+        onBack: handleBack,
+        onDecision: handleDecision,
+        isExecuting: decisionMutation.isPending,
+        isApprovedScope: !isMyScope,
+        showActionPanel: canTakeActions,
+    };
+
+    const massDecisionDialog = massDecisionConfig && (
+        <MassDecisionDialog
+            isOpen={massDecisionConfig.isOpen}
+            onClose={() => setMassDecisionConfig(null)}
+            onConfirm={handleConfirmMassDecision}
+            decisionKey={massDecisionConfig.decisionKey}
+            tasks={massDecisionConfig.tasks}
+            isExecuting={massDecisionMutation.isPending}
+        />
+    );
 
     // ── Mobile Layout ──────────────────────────────────────────
     if (isMobile) {
@@ -336,22 +392,7 @@ export default function InboxPage() {
                                 transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
                                 className="absolute inset-0 w-full min-w-0 z-10 bg-background overflow-hidden"
                             >
-                                <TaskDetailView
-                                    detail={activeDetail}
-                                    isLoading={isDetailLoading}
-                                    isError={isErrorDetail}
-                                    error={errorDetail}
-                                    onRetry={handleRefreshTasks}
-                                    onLoadFirstTask={handleLoadFirstTask}
-                                    hasTasks={tasks.length > 0}
-                                    isSecondaryLoading={isSecondaryLoading}
-                                    onBack={handleBack}
-                                    onDecision={handleDecision}
-                                    isExecuting={decisionMutation.isPending}
-                                    isMobile
-                                    isApprovedScope={!isMyScope}
-                                    showActionPanel={showTaskActions && isMyScope}
-                                />
+                                <TaskDetailView {...taskDetailProps} isMobile />
                             </motion.div>
                         ) : (
                             <motion.div
@@ -363,62 +404,18 @@ export default function InboxPage() {
                             >
                                 <TaskList
                                     key={scope}
-                                    onRequestedCategoriesChange={handleRequestedCategories}
-                                    tasks={tasks}
-                                    selectedTaskId={selectedTaskId}
-                                    onSelectTask={handleSelectTask}
-                                    isLoading={isLoadingList}
-                                    categoryStates={categoryStates}
-                                    onRetryCategory={retryCategory}
-                                    isError={isListError}
-                                    error={listError}
-                                    onRefresh={handleRefreshTasks}
-                                    isRefreshing={isRefreshing}
-                                    totalItems={totalTasks}
-                                    overallTotalItems={overallTotalTasks || totalTasks}
-                                    myTasksCount={myCategoryCountsQuery.data?.ALL}
-                                    approvedTasksCount={approvedCategoryCountsQuery.data?.ALL}
-                                    hasNextPage={hasNextPage}
-                                    isFetchingNextPage={isFetchingNextPage}
-                                    onCancelLoadMore={cancelLoadMore}
-                                    onLoadMore={handleLoadMore}
-                                    onSearchChange={setServerSearch}
+                                    {...taskListProps}
                                     isMobile
-                                    selectionMode={selectionMode}
-                                    selectedIds={selectedIds}
-                                    onSelectionModeChange={setSelectionMode}
-                                    onSelectedIdsChange={setSelectedIds}
-                                    onMassDecision={
-                                        showTaskActions && isMyScope ? handleOpenMassDecision : undefined
-                                    }
-                                    isExecutingMass={
-                                        showTaskActions && isMyScope && massDecisionMutation.isPending
-                                    }
-                                    showTaskActions={showTaskActions && isMyScope}
                                     hasMobileScopeBar={false}
                                     activeCategory={selectedCategory}
                                     onCategoryChange={setSelectedCategory}
                                     onBackToCategories={() => setSelectedCategory(null)}
-                                    scope={scope}
-                                    categoryTotals={categoryTotals}
-                                    categoryTotalsAreAuthoritative={
-                                        categoryCountsQuery.data?.complete === true
-                                    }
                                 />
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
-                {massDecisionConfig && (
-                    <MassDecisionDialog
-                        isOpen={massDecisionConfig.isOpen}
-                        onClose={() => setMassDecisionConfig(null)}
-                        onConfirm={handleConfirmMassDecision}
-                        decisionKey={massDecisionConfig.decisionKey}
-                        tasks={massDecisionConfig.tasks}
-                        isExecuting={massDecisionMutation.isPending}
-                    />
-                )}
+                {massDecisionDialog}
             </div>
         );
     }
@@ -429,41 +426,12 @@ export default function InboxPage() {
             <aside className="relative w-80 shrink-0 overflow-hidden border-r border-border/60 bg-background">
                 <TaskList
                     key={scope}
-                    onRequestedCategoriesChange={handleRequestedCategories}
-                    tasks={tasks}
-                    selectedTaskId={selectedTaskId}
-                    onSelectTask={handleSelectTask}
-                    isLoading={isLoadingList}
-                    categoryStates={categoryStates}
-                    onRetryCategory={retryCategory}
-                    isError={isListError}
-                    error={listError}
-                    onRefresh={handleRefreshTasks}
-                    isRefreshing={isRefreshing}
-                    totalItems={totalTasks}
-                    overallTotalItems={overallTotalTasks || totalTasks}
-                    myTasksCount={myCategoryCountsQuery.data?.ALL}
-                    approvedTasksCount={approvedCategoryCountsQuery.data?.ALL}
-                    hasNextPage={hasNextPage}
-                    isFetchingNextPage={isFetchingNextPage}
-                    onCancelLoadMore={cancelLoadMore}
-                    onLoadMore={handleLoadMore}
-                    onSearchChange={setServerSearch}
-                    selectionMode={selectionMode}
-                    selectedIds={selectedIds}
-                    onSelectionModeChange={setSelectionMode}
-                    onSelectedIdsChange={setSelectedIds}
-                    onMassDecision={showTaskActions && isMyScope ? handleOpenMassDecision : undefined}
-                    isExecutingMass={showTaskActions && isMyScope && massDecisionMutation.isPending}
-                    showTaskActions={showTaskActions && isMyScope}
-                    scope={scope}
+                    {...taskListProps}
                     onScopeChange={(nextScope) => {
-                        navigate(nextScope === 'approved' ? '/approved' : '/inbox');
+                        navigate(getScopeBasePath(nextScope));
                     }}
                     activeCategory={selectedCategory || 'ALL'}
-                    onCategoryChange={(cat) => setSelectedCategory(cat)}
-                    categoryTotals={categoryTotals}
-                    categoryTotalsAreAuthoritative={categoryCountsQuery.data?.complete === true}
+                    onCategoryChange={setSelectedCategory}
                 />
             </aside>
             <main className="relative min-w-0 flex-1 overflow-hidden bg-muted/30">
@@ -477,33 +445,10 @@ export default function InboxPage() {
                         isExecuting={massDecisionMutation.isPending}
                     />
                 ) : (
-                    <TaskDetailView
-                        detail={activeDetail}
-                        isLoading={isDetailLoading}
-                        isError={isErrorDetail}
-                        error={errorDetail}
-                        onRetry={handleRefreshTasks}
-                        onLoadFirstTask={handleLoadFirstTask}
-                        hasTasks={tasks.length > 0}
-                        isSecondaryLoading={isSecondaryLoading}
-                        onBack={handleBack}
-                        onDecision={handleDecision}
-                        isExecuting={decisionMutation.isPending}
-                        isApprovedScope={!isMyScope}
-                        showActionPanel={showTaskActions && isMyScope}
-                    />
+                    <TaskDetailView {...taskDetailProps} />
                 )}
             </main>
-            {massDecisionConfig && (
-                <MassDecisionDialog
-                    isOpen={massDecisionConfig.isOpen}
-                    onClose={() => setMassDecisionConfig(null)}
-                    onConfirm={handleConfirmMassDecision}
-                    decisionKey={massDecisionConfig.decisionKey}
-                    tasks={massDecisionConfig.tasks}
-                    isExecuting={massDecisionMutation.isPending}
-                />
-            )}
+            {massDecisionDialog}
         </div>
     );
 }

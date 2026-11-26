@@ -5,8 +5,7 @@
  * and invalidation policies alike. Follows the factory pattern recommended
  * by TanStack Query docs.
  */
-
-const normId = (id?: string | null): string => (id ? String(id).replace(/^0+/, '') : '');
+import { normalizeInstanceId as normId } from '@/pages/Inbox/utils/instanceId';
 
 export const inboxKeys = {
     all: ['inbox'] as const,
@@ -24,8 +23,7 @@ export const inboxKeys = {
         [...inboxKeys.all, 'tasks', pagination ?? {}] as const,
 
     approvedTasksPrefix: () => [...inboxKeys.all, 'approvedTasks'] as const,
-    approvedTasks: (pagination?: { top?: number; skip?: number }) =>
-        [...inboxKeys.all, 'approvedTasks', pagination ?? {}] as const,
+    scopedTasksPrefix: (scope: 'my' | 'approved') => [...inboxKeys.all, 'scopedTasks', scope] as const,
     scopedTasks: (scope: 'my' | 'approved', category: string, search: string) =>
         [...inboxKeys.all, 'scopedTasks', scope, category, search] as const,
 

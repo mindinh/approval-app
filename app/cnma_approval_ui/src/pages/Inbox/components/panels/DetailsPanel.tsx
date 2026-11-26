@@ -17,27 +17,23 @@ import {
     SheetHeader,
     SheetTitle,
     Skeleton,
-    Button,
     ToggleGroup,
     ToggleGroupItem,
 } from '@cnma/react-ui';
-import { ExternalLink, Trash2, Table as TableIcon, LayoutGrid, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
-import type { TaskDetail } from '@/services/inbox/inbox.types';
-import type { BusinessSectionModel, DetailTableModel, DetailTableRow } from '@/renderers/TaskDetailSections.types';
+import { ExternalLink, Trash2, Table as TableIcon, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react';
+import type { BusinessSectionModel, DetailTableModel, DetailTableRow } from '@/renderers';
 import { cn } from '@/lib/utils';
 import { safe, prettifyFieldLabel } from '@/pages/Inbox/utils/formatters';
-import { normalizeAndOrderTableColumns } from '@/renderers/shared/formatters';
+import { isReferencePrField } from '@/pages/Inbox/utils/predicates';
 import { useTranslation } from 'react-i18next';
 
 export function DetailsPanel({
     model,
-    detail,
     isMobile = false,
     isSecondaryLoading = false,
     onSelectReferencePr,
 }: {
     model: BusinessSectionModel;
-    detail: TaskDetail;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
     onSelectReferencePr?: (prNumber: string) => void;
@@ -63,11 +59,9 @@ export function DetailsPanel({
         });
     };
 
-    const filteredTables = model.tables
-        .filter((table) => !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title))
-        .map(normalizeAndOrderTableColumns);
+    const tables = model.tables;
 
-    if (filteredTables.length === 0) {
+    if (tables.length === 0) {
         if (isSecondaryLoading) {
             return (
                 <div className="space-y-4">
@@ -91,13 +85,7 @@ export function DetailsPanel({
         );
     }
 
-    const isReferencePrField = (key: string, label: string) => {
-        const k = key.toLowerCase();
-        const l = label.toLowerCase();
-        return k === 'referencepr' || k === 'refpr' || l.includes('reference pr') || l.includes('ref pr');
-    };
-
-    const renderCellValue = (key: string, label: string, rawVal: any) => {
+    const renderCellValue = (key: string, label: string, rawVal: string | undefined) => {
         const displayVal = safe(rawVal);
         if (isReferencePrField(key, label) && displayVal !== '-' && displayVal.trim() !== '') {
             if (onSelectReferencePr) {
@@ -120,14 +108,6 @@ export function DetailsPanel({
             return <span className="font-bold text-primary text-sm">{displayVal}</span>;
         }
         return displayVal;
-    };
-
-    const checkIsDeleted = (row: { isDeleted?: boolean; values: Record<string, string> }) => {
-        if (row.isDeleted) return true;
-        const delVal = row.values.deleted ?? row.values.Deleted ?? row.values.LOEKZ ?? row.values.DeletedFlag ?? row.values.deletionFlag;
-        if (delVal == null) return false;
-        const strVal = String(delVal).trim();
-        return strVal !== '' && strVal !== '-' && strVal !== '0' && strVal.toLowerCase() !== 'false';
     };
 
     const handleRowClick = (table: DetailTableModel, row: DetailTableRow) => {
@@ -173,7 +153,7 @@ export function DetailsPanel({
 
             selectedFields.push({
                 key,
-                label: table.detailFieldLabels?.[key] || prettifyFieldLabel(key),
+                label: prettifyFieldLabel(key),
                 value: safe(value),
             });
             markKeyAndAliasesProcessed(key);
@@ -188,7 +168,7 @@ export function DetailsPanel({
 
     return (
         <div className="space-y-6 w-full max-w-full overflow-hidden">
-            {filteredTables.map((table) => (
+            {tables.map((table) => (
                 <Card key={table.id} className="gap-0 bg-card border-border/70 shadow-sm w-full overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
                         <div className="space-y-1">
@@ -243,11 +223,11 @@ export function DetailsPanel({
                             <div className="space-y-3.5 -mx-2">
                                 {table.rows.length === 0 && (
                                     <div className="rounded-xl border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
-                                        {table.emptyMessage || t('common.noData', 'No data')}
+                                        {t('common.noData', 'No data')}
                                     </div>
                                 )}
                                 {table.rows.map((row, index) => {
-                                    const isDeleted = checkIsDeleted(row);
+                                    const isDeleted = Boolean(row.isDeleted);
                                     return (
                                         <div
                                             key={row.id}
@@ -295,11 +275,11 @@ export function DetailsPanel({
                             <div className="space-y-3.5 w-full py-3">
                                 {table.rows.length === 0 && (
                                     <div className="rounded-xl border border-dashed border-border/70 px-4 py-8 text-center text-xs text-muted-foreground">
-                                        {table.emptyMessage || t('common.noData', 'No data')}
+                                        {t('common.noData', 'No data')}
                                     </div>
                                 )}
                                 {table.rows.map((row, index) => {
-                                    const isDeleted = checkIsDeleted(row);
+                                    const isDeleted = Boolean(row.isDeleted);
                                     const isCollapsed = collapsedCardIds.has(row.id);
                                     return (
                                         <Card
@@ -390,12 +370,12 @@ export function DetailsPanel({
                                                     colSpan={table.columns.length + 1}
                                                     className="px-4 py-8 text-center text-muted-foreground whitespace-normal"
                                                 >
-                                                    {table.emptyMessage || t('common.noData', 'No data')}
+                                                    {t('common.noData', 'No data')}
                                                 </TableCell>
                                             </TableRow>
                                         )}
                                         {table.rows.map((row) => {
-                                            const isDeleted = checkIsDeleted(row);
+                                            const isDeleted = Boolean(row.isDeleted);
                                             return (
                                                 <TableRow
                                                     key={row.id}

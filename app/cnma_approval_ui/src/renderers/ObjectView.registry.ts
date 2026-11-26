@@ -1,82 +1,38 @@
-import type { InboxTask } from '@/services/inbox/inbox.types';
+/**
+ * Master registry of business object types: which module renders which SAP category.
+ * To onboard a new type, create `objects/<type>/<type>.fields.ts` + `<type>.views.ts`
+ * exporting an ObjectTypeModule, then add it to OBJECT_TYPE_MODULES.
+ */
 import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
-import type { ObjectViewDefinition, TaskCardStyleConfig } from './core/renderer.types';
-import { resolveObjectView } from './core/objectView';
-import { PR_VIEWS } from './objects/pr/pr.views';
-import { PO_VIEWS } from './objects/po/po.views';
-import { RESERVATION_VIEW } from './objects/reservation/reservation.view';
-import { CLAIM_VIEW } from './objects/claim/claim.view';
-import type { BusinessSectionModel } from './TaskDetailSections.types';
-import { extractTaskEntityRecord, evalTaskCardChips, resolveTaskCardStyle, type BusinessChip } from './core/taskCardView';
+import type { ObjectTypeModule, ObjectViewDefinition } from './core/types';
+import { prModule } from './objects/pr/pr.views';
+import { poModule } from './objects/po/po.views';
+import { reservationModule } from './objects/reservation/reservation.views';
+import { claimModule } from './objects/claim/claim.views';
+import { GENERIC_VIEW } from './objects/generic/generic.views';
 
-export function resolveObjectViewDefinition(businessObject: RawODataEntity): ObjectViewDefinition {
-    const docCategory = String(
-        businessObject?.DocCategory ||
-        businessObject?._meta?.objectType ||
-        businessObject?.objectType ||
-        businessObject?.type ||
-        ''
-    ).toUpperCase();
-    const docType = String(
-        businessObject?.DocumentType ||
-        businessObject?.documentType ||
-        businessObject?.doctyp ||
-        'DEFAULT'
-    ).toUpperCase();
+export const OBJECT_TYPE_MODULES: readonly ObjectTypeModule[] = [prModule, poModule, reservationModule, claimModule];
 
-    if (docCategory === 'BUS2105' || docCategory === 'PR') {
-        return PR_VIEWS[docType] || PR_VIEWS.DEFAULT;
-    }
+const moduleByAlias = new Map<string, ObjectTypeModule>(
+    OBJECT_TYPE_MODULES.flatMap((module) => module.aliases.map((alias) => [alias, module] as const))
+);
 
-    if (docCategory === 'BUS2012' || docCategory === 'PO') {
-        return PO_VIEWS[docType] || PO_VIEWS.DEFAULT;
-    }
-
-    if (docCategory === 'ZBUS2093' || docCategory === 'BUS2093' || docCategory === 'RE' || docCategory === 'RESV') {
-        return RESERVATION_VIEW;
-    }
-
-    if (docCategory === 'ZCLAIM' || docCategory === 'CLAIM') {
-        return CLAIM_VIEW;
-    }
-
-    // Fallback definition for unknown categories
-    return {
-        docCategory: docCategory || 'UNKNOWN',
-        overviewCard: {
-            id: 'unknown-summary',
-            title: 'Overview',
-            fields: Object.keys(businessObject || {})
-                .filter(k => typeof businessObject[k] !== 'object' && !k.startsWith('_'))
-                .map(k => ({
-                    key: k,
-                    label: k.replace(/([A-Z])/g, ' $1').trim(),
-                    source: k
-                }))
-        }
-    };
+/** Finds the module for a category code (`'BUS2012'`, `'po'`, …); case-insensitive. */
+export function findObjectTypeModule(category: unknown): ObjectTypeModule | undefined {
+    return moduleByAlias.get(String(category ?? '').toUpperCase());
 }
 
-export function resolveTaskCardConfigForTask(task: InboxTask, cachedDetail?: any): {
-    viewDef: ObjectViewDefinition;
-    record: RawODataEntity;
-    style: TaskCardStyleConfig;
-    chips: BusinessChip[];
-} {
-    const record = extractTaskEntityRecord(task, cachedDetail);
-    const viewDef = resolveObjectViewDefinition(record);
-    const style = resolveTaskCardStyle(viewDef);
-    const chips = evalTaskCardChips(viewDef, record, task);
-    return { viewDef, record, style, chips };
+/** SAP category of a record (BOR object type or short code), from the fields the BFF may use. */
+export function readDocCategory(record: RawODataEntity): string {
+    return String(record?.DocCategory || record?._meta?.objectType || record?.objectType || record?.type || '');
 }
 
-export function resolveBusinessSectionModel(detailInput: any): BusinessSectionModel {
-    if (!detailInput) {
-        return { title: 'Document Details', cards: [], tables: [] };
-    }
-
-    const businessObject: RawODataEntity = detailInput.businessObject || (detailInput.header ? { ...detailInput.header, _Item: detailInput.items } : detailInput);
-    const viewDefinition = resolveObjectViewDefinition(businessObject);
-    return resolveObjectView(viewDefinition, businessObject);
+/** Document subtype (e.g. `ZUB`), `DEFAULT` when absent. */
+export function readDocumentType(record: RawODataEntity): string {
+    return String(record?.DocumentType || record?.documentType || record?.doctyp || 'DEFAULT').toUpperCase();
 }
 
+/** The view for a record: its module's subtype layout, or the generic fallback. */
+export function resolveObjectViewDefinition(record: RawODataEntity, module = findObjectTypeModule(readDocCategory(record))): ObjectViewDefinition {
+    return module ? module.resolveView(readDocumentType(record)) : GENERIC_VIEW;
+}

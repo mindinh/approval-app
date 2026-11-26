@@ -1,5 +1,5 @@
 import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
-import type { VisibilityPredicate } from './renderer.types';
+import type { VisibilityPredicate } from './types';
 
 export const when = {
     exists: (field: string): VisibilityPredicate => (record: RawODataEntity) => {

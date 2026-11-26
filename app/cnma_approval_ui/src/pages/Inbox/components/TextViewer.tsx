@@ -28,7 +28,7 @@ export function TextViewer({ url, fileName }: TextViewerProps) {
                     setContent(text);
                     setLoading(false);
                 }
-            } catch (err: any) {
+            } catch (err) {
                 console.error('[TextViewer] Error rendering text file:', err);
                 if (isMounted) {
                     setError('Failed to load text file content.');

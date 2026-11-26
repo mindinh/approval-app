@@ -1,9 +1,9 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 
+/** Minimal tab shape the gestures need; callers may pass richer tab objects. */
 export interface TabItem {
     value: string;
     label: string;
-    [key: string]: any;
 }
 
 export interface UseMobileTabGesturesOptions {
@@ -14,8 +14,22 @@ export interface UseMobileTabGesturesOptions {
     onTabChange: (nextTab: string) => void;
 }
 
-export const PULL_THRESHOLD = 45; // 45px damped distance (~75px physical touch drag)
-export const SWITCH_DELAY_MS = 350; // Smooth delay so user sees 100% full bar before transition
+const PULL_THRESHOLD = 45; // 45px damped distance (~75px physical touch drag)
+const SWITCH_DELAY_MS = 350; // Smooth delay so user sees 100% full bar before transition
+/** Responsive resistance: 75px physical drag reaches the full 45px threshold. */
+const PULL_DAMPING_FACTOR = 0.6;
+/** Upward drag (px) needed before a pull session starts. */
+const PULL_START_DISTANCE_PX = 2;
+/** Tolerance for Android subpixels, viewport resizing, or overscroll. */
+const BOTTOM_TOLERANCE_PX = 12;
+/** Keep the new tab scrolled to top while its content mounts. */
+const TAB_SWITCH_SETTLE_MS = 600;
+const WHEEL_SWITCH_DELTA = 70;
+const WHEEL_ACCUMULATOR_RESET_MS = 300;
+
+function isScrolledToBottom({ scrollTop, scrollHeight, clientHeight }: HTMLElement): boolean {
+    return scrollHeight - (scrollTop + clientHeight) <= BOTTOM_TOLERANCE_PX;
+}
 
 export function useMobileTabGestures({
     isMobile,
@@ -36,6 +50,14 @@ export function useMobileTabGestures({
 
     const currentTabIndex = tabs.findIndex((t) => t.value === activeTab);
 
+    // Reset pull state whenever the active tab changes (adjusted during render, not in an effect)
+    const [pullStateTab, setPullStateTab] = useState(activeTab);
+    if (pullStateTab !== activeTab) {
+        setPullStateTab(activeTab);
+        setPullUpDistance(0);
+        setIsSwitchingTab(false);
+    }
+
     // Keep active tab centered in horizontal pill bar
     useEffect(() => {
         if (isMobile && activeTab && tabButtonRefs.current[activeTab]) {
@@ -47,7 +69,7 @@ export function useMobileTabGestures({
         }
     }, [activeTab, isMobile]);
 
-    // Reset container scroll to top, timers, & pull state whenever active tab changes
+    // Reset container scroll to top, timers, & gesture refs whenever active tab changes
     useEffect(() => {
         if (containerRef.current) {
             containerRef.current.scrollTop = 0;
@@ -56,8 +78,6 @@ export function useMobileTabGestures({
             clearTimeout(switchTimeoutRef.current);
             switchTimeoutRef.current = null;
         }
-        setPullUpDistance(0);
-        setIsSwitchingTab(false);
         pullUpStartYRef.current = null;
         isPullingRef.current = false;
         isSwitchingTabRef.current = false;
@@ -92,7 +112,7 @@ export function useMobileTabGestures({
                     container.scrollTop = 0;
                 }
                 isSwitchingTabRef.current = false;
-            }, 600);
+            }, TAB_SWITCH_SETTLE_MS);
         },
         [tabs, activeTab, onTabChange]
     );
@@ -120,10 +140,7 @@ export function useMobileTabGestures({
             if (currentTabIndex >= tabs.length - 1) return;
 
             const target = e.currentTarget;
-            const { scrollTop, scrollHeight, clientHeight } = target;
-            // 12px tolerance for Android subpixels, viewport resizing, or overscroll
-            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-            const isAtBottom = distanceFromBottom <= 12;
+            const isAtBottom = isScrolledToBottom(target);
 
             const currentY = e.touches[0]?.clientY;
             if (currentY === undefined) return;
@@ -133,7 +150,7 @@ export function useMobileTabGestures({
                 if (pullUpStartYRef.current === null) {
                     pullUpStartYRef.current = currentY;
                 }
-                if (pullUpStartYRef.current - currentY > 2) {
+                if (pullUpStartYRef.current - currentY > PULL_START_DISTANCE_PX) {
                     isPullingRef.current = true;
                 }
             }
@@ -143,8 +160,7 @@ export function useMobileTabGestures({
                 const rawDiff = pullUpStartYRef.current - currentY; // Positive when dragging up
 
                 if (rawDiff > 0) {
-                    // Responsive resistance: 0.6 factor so 75px physical drag reaches full 45px threshold
-                    const damped = Math.min(rawDiff * 0.6, PULL_THRESHOLD);
+                    const damped = Math.min(rawDiff * PULL_DAMPING_FACTOR, PULL_THRESHOLD);
                     setPullUpDistance(damped);
 
                     // Reached 100% threshold -> Schedule delayed transition
@@ -205,17 +221,16 @@ export function useMobileTabGestures({
             if (currentTabIndex >= tabs.length - 1) return;
 
             const target = e.currentTarget;
-            const { scrollTop, scrollHeight, clientHeight } = target;
-            const isAtBottom = (scrollHeight - (scrollTop + clientHeight)) <= 12;
+            const isAtBottom = isScrolledToBottom(target);
 
             if (isAtBottom && e.deltaY > 0) {
                 wheelAccumulatorRef.current += e.deltaY;
                 if (wheelResetTimerRef.current) clearTimeout(wheelResetTimerRef.current);
                 wheelResetTimerRef.current = setTimeout(() => {
                     wheelAccumulatorRef.current = 0;
-                }, 300);
+                }, WHEEL_ACCUMULATOR_RESET_MS);
 
-                if (wheelAccumulatorRef.current >= 70 && !switchTimeoutRef.current) {
+                if (wheelAccumulatorRef.current >= WHEEL_SWITCH_DELTA && !switchTimeoutRef.current) {
                     wheelAccumulatorRef.current = 0;
                     hasConsumedGestureRef.current = true;
                     setIsSwitchingTab(true);

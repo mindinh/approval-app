@@ -1,9 +1,10 @@
-import { Textarea, Skeleton, Button } from '@cnma/react-ui';
+import { Textarea, Skeleton } from '@cnma/react-ui';
 import { ExternalLink } from 'lucide-react';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
-import type { BusinessSectionModel, DetailField } from '@/renderers/TaskDetailSections.types';
+import type { BusinessSectionModel, DetailField } from '@/renderers';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { isReferencePrField } from '@/pages/Inbox/utils/predicates';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function OverviewPanel({
@@ -30,15 +31,7 @@ export function OverviewPanel({
 
     const checkIsLongText = (f: DetailField) =>
         f.isLongText ||
-        f.dataType === 'LONG_TEXT' ||
-        f.dataType === 'TEXTAREA' ||
         ['description', 'header note', 'header text', 'purpose', 'paid by', 'bank details', 'note', 'notes', 'remarks'].includes(f.label.toLowerCase());
-
-    const isReferencePrField = (key: string, label: string) => {
-        const k = key.toLowerCase();
-        const l = label.toLowerCase();
-        return k === 'referencepr' || k === 'refpr' || l.includes('reference pr') || l.includes('ref pr');
-    };
 
     const renderFieldValue = (key: string, label: string, val: string) => {
         if (isReferencePrField(key, label) && val !== '-' && val.trim() !== '') {

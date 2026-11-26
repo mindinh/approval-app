@@ -8,6 +8,39 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import { XssecPassportStrategy, XsuaaService } from '@sap/xssec';
 import { createInboxRouter } from './handlers/inbox-handler';
 import { AppError } from './lib/utils/error-handler';
+import { loadEntraConfig } from './lib/auth/entra-config';
+import { EntraTokenValidator } from './lib/auth/entra-token-validator';
+import { TokenExchangeService, type XsuaaCredentials } from './lib/auth/token-exchange-service';
+import { createEntraAuthMiddleware } from './lib/auth/entra-auth-middleware';
+
+const TASKS_PATH = '/api/cnma/APPROVAL_SRV/tasks';
+
+/**
+ * Mobile app: accept Entra ID tokens on the tasks API by exchanging them for XSUAA user tokens
+ * before the XSUAA passport strategy runs. Disabled when the Entra configuration is absent.
+ */
+const mountEntraAuth = (app: express.Application, xsuaa: Partial<XsuaaCredentials>): void => {
+    const config = loadEntraConfig();
+    if (!config) {
+        console.log('[Server] Entra token support disabled (no Entra configuration bound)');
+        return;
+    }
+    if (!xsuaa.url || !xsuaa.clientid || !xsuaa.clientsecret) {
+        console.error('[Server] Entra token support disabled: XSUAA binding has no client secret (saml2-bearer needs clientid/clientsecret)');
+        return;
+    }
+    const validator = new EntraTokenValidator({
+        tenantId: config.tenantId,
+        apiClientId: config.apiClientId,
+        requiredScope: config.requiredScope,
+    });
+    const exchange = new TokenExchangeService({
+        entra: config,
+        xsuaa: { url: xsuaa.url, clientid: xsuaa.clientid, clientsecret: xsuaa.clientsecret },
+    });
+    app.use(TASKS_PATH, createEntraAuthMiddleware({ config, validator, exchange }));
+    console.log(`[Server] Entra token exchange enabled for ${TASKS_PATH} (tenant ${config.tenantId})`);
+};
 
 cds.on('bootstrap', (app: express.Application) => {
     // In local development / hybrid mode, if incoming Authorization is not a Bearer token (e.g. Basic auth),
@@ -100,6 +133,7 @@ cds.on('bootstrap', (app: express.Application) => {
 
             const shouldEnableJwtAuth = process.env.NODE_ENV === 'production' || process.env.ENABLE_JWT_AUTH === 'true';
             if (shouldEnableJwtAuth) {
+                mountEntraAuth(app, authConfig.credentials as Partial<XsuaaCredentials>);
                 app.use('/api/cnma/APPROVAL_SRV/tasks', passport.authenticate('JWT', { session: false }));
                 console.log('[Server] XSUAA JWT authentication middleware enabled for /api/cnma/APPROVAL_SRV/tasks');
             } else {

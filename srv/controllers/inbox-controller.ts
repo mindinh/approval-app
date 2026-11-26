@@ -16,7 +16,8 @@ import {
     decodeJwtPayload,
     summarizeJwtClaims,
     redactToken,
-    hasHeaderValue
+    hasHeaderValue,
+    isImpersonatedRequest
 } from '../lib/utils/auth-helper';
 
 // Helper function to read raw request body stream
@@ -60,7 +61,7 @@ export class InboxController {
         res.json({
             id: sapUser,
             sapUser: sapUser,
-            isImpersonated: req.headers['x-sap-user'] !== undefined,
+            isImpersonated: isImpersonatedRequest(req),
             hasJwt: Boolean(jwtInfo.token),
             tokenSource: jwtInfo.source,
             jwt: jwtInfo.token || null,
@@ -152,7 +153,7 @@ export class InboxController {
             identity: {
                 btpUser: sapUser,
                 sapUser: sapUser,
-                isImpersonated: req.headers['x-sap-user'] !== undefined,
+                isImpersonated: isImpersonatedRequest(req),
                 hasJwt: Boolean(jwtInfo.token),
             },
             sapContext: {
@@ -314,6 +315,11 @@ export class InboxController {
      *         name: documentType
      *         schema:
      *           type: string
+     *       - in: query
+     *         name: documentNumber
+     *         description: Part of a document number
+     *         schema:
+     *           type: string
      *     responses:
      *       '200':
      *         description: Successful response
@@ -334,6 +340,7 @@ export class InboxController {
                 skip: req.query.skip ? parseInt(String(req.query.skip), 10) : 0,
                 category: this.parseTaskCategory(req.query.category),
                 documentType: typeof req.query.documentType === 'string' ? req.query.documentType : undefined,
+                documentNumber: typeof req.query.documentNumber === 'string' ? req.query.documentNumber : undefined,
                 status,
             });
             res.json(result);

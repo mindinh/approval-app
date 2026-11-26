@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatNoteText } from '@/renderers/core/formatters';
 import { CLAIM_OVERVIEW_FIELDS } from '@/renderers/objects/claim/claim.fields';
-import { CLAIM_VIEW } from '@/renderers/objects/claim/claim.view';
+import { CLAIM_VIEW } from '@/renderers/objects/claim/claim.views';
 import { evalField, resolveObjectView } from '@/renderers/core/objectView';
 
 describe('formatNoteText', () => {
@@ -120,7 +120,7 @@ describe('CLAIM_OVERVIEW_FIELDS & CLAIM_VIEW', () => {
     });
 
     it('places core fields and note in overviewCard, and verification fields in Verification card', () => {
-        const overviewKeys = (CLAIM_VIEW.overviewCard?.fields || []).map((f: any) => f.key);
+        const overviewKeys = CLAIM_VIEW.overviewCard.fields.map((f) => f.key);
         expect(overviewKeys).toContain('DocumentNumber|ClaimNumber');
         expect(overviewKeys).toContain('Note|Notes');
         expect(overviewKeys).not.toContain('VeriBy');
@@ -129,7 +129,7 @@ describe('CLAIM_OVERVIEW_FIELDS & CLAIM_VIEW', () => {
         expect(verificationCard).toBeDefined();
         expect(verificationCard?.title).toBe('Verification');
 
-        const veriKeys = (verificationCard?.fields || []).map((f: any) => f.key);
+        const veriKeys = (verificationCard?.fields ?? []).map((f) => f.key);
         expect(veriKeys).toContain('VeriStatus_VeriStatusDesc');
         expect(veriKeys).toContain('VeriBy');
         expect(veriKeys).toContain('VeriDate');

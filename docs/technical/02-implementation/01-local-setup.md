@@ -51,6 +51,19 @@ npm.cmd run dev:hybrid
 The command serves the hybrid profile; it does not provision bindings. Hybrid auth is IAS; production auth is XSUAA in `package.json`.
 Optional frontend `.env.local` `VITE_PP_JWT` supplies the Vite proxy Bearer token. Without `SAP_DEV_OVERRIDE_DESTINATION=false`, local calls can fall back to direct Basic authentication when JWT or destination headers are unavailable, but only when `SAP_TASK_BASE_URL`, `SAP_TASK_USER` and `SAP_TASK_PASSWORD` are all explicitly configured. Destination mode always requires `SAP_TASK_DESTINATION`.
 
+### Watch mode (day-to-day development)
+
+```powershell
+npm.cmd run dev:be:watch      # backend only: cds watch --profile hybrid, restarts on srv/ changes
+npm.cmd run dev:hybrid:watch  # frees ports 4005/4004/3000, then backend (watch) + Vite
+```
+
+`dev:hybrid:watch` starts the backend with stdin redirected from `NUL`: when `cds watch` gets an open, non-terminal stdin pipe (which `concurrently` provides), the server logs "listening" but never answers requests. Run `dev:be:watch` directly in a terminal, or through `dev:hybrid:watch`; do not wrap it in other tools without closing stdin.
+
+`dev:be:watch` passes `--exclude app,tests,docs,scripts` and `--livereload false`. Without the exclude, `cds watch` also watches the frontend: every saved `.ts`/`.json` under `app/` restarted the backend, and Vite returned HTTP 500 (`ECONNREFUSED 127.0.0.1:4005`) during the restart. `cds watch` only honours the `--exclude` flag; a `watch` block in `.cdsrc.json` is ignored.
+
+On Windows with NTFS last-access updates enabled (`fsutil behavior query disablelastaccess` → `2`/`0`), merely reading `srv/` files during startup can emit change events and cause a short chain of extra restarts. Disabling last-access updates (`fsutil behavior set disablelastaccess 1`, admin, then reboot) avoids it.
+
 ## LAN testing
 
 `start:lan`, `start:hybrid:lan`, and `start:ias:lan` bind the backend to `0.0.0.0:4004`.

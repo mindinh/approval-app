@@ -8,16 +8,5 @@
     "body": {
       "limit": "50mb"
     }
-  },
-  "watch": {
-    "exclude": [
-      "db.sqlite",
-      "db.sqlite-wal",
-      "db.sqlite-shm",
-      "**/*.log",
-      "**/*.pdf",
-      "_gen/",
-      "gen/"
-    ]
   }
 }

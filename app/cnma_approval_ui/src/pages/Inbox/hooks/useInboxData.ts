@@ -22,6 +22,13 @@ export interface UseInboxDataOptions {
 
 export type CategoryStates = Partial<Record<ObjectCategory, { isLoading: boolean; error: unknown }>>;
 
+type CategoryTasksQuery = ReturnType<typeof useInfiniteCategoryTasks>;
+
+/** Server total from the first page, unless the data is a placeholder or the query failed. */
+function authoritativeTotal(query: CategoryTasksQuery): number | undefined {
+    return !query.isPlaceholderData && !query.isError ? query.data?.pages[0]?.total : undefined;
+}
+
 export function cacheListCategoryCounts(
     client: QueryClient,
     scope: 'my' | 'approved',
@@ -59,10 +66,10 @@ export function useInboxData({
     const needsGlobalCounts = demandLoading || !!serverSearch || [prTasksQuery, poTasksQuery, reservationTasksQuery, claimTasksQuery].some(query => query.isError);
     const myCountsQuery = useCategoryCounts('my', { enabled: isMyScope && needsGlobalCounts });
     const approvedCountsQuery = useCategoryCounts('approved', { enabled: !isMyScope && needsGlobalCounts });
-    const prTotal = !prTasksQuery.isPlaceholderData && !prTasksQuery.isError ? prTasksQuery.data?.pages[0]?.total : undefined;
-    const poTotal = !poTasksQuery.isPlaceholderData && !poTasksQuery.isError ? poTasksQuery.data?.pages[0]?.total : undefined;
-    const reservationTotal = !reservationTasksQuery.isPlaceholderData && !reservationTasksQuery.isError ? reservationTasksQuery.data?.pages[0]?.total : undefined;
-    const claimTotal = !claimTasksQuery.isPlaceholderData && !claimTasksQuery.isError ? claimTasksQuery.data?.pages[0]?.total : undefined;
+    const prTotal = authoritativeTotal(prTasksQuery);
+    const poTotal = authoritativeTotal(poTasksQuery);
+    const reservationTotal = authoritativeTotal(reservationTasksQuery);
+    const claimTotal = authoritativeTotal(claimTasksQuery);
     const pageCounts = useMemo<CategoryCountsResponse | undefined>(() => {
         if (serverSearch || demandLoading) return undefined;
         const totals = [prTotal, poTotal, reservationTotal, claimTotal];
@@ -176,7 +183,7 @@ export function useInboxData({
         if (!demandLoading || serverSearch) return;
         const requested = new Set(requestedKey?.split(',') ?? []);
         void queryClient.cancelQueries({
-            queryKey: ['inbox', 'scopedTasks', scope],
+            queryKey: inboxKeys.scopedTasksPrefix(scope),
             predicate: query => query.queryKey[4] === serverSearch && !requested.has(String(query.queryKey[3])) &&
                 query.state.fetchMeta?.fetchMore?.direction !== 'forward',
         });

@@ -13,11 +13,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button } from '@cnma/react-ui';
 import type { TaskDetail } from '@/services/inbox/inbox.types';
-import { AttachmentPreviewCard, isPreviewableType } from '../AttachmentPreviewModal';
+import { AttachmentPreviewCard } from '../AttachmentPreviewModal';
+import { isPreviewableType } from '../attachmentPreview';
 import { inboxApi } from '@/services/inbox/inbox.api';
-import { formatDate, safe } from '@/pages/Inbox/utils/formatters';
-import { formatFileSize } from '@/renderers/TaskDetailSections.shared';
-import { cleanFileName, friendlyFileType, Empty } from '@/pages/Inbox/utils/shared';
+import { formatDate, formatFileSize, safe } from '@/pages/Inbox/utils/formatters';
+import { Empty } from '@/pages/Inbox/utils/shared';
+import { cleanFileName, friendlyFileType } from '@/pages/Inbox/utils/fileNames';
 import { cn } from '@/lib/utils';
 import { toast } from '@cnma/react-ui';
 
@@ -92,9 +93,9 @@ export function AttachmentsPanel({
             URL.revokeObjectURL(url);
 
             toast.success('Download completed successfully.', { id: toastId });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to download attachment:', error);
-            toast.error(error.message || 'Failed to download attachment.', { id: toastId });
+            toast.error((error instanceof Error && error.message) || 'Failed to download attachment.', { id: toastId });
         } finally {
             setDownloadingAttachmentId(null);
         }

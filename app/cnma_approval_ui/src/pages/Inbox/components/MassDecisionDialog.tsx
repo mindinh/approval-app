@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Button,
     Textarea,
@@ -16,6 +16,11 @@ import type { InboxTask } from '@/services/inbox/inbox.types';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DECISION_KEYS } from '@/pages/Inbox/utils/constants';
+
+const MAX_COMMENT_LENGTH = 255;
+
+/** Legacy worklist payloads may still carry an un-normalized document number. */
+type TaskWithDocumentNumber = InboxTask & { documentNumber?: string };
 
 interface MassDecisionDialogProps {
     isOpen: boolean;
@@ -41,12 +46,14 @@ export function MassDecisionDialog({
     const isCommentRequired = isReject;
     const canSubmit = !isCommentRequired || comment.trim().length > 0;
 
-    // Reset comment whenever dialog is opened
-    useEffect(() => {
+    // Reset comment whenever dialog is opened (adjusted during render instead of in an effect)
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
         if (isOpen) {
             setComment('');
         }
-    }, [isOpen]);
+    }
 
     const handleConfirm = () => {
         if (!canSubmit) return;
@@ -93,11 +100,9 @@ export function MassDecisionDialog({
                     </Label>
                     <ScrollArea className="max-h-28 rounded-md border border-border/70 bg-muted/20 p-2">
                         <div className="flex flex-wrap gap-1.5">
-                            {tasks.map((task) => {
+                            {tasks.map((task: TaskWithDocumentNumber) => {
                                 const docNumber =
-                                    task.businessContext?.documentId ||
-                                    (task as any).documentNumber ||
-                                    task.instanceId;
+                                    task.businessContext?.documentId || task.documentNumber || task.instanceId;
                                 return (
                                     <Badge
                                         key={task.instanceId}
@@ -120,7 +125,7 @@ export function MassDecisionDialog({
                             {isCommentRequired && <span className="text-destructive ml-1">*</span>}
                         </Label>
                         <span className="text-xs text-muted-foreground">
-                            {comment.length}/255
+                            {comment.length}/{MAX_COMMENT_LENGTH}
                         </span>
                     </div>
                     <Textarea
@@ -132,7 +137,7 @@ export function MassDecisionDialog({
                         }
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        maxLength={255}
+                        maxLength={MAX_COMMENT_LENGTH}
                         className="min-h-24 resize-none text-base sm:text-sm font-sans"
                         autoFocus
                     />

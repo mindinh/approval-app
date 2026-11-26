@@ -138,6 +138,35 @@ export interface TableRow {
     createdAt?: string;
 }
 
+const DEFAULT_CURRENCY = 'VND';
+
+/**
+ * Raw S/4 amount properties that may be passed through on a dashboard task when the
+ * BFF did not resolve `totalNetAmount` itself.
+ */
+interface RawAmountFields {
+    TotalOrderValue?: number | string | null;
+    PaymentAmountLocalCrcy?: number | string | null;
+    TotalNetAmountLocalCrcy?: number | string | null;
+}
+
+function toAmountOrNull(value: number | string | null | undefined): number | null {
+    return value !== undefined && value !== null ? Number(value) : null;
+}
+
+/** Picks the row amount: the resolved net amount, else the raw amount field of the task's object type. */
+function resolveRowAmount(task: NormalizedTask & RawAmountFields): number | null {
+    if (task.totalNetAmount !== undefined && task.totalNetAmount !== null) return task.totalNetAmount;
+
+    const taskType = (task.taskType || task.documentType || '').toUpperCase();
+    const docCat = (task.docCategory || '').toUpperCase();
+    if (taskType === 'PO' || docCat === 'BUS2012') return toAmountOrNull(task.TotalOrderValue);
+    if (taskType === 'CLAIM' || docCat === 'CLAIM') return toAmountOrNull(task.PaymentAmountLocalCrcy);
+    return toAmountOrNull(task.TotalNetAmountLocalCrcy);
+}
+
+const DASHBOARD_STALE_TIME_MS = 5 * 60 * 1000;  // 5 min
+
 // ─── API Query Hook ───────────────────────────────────────
 export function useDashboardQuery(
     params?: { top?: number; skip?: number; category?: string; documentType?: string; status?: string },
@@ -146,7 +175,7 @@ export function useDashboardQuery(
     return useQuery({
         queryKey: [...inboxKeys.dashboard(), params ?? {}],
         queryFn: () => inboxApi.getDashboard(params),
-        staleTime: 5 * 60 * 1000,  // 5 min
+        staleTime: DASHBOARD_STALE_TIME_MS,
         // Filter and pagination changes must not replace the whole dashboard with
         // its initial skeleton while the next server result is being fetched.
         placeholderData: keepPreviousData,
@@ -358,32 +387,16 @@ export function useDashboardData(
 
     // 7. Table rows formatting (fully filtered)
     const tableRows = useMemo(() => {
-        return filteredTasks.map((t: any) => {
-            const taskType = (t.taskType || t.documentType || '').toUpperCase();
-            const docCat = (t.docCategory || '').toUpperCase();
-
-            let amount: number | null = t.totalNetAmount;
-            if (amount === undefined || amount === null) {
-                if (taskType === 'PO' || docCat === 'BUS2012') {
-                    amount = t.TotalOrderValue !== undefined && t.TotalOrderValue !== null ? Number(t.TotalOrderValue) : null;
-                } else if (taskType === 'CLAIM' || docCat === 'CLAIM') {
-                    amount = t.PaymentAmountLocalCrcy !== undefined && t.PaymentAmountLocalCrcy !== null ? Number(t.PaymentAmountLocalCrcy) : null;
-                } else {
-                    amount = t.TotalNetAmountLocalCrcy !== undefined && t.TotalNetAmountLocalCrcy !== null ? Number(t.TotalNetAmountLocalCrcy) : null;
-                }
-            }
-
-            return {
-                taskType: t.taskType,
-                documentTypeDesc: t.typeLabel,
-                docNumber: t.documentNumber,
-                currency: t.currency || 'VND',
-                status: t.status,
-                totalNetAmount: amount,
-                displayCurrency: t.displayCurrency || t.currency || 'VND',
-                createdAt: t.createdAt,
-            };
-        });
+        return filteredTasks.map((t): TableRow => ({
+            taskType: t.taskType,
+            documentTypeDesc: t.typeLabel,
+            docNumber: t.documentNumber,
+            currency: t.currency || DEFAULT_CURRENCY,
+            status: t.status,
+            totalNetAmount: resolveRowAmount(t),
+            displayCurrency: t.displayCurrency || t.currency || DEFAULT_CURRENCY,
+            createdAt: t.createdAt,
+        }));
     }, [filteredTasks]);
 
     return {
@@ -399,4 +412,3 @@ export function useDashboardData(
         isTruncated,
     };
 }
-

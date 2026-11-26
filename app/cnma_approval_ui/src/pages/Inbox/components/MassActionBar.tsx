@@ -7,7 +7,6 @@
 import { Button, Checkbox } from '@cnma/react-ui';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { DECISION_KEYS } from '@/pages/Inbox/utils/constants';
-import { cn } from '@/lib/utils';
 
 interface MassActionBarProps {
     selectedCount: number;

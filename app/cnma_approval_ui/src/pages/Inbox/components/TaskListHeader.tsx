@@ -1,4 +1,6 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { AccountMenu } from '@/components/layouts/AccountMenu';
+import type { FilterValues } from '@/components/filterbar/types';
 import { useTranslation } from 'react-i18next';
 import { Button, Tabs, TabsList, TabsTrigger, Input } from '@cnma/react-ui';
 import {
@@ -191,8 +193,8 @@ export function MobileHeader({
     onScopeChange?: (scope: 'my' | 'approved') => void;
     myTasksCount: number;
     approvedTasksCount: number;
-    filterValues: any;
-    setFilterValues: (fn: any) => void;
+    filterValues: FilterValues;
+    setFilterValues: Dispatch<SetStateAction<FilterValues>>;
     selectionSummary: string;
     onRefresh: () => void;
     isRefreshing: boolean;
@@ -258,7 +260,7 @@ export function MobileHeader({
                             value={filterValues.search || ''}
                             onChange={(e) => {
                                 const val = e.target.value;
-                                setFilterValues((prev: any) => ({ ...prev, search: val }));
+                                setFilterValues((prev) => ({ ...prev, search: val }));
                             }}
                             className="rounded-xl border-border bg-card pl-8 text-sm h-11"
                         />

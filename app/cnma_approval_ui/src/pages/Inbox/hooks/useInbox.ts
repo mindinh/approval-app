@@ -17,9 +17,6 @@ export { inboxKeys } from './inboxKeys';
 // Query hooks
 export {
     useTasks,
-    useApprovedTasks,
-    useInfiniteTasks,
-    useInfiniteApprovedTasks,
     useInfiniteCategoryTasks,
     useTaskDetail,
     useCategoryCounts,
@@ -29,7 +26,6 @@ export {
 export {
     useDecision,
     useMassDecision,
-    useForward,
     useAddComment,
 } from './inboxMutations';
 
@@ -37,7 +33,6 @@ export {
 export {
     invalidateAfterDecision,
     invalidateAfterMassDecision,
-    invalidateAfterForward,
     invalidateAfterComment,
     invalidateTaskList,
 } from './inboxInvalidation';

@@ -6,7 +6,6 @@ import { CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge, Button } from '@cnma/react-ui';
 import type { WorkflowApprovalTreeResponse } from '@/services/inbox/inbox.types';
-import { safe } from '@/pages/Inbox/utils/formatters';
 import {
     normalizeApprovalStatus,
     isPendingApprovalStatus,
@@ -22,11 +21,11 @@ export function WorkflowApprovalPanel({
     data,
     isLoading,
     error,
-    taskDetail,
 }: {
     data?: WorkflowApprovalTreeResponse;
     isLoading: boolean;
     error?: string;
+    /** Accepted for caller compatibility; not rendered. */
     taskDetail?: { createdByName?: string };
 }) {
     const [expandedStepLevels, setExpandedStepLevels] = useState<number[]>([]);
@@ -56,7 +55,7 @@ export function WorkflowApprovalPanel({
 
             {!isLoading && error && (
                 <div className="rounded-lg border border-dashed border-border/70 px-4 py-5 text-sm text-muted-foreground">
-                    {typeof error === 'string' ? error : (error as any)?.message || JSON.stringify(error)}
+                    {error}
                 </div>
             )}
 

@@ -2,10 +2,11 @@ import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { Button, Skeleton } from '@cnma/react-ui';
 import { ArrowLeft } from 'lucide-react';
+import type { RawODataEntity } from '@/services/inbox/inbox.contracts';
 import { StatusHeaderBadges } from './panels';
 
 export interface TaskDetailHeaderProps {
-    viewData: any;
+    viewData: RawODataEntity | null | undefined;
     isMobile?: boolean;
     isSecondaryLoading?: boolean;
     onBack: () => void;

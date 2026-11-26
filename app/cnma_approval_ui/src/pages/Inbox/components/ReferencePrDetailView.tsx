@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button, Badge, Card, Tabs, TabsList, TabsTrigger } from '@cnma/react-ui';
 import { ArrowLeft, RotateCcw, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -34,11 +34,13 @@ export function ReferencePrDetailView({
 
     // Support nested PR navigation history if user clicks a reference PR inside
     const [prHistory, setPrHistory] = useState<string[]>([prNumber]);
-    const currentPr = prHistory[prHistory.length - 1] || prNumber;
-
-    useEffect(() => {
+    // A new root PR starts a fresh history (state adjusted during render, no effect).
+    const [historyRoot, setHistoryRoot] = useState(prNumber);
+    if (historyRoot !== prNumber) {
+        setHistoryRoot(prNumber);
         setPrHistory([prNumber]);
-    }, [prNumber]);
+    }
+    const currentPr = prHistory[prHistory.length - 1] || prNumber;
 
     const formattedPrNumber = currentPr.replace(/^0+/, '');
 
@@ -51,13 +53,16 @@ export function ReferencePrDetailView({
     } = useReferencePrDetail(currentPr);
 
     const [activeTab, setActiveTab] = useState<string>('overview');
-    const prevTabIndexRef = useRef(0);
+    // Slide direction of the mobile tab transition (1 = forward, -1 = back).
+    const [animationDirection, setAnimationDirection] = useState<1 | -1>(1);
 
-    // Reset tab to overview when current PR changes
-    useEffect(() => {
+    // Opening another PR starts on the overview tab.
+    const [tabPr, setTabPr] = useState(currentPr);
+    if (tabPr !== currentPr) {
+        setTabPr(currentPr);
         setActiveTab('overview');
-        prevTabIndexRef.current = 0;
-    }, [currentPr]);
+        setAnimationDirection(1);
+    }
 
     const viewData = useMemo(() => normalizeDetailForView(rawDetail), [rawDetail]);
     const businessModel = useMemo(
@@ -65,13 +70,10 @@ export function ReferencePrDetailView({
         [rawDetail]
     );
 
-    const detailsCount = useMemo(() => {
-        if (!businessModel || !Array.isArray(businessModel.tables)) return 0;
-        const filteredTables = businessModel.tables.filter(
-            (table) => table && !['Header Facts', 'Custom Attributes', 'Related Objects'].includes(table.title)
-        );
-        return filteredTables.reduce((acc, table) => acc + (Array.isArray(table?.rows) ? table.rows.length : 0), 0);
-    }, [businessModel]);
+    const detailsCount = useMemo(
+        () => businessModel?.tables.reduce((acc, table) => acc + table.rows.length, 0) ?? 0,
+        [businessModel]
+    );
 
     const tabs = useMemo(
         () =>
@@ -87,11 +89,10 @@ export function ReferencePrDetailView({
         [viewData, detailsCount, t]
     );
 
-    const currentTabIndex = tabs.findIndex((t) => t.value === activeTab);
-    const animationDirection = currentTabIndex >= prevTabIndexRef.current ? 1 : -1;
-
     const handleMobileTabChange = (nextTab: string) => {
-        prevTabIndexRef.current = tabs.findIndex((t) => t.value === activeTab);
+        const fromIndex = tabs.findIndex((t) => t.value === activeTab);
+        const toIndex = tabs.findIndex((t) => t.value === nextTab);
+        setAnimationDirection(toIndex >= fromIndex ? 1 : -1);
         setActiveTab(nextTab);
     };
 
@@ -126,7 +127,6 @@ export function ReferencePrDetailView({
                 return businessModel ? (
                     <DetailsPanel
                         model={businessModel}
-                        detail={viewData}
                         isMobile={mobile}
                         onSelectReferencePr={handleSelectNestedPr}
                     />

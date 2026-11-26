@@ -163,7 +163,19 @@ describe('InboxProcessor', () => {
         undefined,
         { top: 50, skip: 100 },
         undefined,
-        "DocCategory eq 'BUS2012' and (contains(DocumentNumber,'O''Brien') or contains(CreatedByUser,'O''Brien') or contains(DocumentTypeText,'O''Brien'))"
+        "DocCategory eq 'BUS2012' and (contains(DocumentNumber,'O''Brien') or contains(CreatedByUser,'O''BRIEN') or contains(DocumentTypeText,'O''Brien') or contains(DocumentTypeText,'O''BRIEN'))"
+      );
+    });
+
+    it('matches every search word against document number, creator, type text and title keywords', async () => {
+      mockSapOdataAdapter.getInstances.mockResolvedValue(Object.assign([], { totalCount: 0 }));
+
+      await processor.getTasks('MOCK_USER', 'jwt', { top: 20, skip: 0 }, { search: 'reserv 964' });
+
+      const filter = mockSapOdataAdapter.getInstances.mock.calls[0][6];
+      expect(filter).toBe(
+        "(contains(DocumentNumber,'reserv') or contains(CreatedByUser,'RESERV') or contains(DocumentTypeText,'reserv') or contains(DocumentTypeText,'RESERV') or (DocCategory eq 'ZBUS2093' or DocCategory eq 'BUS2093'))" +
+          " and (contains(DocumentNumber,'964') or contains(CreatedByUser,'964') or contains(DocumentTypeText,'964'))"
       );
     });
   });
@@ -222,6 +234,20 @@ describe('InboxProcessor', () => {
     it('propagates aggregate failures instead of reporting zero tasks', async () => {
       mockSapOdataAdapter.getStatusCounts.mockRejectedValue(new Error('SAP unavailable'));
       await expect(processor.getStatusCounts('MOCK_USER')).rejects.toThrow('SAP unavailable');
+    });
+  });
+
+  describe('getDashboardSummary', () => {
+    it('narrows the task table by part of a document number (escaped)', async () => {
+      mockSapOdataAdapter.getStatusCounts.mockResolvedValue([]);
+      mockSapOdataAdapter.getDocTypeCounts = vi.fn().mockResolvedValue([]);
+      mockSapOdataAdapter.getInstances.mockResolvedValue(Object.assign([], { totalCount: 0 }));
+
+      await processor.getDashboardSummary('MOCK_USER', 'jwt', { category: 'PO', documentNumber: " 45'00 " });
+
+      const filter = mockSapOdataAdapter.getInstances.mock.calls[0][6];
+      expect(filter).toContain("contains(DocumentNumber,'45''00')");
+      expect(filter).toContain(' and ');
     });
   });
 
@@ -418,11 +444,11 @@ describe('InboxProcessor', () => {
         expect(mockSapOdataAdapter.approveOnHeader).not.toHaveBeenCalled();
       });
 
-      it('should not throw when Claim approve fails (best-effort, warning logged)', async () => {
-        mockSapOdataAdapter.approveOnHeader.mockRejectedValue(new Error('approve 500 from SAP'));
+      it('should fail the request and skip the comment when Claim approve fails', async () => {
+        mockSapOdataAdapter.approveOnHeader.mockRejectedValue(new Error('not approver'));
         mockSapOdataAdapter.addComment.mockResolvedValue(undefined);
 
-        const result = await processor.executeDecision(
+        await expect(processor.executeDecision(
           '212',
           '0001',
           '0001',
@@ -430,14 +456,35 @@ describe('InboxProcessor', () => {
           'MOCK_USER',
           'jwt',
           { documentId: '212', businessObjectType: 'CLAIM' }
-        );
+        )).rejects.toMatchObject({ message: expect.stringContaining('not approver') });
 
         expect(mockSapOdataAdapter.approveOnHeader).toHaveBeenCalledTimes(1);
-        expect(mockSapOdataAdapter.addComment).toHaveBeenCalledTimes(1);
-        expect(result.status).toBe('PARTIAL_SUCCESS');
-        expect(result.partialSuccess).toBe(true);
-        expect(result.approve).toBe('rejected');
-        expect(result.comment).toBe('fulfilled');
+        expect(mockSapOdataAdapter.addComment).not.toHaveBeenCalled();
+      });
+
+      it('should use the worklist ApproverNumber for Claim actions', async () => {
+        mockSapClient.get.mockResolvedValueOnce({ value: [{ NormalTask: true, ApproverNumber: '2' }] });
+        mockSapOdataAdapter.rejectOnHeader.mockResolvedValue(undefined);
+        mockSapOdataAdapter.addComment.mockResolvedValue(undefined);
+
+        await processor.executeDecision(
+          'claim-task-2',
+          '0002',
+          '0002',
+          'not ok',
+          'MOCK_USER',
+          'jwt',
+          { documentId: '67', businessObjectType: 'CLAIM', approverNumber: '1' }
+        );
+
+        expect(mockSapOdataAdapter.rejectOnHeader).toHaveBeenCalledWith(
+          'CLAIM', '67',
+          { decision: 'R', comment: 'not ok', approverNumber: '2' },
+          'MOCK_USER', 'jwt'
+        );
+        expect(mockSapOdataAdapter.addComment).toHaveBeenCalledWith(
+          '67', 'not ok', 'MOCK_USER', expect.objectContaining({ approverNumber: '2' })
+        );
       });
 
       it('should not throw when Claim comment fails (best-effort, warning logged)', async () => {

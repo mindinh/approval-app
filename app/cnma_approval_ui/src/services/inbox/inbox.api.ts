@@ -1,5 +1,5 @@
 import axiosInstance from '../core/axiosInstance';
-import { cleanFileName } from '@/pages/Inbox/utils/shared';
+import { cleanFileName } from '@/pages/Inbox/utils/fileNames';
 import type {
     TaskListResponse,
     TaskDetailResponse,

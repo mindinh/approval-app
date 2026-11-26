@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import {
     Button,
@@ -18,6 +18,16 @@ import type { BusUser } from '@/services/inbox/inbox.types';
 import { Search, UserCheck, Loader2, User, Mail, AtSign, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+function toSelectedMap(users: BusUser[] | undefined): Map<string, BusUser> {
+    const map = new Map<string, BusUser>();
+    users?.forEach((u) => {
+        if (u.SAPUserName) {
+            map.set(u.SAPUserName, u);
+        }
+    });
+    return map;
+}
+
 interface TagUserDialogProps {
     isOpen: boolean;
     onClose: () => void;
@@ -35,18 +45,16 @@ export function TagUserDialog({
     const { searchPattern, setSearchPattern, users, isLoading } = useBusUsers('', 250);
     const [selectedMap, setSelectedMap] = useState<Map<string, BusUser>>(new Map());
 
-    useEffect(() => {
+    // Re-seed the selection from initialSelected whenever the dialog opens (or its inputs change while open).
+    // Adjusted during render instead of in an effect; null forces the sync on the first render.
+    const [syncedInputs, setSyncedInputs] = useState<{ isOpen: boolean; initialSelected?: BusUser[] } | null>(null);
+    if (!syncedInputs || syncedInputs.isOpen !== isOpen || syncedInputs.initialSelected !== initialSelected) {
+        setSyncedInputs({ isOpen, initialSelected });
         if (isOpen) {
-            const map = new Map<string, BusUser>();
-            initialSelected?.forEach((u) => {
-                if (u.SAPUserName) {
-                    map.set(u.SAPUserName, u);
-                }
-            });
-            setSelectedMap(map);
+            setSelectedMap(toSelectedMap(initialSelected));
             setSearchPattern('');
         }
-    }, [isOpen, initialSelected, setSearchPattern]);
+    }
 
     const handleToggleUser = (user: BusUser) => {
         setSelectedMap((prev) => {

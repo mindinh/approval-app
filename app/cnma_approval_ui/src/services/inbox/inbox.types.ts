@@ -2,13 +2,7 @@
  * Frontend domain types — mirrors backend normalized models.
  * These types define the API contract between React and CAP.
  */
-import type { RawODataEntity } from './inbox.contracts';
-
-export interface InboxIdentity {
-    btpUser: string;
-    sapUser: string;
-    isImpersonated: boolean;
-}
+import type { RawODataEntity, RawTaskprocessingResponse } from './inbox.contracts';
 
 export interface TaskSupports {
     forward: boolean;
@@ -291,6 +285,19 @@ export interface InboxTask {
     normalTask?: boolean;
     approverNumber?: string;
     ApproverNumber?: string;
+    /** Raw SAP header fields some worklist responses forward with their original casing. */
+    DocumentTypeText?: string;
+    DocumentTypeDisplay?: string;
+    doctyp_desc?: string;
+    DocCategory?: string;
+    TechnicalWrkflwObjectType?: string;
+    CreatedByUser?: string;
+    CreatedByName?: string;
+    createdByUser?: string;
+    UserName?: string;
+    UserFullName?: string;
+    CreationDate?: string;
+    CreationTime?: string;
 }
 
 export interface TaskComment {
@@ -376,6 +383,8 @@ export interface TaskDetail extends Partial<InboxTask> {
     instanceId?: string;
     taskId?: string;
     businessObject?: RawODataEntity;
+    /** SAP TASKPROCESSING data forwarded by the raw-detail BFF envelope. */
+    taskprocessing?: RawTaskprocessingResponse;
     docCategory?: string;
     totalNetValueBeforeTax?: number | string;
     totalFreightAmount?: number | string;
@@ -384,10 +393,10 @@ export interface TaskDetail extends Partial<InboxTask> {
     headerNote?: string;
     task: InboxTask;
     _meta?: TaskDetailMeta;
-    header?: Record<string, any>;
-    items?: Record<string, any>[];
-    workflow?: Record<string, any>;
-    object?: Record<string, any>;
+    header?: RawODataEntity;
+    items?: RawODataEntity[];
+    workflow?: RawODataEntity;
+    object?: RawODataEntity;
     description?: TaskDescription;
     decisions?: Decision[];
     customAttributes?: CustomAttribute[];
@@ -472,13 +481,6 @@ export interface DecisionRequestContext {
     documentId?: string;
     businessObjectType?: string;
     approverNumber?: string;
-}
-
-export interface AddCommentPayload {
-    instanceId: string;
-    text: string;
-    context?: DecisionRequestContext;
-    taggedUsers?: TaggedUser[];
 }
 
 export interface DecisionRequest {

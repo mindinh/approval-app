@@ -10,7 +10,6 @@
     {
       "source": "^/odata/v4/(.*)$",
       "authenticationType": "xsuaa",
-      "identityProvider": "sap.default",
       "target": "/odata/v4/$1",
       "destination": "cnma_prorequest_s4h_destination",
       "csrfProtection": false
@@ -18,7 +17,6 @@
     {
       "source": "^/api/cnma/(.*)$",
       "authenticationType": "xsuaa",
-      "identityProvider": "sap.default",
       "target": "/api/cnma/$1",
       "destination": "cnma_prorequest_s4h_destination",
       "csrfProtection": false
@@ -26,7 +24,6 @@
     {
       "source": "^/api/inbox/(.*)$",
       "authenticationType": "xsuaa",
-      "identityProvider": "sap.default",
       "target": "/api/inbox/$1",
       "destination": "cnma_prorequest_s4h_destination",
       "csrfProtection": false
@@ -50,15 +47,13 @@
       "target": "/index.html",
       "service": "html5-apps-repo-rt",
       "authenticationType": "xsuaa",
-      "identityProvider": "sap.default",
       "cacheControl": "no-cache, no-store, must-revalidate"
     },
     {
       "source": "^(.*)$",
       "target": "$1",
       "service": "html5-apps-repo-rt",
-      "authenticationType": "xsuaa",
-      "identityProvider": "sap.default"
+      "authenticationType": "xsuaa"
     }
   ],
   "responseHeaders": [

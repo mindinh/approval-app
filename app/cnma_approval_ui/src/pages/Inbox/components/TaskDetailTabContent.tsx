@@ -8,15 +8,19 @@ import {
     WorkflowApprovalPanel,
 } from './panels';
 import { SecondaryTabSkeleton } from './TaskDetailSkeletons';
+import type { BusinessSectionModel } from '@/renderers';
+import type { normalizeDetailForView } from '../utils/normalizeTaskDetail';
+
+type DetailViewData = NonNullable<ReturnType<typeof normalizeDetailForView>>;
 
 export interface TaskDetailTabContentProps {
     tabValue: string;
     mobile: boolean;
-    businessModel: any;
-    viewData: any;
+    businessModel: BusinessSectionModel | null;
+    viewData: DetailViewData;
     isSecondaryLoading: boolean;
     isPrAttachmentsLoading?: boolean;
-    workflowData: any;
+    workflowData: DetailViewData['workflowData'] | undefined;
     workflowError?: unknown;
     isApprovedScope: boolean;
     onSelectReferencePr: (prNumber: string) => void;
@@ -55,7 +59,6 @@ export function TaskDetailTabContent({
             return businessModel ? (
                 <DetailsPanel
                     model={businessModel}
-                    detail={viewData}
                     isMobile={mobile}
                     isSecondaryLoading={isSecondaryLoading}
                     onSelectReferencePr={onSelectReferencePr}

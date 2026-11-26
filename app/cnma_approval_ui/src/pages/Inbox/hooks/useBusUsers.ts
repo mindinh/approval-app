@@ -1,25 +1,17 @@
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
+import { STALE } from '@/pages/Inbox/utils/constants';
 import { inboxKeys } from './inboxKeys';
+import { useDebouncedPattern } from './useDebouncedPattern';
 import type { BusUser } from '@/services/inbox/inbox.types';
 
 export function useBusUsers(initialPattern = '', debounceMs = 250) {
-    const [searchPattern, setSearchPattern] = useState(initialPattern);
-    const [debouncedPattern, setDebouncedPattern] = useState(initialPattern);
-
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedPattern(searchPattern.trim());
-        }, debounceMs);
-
-        return () => clearTimeout(handler);
-    }, [searchPattern, debounceMs]);
+    const { searchPattern, setSearchPattern, debouncedPattern } = useDebouncedPattern(initialPattern, debounceMs);
 
     const query = useQuery<BusUser[]>({
         queryKey: inboxKeys.busUsers(debouncedPattern),
         queryFn: () => inboxApi.getBusUsers(debouncedPattern),
-        staleTime: 60 * 1000,
+        staleTime: STALE.USER_LOOKUP,
     });
 
     return {

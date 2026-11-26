@@ -1,0 +1,5542 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden: business section model > Claim 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|ClaimNumber",
+          "label": "Claim Form Number",
+          "value": "CL-0001",
+        },
+        {
+          "isLongText": undefined,
+          "key": "ClaimType|DocumentType_ClaimTypeText|DocumentTypeText",
+          "label": "Claim Type",
+          "value": "ZC01 - Travel Claim",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName|CreatedByUser",
+          "label": "Requestor",
+          "value": "NVA",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "01/10/2026",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "ClaimStatus",
+          "label": "Claim Status",
+          "value": "Submitted",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "200010 - Travel Agency",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentAmount",
+          "label": "Payment Amount",
+          "value": "243.563,97 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy",
+          "label": "Total Amount",
+          "value": "6.347.277.058 VND",
+        },
+        {
+          "isLongText": true,
+          "key": "Note|Notes",
+          "label": "Note",
+          "value": "[U1 10:00] first
+[U2 11:00] second",
+        },
+      ],
+      "id": "claim-summary",
+      "title": "Document Summary",
+    },
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "VeriStatus_VeriStatusDesc",
+          "label": "Verify Status",
+          "value": "V - Verified",
+        },
+        {
+          "isLongText": undefined,
+          "key": "VeriBy",
+          "label": "Verified/Refused By",
+          "value": "Checker",
+        },
+        {
+          "isLongText": undefined,
+          "key": "VeriDate",
+          "label": "Verify Time",
+          "value": "02/10/2026 14:30:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "VeriComment",
+          "label": "Verify Comment",
+          "value": "OK",
+        },
+      ],
+      "id": "claim-verification",
+      "title": "Verification",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "itemNumber",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "reference",
+          "label": "Reference",
+        },
+        {
+          "align": "left",
+          "key": "documentDate",
+          "label": "Document Date",
+        },
+        {
+          "align": "left",
+          "key": "docNum",
+          "label": "Document Number",
+        },
+        {
+          "align": "left",
+          "key": "text",
+          "label": "Text",
+        },
+        {
+          "align": "left",
+          "key": "netDueDate",
+          "label": "Net Due Date",
+        },
+        {
+          "align": "right",
+          "key": "paymentAmount",
+          "label": "Payment Amount",
+        },
+        {
+          "align": "right",
+          "key": "totalNetAmountLocalCrcy",
+          "label": "Amount in Local Currency",
+        },
+        {
+          "align": "right",
+          "key": "invoiceAmount",
+          "label": "Invoice Amount",
+        },
+        {
+          "align": "left",
+          "key": "vendor",
+          "label": "Vendor",
+        },
+        {
+          "align": "left",
+          "key": "fiscalYear",
+          "label": "Fiscal Year",
+        },
+      ],
+      "id": "claim-items",
+      "rows": [
+        {
+          "id": "1",
+          "isDeleted": false,
+          "values": {
+            "docNum": "5100000001",
+            "documentDate": "30/09/2026",
+            "fiscalYear": "2026",
+            "invoiceAmount": "243.563,97 USD",
+            "itemNumber": "1",
+            "netDueDate": "30/10/2026",
+            "paymentAmount": "243.563,97 USD",
+            "reference": "INV-01",
+            "text": "Hotel",
+            "totalNetAmountLocalCrcy": "6.347.277.058 VND",
+            "vendor": "200010",
+          },
+        },
+        {
+          "id": "2",
+          "isDeleted": false,
+          "values": {
+            "docNum": "-",
+            "documentDate": "-",
+            "fiscalYear": "-",
+            "invoiceAmount": "-",
+            "itemNumber": "2",
+            "netDueDate": "-",
+            "paymentAmount": "500.000 USD",
+            "reference": "-",
+            "text": "Taxi",
+            "totalNetAmountLocalCrcy": "500.000 VND",
+            "vendor": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO DEFAULT 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "DEFAULT - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-default",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO UNLISTED 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "UNLISTED - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-default",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZASS 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZASS - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-zass",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZCON 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZCON - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-zcon",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZCOR 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZCOR - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-zcor",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZEXP 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZEXP - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-zexp",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZMAK 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZMAK - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "internalOrder",
+          "label": "Internal Order",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-zmak",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "internalOrder": "IO-88 - Brand Event",
+            "item": "00010",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "internalOrder": "-",
+            "item": "00020",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZNB1 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZNB1 - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-znb1",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZNB2 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZNB2 - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-znb2",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZNBR 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZNBR - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-znbr",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZTOL 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZTOL - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-ztol",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PO ZUB 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZUB - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreatedByUser_UserName",
+          "label": "Requester",
+          "value": "TTB - Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "SupplyingPlant_SupplyingPlantName",
+          "label": "Supplying Plant",
+          "value": "3000 - HCM Plant",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Plant_PlantName",
+          "label": "Receiving Plant",
+          "value": "1000 (Hanoi Plant)",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy",
+          "label": "Total Amount",
+          "value": "5,000,000 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary-zub",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-zub",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 VND",
+            "valuationPrice": "1,500,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "2,500,000",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR DEFAULT 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "DEFAULT - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-default",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-001",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR UNLISTED 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "UNLISTED - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-default",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-001",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR ZASS 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZASS - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-zass",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "item": "00020",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR ZEXP 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZEXP - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-zexp",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "item": "00020",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR ZMAK 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZMAK - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "internalOrder",
+          "label": "Internal Order",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-zmak",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "internalOrder": "IO-77 - Marketing Campaign",
+            "item": "00010",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "internalOrder": "-",
+            "item": "00020",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR ZNB1 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZNB1 - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-znb1",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "item": "00010",
+            "material": "MAT-001",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR ZNB2 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZNB2 - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-znb2",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "item": "00010",
+            "material": "MAT-001",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > PR ZTOL 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZTOL - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-ztol",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-001",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > Reservation 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|DocumentId",
+          "label": "Document number",
+          "value": "RS-0009",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document type",
+          "value": "ZRS - Reservation",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName|CreatedByUser",
+          "label": "Requester",
+          "value": "Le Van C",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created on",
+          "value": "20/10/2026 09:00:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total amount",
+          "value": "7,500,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Plant_PlantName",
+          "label": "Plant",
+          "value": "1000 - Hanoi Plant",
+        },
+        {
+          "isLongText": undefined,
+          "key": "MovementType_MovementTypeName",
+          "label": "Movement type",
+          "value": "201 - GI for cost center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CostCenter_CostCenterName",
+          "label": "Cost center",
+          "value": "CC10 - Ops",
+        },
+      ],
+      "id": "reservation-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "materialText",
+          "label": "Material Text",
+        },
+        {
+          "align": "left",
+          "key": "itemText",
+          "label": "ITEM TEXT",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "cost",
+          "label": "Unit Price",
+        },
+        {
+          "align": "right",
+          "key": "value",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage location",
+        },
+        {
+          "align": "left",
+          "key": "requirementDate",
+          "label": "Requirement date",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L account",
+        },
+      ],
+      "id": "reservation-items",
+      "rows": [
+        {
+          "id": "1",
+          "isDeleted": false,
+          "values": {
+            "cost": "75,000 VND",
+            "glAccount": "500100 - Consumables",
+            "itemText": "Safety",
+            "material": "MAT-9",
+            "materialText": "Gloves",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "100 PR",
+            "requirementDate": "25/10/2026",
+            "storageLocation": "SL02 - Safety Store",
+            "value": "7,500,000 VND",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > accepts header/items and raw detail shapes 1`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseOrder",
+          "label": "PO Number",
+          "value": "4500001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZNB1 - Standard PO",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Tran Thi B",
+        },
+        {
+          "isLongText": undefined,
+          "key": "Vendor",
+          "label": "Vendor",
+          "value": "100050 - Công ty TNHH ABC Chi nhánh Hà Nội",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 08:05:00",
+        },
+        {
+          "isLongText": undefined,
+          "key": "PaymentTerms_PaymentTermsDescription",
+          "label": "Payment Terms",
+          "value": "Z030 - Net 30 days",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetValueBeforeTax",
+          "label": "Subtotal (Excl. VAT)",
+          "value": "1,000.5 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalFreightAmount",
+          "label": "Shipping Fee",
+          "value": "20 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalVatAmount",
+          "label": "VAT",
+          "value": "100.05 USD",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalOrderValue|TotalAmount|Total",
+          "label": "Total",
+          "value": "1,120.55 USD",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderText",
+          "label": "Header Text",
+          "value": "Header text A",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "Note for PO",
+        },
+      ],
+      "id": "po-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "referencePr",
+          "label": "Reference PR",
+        },
+        {
+          "align": "left",
+          "key": "fundsCenter",
+          "label": "Funds Center",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "po-items-znb1",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-02 - Office",
+            "deliveryDate": "01/12/2026",
+            "fundsCenter": "FC100 - Finance Center",
+            "item": "00010",
+            "material": "MAT-100",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "3 EA",
+            "referencePr": "0010001234",
+            "shortText": "Printer",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "901 USD",
+            "valuationPrice": "300.33 USD",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "-",
+            "fundsCenter": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "-",
+            "quantity": "1,234.568 KG",
+            "referencePr": "-",
+            "shortText": "Paper",
+            "storageLocation": "-",
+            "totalValue": "-",
+            "valuationPrice": "-",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > accepts header/items and raw detail shapes 2`] = `
+{
+  "cards": [
+    {
+      "fields": [
+        {
+          "isLongText": undefined,
+          "key": "DocumentNumber|PurchaseRequisition",
+          "label": "Document Number",
+          "value": "0010001234",
+        },
+        {
+          "isLongText": undefined,
+          "key": "DocumentType_DocumentTypeText",
+          "label": "Document Type",
+          "value": "ZTOL - Asset Purchase Requisition",
+        },
+        {
+          "isLongText": undefined,
+          "key": "UserName",
+          "label": "Requester",
+          "value": "Nguyen Van A",
+        },
+        {
+          "isLongText": undefined,
+          "key": "FundsCenter_FundsCenterName",
+          "label": "Funds Center",
+          "value": "FC100 - Finance Center",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CreationDate",
+          "label": "Created On",
+          "value": "28/10/2026 10:24:18",
+        },
+        {
+          "isLongText": undefined,
+          "key": "TotalNetAmountLocalCrcy|Total",
+          "label": "Total Amount",
+          "value": "125,000,000 VND",
+        },
+        {
+          "isLongText": undefined,
+          "key": "CompanyCode_CompanyCodeName",
+          "label": "Company Code",
+          "value": "1000 - CNMA Vietnam",
+        },
+        {
+          "isLongText": true,
+          "key": "HeaderNote",
+          "label": "Header Note",
+          "value": "line one
+line two",
+        },
+        {
+          "isLongText": true,
+          "key": "Purpose",
+          "label": "Purpose",
+          "value": "Purpose line 1
+Purpose line 2",
+        },
+        {
+          "isLongText": true,
+          "key": "PaidBy",
+          "label": "Paid By",
+          "value": "Paid by company",
+        },
+        {
+          "isLongText": true,
+          "key": "BankDetails",
+          "label": "Bank Details",
+          "value": "Bank: ACB
+Account: 123",
+        },
+      ],
+      "id": "pr-summary",
+      "title": "Document Summary",
+    },
+  ],
+  "tables": [
+    {
+      "columns": [
+        {
+          "align": "left",
+          "key": "item",
+          "label": "Item",
+        },
+        {
+          "align": "left",
+          "key": "material",
+          "label": "Material Number",
+        },
+        {
+          "align": "left",
+          "key": "shortText",
+          "label": "Short Text",
+        },
+        {
+          "align": "right",
+          "key": "quantity",
+          "label": "Quantity",
+        },
+        {
+          "align": "right",
+          "key": "valuationPrice",
+          "label": "Valuation Price",
+        },
+        {
+          "align": "right",
+          "key": "totalValue",
+          "label": "Total Value",
+        },
+        {
+          "align": "left",
+          "key": "deliveryDate",
+          "label": "Delivery Date",
+        },
+        {
+          "align": "left",
+          "key": "materialGroup",
+          "label": "Material Group",
+        },
+        {
+          "align": "left",
+          "key": "plant",
+          "label": "Plant",
+        },
+        {
+          "align": "left",
+          "key": "storageLocation",
+          "label": "Storage Location",
+        },
+        {
+          "align": "left",
+          "key": "glAccount",
+          "label": "G/L Account",
+        },
+        {
+          "align": "left",
+          "key": "commitmentItem",
+          "label": "Commitment Item",
+        },
+      ],
+      "id": "pr-items-ztol",
+      "rows": [
+        {
+          "id": "00010",
+          "isDeleted": false,
+          "values": {
+            "commitmentItem": "CI-01 - Equipment",
+            "deliveryDate": "15/11/2026",
+            "glAccount": "640000 - IT Expense",
+            "item": "00010",
+            "material": "MAT-001",
+            "materialGroup": "IT - IT Equipment",
+            "plant": "1000 - Hanoi Plant",
+            "quantity": "2.5 EA",
+            "shortText": "Laptop 14 inch",
+            "storageLocation": "SL01 - Main Store",
+            "totalValue": "62,500,000 VND",
+            "valuationPrice": "25,000,000 VND",
+          },
+        },
+        {
+          "id": "00020",
+          "isDeleted": true,
+          "values": {
+            "commitmentItem": "-",
+            "deliveryDate": "05/11/2026 07:00:00",
+            "glAccount": "-",
+            "item": "00020",
+            "material": "-",
+            "materialGroup": "-",
+            "plant": "2000 - Danang Plant",
+            "quantity": "10 PC",
+            "shortText": "Mouse",
+            "storageLocation": "-",
+            "totalValue": "1,500,004.56 USD",
+            "valuationPrice": "150,000.46 USD",
+          },
+        },
+      ],
+      "title": "Line Items",
+    },
+  ],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > accepts header/items and raw detail shapes 3`] = `
+{
+  "cards": [],
+  "tables": [],
+  "title": "Document Details",
+}
+`;
+
+exports[`golden: business section model > sparse records render placeholders 1`] = `
+[
+  {
+    "cards": [
+      {
+        "fields": [
+          {
+            "isLongText": undefined,
+            "key": "DocumentNumber|PurchaseRequisition",
+            "label": "Document Number",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "DocumentType_DocumentTypeText",
+            "label": "Document Type",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "UserName",
+            "label": "Requester",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "FundsCenter_FundsCenterName",
+            "label": "Funds Center",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CreationDate",
+            "label": "Created On",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalNetAmountLocalCrcy|Total",
+            "label": "Total Amount",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CompanyCode_CompanyCodeName",
+            "label": "Company Code",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "HeaderNote",
+            "label": "Header Note",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "Purpose",
+            "label": "Purpose",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "PaidBy",
+            "label": "Paid By",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "BankDetails",
+            "label": "Bank Details",
+            "value": "-",
+          },
+        ],
+        "id": "pr-summary",
+        "title": "Document Summary",
+      },
+    ],
+    "tables": [
+      {
+        "columns": [
+          {
+            "align": "left",
+            "key": "item",
+            "label": "Item",
+          },
+          {
+            "align": "left",
+            "key": "material",
+            "label": "Material Number",
+          },
+          {
+            "align": "left",
+            "key": "shortText",
+            "label": "Short Text",
+          },
+          {
+            "align": "right",
+            "key": "quantity",
+            "label": "Quantity",
+          },
+          {
+            "align": "right",
+            "key": "valuationPrice",
+            "label": "Valuation Price",
+          },
+          {
+            "align": "right",
+            "key": "totalValue",
+            "label": "Total Value",
+          },
+          {
+            "align": "left",
+            "key": "deliveryDate",
+            "label": "Delivery Date",
+          },
+          {
+            "align": "left",
+            "key": "materialGroup",
+            "label": "Material Group",
+          },
+          {
+            "align": "left",
+            "key": "plant",
+            "label": "Plant",
+          },
+          {
+            "align": "left",
+            "key": "storageLocation",
+            "label": "Storage Location",
+          },
+          {
+            "align": "left",
+            "key": "glAccount",
+            "label": "G/L Account",
+          },
+          {
+            "align": "left",
+            "key": "commitmentItem",
+            "label": "Commitment Item",
+          },
+        ],
+        "id": "pr-items-default",
+        "rows": [
+          {
+            "id": "1",
+            "isDeleted": false,
+            "values": {
+              "commitmentItem": "-",
+              "deliveryDate": "-",
+              "glAccount": "-",
+              "item": "-",
+              "material": "-",
+              "materialGroup": "-",
+              "plant": "-",
+              "quantity": "-",
+              "shortText": "-",
+              "storageLocation": "-",
+              "totalValue": "-",
+              "valuationPrice": "-",
+            },
+          },
+        ],
+        "title": "Line Items",
+      },
+    ],
+    "title": "Document Details",
+  },
+  {
+    "cards": [
+      {
+        "fields": [
+          {
+            "isLongText": undefined,
+            "key": "DocumentNumber|PurchaseOrder",
+            "label": "PO Number",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "DocumentType_DocumentTypeText",
+            "label": "Document Type",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "UserName",
+            "label": "Requester",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "Vendor",
+            "label": "Vendor",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CompanyCode_CompanyCodeName",
+            "label": "Company Code",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CreationDate",
+            "label": "Created On",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "PaymentTerms_PaymentTermsDescription",
+            "label": "Payment Terms",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalNetValueBeforeTax",
+            "label": "Subtotal (Excl. VAT)",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalFreightAmount",
+            "label": "Shipping Fee",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalVatAmount",
+            "label": "VAT",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalOrderValue|TotalAmount|Total",
+            "label": "Total",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "HeaderText",
+            "label": "Header Text",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "HeaderNote",
+            "label": "Header Note",
+            "value": "-",
+          },
+        ],
+        "id": "po-summary",
+        "title": "Document Summary",
+      },
+    ],
+    "tables": [
+      {
+        "columns": [
+          {
+            "align": "left",
+            "key": "item",
+            "label": "Item",
+          },
+          {
+            "align": "left",
+            "key": "material",
+            "label": "Material Number",
+          },
+          {
+            "align": "left",
+            "key": "shortText",
+            "label": "Short Text",
+          },
+          {
+            "align": "right",
+            "key": "quantity",
+            "label": "Quantity",
+          },
+          {
+            "align": "right",
+            "key": "valuationPrice",
+            "label": "Valuation Price",
+          },
+          {
+            "align": "right",
+            "key": "totalValue",
+            "label": "Total Value",
+          },
+          {
+            "align": "left",
+            "key": "deliveryDate",
+            "label": "Delivery Date",
+          },
+          {
+            "align": "left",
+            "key": "materialGroup",
+            "label": "Material Group",
+          },
+          {
+            "align": "left",
+            "key": "plant",
+            "label": "Plant",
+          },
+          {
+            "align": "left",
+            "key": "storageLocation",
+            "label": "Storage Location",
+          },
+          {
+            "align": "left",
+            "key": "referencePr",
+            "label": "Reference PR",
+          },
+          {
+            "align": "left",
+            "key": "glAccount",
+            "label": "G/L Account",
+          },
+          {
+            "align": "left",
+            "key": "fundsCenter",
+            "label": "Funds Center",
+          },
+          {
+            "align": "left",
+            "key": "commitmentItem",
+            "label": "Commitment Item",
+          },
+        ],
+        "id": "po-items-default",
+        "rows": [
+          {
+            "id": "1",
+            "isDeleted": false,
+            "values": {
+              "commitmentItem": "-",
+              "deliveryDate": "-",
+              "fundsCenter": "-",
+              "glAccount": "-",
+              "item": "-",
+              "material": "-",
+              "materialGroup": "-",
+              "plant": "-",
+              "quantity": "-",
+              "referencePr": "-",
+              "shortText": "-",
+              "storageLocation": "-",
+              "totalValue": "-",
+              "valuationPrice": "-",
+            },
+          },
+        ],
+        "title": "Line Items",
+      },
+    ],
+    "title": "Document Details",
+  },
+  {
+    "cards": [
+      {
+        "fields": [
+          {
+            "isLongText": undefined,
+            "key": "DocumentNumber|ClaimNumber",
+            "label": "Claim Form Number",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "ClaimType|DocumentType_ClaimTypeText|DocumentTypeText",
+            "label": "Claim Type",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "UserName|CreatedByUser",
+            "label": "Requestor",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CreationDate",
+            "label": "Created On",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CompanyCode_CompanyCodeName",
+            "label": "Company Code",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "ClaimStatus",
+            "label": "Claim Status",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "Vendor",
+            "label": "Vendor",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "PaymentAmount",
+            "label": "Payment Amount",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalNetAmountLocalCrcy",
+            "label": "Total Amount",
+            "value": "-",
+          },
+          {
+            "isLongText": true,
+            "key": "Note|Notes",
+            "label": "Note",
+            "value": "-",
+          },
+        ],
+        "id": "claim-summary",
+        "title": "Document Summary",
+      },
+      {
+        "fields": [
+          {
+            "isLongText": undefined,
+            "key": "VeriStatus_VeriStatusDesc",
+            "label": "Verify Status",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "VeriBy",
+            "label": "Verified/Refused By",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "VeriDate",
+            "label": "Verify Time",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "VeriComment",
+            "label": "Verify Comment",
+            "value": "-",
+          },
+        ],
+        "id": "claim-verification",
+        "title": "Verification",
+      },
+    ],
+    "tables": [
+      {
+        "columns": [
+          {
+            "align": "left",
+            "key": "itemNumber",
+            "label": "Item",
+          },
+          {
+            "align": "left",
+            "key": "reference",
+            "label": "Reference",
+          },
+          {
+            "align": "left",
+            "key": "documentDate",
+            "label": "Document Date",
+          },
+          {
+            "align": "left",
+            "key": "docNum",
+            "label": "Document Number",
+          },
+          {
+            "align": "left",
+            "key": "text",
+            "label": "Text",
+          },
+          {
+            "align": "left",
+            "key": "netDueDate",
+            "label": "Net Due Date",
+          },
+          {
+            "align": "right",
+            "key": "paymentAmount",
+            "label": "Payment Amount",
+          },
+          {
+            "align": "right",
+            "key": "totalNetAmountLocalCrcy",
+            "label": "Amount in Local Currency",
+          },
+          {
+            "align": "right",
+            "key": "invoiceAmount",
+            "label": "Invoice Amount",
+          },
+          {
+            "align": "left",
+            "key": "vendor",
+            "label": "Vendor",
+          },
+          {
+            "align": "left",
+            "key": "fiscalYear",
+            "label": "Fiscal Year",
+          },
+        ],
+        "id": "claim-items",
+        "rows": [
+          {
+            "id": "1",
+            "isDeleted": false,
+            "values": {
+              "docNum": "-",
+              "documentDate": "-",
+              "fiscalYear": "-",
+              "invoiceAmount": "-",
+              "itemNumber": "-",
+              "netDueDate": "-",
+              "paymentAmount": "-",
+              "reference": "-",
+              "text": "-",
+              "totalNetAmountLocalCrcy": "-",
+              "vendor": "-",
+            },
+          },
+        ],
+        "title": "Line Items",
+      },
+    ],
+    "title": "Document Details",
+  },
+  {
+    "cards": [
+      {
+        "fields": [
+          {
+            "isLongText": undefined,
+            "key": "DocumentNumber|DocumentId",
+            "label": "Document number",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "DocumentType_DocumentTypeText",
+            "label": "Document type",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "UserName|CreatedByUser",
+            "label": "Requester",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CreationDate",
+            "label": "Created on",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "TotalNetAmountLocalCrcy|Total",
+            "label": "Total amount",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "Plant_PlantName",
+            "label": "Plant",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "MovementType_MovementTypeName",
+            "label": "Movement type",
+            "value": "-",
+          },
+          {
+            "isLongText": undefined,
+            "key": "CostCenter_CostCenterName",
+            "label": "Cost center",
+            "value": "-",
+          },
+        ],
+        "id": "reservation-summary",
+        "title": "Document Summary",
+      },
+    ],
+    "tables": [
+      {
+        "columns": [
+          {
+            "align": "left",
+            "key": "material",
+            "label": "Material Number",
+          },
+          {
+            "align": "left",
+            "key": "materialText",
+            "label": "Material Text",
+          },
+          {
+            "align": "left",
+            "key": "itemText",
+            "label": "ITEM TEXT",
+          },
+          {
+            "align": "right",
+            "key": "quantity",
+            "label": "Quantity",
+          },
+          {
+            "align": "right",
+            "key": "cost",
+            "label": "Unit Price",
+          },
+          {
+            "align": "right",
+            "key": "value",
+            "label": "Total Value",
+          },
+          {
+            "align": "left",
+            "key": "plant",
+            "label": "Plant",
+          },
+          {
+            "align": "left",
+            "key": "storageLocation",
+            "label": "Storage location",
+          },
+          {
+            "align": "left",
+            "key": "requirementDate",
+            "label": "Requirement date",
+          },
+          {
+            "align": "left",
+            "key": "glAccount",
+            "label": "G/L account",
+          },
+        ],
+        "id": "reservation-items",
+        "rows": [
+          {
+            "id": "1",
+            "isDeleted": false,
+            "values": {
+              "cost": "-",
+              "glAccount": "-",
+              "itemText": "-",
+              "material": "-",
+              "materialText": "-",
+              "plant": "-",
+              "quantity": "-",
+              "requirementDate": "-",
+              "storageLocation": "-",
+              "value": "-",
+            },
+          },
+        ],
+        "title": "Line Items",
+      },
+    ],
+    "title": "Document Details",
+  },
+]
+`;
+
+exports[`golden: task card > backend chips 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total Amount",
+      "value": "2.270.982 VND",
+    },
+    {
+      "isPrimary": false,
+      "label": "Due",
+      "value": "30/10/2026",
+    },
+    {
+      "isPrimary": false,
+      "label": "Qty",
+      "value": "1.234,5 EA",
+    },
+    {
+      "isPrimary": false,
+      "label": "Urgent",
+      "value": "Yes",
+    },
+    {
+      "isPrimary": false,
+      "label": "Note",
+      "value": "hello",
+    },
+  ],
+  "overviewCardId": "claim-summary",
+  "tableId": "claim-items",
+  "tone": "success",
+}
+`;
+
+exports[`golden: task card > cached detail 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total",
+      "value": "1,120.55 USD",
+    },
+    {
+      "isPrimary": undefined,
+      "label": "Type",
+      "value": "Standard PO",
+    },
+  ],
+  "overviewCardId": "po-summary",
+  "tableId": "po-items-znb1",
+  "tone": "info",
+}
+`;
+
+exports[`golden: task card > claim 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total",
+      "value": "243.563,97 USD",
+    },
+    {
+      "isPrimary": undefined,
+      "label": "Type",
+      "value": "Travel",
+    },
+  ],
+  "overviewCardId": "claim-summary",
+  "tableId": "claim-items",
+  "tone": "success",
+}
+`;
+
+exports[`golden: task card > no context 1`] = `
+{
+  "chips": [],
+  "overviewCardId": "unknown-summary",
+  "tableId": null,
+  "tone": "primary",
+}
+`;
+
+exports[`golden: task card > po legacy header 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total",
+      "value": "1,234.56 USD",
+    },
+    {
+      "isPrimary": undefined,
+      "label": "Type",
+      "value": "Standard PO",
+    },
+  ],
+  "overviewCardId": "po-summary",
+  "tableId": "po-items-default",
+  "tone": "info",
+}
+`;
+
+exports[`golden: task card > po zub 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total",
+      "value": "5,000,000 VND",
+    },
+    {
+      "isPrimary": undefined,
+      "label": "Type",
+      "value": "Stock Transfer",
+    },
+  ],
+  "overviewCardId": "po-summary-zub",
+  "tableId": "po-items-zub",
+  "tone": "info",
+}
+`;
+
+exports[`golden: task card > pr raw fields 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total",
+      "value": "125,000,000 VND",
+    },
+    {
+      "isPrimary": undefined,
+      "label": "Type",
+      "value": "Asset PR",
+    },
+  ],
+  "overviewCardId": "pr-summary",
+  "tableId": "pr-items-zass",
+  "tone": "primary",
+}
+`;
+
+exports[`golden: task card > reservation 1`] = `
+{
+  "chips": [
+    {
+      "isPrimary": true,
+      "label": "Total",
+      "value": "7,500,000 VND",
+    },
+    {
+      "isPrimary": undefined,
+      "label": "Type",
+      "value": "Reservation",
+    },
+  ],
+  "overviewCardId": "reservation-summary",
+  "tableId": "reservation-items",
+  "tone": "warning",
+}
+`;
+
+exports[`golden: task card > unknown category 1`] = `
+{
+  "chips": [],
+  "overviewCardId": "unknown-summary",
+  "tableId": null,
+  "tone": "primary",
+}
+`;

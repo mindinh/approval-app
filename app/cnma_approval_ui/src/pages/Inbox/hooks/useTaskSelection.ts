@@ -8,7 +8,7 @@
  *
  * Supports both controlled (external) and uncontrolled (internal) modes.
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useLayoutEffect, useRef } from 'react';
 import type { InboxTask } from '@/services/inbox/inbox.types';
 
 interface UseTaskSelectionOptions {
@@ -23,23 +23,26 @@ interface UseTaskSelectionOptions {
 }
 
 export function useTaskSelection(options: UseTaskSelectionOptions = {}) {
-    const [_internalMode, _setInternalMode] = useState(false);
-    const [_internalIds, _setInternalIds] = useState<Set<string>>(new Set());
+    const { onSelectionModeChange, onSelectedIdsChange } = options;
+    const [internalMode, setInternalMode] = useState(false);
+    const [internalIds, setInternalIds] = useState<Set<string>>(() => new Set());
 
-    const selectionMode =
-        options.selectionMode !== undefined ? options.selectionMode : _internalMode;
-    const selectedIds =
-        options.selectedIds !== undefined ? options.selectedIds : _internalIds;
+    const selectionMode = options.selectionMode !== undefined ? options.selectionMode : internalMode;
+    const selectedIds = options.selectedIds !== undefined ? options.selectedIds : internalIds;
 
+    // Latest committed selection, also advanced eagerly by updateSelectedIds so
+    // consecutive updates within one event see each other.
     const selectedIdsRef = useRef(selectedIds);
-    selectedIdsRef.current = selectedIds;
+    useLayoutEffect(() => {
+        selectedIdsRef.current = selectedIds;
+    });
 
     const setSelectionMode = useCallback(
         (mode: boolean) => {
-            _setInternalMode(mode);
-            options.onSelectionModeChange?.(mode);
+            setInternalMode(mode);
+            onSelectionModeChange?.(mode);
         },
-        [options.onSelectionModeChange]
+        [onSelectionModeChange]
     );
 
     const updateSelectedIds = useCallback(
@@ -47,10 +50,10 @@ export function useTaskSelection(options: UseTaskSelectionOptions = {}) {
             const previous = selectedIdsRef.current;
             if (previous.size === newIds.size && [...newIds].every(id => previous.has(id))) return;
             selectedIdsRef.current = newIds;
-            _setInternalIds(newIds);
-            options.onSelectedIdsChange?.(newIds);
+            setInternalIds(newIds);
+            onSelectedIdsChange?.(newIds);
         },
-        [options.onSelectedIdsChange]
+        [onSelectedIdsChange]
     );
 
     const toggleSelection = useCallback(

@@ -11,10 +11,11 @@
  * - Own page-level UI state
  */
 import { useEffect, useRef } from 'react';
-import { infiniteQueryOptions, keepPreviousData, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, keepPreviousData, useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { inboxApi } from '@/services/inbox/inbox.api';
 import { STALE, REFRESH } from '@/pages/Inbox/utils/constants';
 import { isSapUserMappingMissing } from '@/pages/Inbox/utils/predicates';
+import { normalizeInstanceId, resolveDetailInstanceId } from '@/pages/Inbox/utils/instanceId';
 import { inboxKeys } from './inboxKeys';
 import type { TaskDetailResponse, InboxTask } from '@/services/inbox/inbox.types';
 import { useErrorModal } from '@/contexts/useErrorModal';
@@ -30,6 +31,35 @@ function listRefetchInterval(error: unknown): number | false {
     if (isSapUserMappingMissing(error)) return false;
     if (shouldPausePolling()) return false;
     return REFRESH.LIST_MS;
+}
+
+/** List queries retry once, except when the SAP user mapping is missing (retrying cannot help). */
+function retryListQuery(failureCount: number, error: unknown): boolean {
+    if (isSapUserMappingMissing(error)) return false;
+    return failureCount < 1;
+}
+
+const NON_RETRYABLE_HTTP_STATUSES = new Set([401, 403, 404]);
+
+function httpStatusOf(error: unknown): unknown {
+    if (!error || typeof error !== 'object') return undefined;
+    const err = error as { response?: { status?: unknown }; statusCode?: unknown; status?: unknown };
+    return err.response?.status || err.statusCode || err.status;
+}
+
+/** Detail queries retry once, except on auth / not-found responses. */
+function retryDetailQuery(failureCount: number, error: unknown): boolean {
+    const status = httpStatusOf(error);
+    if (typeof status === 'number' && NON_RETRYABLE_HTTP_STATUSES.has(status)) {
+        return false;
+    }
+    return failureCount < 1;
+}
+
+function toPagination(options?: { top?: number; skip?: number }) {
+    return options?.top != null || options?.skip != null
+        ? { top: options?.top, skip: options?.skip }
+        : undefined;
 }
 
 /**
@@ -65,7 +95,7 @@ export function useCategoryCounts(scope: 'my' | 'approved' = 'my', options?: { e
     return useQuery({
         queryKey: inboxKeys.categoryCounts(scope),
         queryFn: ({ signal }) => inboxApi.getCategoryCounts(scope, signal),
-        staleTime: 60 * 1000, // 1 minute fresh
+        staleTime: STALE.COUNTS,
         enabled: options?.enabled !== false,
         refetchOnWindowFocus: false,
     });
@@ -75,7 +105,7 @@ export function useStatusCounts(options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: inboxKeys.statusCounts(),
         queryFn: ({ signal }) => inboxApi.getStatusCounts(signal),
-        staleTime: 60_000,
+        staleTime: STALE.COUNTS,
         enabled: options?.enabled !== false,
         refetchOnWindowFocus: false,
         refetchInterval: (q) => listRefetchInterval(q.state.error),
@@ -84,9 +114,7 @@ export function useStatusCounts(options?: { enabled?: boolean }) {
 
 // ─── useTasks ──────────────────────────────────────────────
 export function useTasks(options?: { enabled?: boolean; top?: number; skip?: number; staleTime?: number }) {
-    const pagination = options?.top != null || options?.skip != null
-        ? { top: options?.top, skip: options?.skip }
-        : undefined;
+    const pagination = toPagination(options);
 
     const query = useQuery({
         queryKey: inboxKeys.tasks(pagination),
@@ -96,41 +124,14 @@ export function useTasks(options?: { enabled?: boolean; top?: number; skip?: num
         placeholderData: keepPreviousData,
         refetchOnWindowFocus: false,
         refetchInterval: (q) => listRefetchInterval(q.state.error),
-        retry: (failureCount, error: any) => {
-            if (isSapUserMappingMissing(error)) return false;
-            return failureCount < 1;
-        },
+        retry: retryListQuery,
     });
 
     useErrorModalOnQueryError(query.error, 'Failed to load tasks');
     return query;
 }
 
-// ─── useApprovedTasks ──────────────────────────────────────
-export function useApprovedTasks(options?: { enabled?: boolean; top?: number; skip?: number }) {
-    const pagination = options?.top != null || options?.skip != null
-        ? { top: options?.top, skip: options?.skip }
-        : undefined;
-
-    const query = useQuery({
-        queryKey: inboxKeys.approvedTasks(pagination),
-        queryFn: ({ signal }) => inboxApi.getApprovedTasks(pagination, signal),
-        staleTime: STALE.LIST,
-        enabled: options?.enabled !== false,
-        placeholderData: keepPreviousData,
-        refetchOnWindowFocus: false,
-        refetchInterval: (q) => listRefetchInterval(q.state.error),
-        retry: (failureCount, error: any) => {
-            if (isSapUserMappingMissing(error)) return false;
-            return failureCount < 1;
-        },
-    });
-
-    useErrorModalOnQueryError(query.error, 'Failed to load approved tasks');
-    return query;
-}
-
-// ─── useInfiniteTasks (infinite scroll) ────────────────────
+// ─── useInfiniteCategoryTasks (infinite scroll) ────────────
 const INFINITE_PAGE_SIZE = 25;
 
 export function categoryTasksQueryOptions(
@@ -158,12 +159,8 @@ export function categoryTasksQueryOptions(
         placeholderData: (previousData, previousQuery) =>
             previousQuery?.queryKey[2] === scope ? previousData : undefined,
         refetchOnWindowFocus: false,
-        retry: (failureCount, error: any) => {
-            if (isSapUserMappingMissing(error)) return false;
-            return failureCount < 1;
-        },
+        retry: retryListQuery,
     });
-
 }
 
 export function useInfiniteCategoryTasks(
@@ -172,58 +169,8 @@ export function useInfiniteCategoryTasks(
     search = '',
     enabled = true
 ) {
-    const query = useInfiniteQuery({ ...categoryTasksQueryOptions(scope, category, search), enabled });
     // Category failures render inline so an unrelated group remains usable.
-    return query;
-}
-
-export function useInfiniteTasks(options?: { enabled?: boolean }) {
-    const query = useInfiniteQuery({
-        queryKey: inboxKeys.tasksPrefix(),
-        queryFn: ({ pageParam = 0, signal }) =>
-            inboxApi.getTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }, signal),
-        initialPageParam: 0,
-        getNextPageParam: (lastPage, allPages) => {
-            const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
-            if (lastPage.items.length === 0 || totalFetched >= lastPage.total) return undefined;
-            return allPages.length * INFINITE_PAGE_SIZE;
-        },
-        staleTime: STALE.LIST,
-        enabled: options?.enabled !== false,
-        refetchOnWindowFocus: false,
-        retry: (failureCount, error: any) => {
-            if (isSapUserMappingMissing(error)) return false;
-            return failureCount < 1;
-        },
-    });
-
-    useErrorModalOnQueryError(query.error, 'Failed to load tasks');
-    return query;
-}
-
-// ─── useInfiniteApprovedTasks (infinite scroll) ────────────
-export function useInfiniteApprovedTasks(options?: { enabled?: boolean }) {
-    const query = useInfiniteQuery({
-        queryKey: inboxKeys.approvedTasksPrefix(),
-        queryFn: ({ pageParam = 0, signal }) =>
-            inboxApi.getApprovedTasks({ top: INFINITE_PAGE_SIZE, skip: pageParam }, signal),
-        initialPageParam: 0,
-        getNextPageParam: (lastPage, allPages) => {
-            const totalFetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
-            if (lastPage.items.length === 0 || totalFetched >= lastPage.total) return undefined;
-            return allPages.length * INFINITE_PAGE_SIZE;
-        },
-        staleTime: STALE.LIST,
-        enabled: options?.enabled !== false,
-        refetchOnWindowFocus: false,
-        retry: (failureCount, error: any) => {
-            if (isSapUserMappingMissing(error)) return false;
-            return failureCount < 1;
-        },
-    });
-
-    useErrorModalOnQueryError(query.error, 'Failed to load approved tasks');
-    return query;
+    return useInfiniteQuery({ ...categoryTasksQueryOptions(scope, category, search), enabled });
 }
 
 export function useTaskDetail(
@@ -231,36 +178,22 @@ export function useTaskDetail(
     options?: { enabled?: boolean },
     placeholderTask?: InboxTask
 ) {
-    const queryClient = useQueryClient();
-
     const query = useQuery<TaskDetailResponse, Error>({
         queryKey: inboxKeys.taskDetail(instanceId || ''),
         queryFn: ({ signal }) => inboxApi.getTaskDetail(instanceId!, signal),
         enabled: !!instanceId && options?.enabled !== false,
         staleTime: STALE.DETAIL,
-        retry: (failureCount, error: any) => {
-            const status = error?.response?.status || error?.statusCode || error?.status;
-            if (status === 404 || status === 403 || status === 401) {
-                return false;
-            }
-            return failureCount < 1;
-        },
+        retry: retryDetailQuery,
         placeholderData: (previousData) => {
             if (previousData) {
-                const prevId = (previousData as any)?.taskprocessing?.task?.InstanceID ||
-                               previousData.instanceId ||
-                               previousData.taskId ||
-                               previousData.task?.instanceId;
-                const normPrevId = prevId ? String(prevId).replace(/^0+/, '') : '';
-                const normInstId = instanceId ? String(instanceId).replace(/^0+/, '') : '';
-                if (!prevId || prevId === instanceId || normPrevId === normInstId) {
+                const prevId = resolveDetailInstanceId(previousData);
+                if (!prevId || prevId === instanceId || normalizeInstanceId(prevId) === normalizeInstanceId(instanceId)) {
                     return previousData;
                 }
             }
             if (placeholderTask && placeholderTask.instanceId === instanceId) {
                 const docType = placeholderTask.objectType || placeholderTask.businessContext?.type || 'PR';
                 const docId = placeholderTask.documentId || placeholderTask.instid || placeholderTask.businessContext?.documentId || '';
-
 
                 return {
                     taskId: placeholderTask.instanceId,
@@ -304,13 +237,7 @@ export function useReferencePrDetail(
         queryFn: () => inboxApi.getPrDetail(prNumber!),
         enabled: !!prNumber && options?.enabled !== false,
         staleTime: STALE.DETAIL,
-        retry: (failureCount, error: any) => {
-            const status = error?.response?.status || error?.statusCode || error?.status;
-            if (status === 404 || status === 403 || status === 401) {
-                return false;
-            }
-            return failureCount < 1;
-        },
+        retry: retryDetailQuery,
     });
 
     useErrorModalOnQueryError(query.error, 'Failed to load reference PR detail');
